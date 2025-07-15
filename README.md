@@ -65,7 +65,7 @@ Una plataforma completa que combina recolección ilimitada de tweets via web scr
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/BerserkerUwU/SentimentalSocialNextJS.git
+git clone https://github.com/mrlocky97/SentimentalSocialNextJS.git
 cd SentimentalSocialNextJS
 
 # Instalar dependencias
@@ -305,8 +305,8 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 📞 Contacto
 
-- **Developer**: [BerserkerUwU](https://github.com/BerserkerUwU)
-- **Project Link**: [https://github.com/BerserkerUwU/SentimentalSocialNextJS](https://github.com/BerserkerUwU/SentimentalSocialNextJS)
+- **Developer**: [mrlocky97](https://github.com/mrlocky97)
+- **Project Link**: [https://github.com/mrlocky97/SentimentalSocialNextJS](https://github.com/mrlocky97/SentimentalSocialNextJS)
 
 ---
 
@@ -314,6 +314,6 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 **⭐ Si este proyecto te resulta útil, no olvides darle una estrella! ⭐**
 
-[🚀 Demo Live](https://your-demo-url.com) | [📖 Docs](https://your-docs-url.com) | [🐛 Report Bug](https://github.com/BerserkerUwU/SentimentalSocialNextJS/issues) | [💡 Request Feature](https://github.com/BerserkerUwU/SentimentalSocialNextJS/issues)
+[🚀 Demo Live](https://your-demo-url.com) | [📖 Docs](https://your-docs-url.com) | [🐛 Report Bug](https://github.com/mrlocky97/SentimentalSocialNextJS/issues) | [💡 Request Feature](https://github.com/mrlocky97/SentimentalSocialNextJS/issues)
 
 </div>
