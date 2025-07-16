@@ -1,0 +1,47 @@
+{
+  "name": "sentimentalsocial",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx tsc --project tsconfig.server.json && node dist/server.js",
+    "build": "npx tsc --project tsconfig.server.json",
+    "start": "node dist/server.js",
+    "test:db": "tsx src/scripts/test-database.ts",
+    "test:scraping": "tsx src/scripts/test-scraping-only.ts",
+    "test:hybrid": "tsx src/scripts/test-hybrid-collection.ts",
+    "test:collection": "tsx src/scripts/test-twitter-collection.ts",
+    "test:sentiment": "tsx src/scripts/test-sentiment-analysis.ts"
+  },
+  "dependencies": {
+    "@crawlee/core": "^3.13.10",
+    "@crawlee/playwright": "^3.13.10",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.96",
+    "@types/morgan": "^1.9.10",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "axios": "^1.10.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^4.19.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.17.0",
+    "mongoose": "^8.16.3",
+    "morgan": "^1.10.0",
+    "playwright": "^1.54.1",
+    "puppeteer": "^24.12.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "twid": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
