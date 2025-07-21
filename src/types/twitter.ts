@@ -1,6 +1,6 @@
 /**
  * Twitter Integration Types
- * Types for Twitter API integration, tweet collection, and analysis
+ * Types for Twitter scraping with twikit and tweet analysis
  */
 
 // Core Twitter Types
@@ -156,132 +156,6 @@ export interface CampaignAnalytics {
   generatedAt: Date;
 }
 
-// Twitter API Integration Types
-export interface TwitterAPIConfig {
-  bearerToken: string;
-  apiKey?: string;
-  apiSecret?: string;
-  accessToken?: string;
-  accessTokenSecret?: string;
-  rateLimitBuffer: number; // Buffer time in ms between requests
-  maxRetries: number;
-}
-
-export interface TwitterSearchParams {
-  query: string; // Search query with hashtags, keywords, etc.
-  maxResults?: number; // Max 100 per request for basic, 500 for academic
-  sinceId?: string; // Get tweets after this tweet ID
-  untilId?: string; // Get tweets before this tweet ID
-  startTime?: string; // ISO datetime string
-  endTime?: string; // ISO datetime string
-  lang?: string; // Language code (ISO 639-1)
-  tweetFields?: string[]; // Fields to include in response
-  userFields?: string[]; // User fields to include
-  expansions?: string[]; // What to expand (author_id, geo, etc.)
-  placeFields?: string[]; // Geographic fields
-  nextToken?: string; // Pagination token
-  maxTotal?: number; // Maximum total tweets to collect (for pagination)
-}
-
-export interface TwitterAPIResponse {
-  data?: TwitterAPITweet[];
-  includes?: {
-    users?: TwitterAPIUser[];
-    places?: TwitterAPIPlace[];
-    media?: TwitterAPIMedia[];
-  };
-  meta?: {
-    newest_id?: string;
-    oldest_id?: string;
-    result_count: number;
-    next_token?: string;
-    previous_token?: string;
-  };
-  errors?: TwitterAPIError[];
-}
-
-export interface TwitterAPITweet {
-  id: string;
-  text: string;
-  author_id: string;
-  created_at: string;
-  public_metrics?: {
-    retweet_count: number;
-    like_count: number;
-    reply_count: number;
-    quote_count: number;
-    bookmark_count?: number;
-    impression_count?: number;
-  };
-  entities?: {
-    hashtags?: Array<{ start: number; end: number; tag: string }>;
-    mentions?: Array<{ start: number; end: number; username: string; id: string }>;
-    urls?: Array<{ start: number; end: number; url: string; expanded_url?: string }>;
-  };
-  geo?: {
-    place_id?: string;
-    coordinates?: { type: string; coordinates: [number, number] };
-  };
-  lang?: string;
-  referenced_tweets?: Array<{
-    type: 'retweeted' | 'quoted' | 'replied_to';
-    id: string;
-  }>;
-  attachments?: {
-    media_keys?: string[];
-  };
-}
-
-export interface TwitterAPIUser {
-  id: string;
-  username: string;
-  name: string;
-  description?: string;
-  location?: string;
-  url?: string;
-  verified?: boolean;
-  profile_image_url?: string;
-  public_metrics?: {
-    followers_count: number;
-    following_count: number;
-    tweet_count: number;
-    listed_count: number;
-  };
-  created_at?: string;
-}
-
-export interface TwitterAPIPlace {
-  id: string;
-  full_name: string;
-  name: string;
-  country: string;
-  country_code: string;
-  geo?: {
-    type: string;
-    coordinates: [number, number];
-  };
-}
-
-export interface TwitterAPIMedia {
-  media_key: string;
-  type: 'photo' | 'video' | 'animated_gif';
-  url?: string;
-  preview_image_url?: string;
-  public_metrics?: {
-    view_count?: number;
-  };
-}
-
-export interface TwitterAPIError {
-  title: string;
-  detail: string;
-  type: string;
-  resource_type?: string;
-  field?: string;
-  parameter?: string;
-  value?: string;
-}
-
 // Collection and Processing Types
 export interface TweetCollectionJob {
   id: string;
@@ -296,7 +170,6 @@ export interface TweetCollectionJob {
   startedAt?: Date;
   completedAt?: Date;
   lastTweetId?: string; // For pagination
-  nextToken?: string; // Twitter API pagination token
   errors: string[];
   retryCount: number;
   maxRetries: number;
@@ -331,7 +204,7 @@ export interface TweetProcessor {
   extractUrls(text: string): string[];
   detectLanguage(text: string): string;
   calculateEngagement(metrics: TweetMetrics, followers: number): number;
-  classifyTweetType(tweet: TwitterAPITweet): {
+  classifyTweetType(text: string): {
     isRetweet: boolean;
     isReply: boolean;
     isQuote: boolean;

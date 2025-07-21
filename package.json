@@ -7,14 +7,16 @@
     "build": "npx tsc --project tsconfig.server.json",
     "start": "node dist/server.js",
     "test:db": "tsx src/scripts/test-database.ts",
-    "test:scraping": "tsx src/scripts/test-scraping-only.ts",
-    "test:hybrid": "tsx src/scripts/test-hybrid-collection.ts",
-    "test:collection": "tsx src/scripts/test-twitter-collection.ts",
-    "test:sentiment": "tsx src/scripts/test-sentiment-analysis.ts"
+    "test:scraping": "tsx src/scripts/test-scraping-routes.ts",
+    "test:sentiment": "tsx src/scripts/test-sentiment-analysis.ts",
+    "test:experimental": "tsx src/scripts/run-experimental-test.ts",
+    "evaluate:models": "tsx src/scripts/run-experimental-test.ts",
+    "generate:report": "tsx src/scripts/run-experimental-test.ts"
   },
   "dependencies": {
     "@crawlee/core": "^3.13.10",
     "@crawlee/playwright": "^3.13.10",
+    "@the-convocation/twitter-scraper": "^0.17.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -36,8 +38,7 @@
     "playwright": "^1.54.1",
     "puppeteer": "^24.12.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "twid": "^0.3.0"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",

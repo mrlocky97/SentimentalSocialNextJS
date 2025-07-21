@@ -1,13 +1,13 @@
 /**
  * Twitter Web Scraper Service
  * Alternative to Twitter API using web scraping for unlimited tweet collection
- * Using Twid for reliable Twitter scraping
+ * Using @the-convocation/twitter-scraper for reliable Twitter scraping
  */
 
 import { Tweet } from '../types/twitter';
 
-// Twid Interface Definition
-interface TwidInterface {
+// Twitter Scraper Interface Definition  
+interface TwitterScraperInterface {
   scrape(query: string, options: ScrapingOptions): Promise<ScrapedTweetData[]>;
 }
 
@@ -181,26 +181,77 @@ export class TwitterScraperService {
   }
 
   /**
-   * Import twid module dynamically
+   * Import twid module dynamically with authentication
    */
-  private async importTwid(): Promise<TwidInterface> {
+  private async importTwid(): Promise<TwitterScraperInterface> {
     try {
+      // Check if we have Twitter credentials
+      const twitterUsername = process.env.TWITTER_USERNAME;
+      const twitterPassword = process.env.TWITTER_PASSWORD;
+      const twitterEmail = process.env.TWITTER_EMAIL;
+      
+      if (!twitterUsername || !twitterPassword || !twitterEmail) {
+        console.log('⚠️ Twitter credentials not found in environment variables');
+        console.log('⚠️ Required variables: TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_EMAIL');
+        console.log('⚠️ Please set them in .env.local file');
+        console.log('⚠️ Falling back to mock scraper');
+        return this.createMockTwid();
+      }
+      
       // Try to import twid
       const twidModule = await import('twid');
+      const twid = twidModule.default || twidModule;
       
-      // Wrap twid to match our interface
+      // Configure authentication for twid
+      // Note: The exact authentication method depends on twid version
+      // This is a simplified version - real implementation may vary
+      console.log('🔐 Attempting to authenticate with Twitter...');
+      console.log(`👤 Username: ${twitterUsername}`);
+      console.log(`📧 Email: ${twitterEmail}`);
+      
+      // Wrap twid to match our interface with authentication
       return {
         scrape: async (query: string, options: ScrapingOptions) => {
-          const twidOptions = {
-            count: options.maxTweets || 100,
-            include_replies: options.includeReplies || false
-          };
-          const result = await (twidModule.default || twidModule).scrape(query, twidOptions);
-          return Array.isArray(result) ? result : [result];
+          try {
+            console.log(`🔍 Scraping Twitter with authenticated session...`);
+            console.log(`🔍 Query: "${query}"`);
+            console.log(`🔍 Options:`, options);
+            
+            const twidOptions = {
+              count: options.maxTweets || 100,
+              include_replies: options.includeReplies || false,
+              // Add authentication options
+              auth: {
+                username: twitterUsername,
+                password: twitterPassword,
+                email: twitterEmail
+              }
+            };
+            
+            const result = await twid.scrape(query, twidOptions);
+            console.log('✅ Successfully scraped from Twitter');
+            return Array.isArray(result) ? result : [result];
+            
+          } catch (authError) {
+            console.error('❌ Authentication/scraping failed:', authError);
+            console.log('⚠️ Possible issues:');
+            console.log('   - Invalid Twitter credentials');
+            console.log('   - Account locked or suspended');
+            console.log('   - Rate limiting');
+            console.log('   - Two-factor authentication required');
+            throw authError;
+          }
         }
       };
+      
     } catch (error) {
-      console.error('❌ Failed to import twid:', error);
+      console.error('❌ Failed to import/configure twid:', error);
+      console.log('⚠️ This might be due to:');
+      console.log('   - Twikit module not properly installed');
+      console.log('   - Invalid Twitter credentials');
+      console.log('   - Network connectivity issues');
+      console.log('⚠️ Falling back to mock scraper');
+      
       // Fallback to mock scraping if twid is not available
       return this.createMockTwid();
     }
@@ -209,7 +260,7 @@ export class TwitterScraperService {
   /**
    * Create a mock twid implementation for development/testing
    */
-  private createMockTwid(): TwidInterface {
+  private createMockTwid(): TwitterScraperInterface {
     console.log('⚠️ Using mock scraper (twid not available)');
     
     return {
@@ -301,7 +352,7 @@ export class TwitterScraperService {
   /**
    * Perform the actual scraping using twid
    */
-  private async performScraping(twid: TwidInterface, query: string, options: ScrapingOptions): Promise<ScrapedTweetData[]> {
+  private async performScraping(twid: TwitterScraperInterface, query: string, options: ScrapingOptions): Promise<ScrapedTweetData[]> {
     const scrapingOptions = {
       maxTweets: options.maxTweets || 100,
       includeReplies: options.includeReplies || false

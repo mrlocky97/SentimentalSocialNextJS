@@ -22,10 +22,9 @@ import userRoutes from './routes/users';
 import campaignRoutes from './routes/campaigns';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
-import { twitterRoutes } from './routes/twitter';
-import { twitterCollectionRoutes } from './routes/twitter-collection';
-import hybridCollectionRoutes from './routes/hybrid-collection';
 import sentimentRoutes from './routes/sentiment';
+import experimentalRoutes from './routes/experimental.routes';
+import { scrapingRoutes } from './routes/scraping';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -77,10 +76,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/campaigns', campaignRoutes);
-app.use('/api/v1/twitter', twitterRoutes);
-app.use('/api/v1/twitter', twitterCollectionRoutes);
-app.use('/api/v1/hybrid-collection', hybridCollectionRoutes);
+app.use('/api/v1/scraping', scrapingRoutes);
 app.use('/api/v1/sentiment', sentimentRoutes);
+app.use('/api/v1/experimental', experimentalRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 // API info endpoint
@@ -94,18 +92,19 @@ app.get('/api/v1', (req, res) => {
       auth: '/api/v1/auth',
       users: '/api/v1/users',
       campaigns: '/api/v1/campaigns',
-      twitter: '/api/v1/twitter',
-      hybridCollection: '/api/v1/hybrid-collection',
+      scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
+      experimental: '/api/v1/experimental',
       admin: '/api/v1/admin',
     },
     features: [
       'User Authentication & Authorization',
       'Campaign Management',
-      'Twitter Data Scraping (Unlimited)',
-      'Hybrid Collection (Web Scraping + API)',
+      'Twitter Data Scraping with Twikit (Unlimited)',
       'Real-time Sentiment Analysis',
       'Advanced Analytics & Reporting',
+      'Experimental Model Evaluation',
+      'Performance Benchmarking & Visualization',
       'Data Export Capabilities',
     ],
   });
