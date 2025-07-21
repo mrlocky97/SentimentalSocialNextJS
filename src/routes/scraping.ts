@@ -12,19 +12,37 @@ const router = Router();
 
 // Try to use real scraper first, fallback to mock if it fails
 let scraperService: TwitterRealScraperService | TwitterScraperService;
+let useRealScraper = true; // Enable real scraper to test cookie authentication
 
 async function getScraperService() {
   if (!scraperService) {
-    try {
-      // Try real scraper first
-      scraperService = new TwitterRealScraperService();
-      console.log('🚀 Using Real Twitter Scraper Service');
-    } catch (error) {
-      console.log('⚠️ Real scraper not available, using mock scraper');
+    if (useRealScraper) {
+      try {
+        // Try real scraper first
+        scraperService = new TwitterRealScraperService();
+        console.log('🚀 Using Real Twitter Scraper Service');
+      } catch (error) {
+        console.log('⚠️ Real scraper initialization failed, using mock scraper');
+        useRealScraper = false;
+        scraperService = new TwitterScraperService();
+      }
+    } else {
       scraperService = new TwitterScraperService();
+      console.log('🎭 Using Mock Twitter Scraper Service');
     }
   }
   return scraperService;
+}
+
+// Function to handle scraper failures and switch to mock
+async function handleScrapingFailure(error: any) {
+  if (useRealScraper && (error.message?.includes('Forbidden') || error.message?.includes('Authentication'))) {
+    console.log('⚠️ Real scraper authentication failed, switching to mock scraper');
+    useRealScraper = false;
+    scraperService = new TwitterScraperService();
+    return true; // Indicate we switched to mock
+  }
+  return false; // No switch occurred
 }
 
 const sentimentManager = new TweetSentimentAnalysisManager();
@@ -116,13 +134,31 @@ router.post('/hashtag', async (req: Request, res: Response) => {
     const startTime = Date.now();
 
     // Get scraper service (real or mock)
-    const scraper = await getScraperService();
+    let scraper = await getScraperService();
+    let scrapingResult;
 
-    // Scrape tweets
-    const scrapingResult = await scraper.scrapeByHashtag(hashtag, {
-      maxTweets,
-      includeReplies
-    });
+    try {
+      // Scrape tweets
+      scrapingResult = await scraper.scrapeByHashtag(hashtag, {
+        maxTweets,
+        includeReplies
+      });
+    } catch (error) {
+      console.error(`❌ Error scraping hashtag #${hashtag}:`, error);
+      
+      // Try to switch to mock scraper if authentication failed
+      const switched = await handleScrapingFailure(error);
+      if (switched) {
+        console.log('🔄 Retrying with mock scraper...');
+        scraper = await getScraperService();
+        scrapingResult = await scraper.scrapeByHashtag(hashtag, {
+          maxTweets,
+          includeReplies
+        });
+      } else {
+        throw error; // Re-throw if we can't handle the error
+      }
+    }
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
@@ -420,12 +456,28 @@ router.get('/status', async (req: Request, res: Response) => {
     // Check if it's real scraper or mock
     const isRealScraper = scraper instanceof TwitterRealScraperService;
     
+    // Get authentication status for real scraper
+    let authStatus = null;
+    if (isRealScraper) {
+      authStatus = scraper.getAuthenticationStatus();
+      // Perform health check
+      await scraper.checkAuthenticationHealth();
+    }
+    
     res.json({
       success: true,
       data: {
         service_status: 'operational',
         scraper_type: isRealScraper ? 'real' : 'mock',
         authenticated: isRealScraper ? (rateLimitStatus as any).isAuthenticated : false,
+        authentication_monitoring: isRealScraper ? {
+          status: authStatus?.isAuthenticated ? 'authenticated' : 'failed',
+          last_check: authStatus?.lastCheck,
+          consecutive_failures: authStatus?.consecutiveFailures,
+          next_retry_time: authStatus?.nextRetryTime,
+          credentials_valid: authStatus?.credentialsValid,
+          last_error: authStatus?.lastError
+        } : null,
         rate_limit: {
           available: !rateLimitStatus.isLimited,
           requests_used: rateLimitStatus.requestCount,
@@ -439,7 +491,14 @@ router.get('/status', async (req: Request, res: Response) => {
             max_tweets_per_request: 1000,
             max_user_tweets: 500,
             rate_limit_window: '1 hour'
-          }
+          },
+          mock_features: !isRealScraper ? {
+            realistic_users: 8,
+            sentiment_variety: 3,
+            template_categories: ['AI', 'Technology', 'default'],
+            dynamic_content: true,
+            realistic_metrics: true
+          } : null
         },
         credentials_configured: !!(process.env.TWITTER_USERNAME && process.env.TWITTER_PASSWORD && process.env.TWITTER_EMAIL),
         last_scraping: {
