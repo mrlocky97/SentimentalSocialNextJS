@@ -10,39 +10,74 @@ import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analy
 
 const router = Router();
 
-// Try to use real scraper first, fallback to mock if it fails
-let scraperService: TwitterRealScraperService | TwitterScraperService;
-let useRealScraper = true; // Enable real scraper to test cookie authentication
+// Always try real scraper first, fallback to mock only on specific failures
+let realScraperService: TwitterRealScraperService | null = null;
+let mockScraperService: TwitterScraperService | null = null;
 
-async function getScraperService() {
-  if (!scraperService) {
-    if (useRealScraper) {
-      try {
-        // Try real scraper first
-        scraperService = new TwitterRealScraperService();
-        console.log('🚀 Using Real Twitter Scraper Service');
-      } catch (error) {
-        console.log('⚠️ Real scraper initialization failed, using mock scraper');
-        useRealScraper = false;
-        scraperService = new TwitterScraperService();
-      }
-    } else {
-      scraperService = new TwitterScraperService();
-      console.log('🎭 Using Mock Twitter Scraper Service');
-    }
+async function getRealScraperService(): Promise<TwitterRealScraperService> {
+  if (!realScraperService) {
+    realScraperService = new TwitterRealScraperService();
+    console.log('Initialized Real Twitter Scraper Service');
   }
-  return scraperService;
+  return realScraperService;
 }
 
-// Function to handle scraper failures and switch to mock
-async function handleScrapingFailure(error: any) {
-  if (useRealScraper && (error.message?.includes('Forbidden') || error.message?.includes('Authentication'))) {
-    console.log('⚠️ Real scraper authentication failed, switching to mock scraper');
-    useRealScraper = false;
-    scraperService = new TwitterScraperService();
-    return true; // Indicate we switched to mock
+function getMockScraperService(): TwitterScraperService {
+  if (!mockScraperService) {
+    mockScraperService = new TwitterScraperService();
+    console.log('Initialized Mock Twitter Scraper Service (fallback mode)');
   }
-  return false; // No switch occurred
+  return mockScraperService;
+}
+
+// Function to handle scraper failures and determine if we should use mock
+function shouldFallbackToMock(error: any): boolean {
+  const errorMessage = error.message || '';
+  const errorString = error.toString() || '';
+  
+  return (
+    errorMessage.includes('Forbidden') ||
+    errorMessage.includes('Authentication') ||
+    errorMessage.includes('Unauthorized') ||
+    errorMessage.includes('Cookie') ||
+    errorMessage.includes('Login') ||
+    errorMessage.includes('Session') ||
+    errorMessage.includes('AuthenticationError') ||
+    errorMessage.includes('not logged-in') ||
+    errorMessage.includes('Scraper is not logged-in') ||
+    errorString.includes('Forbidden') ||
+    errorString.includes('AuthenticationError') ||
+    errorString.includes('not logged-in') ||
+    errorString.includes('Scraper is not logged-in') ||
+    error.status === 401 ||
+    error.status === 403 ||
+    error.name === 'AuthenticationError' ||
+    (error.code && (error.code === 401 || error.code === 403))
+  );
+}
+
+// Unified scraping function that tries real scraper first, then fallback to mock
+async function performScraping<T>(
+  scrapingOperation: (scraper: TwitterRealScraperService) => Promise<T>,
+  operationName: string
+): Promise<T> {
+  try {
+    console.log(`Attempting ${operationName} with Real Twitter Scraper...`);
+    const realScraper = await getRealScraperService();
+    return await scrapingOperation(realScraper);
+  } catch (error) {
+    console.error(`Real scraper failed for ${operationName}:`, error);
+    
+    if (shouldFallbackToMock(error)) {
+      console.log(`🎭 Falling back to Mock Scraper for ${operationName}...`);
+      const mockScraper = getMockScraperService();
+      // Cast mock scraper to match the interface for the operation
+      return await scrapingOperation(mockScraper as any);
+    } else {
+      // Re-throw non-authentication errors
+      throw error;
+    }
+  }
 }
 
 const sentimentManager = new TweetSentimentAnalysisManager();
@@ -133,43 +168,25 @@ router.post('/hashtag', async (req: Request, res: Response) => {
     console.log(`🕷️ Starting hashtag scraping for #${hashtag}...`);
     const startTime = Date.now();
 
-    // Get scraper service (real or mock)
-    let scraper = await getScraperService();
-    let scrapingResult;
-
-    try {
-      // Scrape tweets
-      scrapingResult = await scraper.scrapeByHashtag(hashtag, {
+    // Use unified scraping function that tries real scraper first
+    const scrapingResult = await performScraping(
+      async (scraper) => await scraper.scrapeByHashtag(hashtag, {
         maxTweets,
         includeReplies
-      });
-    } catch (error) {
-      console.error(`❌ Error scraping hashtag #${hashtag}:`, error);
-      
-      // Try to switch to mock scraper if authentication failed
-      const switched = await handleScrapingFailure(error);
-      if (switched) {
-        console.log('🔄 Retrying with mock scraper...');
-        scraper = await getScraperService();
-        scrapingResult = await scraper.scrapeByHashtag(hashtag, {
-          maxTweets,
-          includeReplies
-        });
-      } else {
-        throw error; // Re-throw if we can't handle the error
-      }
-    }
+      }),
+      `hashtag scraping for #${hashtag}`
+    );
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`📊 Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
+      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`✅ Hashtag scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
+    console.log(`Hashtag scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -189,7 +206,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in hashtag scraping:', error);
+    console.error('Error in hashtag scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -259,28 +276,28 @@ router.post('/user', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🕷️ Starting user scraping for @${username}...`);
+    console.log(`Starting user scraping for @${username}...`);
     const startTime = Date.now();
 
-    // Get scraper service (real or mock)
-    const scraper = await getScraperService();
-
-    // Scrape user tweets
-    const scrapingResult = await scraper.scrapeByUser(username, {
-      maxTweets,
-      includeReplies
-    });
+    // Use unified scraping function that tries real scraper first
+    const scrapingResult = await performScraping(
+      async (scraper) => await scraper.scrapeByUser(username, {
+        maxTweets,
+        includeReplies
+      }),
+      `user scraping for @${username}`
+    );
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`📊 Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
+      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`✅ User scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
+    console.log(`User scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -300,7 +317,7 @@ router.post('/user', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in user scraping:', error);
+    console.error('Error in user scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -373,25 +390,25 @@ router.post('/search', async (req: Request, res: Response) => {
     console.log(`🔍 Starting search scraping for: "${query}"...`);
     const startTime = Date.now();
 
-    // Get scraper service (real or mock)
-    const scraper = await getScraperService();
-
-    // Scrape tweets by search - using hashtag method with search query
-    const scrapingResult = await scraper.scrapeByHashtag(query, {
-      maxTweets,
-      includeReplies: false
-    });
+    // Use unified scraping function that tries real scraper first
+    const scrapingResult = await performScraping(
+      async (scraper) => await scraper.scrapeByHashtag(query, {
+        maxTweets,
+        includeReplies: false
+      }),
+      `search scraping for: "${query}"`
+    );
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`📊 Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
+      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`✅ Search scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
+    console.log(`Search scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -411,7 +428,7 @@ router.post('/search', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in search scraping:', error);
+    console.error('Error in search scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -450,55 +467,75 @@ router.post('/search', async (req: Request, res: Response) => {
  */
 router.get('/status', async (req: Request, res: Response) => {
   try {
-    const scraper = await getScraperService();
-    const rateLimitStatus = scraper.getRateLimitStatus();
+    // Always try to get real scraper status first
+    let realScraperStatus = null;
+    let isRealScraperAvailable = false;
     
-    // Check if it's real scraper or mock
-    const isRealScraper = scraper instanceof TwitterRealScraperService;
-    
-    // Get authentication status for real scraper
-    let authStatus = null;
-    if (isRealScraper) {
-      authStatus = scraper.getAuthenticationStatus();
+    try {
+      const realScraper = await getRealScraperService();
+      const rateLimitStatus = realScraper.getRateLimitStatus();
+      const authStatus = realScraper.getAuthenticationStatus();
+      
       // Perform health check
-      await scraper.checkAuthenticationHealth();
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        service_status: 'operational',
-        scraper_type: isRealScraper ? 'real' : 'mock',
-        authenticated: isRealScraper ? (rateLimitStatus as any).isAuthenticated : false,
-        authentication_monitoring: isRealScraper ? {
+      await realScraper.checkAuthenticationHealth();
+      
+      realScraperStatus = {
+        authenticated: (rateLimitStatus as any).isAuthenticated,
+        authentication_monitoring: {
           status: authStatus?.isAuthenticated ? 'authenticated' : 'failed',
           last_check: authStatus?.lastCheck,
           consecutive_failures: authStatus?.consecutiveFailures,
           next_retry_time: authStatus?.nextRetryTime,
           credentials_valid: authStatus?.credentialsValid,
           last_error: authStatus?.lastError
-        } : null,
+        },
         rate_limit: {
           available: !rateLimitStatus.isLimited,
           requests_used: rateLimitStatus.requestCount,
           requests_remaining: rateLimitStatus.remaining,
           reset_time: rateLimitStatus.resetTime
-        },
+        }
+      };
+      
+      isRealScraperAvailable = true;
+    } catch (error) {
+      console.log('Real scraper not available, will use mock as fallback');
+      realScraperStatus = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        available: false
+      };
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        service_status: 'operational',
+        primary_scraper: 'real',
+        fallback_scraper: 'mock',
+        real_scraper_available: isRealScraperAvailable,
+        real_scraper_status: realScraperStatus,
         scraper_info: {
-          type: isRealScraper ? '@the-convocation/twitter-scraper' : 'mock',
-          supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
+          primary: {
+            type: '@the-convocation/twitter-scraper',
+            supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
+            authentication: 'cookie-based'
+          },
+          fallback: {
+            type: 'mock',
+            supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
+            mock_features: {
+              realistic_users: 8,
+              sentiment_variety: 3,
+              template_categories: ['AI', 'Technology', 'default'],
+              dynamic_content: true,
+              realistic_metrics: true
+            }
+          },
           limits: {
             max_tweets_per_request: 1000,
             max_user_tweets: 500,
             rate_limit_window: '1 hour'
-          },
-          mock_features: !isRealScraper ? {
-            realistic_users: 8,
-            sentiment_variety: 3,
-            template_categories: ['AI', 'Technology', 'default'],
-            dynamic_content: true,
-            realistic_metrics: true
-          } : null
+          }
         },
         credentials_configured: !!(process.env.TWITTER_USERNAME && process.env.TWITTER_PASSWORD && process.env.TWITTER_EMAIL),
         last_scraping: {
@@ -506,11 +543,11 @@ router.get('/status', async (req: Request, res: Response) => {
           status: 'ready'
         }
       },
-      message: `Scraping service is operational (${isRealScraper ? 'REAL' : 'MOCK'} mode)`
+      message: `Scraping service operational - Real scraper ${isRealScraperAvailable ? 'AVAILABLE' : 'UNAVAILABLE'} (automatic fallback to mock)`
     });
 
   } catch (error) {
-    console.error('❌ Error getting scraping status:', error);
+    console.error('Error getting scraping status:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

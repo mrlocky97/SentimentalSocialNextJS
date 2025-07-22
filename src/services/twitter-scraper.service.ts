@@ -162,7 +162,7 @@ export class TwitterScraperService {
    * Scrape tweets by hashtag
    */
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-    console.log(`🕷️ Starting scrape for hashtag: #${hashtag}`);
+    console.log(`Starting scrape for hashtag: #${hashtag}`);
     
     if (this.isRateLimited) {
       throw new Error(`Rate limited. Reset time: ${this.rateLimitResetTime.toISOString()}`);
@@ -183,7 +183,7 @@ export class TwitterScraperService {
       const twid = await this.importTwid();
       
       const searchQuery = this.buildSearchQuery(hashtag, defaultOptions);
-      console.log(`🔍 Search Query: ${searchQuery}`);
+      console.log(`Search Query: ${searchQuery}`);
 
       const scrapedData = await this.performScraping(twid, searchQuery, defaultOptions);
       const tweets = this.processTweets(scrapedData, defaultOptions);
@@ -202,7 +202,7 @@ export class TwitterScraperService {
       };
 
     } catch (error) {
-      console.error('❌ Scraping error:', error);
+      console.error('Scraping error:', error);
       return {
         tweets: [],
         totalFound: 0,
@@ -220,7 +220,7 @@ export class TwitterScraperService {
    * Scrape tweets from a specific user
    */
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-    console.log(`🕷️ Starting scrape for user: @${username}`);
+    console.log(`Starting scrape for user: @${username}`);
     
     const userOptions = { ...options, username };
     return this.scrapeByHashtag('', userOptions);
@@ -242,9 +242,9 @@ export class TwitterScraperService {
    * Initialize mock Twitter scraper (real scraping handled by TwitterRealScraperService)
    */
   private async importTwid(): Promise<TwitterScraperInterface> {
-    console.log('⚠️ Using mock Twitter scraper for development/testing');
-    console.log('⚠️ For real scraping, use TwitterRealScraperService with cookie authentication');
-    console.log('⚠️ See TWITTER_COOKIE_GUIDE.md for setup instructions');
+    console.log('Using mock Twitter scraper for development/testing');
+    console.log('For real scraping, use TwitterRealScraperService with cookie authentication');
+    console.log('See TWITTER_COOKIE_GUIDE.md for setup instructions');
     
     // Always return mock scraper since real scraping is handled by TwitterRealScraperService
     return this.createMockTwid();
@@ -254,7 +254,7 @@ export class TwitterScraperService {
    * Create a mock twid implementation for development/testing
    */
   private createMockTwid(): TwitterScraperInterface {
-    console.log('⚠️ Using mock scraper (twid not available)');
+    console.log('Using mock scraper (twid not available)');
     
     return {
       scrape: async (query: string, options: ScrapingOptions) => {
@@ -498,7 +498,7 @@ export class TwitterScraperService {
       includeReplies: options.includeReplies || false
     };
 
-    console.log(`🕷️ Scraping with options:`, scrapingOptions);
+    console.log(`Scraping with options:`, scrapingOptions);
     
     // Add delay to avoid being blocked
     await this.delay(this.config.delay || 2000);
@@ -530,7 +530,7 @@ export class TwitterScraperService {
         
         tweets.push(tweet);
       } catch (error) {
-        console.warn('⚠️ Failed to process tweet:', error);
+        console.warn('Failed to process tweet:', error);
       }
     }
 
@@ -611,7 +611,7 @@ export class TwitterScraperService {
     // Check if we've hit the limit
     if (this.requestCount >= this.maxRequestsPerHour) {
       this.isRateLimited = true;
-      console.warn('⚠️ Rate limit reached. Will reset at:', this.rateLimitResetTime);
+      console.warn('Rate limit reached. Will reset at:', this.rateLimitResetTime);
     }
   }
 

@@ -115,4 +115,17 @@ temp/
 # Sentry Config File
 .sentryclirc
 
+# Twitter authentication files (SECURITY SENSITIVE)
+cookies.json
+manual-cookies.json
+twitter-session.json
+
+# Application specific
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# Compiled TypeScript
+dist/
+build/
+
 /node_modules

@@ -1,53 +1,138 @@
 # SentimentalSocial - Twitter Sentiment Analysis API
 
-🚀 **API avanzado para análisis de sentimientos en Twitter con insights de marketing**
+🚀 **Advanced API for Twitter sentiment analysis with marketing insights**
 
-Una plataforma completa que combina recolección ilimitada de tweets via web scraping, análisis de sentimientos inteligente y generación automática de insights de marketing.
+A complete platform that combines unlimited tweet collection via web scraping, intelligent sentiment analysis, and automatic generation of marketing insights.
 
-## 🌟 Características Principales
+## 🌟 Key Features
 
-### 🕷️ **Recolección de Tweets Ilimitada**
-- **Web Scraping**: Recolección sin límites usando Playwright + Twikit
-- **Twitter API**: Integración con API oficial para datos en tiempo real  
-- **Sistema Híbrido**: 80% scraping + 20% API para resultados óptimos
-- **Rate Limiting**: Control inteligente para evitar bloqueos
+### 🕷️ **Unlimited Tweet Collection**
+- **Real Twitter Scraper**: Cookie-based authentication with @the-convocation/twitter-scraper
+- **Smart Fallback System**: Automatic fallback to mock data for development/testing
+- **Rate Limiting**: Intelligent controls to avoid blocks
+- **Persistent Sessions**: Cookie management for seamless authentication
 
-### 🧠 **Análisis de Sentimientos Avanzado**
-- **Sentiment Scoring**: Puntuación de -1 (muy negativo) a +1 (muy positivo)
-- **Emotion Analysis**: Detección de 6 emociones (joy, sadness, anger, fear, surprise, disgust)
-- **Brand Mention Detection**: Identificación automática de menciones de marca
-- **Entity Extraction**: Extracción de personas, organizaciones y ubicaciones
-- **Language Detection**: Soporte para inglés y español
+### 🧠 **Advanced Sentiment Analysis**
+- **Sentiment Scoring**: Scale from -1 (very negative) to +1 (very positive)
+- **Emotion Analysis**: Detection of 6 emotions (joy, sadness, anger, fear, surprise, disgust)
+- **Brand Mention Detection**: Automatic brand mention identification
+- **Entity Extraction**: Extraction of people, organizations, and locations
+- **Language Detection**: Support for English and Spanish
 
-### 💡 **Marketing Insights Automático**
-- **Brand Perception Analysis**: Análisis de percepción de marca en tiempo real
-- **Customer Feedback Detection**: Identificación automática de quejas y feedback
-- **Influencer Impact Scoring**: Puntuación de influencia basada en engagement
-- **Trend Identification**: Detección de tendencias emergentes
-- **Actionable Recommendations**: Recomendaciones específicas para cada insight
+### 💡 **Automatic Marketing Insights**
+- **Brand Perception Analysis**: Real-time brand perception analysis
+- **Customer Feedback Detection**: Automatic complaint and feedback identification
+- **Influencer Impact Scoring**: Influence scoring based on engagement
+- **Trend Identification**: Detection of emerging trends
+- **Actionable Recommendations**: Specific recommendations for each insight
 
-### 📊 **Analytics y Reporting**
-- **Real-time Statistics**: Estadísticas en tiempo real
-- **Sentiment Trends**: Análisis de tendencias temporales
-- **Batch Processing**: Procesamiento en lotes hasta 100 tweets
-- **Performance Metrics**: Métricas de rendimiento detalladas
+### 📊 **Analytics and Reporting**
+- **Real-time Statistics**: Live statistics
+- **Sentiment Trends**: Temporal trend analysis
+- **Batch Processing**: Batch processing up to 100 tweets
+- **Performance Metrics**: Detailed performance metrics
 
-## 🏗️ Arquitectura
+## 🏗️ Architecture
 
 ```
 📁 SentimentalSocial/
-├── 🕷️ Web Scraping System
-│   ├── TwitterScraperService
-│   ├── HybridCollectionManager
-│   └── Mock Data Generator
+├── 🕷️ Hybrid Scraping System
+│   ├── TwitterRealScraperService (Cookie-based)
+│   ├── TwitterScraperService (Mock fallback)
+│   ├── TwitterCookieManager
+│   └── Automatic Fallback Logic
 ├── 🧠 Sentiment Analysis Engine
 │   ├── SentimentAnalysisService
 │   ├── TweetSentimentAnalysisManager
 │   └── Marketing Insights Generator
 ├── 📊 API Layer
-│   ├── Express Server
+│   ├── Express Server + TypeScript
 │   ├── Swagger Documentation
-│   └── Authentication System
+│   └── Rate Limiting & Monitoring
+├── 🗄️ Data Layer
+│   ├── MongoDB Integration
+│   ├── Cookie Session Management
+│   └── Performance Tracking
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ 
+- MongoDB
+- Twitter/X account (for real scraping)
+
+### 1. Setup Project
+```bash
+# Clone the repository
+git clone <repository-url>
+cd sentimentalsocial
+
+# Install dependencies
+npm install
+
+# Run setup script
+node setup.js
+```
+
+### 2. Configure Environment
+```bash
+# Edit .env.local with your configuration
+cp .env.example .env.local
+```
+
+### 3. Twitter Authentication (Optional)
+For real Twitter scraping, follow the [Twitter Authentication Guide](./TWITTER_AUTHENTICATION.md):
+
+```bash
+# 1. Extract cookies from browser (see guide)
+# 2. Edit manual-cookies.json
+# 3. Import cookies
+node import-cookies.js
+```
+
+### 4. Start Development Server
+```bash
+npm run dev
+```
+
+The API will be available at `http://localhost:3001`
+
+## 📋 API Endpoints
+
+### Core Scraping
+```bash
+# Scrape tweets by hashtag
+POST /api/v1/scraping/hashtag
+{
+  "hashtag": "AI",
+  "maxTweets": 50,
+  "analyzeSentiment": true
+}
+
+# Scrape tweets by user
+POST /api/v1/scraping/user  
+{
+  "username": "elonmusk",
+  "maxTweets": 30,
+  "analyzeSentiment": true
+}
+
+# Search tweets
+POST /api/v1/scraping/search
+{
+  "query": "machine learning",
+  "maxTweets": 100
+}
+
+# Get system status
+GET /api/v1/scraping/status
+```
+
+### Documentation
+- **Swagger UI**: `http://localhost:3001/api-docs`
+- **API Info**: `http://localhost:3001/api/v1`
+- **Health Check**: `http://localhost:3001/health`
 └── 🗄️ Data Layer
     ├── MongoDB Integration
     ├── Tweet Repository

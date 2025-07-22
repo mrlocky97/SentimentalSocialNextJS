@@ -226,12 +226,8 @@ export class TwitterRealScraperService {
         await this.delay(randomDelay);
 
         // Attempt to login with 2FA if available
-        if (twoFactorSecret) {
-          await this.scraper.login(username, password, email, twoFactorSecret);
-        } else {
-          await this.scraper.login(username, password, email);
-        }
-        
+        await this.scraper.login(username, password, email);
+
         this.isAuthenticated = true;
         this.updateAuthStatus(true);
         console.log('✅ Successfully authenticated with Twitter!');
@@ -337,6 +333,20 @@ export class TwitterRealScraperService {
     } catch (error) {
       console.error(`❌ Error scraping hashtag #${hashtag}:`, error);
       
+      // For authentication errors, re-throw so the route can handle fallback
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('Forbidden') ||
+        errorMessage.includes('Authentication') ||
+        errorMessage.includes('not logged-in') ||
+        errorMessage.includes('Scraper is not logged-in') ||
+        (error instanceof Error && error.name === 'AuthenticationError')
+      ) {
+        console.log('🔄 Re-throwing authentication error for fallback handling');
+        throw error;
+      }
+      
+      // For other errors, return empty result
       return {
         tweets: [],
         totalFound: 0,
@@ -405,6 +415,20 @@ export class TwitterRealScraperService {
     } catch (error) {
       console.error(`❌ Error scraping user @${username}:`, error);
       
+      // For authentication errors, re-throw so the route can handle fallback
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('Forbidden') ||
+        errorMessage.includes('Authentication') ||
+        errorMessage.includes('not logged-in') ||
+        errorMessage.includes('Scraper is not logged-in') ||
+        (error instanceof Error && error.name === 'AuthenticationError')
+      ) {
+        console.log('🔄 Re-throwing authentication error for fallback handling');
+        throw error;
+      }
+      
+      // For other errors, return empty result
       return {
         tweets: [],
         totalFound: 0,
@@ -550,16 +574,23 @@ export class TwitterRealScraperService {
     this.authStatus.lastCheck = new Date();
     
     if (isSuccess) {
-      this.authStatus.isAuthenticated = true;
-      this.authStatus.consecutiveFailures = 0;
-      this.authStatus.lastError = undefined;
-      this.authStatus.nextRetryTime = undefined;
-      this.authStatus.credentialsValid = true;
+      this.authStatus = {
+        isAuthenticated: true,
+        lastCheck: new Date(),
+        lastError: undefined,
+        consecutiveFailures: 0,
+        nextRetryTime: undefined,
+        credentialsValid: true
+      };
     } else {
-      this.authStatus.isAuthenticated = false;
-      this.authStatus.consecutiveFailures++;
-      this.authStatus.lastError = error || 'Unknown authentication error';
-      
+      this.authStatus = {
+        isAuthenticated: false,
+        lastCheck: new Date(),
+        lastError: error || 'Unknown authentication error',
+        consecutiveFailures: this.authStatus.consecutiveFailures + 1,
+        nextRetryTime: this.authStatus.nextRetryTime,
+        credentialsValid: this.authStatus.credentialsValid
+      };
       // Set next retry time based on consecutive failures
       const backoffMinutes = Math.min(30 * Math.pow(2, this.authStatus.consecutiveFailures - 1), 1440); // Max 24 hours
       this.authStatus.nextRetryTime = new Date(Date.now() + backoffMinutes * 60 * 1000);
