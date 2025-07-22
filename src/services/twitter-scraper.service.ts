@@ -239,80 +239,15 @@ export class TwitterScraperService {
   }
 
   /**
-   * Import twid module dynamically with authentication
+   * Initialize mock Twitter scraper (real scraping handled by TwitterRealScraperService)
    */
   private async importTwid(): Promise<TwitterScraperInterface> {
-    try {
-      // Check if we have Twitter credentials
-      const twitterUsername = process.env.TWITTER_USERNAME;
-      const twitterPassword = process.env.TWITTER_PASSWORD;
-      const twitterEmail = process.env.TWITTER_EMAIL;
-      
-      if (!twitterUsername || !twitterPassword || !twitterEmail) {
-        console.log('⚠️ Twitter credentials not found in environment variables');
-        console.log('⚠️ Required variables: TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_EMAIL');
-        console.log('⚠️ Please set them in .env.local file');
-        console.log('⚠️ Falling back to mock scraper');
-        return this.createMockTwid();
-      }
-      
-      // Try to import twid
-      const twidModule = await import('twid');
-      const twid = twidModule.default || twidModule;
-      
-      // Configure authentication for twid
-      // Note: The exact authentication method depends on twid version
-      // This is a simplified version - real implementation may vary
-      console.log('🔐 Attempting to authenticate with Twitter...');
-      console.log(`👤 Username: ${twitterUsername}`);
-      console.log(`📧 Email: ${twitterEmail}`);
-      
-      // Wrap twid to match our interface with authentication
-      return {
-        scrape: async (query: string, options: ScrapingOptions) => {
-          try {
-            console.log(`🔍 Scraping Twitter with authenticated session...`);
-            console.log(`🔍 Query: "${query}"`);
-            console.log(`🔍 Options:`, options);
-            
-            const twidOptions = {
-              count: options.maxTweets || 100,
-              include_replies: options.includeReplies || false,
-              // Add authentication options
-              auth: {
-                username: twitterUsername,
-                password: twitterPassword,
-                email: twitterEmail
-              }
-            };
-            
-            const result = await twid.scrape(query, twidOptions);
-            console.log('✅ Successfully scraped from Twitter');
-            return Array.isArray(result) ? result : [result];
-            
-          } catch (authError) {
-            console.error('❌ Authentication/scraping failed:', authError);
-            console.log('⚠️ Possible issues:');
-            console.log('   - Invalid Twitter credentials');
-            console.log('   - Account locked or suspended');
-            console.log('   - Rate limiting');
-            console.log('   - Two-factor authentication required');
-            throw authError;
-          }
-        }
-      };
-      
-    } catch (error) {
-      console.error('❌ Failed to import/configure twid:', error);
-      console.log('⚠️ This might be due to:');
-      console.log('   - Twikit module not properly installed');
-      console.log('   - Invalid Twitter credentials');
-      console.log('   - Network connectivity issues');
-      console.log('⚠️ Falling back to mock scraper');
-      
-      // Fallback to mock scraping if twid is not available
-      return this.createMockTwid();
-    }
+    console.log('⚠️ Using mock Twitter scraper for development/testing');
+    console.log('⚠️ For real scraping, use TwitterRealScraperService with cookie authentication');
+    console.log('⚠️ See TWITTER_COOKIE_GUIDE.md for setup instructions');
+    
+    // Always return mock scraper since real scraping is handled by TwitterRealScraperService
+    return this.createMockTwid();
   }
 
   /**

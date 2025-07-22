@@ -1,0 +1,44 @@
+{
+  "cookies": [
+    {
+      "name": "auth_token",
+      "value": "REPLACE_WITH_YOUR_AUTH_TOKEN",
+      "domain": ".twitter.com",
+      "path": "/",
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ct0",
+      "value": "REPLACE_WITH_YOUR_CT0_TOKEN",
+      "domain": ".twitter.com",
+      "path": "/",
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "twid",
+      "value": "REPLACE_WITH_YOUR_TWID",
+      "domain": ".twitter.com",
+      "path": "/",
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_twitter_sess",
+      "value": "REPLACE_WITH_YOUR_TWITTER_SESS",
+      "domain": ".twitter.com",
+      "path": "/",
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "timestamp": 1753221137471,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "isValid": true,
+  "expirationTime": 1753307537471
+}

@@ -6,6 +6,8 @@
     "dev": "npx tsc --project tsconfig.server.json && node dist/server.js",
     "build": "npx tsc --project tsconfig.server.json",
     "start": "node dist/server.js",
+    "auth": "tsx src/utils/twitter-auth-helper.ts",
+    "cookie-helper": "tsx src/utils/cookie-importer.ts",
     "test:db": "tsx src/scripts/test-database.ts",
     "test:scraping": "tsx src/scripts/test-scraping-routes.ts",
     "test:sentiment": "tsx src/scripts/test-sentiment-analysis.ts",

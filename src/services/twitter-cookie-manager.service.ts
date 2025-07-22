@@ -229,4 +229,41 @@ export class TwitterCookieManager {
       console.error('❌ Error extracting cookies from scraper:', error);
     }
   }
+
+  /**
+   * Get cookies as a string for HTTP headers
+   */
+  public getCookiesAsString(): string {
+    const cookies = this.getCookies();
+    if (!cookies || cookies.length === 0) return '';
+    
+    return cookies
+      .map(cookie => `${cookie.name}=${cookie.value}`)
+      .join('; ');
+  }
+
+  /**
+   * Get session timestamp
+   */
+  public getSessionTimestamp(): number | null {
+    return this.sessionData ? this.sessionData.timestamp : null;
+  }
+
+  /**
+   * Get session creation date
+   */
+  public getSessionDate(): Date | null {
+    const timestamp = this.getSessionTimestamp();
+    return timestamp ? new Date(timestamp) : null;
+  }
+
+  /**
+   * Get session age in minutes
+   */
+  public getSessionAgeMinutes(): number | null {
+    const timestamp = this.getSessionTimestamp();
+    if (!timestamp) return null;
+    
+    return Math.floor((Date.now() - timestamp) / (1000 * 60));
+  }
 }

@@ -144,23 +144,36 @@ export class TwitterRealScraperService {
       const scraperConfig: any = {
         transform: {
           request: (input: any, init: any) => {
-            // Add delays and headers
+            // Add comprehensive headers and cookies
             if (init) {
+              const cookieHeader = this.cookieManager.getCookiesAsString();
+              
               init.headers = {
                 ...init.headers,
                 'User-Agent': savedUserAgent || this.config.userAgent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Cache-Control': 'max-age=0',
               };
+
+              // Add cookies if available
+              if (cookieHeader) {
+                init.headers['Cookie'] = cookieHeader;
+              }
             }
             return [input, init];
           },
         },
+        // Additional configuration for better reliability
+        timeout: this.config.timeout,
+        retry: this.config.maxRetries,
       };
-
-      // If we have cookies, configure scraper to use them
-      if (existingCookies && existingCookies.length > 0) {
-        console.log(`🍪 Loading ${existingCookies.length} saved cookies for authentication`);
-        scraperConfig.cookies = this.cookieManager.getCookiesForScraper();
-      }
 
       this.scraper = new Scraper(scraperConfig);
 
@@ -207,9 +220,10 @@ export class TwitterRealScraperService {
         this.lastLoginAttempt = new Date();
         this.loginAttempts++;
 
-        // Add extra delay before login to avoid detection
-        console.log('⏱️ Waiting 5 seconds before login attempt...');
-        await this.delay(5000);
+        // Add random delay before login to appear more human-like
+        const randomDelay = 3000 + Math.random() * 4000; // 3-7 seconds
+        console.log(`⏱️ Waiting ${Math.round(randomDelay/1000)} seconds before login attempt...`);
+        await this.delay(randomDelay);
 
         // Attempt to login with 2FA if available
         if (twoFactorSecret) {
@@ -237,10 +251,14 @@ export class TwitterRealScraperService {
       // Clear cookies on auth failure
       this.cookieManager.invalidateSession();
       
-      // Reset attempts if we're hitting rate limits
-      if (error instanceof Error && error.message.includes('429')) {
-        console.log('⏰ Rate limited. Resetting login attempts after cooldown.');
-        this.loginAttempts = 0;
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('429') || error.message.includes('rate limit')) {
+          console.log('⏰ Rate limited. Resetting login attempts after cooldown.');
+          this.loginAttempts = 0;
+        } else if (error.message.includes('Forbidden')) {
+          console.log('🚫 Twitter blocked the request. Consider using cookies from another session.');
+        }
       }
       
       throw error;
