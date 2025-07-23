@@ -7,12 +7,17 @@ import { Router, Request, Response } from 'express';
 import { TwitterRealScraperService } from '../services/twitter-real-scraper.service';
 import { TwitterScraperService } from '../services/twitter-scraper.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
+import { TweetDatabaseService } from '../services/tweet-database.service';
 
 const router = Router();
 
 // Always try real scraper first, fallback to mock only on specific failures
 let realScraperService: TwitterRealScraperService | null = null;
 let mockScraperService: TwitterScraperService | null = null;
+
+// Initialize services
+const sentimentManager = new TweetSentimentAnalysisManager();
+const tweetDatabaseService = new TweetDatabaseService();
 
 async function getRealScraperService(): Promise<TwitterRealScraperService> {
   if (!realScraperService) {
@@ -79,8 +84,6 @@ async function performScraping<T>(
     }
   }
 }
-
-const sentimentManager = new TweetSentimentAnalysisManager();
 
 /**
  * @swagger
@@ -182,6 +185,18 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
+    }
+
+    // Save tweets to database automatically
+    if (scrapingResult.tweets.length > 0) {
+      try {
+        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
+        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
+      } catch (dbError) {
+        console.error('Error saving tweets to database:', dbError);
+        // Don't fail the response, just log the error
+      }
     }
 
     const executionTime = Date.now() - startTime;
@@ -295,6 +310,18 @@ router.post('/user', async (req: Request, res: Response) => {
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
 
+    // Save tweets to database automatically
+    if (scrapingResult.tweets.length > 0) {
+      try {
+        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
+        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
+      } catch (dbError) {
+        console.error('Error saving tweets to database:', dbError);
+        // Don't fail the response, just log the error
+      }
+    }
+
     const executionTime = Date.now() - startTime;
 
     console.log(`User scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
@@ -404,6 +431,18 @@ router.post('/search', async (req: Request, res: Response) => {
       console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
+    }
+
+    // Save tweets to database automatically
+    if (scrapingResult.tweets.length > 0) {
+      try {
+        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
+        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
+      } catch (dbError) {
+        console.error('Error saving tweets to database:', dbError);
+        // Don't fail the response, just log the error
+      }
     }
 
     const executionTime = Date.now() - startTime;

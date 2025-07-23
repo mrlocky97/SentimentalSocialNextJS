@@ -286,8 +286,11 @@ export class TwitterScraperService {
       const baseEngagement = this.calculateBaseEngagement(user.followers, sentiment);
       const metrics = this.generateRealisticMetrics(baseEngagement);
       
+      // Generate a numeric ID that looks like a real Twitter ID (18-19 digits)
+      const mockTweetId = String(Date.now() * 1000 + i); // Ensures uniqueness and realistic length
+      
       mockTweets.push({
-        id: `mock_${Date.now()}_${i}`,
+        id: mockTweetId,
         text: tweetContent.text,
         author: {
           id: user.username,
@@ -543,9 +546,15 @@ export class TwitterScraperService {
   private normalizeTweet(scrapedTweet: ScrapedTweetData): Tweet {
     const createdAt = new Date(scrapedTweet.createdAt || new Date().toISOString());
     
+    // Generate numeric ID if not provided or if it's not numeric
+    const originalId = scrapedTweet.id;
+    const numericId = originalId && /^\d+$/.test(originalId) 
+      ? originalId 
+      : String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
+    
     return {
-      id: scrapedTweet.id || `scraped_${Date.now()}_${Math.random()}`,
-      tweetId: scrapedTweet.id || `scraped_${Date.now()}_${Math.random()}`,
+      id: numericId,
+      tweetId: numericId,
       content: scrapedTweet.text || scrapedTweet.content || '',
       author: {
         id: scrapedTweet.author?.id || scrapedTweet.author?.username || 'unknown',
