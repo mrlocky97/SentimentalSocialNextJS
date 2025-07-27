@@ -16,7 +16,9 @@
     "test:sentiment": "tsx src/scripts/test-sentiment-analysis.ts",
     "test:experimental": "tsx src/scripts/run-experimental-test.ts",
     "evaluate:models": "tsx src/scripts/run-experimental-test.ts",
-    "generate:report": "tsx src/scripts/run-experimental-test.ts"
+    "generate:report": "tsx src/scripts/run-experimental-test.ts",
+    "ml:study": "tsx src/scripts/ml-study-evaluation.ts",
+    "ml:evaluate": "tsx src/scripts/ml-evaluation-simplified.ts"
   },
   "dependencies": {
     "@crawlee/core": "^3.13.10",
