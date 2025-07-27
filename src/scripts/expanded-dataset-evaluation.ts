@@ -8,6 +8,8 @@ import { HybridSentimentAnalysisService } from '../services/hybrid-sentiment-ana
 import { getBalancedDataset, splitDataset } from '../data/training-dataset';
 // Importar el dataset expandido
 import { getExpandedTrainingDataset } from '../data/expanded-training-dataset';
+import { normalizeSentimentLabel } from '../lib/utils/sentiment.utils';
+import { calculateEvaluationMetrics } from '../lib/utils/metrics.utils';
 
 class ExpandedDatasetEvaluation {
 
@@ -90,8 +92,8 @@ class ExpandedDatasetEvaluation {
             const endTime = Date.now();
 
             processingTimes.push(endTime - startTime);
-            predictions.push(this.normalizeSentimentLabel(result.label));
-            actuals.push(this.normalizeSentimentLabel(sample.sentiment));
+            predictions.push(normalizeSentimentLabel(result.label));
+            actuals.push(normalizeSentimentLabel(sample.sentiment));
         }
 
         return this.calculateMetrics(predictions, actuals, processingTimes);
@@ -199,8 +201,8 @@ class ExpandedDatasetEvaluation {
                 const result = await hybridService.analyze(sample.text);
                 const endTime = Date.now();
 
-                const prediction = this.normalizeSentimentLabel(result.sentiment.label);
-                const actual = this.normalizeSentimentLabel(sample.sentiment);
+                const prediction = normalizeSentimentLabel(result.sentiment.label);
+                const actual = normalizeSentimentLabel(sample.sentiment);
 
                 predictions.push(prediction);
                 actuals.push(actual);
@@ -236,14 +238,6 @@ class ExpandedDatasetEvaluation {
         }
     }
 
-    /**
-     * Normalizar etiquetas
-     */
-    private normalizeSentimentLabel(label: string): string {
-        if (label === 'very_positive' || label === 'positive') return 'positive';
-        if (label === 'very_negative' || label === 'negative') return 'negative';
-        return 'neutral';
-    }
 }
 
 // Ejecutar evaluación

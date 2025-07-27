@@ -3,6 +3,14 @@
  * Input validation following Single Responsibility Principle
  */
 
+import {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+  isValidObjectId,
+  validateRequiredFields
+} from '../utils/validation.utils';
+
 // Simple validation functions (you can replace with Zod, Joi, etc.)
 
 export interface ValidationResult {
@@ -12,8 +20,7 @@ export interface ValidationResult {
 
 export class Validator {
   static email(email: string): ValidationResult {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValid = emailRegex.test(email);
+    const isValid = isValidEmail(email);
 
     return {
       isValid,
@@ -22,51 +29,25 @@ export class Validator {
   }
 
   static username(username: string): ValidationResult {
+    const isValid = isValidUsername(username);
     const errors: string[] = [];
 
-    if (username.length < 3) {
-      errors.push('Username must be at least 3 characters long');
-    }
-
-    if (username.length > 30) {
-      errors.push('Username must be less than 30 characters');
-    }
-
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      errors.push('Username can only contain letters, numbers, and underscores');
+    if (!isValid) {
+      errors.push('Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens');
     }
 
     return {
-      isValid: errors.length === 0,
+      isValid,
       errors,
     };
   }
 
   static password(password: string): ValidationResult {
+    const isValid = isValidPassword(password);
     const errors: string[] = [];
 
-    if (password.length < 8) {
-      errors.push('Password must be at least 8 characters long');
-    }
-
-    if (password.length > 128) {
-      errors.push('Password must be less than 128 characters');
-    }
-
-    if (!/(?=.*[a-z])/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
-    }
-
-    if (!/(?=.*[A-Z])/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
-    }
-
-    if (!/(?=.*\d)/.test(password)) {
-      errors.push('Password must contain at least one number');
-    }
-
-    if (!/(?=.*[@$!%*?&])/.test(password)) {
-      errors.push('Password must contain at least one special character');
+    if (!isValid) {
+      errors.push('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number');
     }
 
     return {

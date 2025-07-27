@@ -5,6 +5,7 @@
  */
 
 import { SentimentResult, SentimentLabel } from '../types/sentiment';
+import { normalizeSentimentLabel } from '../lib/utils/sentiment.utils';
 
 export interface TrainingData {
     text: string;
@@ -207,15 +208,6 @@ export class NaiveBayesSentimentModel {
     }
 
     /**
-     * Normalizar etiquetas de sentimiento a formato simplificado
-     */
-    private normalizeSentimentLabel(label: SentimentLabel): 'positive' | 'negative' | 'neutral' {
-        if (label === 'very_positive' || label === 'positive') return 'positive';
-        if (label === 'very_negative' || label === 'negative') return 'negative';
-        return 'neutral';
-    }
-
-    /**
      * Construir vocabulario desde datos de entrenamiento
      */
     private async buildVocabulary(trainingData: TrainingData[]): Promise<void> {
@@ -223,7 +215,7 @@ export class NaiveBayesSentimentModel {
 
         for (const doc of trainingData) {
             this.statistics.totalDocuments++;
-            const normalizedSentiment = this.normalizeSentimentLabel(doc.sentiment);
+            const normalizedSentiment = normalizeSentimentLabel(doc.sentiment);
             this.statistics.documentCounts[normalizedSentiment]++;
 
             const tokens = this.preprocessText(doc.text);
@@ -256,7 +248,7 @@ export class NaiveBayesSentimentModel {
         for (const doc of trainingData) {
             const tokens = this.preprocessText(doc.text);
             const uniqueTokens = new Set(tokens); // Evitar contar la misma palabra múltiples veces en un documento
-            const normalizedSentiment = this.normalizeSentimentLabel(doc.sentiment);
+            const normalizedSentiment = normalizeSentimentLabel(doc.sentiment);
 
             for (const token of uniqueTokens) {
                 if (this.statistics.vocabulary.has(token)) {

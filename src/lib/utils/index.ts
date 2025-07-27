@@ -1,7 +1,19 @@
 /**
- * Utility Functions
- * Reusable utility functions following DRY principle
+ * Utils Index
+ * Central export point for all utility functions
  */
+
+// Sentiment Analysis Utilities
+export * from './sentiment.utils';
+
+// MongoDB Document Conversion Utilities
+export * from './mongodb.utils';
+
+// Validation Utilities
+export * from './validation.utils';
+
+// Metrics Calculation Utilities
+export * from './metrics.utils';
 
 /**
  * Generate unique ID (you might want to use UUID library)

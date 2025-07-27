@@ -5,6 +5,7 @@
 
 import { SentimentAnalysisService } from './sentiment-analysis.service';
 import { NaiveBayesSentimentModel } from '../experimental/naive-bayes.model';
+import { normalizeSentimentLabel } from '../lib/utils/sentiment.utils';
 import { getExpandedTrainingDataset } from '../data/expanded-training-dataset';
 
 interface HybridSentimentResult {
@@ -129,8 +130,8 @@ export class HybridSentimentAnalysisService {
         }
 
         // Normalizar etiquetas
-        const rbLabel = this.normalizeSentimentLabel(ruleBasedResult.sentiment.label);
-        const nbLabel = this.normalizeSentimentLabel(naiveBayesResult.label);
+        const rbLabel = normalizeSentimentLabel(ruleBasedResult.sentiment.label);
+        const nbLabel = normalizeSentimentLabel(naiveBayesResult.label);
 
         // Si ambos coinciden, usar el de mayor confianza
         if (rbLabel === nbLabel) {
@@ -177,15 +178,6 @@ export class HybridSentimentAnalysisService {
             method: 'hybrid' as const,
             hybridScore: weightedScore
         };
-    }
-
-    /**
-     * Normalizar etiquetas para comparación
-     */
-    private normalizeSentimentLabel(label: string): string {
-        if (label === 'very_positive' || label === 'positive') return 'positive';
-        if (label === 'very_negative' || label === 'negative') return 'negative';
-        return 'neutral';
     }
 
     /**
