@@ -25,7 +25,12 @@
     "test:hybrid": "tsx src/scripts/hybrid-endpoint-test.ts",
     "ml:expand-dataset": "tsx src/scripts/dataset-expansion.ts",
     "ml:test-expanded": "tsx src/scripts/expanded-dataset-evaluation.ts",
-    "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts"
+    "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts",
+    "test:performance": "tsx src/scripts/performance-test-suite.ts",
+    "test:endpoints": "tsx src/scripts/server-endpoint-tests.ts",
+    "test:functional": "tsx src/scripts/functional-endpoint-tests.ts",
+    "test:benchmark": "tsx src/scripts/production-benchmark.ts",
+    "report:final": "tsx src/scripts/final-system-report.ts"
   },
   "dependencies": {
     "@crawlee/core": "^3.13.10",
