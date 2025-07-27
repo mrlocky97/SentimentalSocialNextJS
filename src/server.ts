@@ -18,14 +18,15 @@ import specs from './lib/swagger';
 import DatabaseConnection from './lib/database/connection';
 
 // Import route modules
-import userRoutes from './routes/users';
 import campaignRoutes from './routes/campaigns';
-import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import sentimentRoutes from './routes/sentiment';
 import experimentalRoutes from './routes/experimental.routes';
+import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
 import { scrapingRoutes } from './routes/scraping';
 import twitterAuthRoutes from './routes/twitter-auth';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -81,6 +82,7 @@ app.use('/api/v1/scraping', scrapingRoutes);
 app.use('/api/v1/twitter-auth', twitterAuthRoutes);
 app.use('/api/v1/sentiment', sentimentRoutes);
 app.use('/api/v1/experimental', experimentalRoutes);
+app.use('/api/v1/hybrid', hybridSentimentRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 // API info endpoint

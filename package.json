@@ -18,7 +18,14 @@
     "evaluate:models": "tsx src/scripts/run-experimental-test.ts",
     "generate:report": "tsx src/scripts/run-experimental-test.ts",
     "ml:study": "tsx src/scripts/ml-study-evaluation.ts",
-    "ml:evaluate": "tsx src/scripts/ml-evaluation-simplified.ts"
+    "ml:evaluate": "tsx src/scripts/ml-evaluation-simplified.ts",
+    "ml:naive-bayes": "tsx src/scripts/naive-bayes-evaluation.ts",
+    "ml:optimize": "tsx src/scripts/naive-bayes-optimization.ts",
+    "ml:hybrid": "tsx src/scripts/hybrid-system-test.ts",
+    "test:hybrid": "tsx src/scripts/hybrid-endpoint-test.ts",
+    "ml:expand-dataset": "tsx src/scripts/dataset-expansion.ts",
+    "ml:test-expanded": "tsx src/scripts/expanded-dataset-evaluation.ts",
+    "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts"
   },
   "dependencies": {
     "@crawlee/core": "^3.13.10",
