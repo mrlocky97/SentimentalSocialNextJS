@@ -133,7 +133,7 @@ interface AppError extends Error {
   code?: string;
 }
 
-app.use((err: AppError, req: express.Request, res: express.Response) => {
+app.use((err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error occurred:', {
     message: err.message,
     stack: err.stack,
