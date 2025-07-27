@@ -3,10 +3,10 @@
  * Following Single Responsibility Principle - only handles authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../types/api';
 
-export interface AuthenticatedRequest extends NextRequest {
+export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
@@ -37,91 +37,87 @@ function verifyToken(token: string): { userId: string; email: string; username: 
 /**
  * Authentication middleware
  */
-export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (request: NextRequest): Promise<NextResponse> => {
-    try {
-      const authHeader = request.headers.get('authorization');
-      
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json<ApiResponse>({
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Missing or invalid authorization header',
-          },
-          timestamp: new Date().toISOString(),
-        }, { status: 401 });
-      }
+export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  try {
+    const authHeader = req.headers.authorization;
 
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-      const user = verifyToken(token);
-
-      if (!user) {
-        return NextResponse.json<ApiResponse>({
-          success: false,
-          error: {
-            code: 'INVALID_TOKEN',
-            message: 'Invalid or expired token',
-          },
-          timestamp: new Date().toISOString(),
-        }, { status: 401 });
-      }
-
-      // Add user to request
-      const authenticatedRequest = request as AuthenticatedRequest;
-      authenticatedRequest.user = {
-        id: user.userId,
-        email: user.email,
-        username: user.username,
-      };
-
-      return await handler(authenticatedRequest);
-
-    } catch (error) {
-      console.error('Authentication error:', error);
-      
-      return NextResponse.json<ApiResponse>({
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
         success: false,
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Internal server error',
+          code: 'UNAUTHORIZED',
+          message: 'Missing or invalid authorization header',
         },
         timestamp: new Date().toISOString(),
-      }, { status: 500 });
+      });
+      return;
     }
-  };
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const user = verifyToken(token);
+
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        error: {
+          code: 'INVALID_TOKEN',
+          message: 'Invalid or expired token',
+        },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Add user to request
+    req.user = {
+      id: user.userId,
+      email: user.email,
+      username: user.username,
+    };
+
+    next();
+
+  } catch (error) {
+    console.error('Authentication error:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
 }
 
 /**
  * Optional authentication middleware (doesn't fail if no token)
  */
-export function withOptionalAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (request: NextRequest): Promise<NextResponse> => {
-    try {
-      const authHeader = request.headers.get('authorization');
-      
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        const user = verifyToken(token);
+export function optionalAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  try {
+    const authHeader = req.headers.authorization;
 
-        if (user) {
-          const authenticatedRequest = request as AuthenticatedRequest;
-          authenticatedRequest.user = {
-            id: user.userId,
-            email: user.email,
-            username: user.username,
-          };
-        }
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const user = verifyToken(token);
+
+      if (user) {
+        req.user = {
+          id: user.userId,
+          email: user.email,
+          username: user.username,
+        };
       }
-
-      return await handler(request as AuthenticatedRequest);
-
-    } catch (error) {
-      console.error('Optional authentication error:', error);
-      // Continue without authentication on error
-      return await handler(request as AuthenticatedRequest);
     }
-  };
+
+    next();
+
+  } catch (error) {
+    console.error('Optional authentication error:', error);
+    // Continue without authentication on error
+    next();
+  }
 }
 
 /**
@@ -134,88 +130,80 @@ interface RateLimitOptions {
 
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-export function withRateLimit(options: RateLimitOptions) {
-  return function(handler: (req: NextRequest) => Promise<NextResponse>) {
-    return async (request: NextRequest): Promise<NextResponse> => {
-      try {
-        const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-        const now = Date.now();
-        const key = `${clientIP}-${Math.floor(now / options.windowMs)}`;
+export function rateLimit(options: RateLimitOptions) {
+  return function (req: Request, res: Response, next: NextFunction): void {
+    try {
+      const clientIP = req.headers['x-forwarded-for'] as string ||
+        req.headers['x-real-ip'] as string ||
+        req.socket.remoteAddress ||
+        'unknown';
+      const now = Date.now();
+      const key = `${clientIP}-${Math.floor(now / options.windowMs)}`;
 
-        const current = rateLimitStore.get(key) || { count: 0, resetTime: now + options.windowMs };
+      const current = rateLimitStore.get(key) || { count: 0, resetTime: now + options.windowMs };
 
-        if (current.count >= options.maxRequests) {
-          return NextResponse.json<ApiResponse>({
-            success: false,
-            error: {
-              code: 'RATE_LIMIT_EXCEEDED',
-              message: 'Too many requests, please try again later',
-            },
-            timestamp: new Date().toISOString(),
-          }, { 
-            status: 429,
-            headers: {
-              'X-RateLimit-Limit': options.maxRequests.toString(),
-              'X-RateLimit-Remaining': '0',
-              'X-RateLimit-Reset': current.resetTime.toString(),
-            }
-          });
-        }
+      if (current.count >= options.maxRequests) {
+        res.status(429).json({
+          success: false,
+          error: {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many requests, please try again later',
+          },
+          timestamp: new Date().toISOString(),
+        });
 
-        current.count++;
-        rateLimitStore.set(key, current);
+        res.set({
+          'X-RateLimit-Limit': options.maxRequests.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': current.resetTime.toString(),
+        });
 
-        // Clean up old entries
-        if (Math.random() < 0.01) { // 1% chance to clean up
-          for (const [key, value] of rateLimitStore.entries()) {
-            if (value.resetTime < now) {
-              rateLimitStore.delete(key);
-            }
+        return;
+      }
+
+      current.count++;
+      rateLimitStore.set(key, current);
+
+      // Clean up old entries
+      if (Math.random() < 0.01) { // 1% chance to clean up
+        for (const [key, value] of rateLimitStore.entries()) {
+          if (value.resetTime < now) {
+            rateLimitStore.delete(key);
           }
         }
-
-        const response = await handler(request);
-        
-        // Add rate limit headers
-        response.headers.set('X-RateLimit-Limit', options.maxRequests.toString());
-        response.headers.set('X-RateLimit-Remaining', (options.maxRequests - current.count).toString());
-        response.headers.set('X-RateLimit-Reset', current.resetTime.toString());
-
-        return response;
-
-      } catch (error) {
-        console.error('Rate limiting error:', error);
-        return await handler(request);
       }
-    };
+
+      // Add rate limit headers
+      res.set({
+        'X-RateLimit-Limit': options.maxRequests.toString(),
+        'X-RateLimit-Remaining': (options.maxRequests - current.count).toString(),
+        'X-RateLimit-Reset': current.resetTime.toString(),
+      });
+
+      next();
+
+    } catch (error) {
+      console.error('Rate limiting error:', error);
+      next();
+    }
   };
 }
 
 /**
  * CORS middleware
  */
-export function withCORS(handler: (req: NextRequest) => Promise<NextResponse>) {
-  return async (request: NextRequest): Promise<NextResponse> => {
-    // Handle preflight requests
-    if (request.method === 'OPTIONS') {
-      return new NextResponse(null, {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
-    }
+export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Max-Age', '86400');
 
-    const response = await handler(request);
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-    // Add CORS headers to response
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    return response;
-  };
+  next();
 }

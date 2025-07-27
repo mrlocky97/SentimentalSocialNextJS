@@ -5,6 +5,7 @@
 ### 1. Install MongoDB
 
 #### Option A: Local MongoDB (Recommended for development)
+
 ```bash
 # Windows (using Chocolatey)
 choco install mongodb
@@ -13,6 +14,7 @@ choco install mongodb
 ```
 
 #### Option B: MongoDB Atlas (Cloud)
+
 1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
 2. Create a free account
 3. Create a new cluster
@@ -48,17 +50,20 @@ npm run dev
 ```
 
 Then visit these endpoints:
+
 - **Health Check**: http://localhost:3000/api/health
 - **Test User Creation**: http://localhost:3000/api/test/user
 
 ## 🧪 Testing the Setup
 
 ### 1. Health Check
+
 ```bash
 curl http://localhost:3000/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -73,6 +78,7 @@ Expected response:
 ```
 
 ### 2. Create a Test User
+
 ```bash
 curl -X POST http://localhost:3000/api/test/user \
   -H "Content-Type: application/json" \
@@ -85,6 +91,7 @@ curl -X POST http://localhost:3000/api/test/user \
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -103,16 +110,19 @@ Expected response:
 
 1. **Create Account**: Sign up at [MongoDB Atlas](https://www.mongodb.com/atlas)
 
-2. **Create Cluster**: 
+2. **Create Cluster**:
+
    - Choose "Build a Database"
    - Select "M0 Sandbox" (Free tier)
    - Choose your preferred cloud provider and region
 
 3. **Configure Security**:
+
    - Create a database user with username/password
    - Add your IP address to the IP whitelist (or use 0.0.0.0/0 for development)
 
 4. **Get Connection String**:
+
    - Click "Connect" on your cluster
    - Choose "Connect your application"
    - Copy the connection string
@@ -128,15 +138,18 @@ Expected response:
 ### Common Issues:
 
 1. **Connection Refused**
+
    - Make sure MongoDB is running (local)
    - Check if the port 27017 is available
    - Verify the connection string
 
 2. **Authentication Failed**
+
    - Check username/password in connection string
    - Ensure database user exists in Atlas
 
 3. **Network Timeout**
+
    - Add your IP to Atlas whitelist
    - Check firewall settings
 
@@ -145,12 +158,14 @@ Expected response:
    - No action needed
 
 ### Logs Location:
+
 - MongoDB logs: Check console output when running the app
 - Application logs: Check the terminal where you run `npm run dev`
 
 ## 📊 Database Structure
 
 The application will automatically create these collections:
+
 - `users` - User accounts and profiles
 - `posts` - Social media posts (when implemented)
 - `follows` - User relationships (when implemented)
@@ -165,6 +180,7 @@ The application will automatically create these collections:
 ## 📈 Next Steps
 
 After successful connection:
+
 1. Implement additional API endpoints
 2. Add authentication middleware
 3. Create post and comment models

@@ -38,7 +38,6 @@ const router = Router();
  */
 router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log(`🔐 User ${req.user?.id} attempting Twitter login`);
 
     const authHelper = new TwitterAuthHelper();
     const result = await authHelper.authenticateManually();
@@ -95,7 +94,6 @@ router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: 
  */
 router.post('/import-cookies', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log(`🍪 User ${req.user?.id} importing Twitter cookies`);
 
     // Use the manual cookie importer utility
     const { ManualCookieImporter } = await import('../utils/manual-cookie-importer');
@@ -171,7 +169,6 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
  */
 router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log(`🚪 User ${req.user?.id} logging out from Twitter`);
 
     const cookieManager = new TwitterCookieManager();
     cookieManager.clearCookies();
@@ -204,7 +201,6 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res:
  */
 router.get('/validate-cookies', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    console.log(`🧪 User ${req.user?.id} validating Twitter cookies`);
 
     const cookieManager = new TwitterCookieManager();
     const hasSession = cookieManager.hasValidSession();

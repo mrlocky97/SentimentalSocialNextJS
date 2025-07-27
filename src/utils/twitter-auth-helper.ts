@@ -27,15 +27,13 @@ export class TwitterAuthHelper {
    * Attempt manual Twitter authentication with improved error handling
    */
   async authenticateManually(): Promise<AuthResult> {
-    console.log('🔐 Starting Twitter manual authentication...');
-    
+
     try {
       // Import twitter scraper
       const { Scraper } = await import('@the-convocation/twitter-scraper');
-      
+
       // Check if we already have valid cookies
       if (this.cookieManager.hasValidSession()) {
-        console.log('✅ Found existing valid session cookies');
         return {
           success: true,
           message: 'Valid session already exists'
@@ -54,8 +52,6 @@ export class TwitterAuthHelper {
         };
       }
 
-      console.log(`📧 Using email: ${email}`);
-      console.log(`👤 Using username: ${username}`);
 
       // Create scraper with specific configuration for authentication
       const scraper = new Scraper({
@@ -77,24 +73,21 @@ export class TwitterAuthHelper {
         },
       });
 
-      console.log('⏳ Attempting login... (this may take 10-30 seconds)');
-      
+
       // Add delay before login attempt
       await this.delay(2000);
 
       // Attempt login
       await scraper.login(username, password, email);
-      
-      console.log('✅ Login successful! Extracting cookies...');
+
 
       // Extract and save cookies
       await this.cookieManager.extractCookiesFromScraper(scraper);
-      
+
       // Verify the cookies work
       const isLoggedIn = await scraper.isLoggedIn();
-      
+
       if (isLoggedIn) {
-        console.log('🍪 Cookies saved and verified successfully!');
         return {
           success: true,
           message: 'Authentication successful and cookies saved',
@@ -110,7 +103,7 @@ export class TwitterAuthHelper {
 
     } catch (error) {
       console.error('❌ Authentication error:', error);
-      
+
       if (error instanceof Error) {
         if (error.message.includes('Forbidden')) {
           return {
@@ -141,8 +134,7 @@ export class TwitterAuthHelper {
    * Test existing cookies
    */
   async testExistingCookies(): Promise<AuthResult> {
-    console.log('🧪 Testing existing cookies...');
-    
+
     try {
       if (!this.cookieManager.hasValidSession()) {
         return {
@@ -152,7 +144,7 @@ export class TwitterAuthHelper {
       }
 
       const { Scraper } = await import('@the-convocation/twitter-scraper');
-      
+
       const scraper = new Scraper({
         transform: {
           request: (input: any, init: any) => {
@@ -170,9 +162,8 @@ export class TwitterAuthHelper {
       });
 
       const isLoggedIn = await scraper.isLoggedIn();
-      
+
       if (isLoggedIn) {
-        console.log('✅ Existing cookies are valid!');
         return {
           success: true,
           message: 'Existing cookies are valid and working'
@@ -201,7 +192,7 @@ export class TwitterAuthHelper {
   getAuthStatus() {
     const hasSession = this.cookieManager.hasValidSession();
     const cookies = this.cookieManager.getCookies();
-    
+
     return {
       hasValidSession: hasSession,
       cookieCount: cookies ? cookies.length : 0,
@@ -219,7 +210,6 @@ export class TwitterAuthHelper {
   clearSession(): AuthResult {
     try {
       this.cookieManager.clearCookies();
-      console.log('🧹 Session cleared successfully');
       return {
         success: true,
         message: 'Session cleared successfully'
@@ -264,7 +254,6 @@ export class TwitterAuthHelper {
       // Reload cookies in our manager
       this.cookieManager = new TwitterCookieManager();
 
-      console.log(`🍪 Imported ${parsedData.cookies.length} cookies successfully`);
 
       return {
         success: true,
@@ -288,61 +277,43 @@ export class TwitterAuthHelper {
 // CLI interface when run directly
 if (require.main === module) {
   const helper = new TwitterAuthHelper();
-  
+
   const command = process.argv[2];
-  
+
   switch (command) {
     case 'login':
       helper.authenticateManually().then(result => {
-        console.log(`\n📋 Result: ${result.message}`);
         process.exit(result.success ? 0 : 1);
       });
       break;
-      
+
     case 'test':
       helper.testExistingCookies().then(result => {
-        console.log(`\n📋 Result: ${result.message}`);
         process.exit(result.success ? 0 : 1);
       });
       break;
-      
+
     case 'status':
       const status = helper.getAuthStatus();
-      console.log('\n📊 Authentication Status:');
-      console.log(`   Valid Session: ${status.hasValidSession}`);
-      console.log(`   Cookie Count: ${status.cookieCount}`);
       if (status.sessionInfo && status.sessionInfo.timestamp) {
-        console.log(`   Session Created: ${new Date(status.sessionInfo.timestamp).toLocaleString()}`);
-        console.log(`   Session Age: ${status.sessionInfo.ageMinutes} minutes`);
-        console.log(`   User Agent: ${status.sessionInfo.userAgent}`);
       }
       break;
-      
+
     case 'clear':
       const clearResult = helper.clearSession();
-      console.log(`\n📋 Result: ${clearResult.message}`);
       break;
-      
+
     case 'import':
       const filePath = process.argv[3];
       if (!filePath) {
         console.log('❌ Please provide the path to the cookies file');
-        console.log('Usage: npm run auth import /path/to/cookies.json');
         process.exit(1);
       }
       const importResult = helper.importCookies(filePath);
-      console.log(`\n📋 Result: ${importResult.message}`);
       process.exit(importResult.success ? 0 : 1);
       break;
-      
+
     default:
-      console.log('🔐 Twitter Authentication Helper');
-      console.log('\nAvailable commands:');
-      console.log('  npm run auth login  - Attempt manual login');
-      console.log('  npm run auth test   - Test existing cookies');
-      console.log('  npm run auth status - Show authentication status');
-      console.log('  npm run auth clear  - Clear session');
-      console.log('  npm run auth import <path> - Import cookies from file');
       break;
   }
 }

@@ -9,215 +9,215 @@ import { User, UserAuth, CreateUserRequest } from '../types/user';
 import { MongoUserRepository } from '../repositories/mongo-user.repository';
 
 export interface RegisterRequest {
-  email: string;
-  password: string;
-  displayName: string;
-  username: string;
-  role?: 'admin' | 'manager' | 'analyst' | 'onlyView' | 'client';
+    email: string;
+    password: string;
+    displayName: string;
+    username: string;
+    role?: 'admin' | 'manager' | 'analyst' | 'onlyView' | 'client';
 }
 
 export interface LoginRequest {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
+    email: string;
+    password: string;
+    rememberMe?: boolean;
 }
 
 export interface AuthResponse {
-  user: Omit<User, 'password'>;
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
+    user: Omit<User, 'password'>;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
 }
 
 export class AuthService {
-  private userRepository: MongoUserRepository;
+    private userRepository: MongoUserRepository;
 
-  constructor() {
-    this.userRepository = new MongoUserRepository();
-  }
-
-  /**
-   * Register a new user
-   */
-  async register(data: RegisterRequest): Promise<AuthResponse> {
-    // Check if user already exists
-    const existingUser = await this.userRepository.findByEmail(data.email);
-    if (existingUser) {
-      throw new Error('User with this email already exists');
+    constructor() {
+        this.userRepository = new MongoUserRepository();
     }
 
-    // Create user request object matching the CreateUserRequest interface
-    const createUserData: CreateUserRequest = {
-      email: data.email.toLowerCase().trim(),
-      username: data.username.toLowerCase().trim(),
-      displayName: data.displayName.trim(),
-      password: data.password,
-      role: data.role || 'analyst',
-    };
+    /**
+     * Register a new user
+     */
+    async register(data: RegisterRequest): Promise<AuthResponse> {
+        // Check if user already exists
+        const existingUser = await this.userRepository.findByEmail(data.email);
+        if (existingUser) {
+            throw new Error('User with this email already exists');
+        }
 
-    // Save user (password hashing is handled in repository)
-    const newUser = await this.userRepository.create(createUserData);
+        // Create user request object matching the CreateUserRequest interface
+        const createUserData: CreateUserRequest = {
+            email: data.email.toLowerCase().trim(),
+            username: data.username.toLowerCase().trim(),
+            displayName: data.displayName.trim(),
+            password: data.password,
+            role: data.role || 'analyst',
+        };
 
-    // Generate tokens
-    const tokenPayload = {
-      id: newUser.id,
-      email: newUser.email,
-      role: newUser.role,
-      fullName: newUser.displayName, // Use displayName as fullName
-    };
+        // Save user (password hashing is handled in repository)
+        const newUser = await this.userRepository.create(createUserData);
 
-    const accessToken = generateToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+        // Generate tokens
+        const tokenPayload = {
+            id: newUser.id,
+            email: newUser.email,
+            role: newUser.role,
+            fullName: newUser.displayName, // Use displayName as fullName
+        };
 
-    return {
-      user: newUser,
-      accessToken,
-      refreshToken,
-      expiresIn: 3600, // 1 hour
-    };
-  }
+        const accessToken = generateToken(tokenPayload);
+        const refreshToken = generateRefreshToken(tokenPayload);
 
-  /**
-   * Login user
-   */
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    // Find user by email with password hash
-    const userAuth = await this.userRepository.findAuthByEmail(data.email.toLowerCase().trim());
-    if (!userAuth) {
-      throw new Error('Invalid email or password');
+        return {
+            user: newUser,
+            accessToken,
+            refreshToken,
+            expiresIn: 3600, // 1 hour
+        };
     }
 
-    // Check if user is active
-    if (!userAuth.isActive) {
-      throw new Error('Account is deactivated. Please contact support.');
+    /**
+     * Login user
+     */
+    async login(data: LoginRequest): Promise<AuthResponse> {
+        // Find user by email with password hash
+        const userAuth = await this.userRepository.findAuthByEmail(data.email.toLowerCase().trim());
+        if (!userAuth) {
+            throw new Error('Invalid email or password');
+        }
+
+        // Check if user is active
+        if (!userAuth.isActive) {
+            throw new Error('Account is deactivated. Please contact support.');
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(data.password, userAuth.passwordHash);
+        if (!isPasswordValid) {
+            throw new Error('Invalid email or password');
+        }
+
+        // Get full user profile
+        const user = await this.userRepository.findById(userAuth.id);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Update last login (we'll skip this for now since UpdateUserRequest doesn't support it)
+        // await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+
+        // Generate tokens
+        const tokenPayload = {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            fullName: user.displayName, // Use displayName as fullName
+        };
+
+        const accessToken = generateToken(tokenPayload);
+        const refreshToken = generateRefreshToken(tokenPayload);
+
+        return {
+            user,
+            accessToken,
+            refreshToken,
+            expiresIn: data.rememberMe ? 604800 : 3600, // 7 days if remember me, 1 hour otherwise
+        };
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(data.password, userAuth.passwordHash);
-    if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+    /**
+     * Refresh access token
+     */
+    async refreshToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
+        try {
+            const decoded = await import('jsonwebtoken').then(jwt =>
+                jwt.verify(refreshToken, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production')
+            ) as { id: string; email: string; role: string; fullName: string };
+
+            // Verify user still exists and is active
+            const user = await this.userRepository.findById(decoded.id);
+            if (!user || !user.isActive) {
+                throw new Error('User not found or inactive');
+            }
+
+            // Generate new access token
+            const tokenPayload = {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.displayName, // Use displayName as fullName
+            };
+
+            const newAccessToken = generateToken(tokenPayload);
+
+            return {
+                accessToken: newAccessToken,
+                expiresIn: 3600, // 1 hour
+            };
+        } catch {
+            throw new Error('Invalid or expired refresh token');
+        }
     }
 
-    // Get full user profile
-    const user = await this.userRepository.findById(userAuth.id);
-    if (!user) {
-      throw new Error('User not found');
+    /**
+     * Change user password
+     */
+    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+        // Find user with password hash
+        const userAuth = await this.userRepository.findAuthById(userId);
+        if (!userAuth) {
+            throw new Error('User not found');
+        }
+
+        // Verify current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userAuth.passwordHash);
+        if (!isCurrentPasswordValid) {
+            throw new Error('Current password is incorrect');
+        }
+
+        // Hash new password and update (this would need a repository method to update password)
+        // For now, we'll throw an error indicating this feature needs implementation
+        throw new Error('Password change feature needs implementation in repository');
     }
 
-    // Update last login (we'll skip this for now since UpdateUserRequest doesn't support it)
-    // await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+    /**
+     * Validate password strength
+     */
+    validatePassword(password: string): { isValid: boolean; errors: string[] } {
+        const errors: string[] = [];
 
-    // Generate tokens
-    const tokenPayload = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      fullName: user.displayName, // Use displayName as fullName
-    };
+        if (password.length < 8) {
+            errors.push('Password must be at least 8 characters long');
+        }
 
-    const accessToken = generateToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+        if (!/(?=.*[a-z])/.test(password)) {
+            errors.push('Password must contain at least one lowercase letter');
+        }
 
-    return {
-      user,
-      accessToken,
-      refreshToken,
-      expiresIn: data.rememberMe ? 604800 : 3600, // 7 days if remember me, 1 hour otherwise
-    };
-  }
+        if (!/(?=.*[A-Z])/.test(password)) {
+            errors.push('Password must contain at least one uppercase letter');
+        }
 
-  /**
-   * Refresh access token
-   */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
-    try {
-      const decoded = await import('jsonwebtoken').then(jwt => 
-        jwt.verify(refreshToken, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production')
-      ) as { id: string; email: string; role: string; fullName: string };
+        if (!/(?=.*\d)/.test(password)) {
+            errors.push('Password must contain at least one number');
+        }
 
-      // Verify user still exists and is active
-      const user = await this.userRepository.findById(decoded.id);
-      if (!user || !user.isActive) {
-        throw new Error('User not found or inactive');
-      }
+        if (!/(?=.*[@$!%*?&])/.test(password)) {
+            errors.push('Password must contain at least one special character (@$!%*?&)');
+        }
 
-      // Generate new access token
-      const tokenPayload = {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        fullName: user.displayName, // Use displayName as fullName
-      };
-
-      const newAccessToken = generateToken(tokenPayload);
-
-      return {
-        accessToken: newAccessToken,
-        expiresIn: 3600, // 1 hour
-      };
-    } catch {
-      throw new Error('Invalid or expired refresh token');
-    }
-  }
-
-  /**
-   * Change user password
-   */
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    // Find user with password hash
-    const userAuth = await this.userRepository.findAuthById(userId);
-    if (!userAuth) {
-      throw new Error('User not found');
+        return {
+            isValid: errors.length === 0,
+            errors,
+        };
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userAuth.passwordHash);
-    if (!isCurrentPasswordValid) {
-      throw new Error('Current password is incorrect');
+    /**
+     * Validate email format
+     */
+    validateEmail(email: string): boolean {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
-
-    // Hash new password and update (this would need a repository method to update password)
-    // For now, we'll throw an error indicating this feature needs implementation
-    throw new Error('Password change feature needs implementation in repository');
-  }
-
-  /**
-   * Validate password strength
-   */
-  validatePassword(password: string): { isValid: boolean; errors: string[] } {
-    const errors: string[] = [];
-
-    if (password.length < 8) {
-      errors.push('Password must be at least 8 characters long');
-    }
-
-    if (!/(?=.*[a-z])/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
-    }
-
-    if (!/(?=.*[A-Z])/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
-    }
-
-    if (!/(?=.*\d)/.test(password)) {
-      errors.push('Password must contain at least one number');
-    }
-
-    if (!/(?=.*[@$!%*?&])/.test(password)) {
-      errors.push('Password must contain at least one special character (@$!%*?&)');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-    };
-  }
-
-  /**
-   * Validate email format
-   */
-  validateEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
 }

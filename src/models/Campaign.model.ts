@@ -9,29 +9,29 @@ import { CampaignStatus, CampaignType, DataSource } from '../types/campaign';
 export interface ICampaignDocument extends Document {
   name: string;
   description?: string;
-  
+
   // Campaign Configuration
   type: CampaignType;
   status: CampaignStatus;
   dataSources: DataSource[];
-  
+
   // Tracking Parameters
   hashtags: string[];
   keywords: string[];
   mentions: string[];
-  
+
   // Time Configuration
   startDate: Date;
   endDate: Date;
   timezone: string;
-  
+
   // Collection Settings
   maxTweets: number;
   collectImages: boolean;
   collectVideos: boolean;
   collectReplies: boolean;
   collectRetweets: boolean;
-  
+
   // Geographic Filters
   geoLocation?: {
     country?: string;
@@ -42,26 +42,26 @@ export interface ICampaignDocument extends Document {
       lng: number;
     };
   };
-  
+
   // Language Filters
   languages: string[];
-  
+
   // Analysis Configuration
   sentimentAnalysis: boolean;
   emotionAnalysis: boolean;
   topicsAnalysis: boolean;
   influencerAnalysis: boolean;
-  
+
   // Organization & Permissions
   organizationId: string;
   createdBy: string;
   assignedTo: string[];
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
   lastDataCollection?: Date;
-  
+
   // Statistics
   stats?: {
     totalTweets: number;
@@ -71,7 +71,7 @@ export interface ICampaignDocument extends Document {
     topMentions: { mention: string; count: number }[];
     dailyVolume: { date: string; count: number }[];
   };
-  
+
   // Instance methods
   canUserEdit(userId: string): boolean;
   getDurationInDays(): number;
@@ -115,13 +115,13 @@ const campaignSchema = new Schema<ICampaignDocument>({
     maxlength: [100, 'Campaign name cannot exceed 100 characters'],
     index: true
   },
-  
+
   description: {
     type: String,
     trim: true,
     maxlength: [500, 'Description cannot exceed 500 characters']
   },
-  
+
   type: {
     type: String,
     required: [true, 'Campaign type is required'],
@@ -131,7 +131,7 @@ const campaignSchema = new Schema<ICampaignDocument>({
     },
     index: true
   },
-  
+
   status: {
     type: String,
     required: [true, 'Campaign status is required'],
@@ -142,7 +142,7 @@ const campaignSchema = new Schema<ICampaignDocument>({
     default: 'draft',
     index: true
   },
-  
+
   dataSources: [{
     type: String,
     enum: {
@@ -150,43 +150,43 @@ const campaignSchema = new Schema<ICampaignDocument>({
       message: 'Data source must be one of: twitter, instagram, facebook, tiktok, linkedin'
     }
   }],
-  
+
   hashtags: [{
     type: String,
     trim: true,
     maxlength: [50, 'Hashtag cannot exceed 50 characters']
   }],
-  
+
   keywords: [{
     type: String,
     trim: true,
     maxlength: [100, 'Keyword cannot exceed 100 characters']
   }],
-  
+
   mentions: [{
     type: String,
     trim: true,
     maxlength: [50, 'Mention cannot exceed 50 characters']
   }],
-  
+
   startDate: {
     type: Date,
     required: [true, 'Start date is required'],
     index: true
   },
-  
+
   endDate: {
     type: Date,
     required: [true, 'End date is required'],
     index: true
   },
-  
+
   timezone: {
     type: String,
     required: [true, 'Timezone is required'],
     default: 'UTC'
   },
-  
+
   maxTweets: {
     type: Number,
     required: [true, 'Max tweets limit is required'],
@@ -194,93 +194,93 @@ const campaignSchema = new Schema<ICampaignDocument>({
     max: [1000000, 'Maximum tweets collection is 1,000,000'],
     default: 10000
   },
-  
+
   collectImages: { type: Boolean, default: true },
   collectVideos: { type: Boolean, default: true },
   collectReplies: { type: Boolean, default: false },
   collectRetweets: { type: Boolean, default: true },
-  
+
   geoLocation: geoLocationSchema,
-  
+
   languages: [{
     type: String,
     length: 2
   }],
-  
+
   sentimentAnalysis: { type: Boolean, default: true },
   emotionAnalysis: { type: Boolean, default: false },
   topicsAnalysis: { type: Boolean, default: false },
   influencerAnalysis: { type: Boolean, default: false },
-  
+
   organizationId: {
     type: String,
     required: [true, 'Organization ID is required'],
     index: true
   },
-  
+
   createdBy: {
     type: String,
     required: [true, 'Creator user ID is required'],
     index: true
   },
-  
+
   assignedTo: [{
     type: String
   }],
-  
+
   lastDataCollection: {
     type: Date,
     index: true
   },
-  
+
   stats: statsSchema
-  
+
 }, {
   timestamps: true,
   versionKey: false
 });
 
 // Pre-save middleware
-campaignSchema.pre('save', function(next) {
+campaignSchema.pre('save', function (next) {
   if (this.hashtags.length === 0 && this.keywords.length === 0 && this.mentions.length === 0) {
     next(new Error('At least one hashtag, keyword, or mention must be provided'));
     return;
   }
-  
+
   if (this.dataSources.length === 0) {
     next(new Error('At least one data source must be selected'));
     return;
   }
-  
+
   const daysDiff = Math.ceil((this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24));
   if (daysDiff > 365) {
     next(new Error('Campaign duration cannot exceed 365 days'));
     return;
   }
-  
+
   next();
 });
 
 // Instance methods
-campaignSchema.methods.canUserEdit = function(userId: string): boolean {
+campaignSchema.methods.canUserEdit = function (userId: string): boolean {
   return this.createdBy === userId || this.assignedTo.includes(userId);
 };
 
-campaignSchema.methods.getDurationInDays = function(): number {
+campaignSchema.methods.getDurationInDays = function (): number {
   return Math.ceil((this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-campaignSchema.methods.isActive = function(): boolean {
+campaignSchema.methods.isActive = function (): boolean {
   const now = new Date();
   return this.status === 'active' && this.startDate <= now && this.endDate >= now;
 };
 
 // Static methods
-campaignSchema.statics.findByOrganization = function(organizationId: string) {
+campaignSchema.statics.findByOrganization = function (organizationId: string) {
   return this.find({ organizationId }).sort({ createdAt: -1 });
 };
 
-campaignSchema.statics.findActiveByUser = function(userId: string) {
+campaignSchema.statics.findActiveByUser = function (userId: string) {
   return this.find({
     $and: [
       { status: 'active' },

@@ -30,25 +30,24 @@ export class TweetSentimentAnalysisManager {
    */
   async analyzeTweet(tweet: Tweet, config?: Partial<SentimentAnalysisConfig>): Promise<TweetSentimentAnalysis> {
     const finalConfig = { ...this.defaultConfig, ...config };
-    
+
     try {
-      console.log(`🔍 Analyzing tweet: ${tweet.tweetId}`);
-      
+
       // Perform text analysis
       const textAnalysis = await this.sentimentService.analyze(tweet.content, finalConfig);
-      
+
       // Extract brand mentions
       const brandMentions = this.extractBrandMentions(tweet.content, finalConfig);
-      
+
       // Analyze hashtag sentiments
       const hashtagSentiments = await this.analyzeHashtagSentiments(tweet.hashtags || [], tweet.content);
-      
+
       // Calculate influence score
       const influenceScore = this.calculateInfluenceScore(tweet);
-      
+
       // Generate marketing insights
       const marketingInsights = this.generateMarketingInsights(tweet, textAnalysis, brandMentions, influenceScore);
-      
+
       const analysis: TweetSentimentAnalysis = {
         tweetId: tweet.tweetId,
         content: tweet.content,
@@ -60,9 +59,8 @@ export class TweetSentimentAnalysisManager {
         analyzedAt: new Date()
       };
 
-      console.log(`✅ Tweet analysis completed: ${textAnalysis.sentiment.label} (${textAnalysis.sentiment.score.toFixed(2)})`);
       return analysis;
-      
+
     } catch (error) {
       console.error(`❌ Error analyzing tweet ${tweet.tweetId}:`, error);
       throw new Error(`Failed to analyze tweet: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -73,31 +71,28 @@ export class TweetSentimentAnalysisManager {
    * Analyze multiple tweets in batch
    */
   async analyzeTweetsBatch(tweets: Tweet[], config?: Partial<SentimentAnalysisConfig>): Promise<TweetSentimentAnalysis[]> {
-    console.log(`🔍 Starting batch analysis of ${tweets.length} tweets...`);
-    
+
     const results: TweetSentimentAnalysis[] = [];
     const errors: string[] = [];
-    
+
     for (let i = 0; i < tweets.length; i++) {
       try {
         const analysis = await this.analyzeTweet(tweets[i], config);
         results.push(analysis);
-        
+
         // Progress logging
         if ((i + 1) % 10 === 0) {
-          console.log(`📊 Analyzed ${i + 1}/${tweets.length} tweets`);
         }
       } catch (error) {
         errors.push(`Tweet ${tweets[i].tweetId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         console.error(`❌ Failed to analyze tweet ${i + 1}:`, error);
       }
     }
-    
-    console.log(`✅ Batch analysis completed: ${results.length} successful, ${errors.length} errors`);
+
     if (errors.length > 0) {
       console.warn('❌ Errors during batch analysis:', errors);
     }
-    
+
     return results;
   }
 
@@ -110,7 +105,7 @@ export class TweetSentimentAnalysisManager {
     }
 
     // Calculate average sentiment
-    const averageSentiment = analyses.reduce((sum, analysis) => 
+    const averageSentiment = analyses.reduce((sum, analysis) =>
       sum + analysis.analysis.sentiment.score, 0) / analyses.length;
 
     // Calculate sentiment distribution
@@ -121,7 +116,7 @@ export class TweetSentimentAnalysisManager {
 
     // Calculate percentages
     Object.keys(distribution).forEach(key => {
-      distribution[key as keyof typeof distribution] = 
+      distribution[key as keyof typeof distribution] =
         (distribution[key as keyof typeof distribution] / analyses.length) * 100;
     });
 
@@ -191,14 +186,14 @@ export class TweetSentimentAnalysisManager {
 
     // Group analyses by time intervals
     const timeGroups: { [key: string]: TweetSentimentAnalysis[] } = {};
-    
+
     analyses.forEach(analysis => {
       const timestamp = new Date(analysis.analyzedAt);
       const intervalStart = new Date(
         Math.floor(timestamp.getTime() / (intervalHours * 60 * 60 * 1000)) * (intervalHours * 60 * 60 * 1000)
       );
       const key = intervalStart.toISOString();
-      
+
       if (!timeGroups[key]) {
         timeGroups[key] = [];
       }
@@ -207,9 +202,9 @@ export class TweetSentimentAnalysisManager {
 
     // Calculate trends for each interval
     const trends = Object.entries(timeGroups).map(([timestamp, groupAnalyses]) => {
-      const avgSentiment = groupAnalyses.reduce((sum, analysis) => 
+      const avgSentiment = groupAnalyses.reduce((sum, analysis) =>
         sum + analysis.analysis.sentiment.score, 0) / groupAnalyses.length;
-      
+
       const allKeywords = groupAnalyses.flatMap(analysis => analysis.analysis.keywords);
       const topKeywords = this.getTopKeywords(allKeywords, 5);
 
@@ -234,7 +229,7 @@ export class TweetSentimentAnalysisManager {
     config.brandKeywords.forEach(brand => {
       const regex = new RegExp(`\\b${brand}\\b`, 'gi');
       const matches = content.match(regex);
-      
+
       if (matches) {
         // Extract context around brand mention
         const brandIndex = lowerContent.indexOf(brand.toLowerCase());
@@ -268,7 +263,7 @@ export class TweetSentimentAnalysisManager {
         // Create context for hashtag analysis
         const hashtagContext = `Talking about ${hashtag} ${content}`;
         const analysis = await this.sentimentService.analyze(hashtagContext);
-        
+
         hashtagSentiments.push({
           hashtag,
           sentiment: analysis.sentiment,
@@ -309,9 +304,9 @@ export class TweetSentimentAnalysisManager {
    * Generate marketing insights from analysis
    */
   private generateMarketingInsights(
-    tweet: Tweet, 
-    textAnalysis: any, 
-    brandMentions: BrandMention[], 
+    tweet: Tweet,
+    textAnalysis: any,
+    brandMentions: BrandMention[],
     influenceScore: number
   ): MarketingInsight[] {
     const insights: MarketingInsight[] = [];
@@ -360,10 +355,10 @@ export class TweetSentimentAnalysisManager {
     }
 
     // Trend identification
-    const emotionalWords = textAnalysis.keywords.filter((keyword: string) => 
+    const emotionalWords = textAnalysis.keywords.filter((keyword: string) =>
       ['amazing', 'terrible', 'love', 'hate', 'best', 'worst', 'incredible', 'awful'].includes(keyword.toLowerCase())
     );
-    
+
     if (emotionalWords.length > 0) {
       insights.push({
         type: 'trend_identification',
@@ -384,20 +379,20 @@ export class TweetSentimentAnalysisManager {
     // Simplified sentiment calculation for mention context
     const positiveWords = ['love', 'great', 'amazing', 'best', 'excellent', 'perfect', 'awesome'];
     const negativeWords = ['hate', 'terrible', 'worst', 'awful', 'horrible', 'bad', 'disappointing'];
-    
+
     const lowerContext = context.toLowerCase();
     let score = 0;
-    
+
     positiveWords.forEach(word => {
       if (lowerContext.includes(word)) score += 0.3;
     });
-    
+
     negativeWords.forEach(word => {
       if (lowerContext.includes(word)) score -= 0.3;
     });
-    
+
     score = Math.max(-1, Math.min(1, score));
-    
+
     return {
       score,
       magnitude: Math.abs(score),
@@ -414,7 +409,7 @@ export class TweetSentimentAnalysisManager {
     keywords.forEach(keyword => {
       counts[keyword] = (counts[keyword] || 0) + 1;
     });
-    
+
     return Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
       .slice(0, limit)

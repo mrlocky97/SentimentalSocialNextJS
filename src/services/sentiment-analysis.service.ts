@@ -27,12 +27,12 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
    */
   async analyze(text: string, config?: SentimentAnalysisConfig): Promise<TextAnalysis> {
     const finalConfig = { ...this.defaultConfig, ...config };
-    
+
     try {
       // For now, we'll use a comprehensive rule-based approach
       // In production, this would integrate with Google Cloud Natural Language API,
       // AWS Comprehend, or Azure Text Analytics
-      
+
       const sentiment = await this.analyzeSentiment(text);
       const keywords = this.extractKeywords(text);
       const entities = this.extractEntities(text, finalConfig);
@@ -56,7 +56,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
    */
   async analyzeBatch(texts: string[], config?: SentimentAnalysisConfig): Promise<TextAnalysis[]> {
     const results: TextAnalysis[] = [];
-    
+
     for (const text of texts) {
       try {
         const analysis = await this.analyze(text, config);
@@ -67,7 +67,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         results.push(this.createErrorAnalysis(text));
       }
     }
-    
+
     return results;
   }
 
@@ -91,7 +91,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
    */
   private async analyzeSentiment(text: string): Promise<SentimentResult> {
     const cleanText = this.preprocessText(text);
-    
+
     // ENHANCED SENTIMENT LEXICONS - Expandidos para mejor precisión
     const positiveWords = [
       // Inglés básico
@@ -99,31 +99,31 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'best', 'incredible', 'outstanding', 'brilliant', 'superb', 'magnificent', 'spectacular',
       'good', 'nice', 'happy', 'pleased', 'satisfied', 'delighted', 'thrilled', 'excited',
       'beautiful', 'stunning', 'gorgeous', 'impressive', 'remarkable', 'exceptional',
-      
+
       // Inglés adicional
       'fabulous', 'marvelous', 'terrific', 'splendid', 'divine', 'phenomenal', 'extraordinary',
       'flawless', 'elite', 'premium', 'superior', 'top-notch', 'first-class', 'world-class',
       'stellar', 'epic', 'legendary', 'iconic', 'masterpiece', 'genius', 'breakthrough',
       'revolutionary', 'innovative', 'cutting-edge', 'state-of-the-art', 'game-changer',
-      
+
       // Emociones positivas
       'joy', 'bliss', 'ecstasy', 'euphoria', 'elation', 'cheerful', 'optimistic', 'hopeful',
       'confident', 'proud', 'grateful', 'thankful', 'blessed', 'fortunate', 'lucky',
-      
+
       // Calidad y valor
       'quality', 'value', 'bargain', 'deal', 'worth', 'worthwhile', 'beneficial', 'useful',
       'helpful', 'effective', 'efficient', 'reliable', 'trustworthy', 'authentic', 'genuine',
-      
+
       // Español básico
       'increíble', 'excelente', 'fantástico', 'maravilloso', 'perfecto', 'genial', 'súper',
       'bueno', 'buena', 'buenas', 'buenos', 'magnífico', 'espectacular', 'extraordinario',
       'encanta', 'encanto', 'amo', 'adoro', 'feliz', 'contento', 'satisfecho', 'emocionado',
-      
+
       // Español adicional
       'fabuloso', 'estupendo', 'fenomenal', 'divino', 'precioso', 'hermoso', 'bello',
       'impresionante', 'sorprendente', 'asombroso', 'brillante', 'genial', 'ideal',
       'óptimo', 'exquisito', 'delicioso', 'sabroso', 'rico', 'calidad', 'valor',
-      
+
       // Alemán básico
       'wunderbar', 'fantastisch', 'großartig', 'ausgezeichnet', 'perfekt', 'toll', 'super',
       'gut', 'schön', 'herrlich', 'prächtig', 'fabelhaft', 'erstaunlich', 'beeindruckend',
@@ -133,7 +133,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'erstklassig', 'spitzenklasse', 'weltklasse', 'meisterhaft', 'genial', 'brilliant',
       'innovativ', 'revolutionär', 'bahnbrechend', 'wegweisend', 'zukunftsweisend',
       'qualität', 'wert', 'nutzen', 'vorteil', 'hilfreich', 'nützlich', 'wertvoll',
-      
+
       // Francés básico
       'merveilleux', 'fantastique', 'excellent', 'parfait', 'magnifique', 'superbe', 'génial',
       'bon', 'bonne', 'bons', 'bonnes', 'beau', 'belle', 'joli', 'jolie', 'formidable',
@@ -144,11 +144,11 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'prestigieux', 'luxueux', 'élégant', 'raffiné', 'sophistiqué', 'innovant',
       'révolutionnaire', 'avant-gardiste', 'qualité', 'valeur', 'avantage', 'bénéfice',
       'utile', 'efficace', 'fiable', 'authentique', 'précieux', 'utilitaire',
-      
+
       // Expresiones coloquiales
       'cool', 'awesome', 'rad', 'dope', 'lit', 'fire', 'sick', 'tight', 'fresh',
       'legit', 'solid', 'clutch', 'boss', 'mint', 'clean', 'smooth', 'sweet',
-      
+
       // Emojis y símbolos como texto
       'thumbsup', 'heart', 'fire', 'star', 'crown', 'gem', 'trophy', 'medal'
     ];
@@ -159,33 +159,33 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'bad', 'poor', 'disappointing', 'frustrating', 'annoying', 'broken', 'failed', 'wrong',
       'sad', 'angry', 'upset', 'disappointed', 'unhappy', 'concerned', 'worried', 'confused',
       'ugly', 'boring', 'slow', 'expensive', 'cheap', 'fake', 'overpriced', 'uncomfortable',
-      
+
       // Inglés adicional
       'dreadful', 'appalling', 'atrocious', 'abysmal', 'deplorable', 'despicable', 'detestable',
       'revolting', 'repulsive', 'sickening', 'nauseating', 'vile', 'foul', 'rotten', 'corrupt',
       'toxic', 'harmful', 'damaging', 'destructive', 'disastrous', 'catastrophic', 'ruinous',
       'defective', 'flawed', 'faulty', 'inferior', 'substandard', 'mediocre', 'inadequate',
-      
+
       // Emociones negativas
       'furious', 'enraged', 'livid', 'irate', 'outraged', 'disgusted', 'repulsed', 'horrified',
       'devastated', 'crushed', 'heartbroken', 'depressed', 'miserable', 'wretched', 'anguished',
       'tormented', 'suffering', 'pain', 'agony', 'torture', 'nightmare', 'hell',
-      
+
       // Problemas y fallos
       'problem', 'issue', 'trouble', 'difficulty', 'struggle', 'challenge', 'obstacle',
       'error', 'mistake', 'bug', 'glitch', 'crash', 'freeze', 'lag', 'delay',
       'waste', 'loss', 'damage', 'harm', 'injury', 'hurt', 'wound', 'scar',
-      
+
       // Español básico
       'terrible', 'horrible', 'malo', 'mala', 'malos', 'malas', 'pésimo', 'fatal',
       'desastre', 'disgusto', 'odio', 'detesto', 'asco', 'repugnante', 'asqueroso',
       'triste', 'enfadado', 'molesto', 'frustrado', 'decepcionado', 'preocupado',
-      
+
       // Español adicional
       'espantoso', 'horroroso', 'abominable', 'detestable', 'repulsivo', 'nauseabundo',
       'deplorable', 'lamentable', 'patético', 'vergonzoso', 'inaceptable', 'intolerable',
       'problema', 'fallo', 'error', 'defecto', 'basura', 'porquería', 'chatarra',
-      
+
       // Alemán básico
       'schrecklich', 'furchtbar', 'schlecht', 'schlimm', 'schlimmer', 'schlechteste', 'hassen',
       'ekelhaft', 'widerlich', 'abstoßend', 'entsetzlich', 'grauenhaft', 'grausam',
@@ -195,7 +195,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'fehlerhaft', 'mangelhaft', 'unzureichend', 'minderwertig', 'mittelmäßig',
       'problem', 'schwierigkeit', 'fehler', 'panne', 'störung', 'schaden', 'verlust',
       'elend', 'jammer', 'qual', 'schmerz', 'leiden', 'alptraum', 'hölle',
-      
+
       // Francés básico
       'terrible', 'horrible', 'affreux', 'épouvantable', 'mauvais', 'mauvaise', 'pire',
       'détester', 'haïr', 'dégoûtant', 'répugnant', 'pathétique', 'inutile', 'nul',
@@ -205,11 +205,11 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'défectueux', 'défaillant', 'insuffisant', 'inférieur', 'médiocre', 'inadéquat',
       'problème', 'difficulté', 'erreur', 'panne', 'dysfonctionnement', 'dommage', 'perte',
       'misère', 'souffrance', 'douleur', 'agonie', 'torture', 'cauchemar', 'enfer',
-      
+
       // Expresiones coloquiales negativas
       'trash', 'garbage', 'crap', 'junk', 'rubbish', 'mess', 'disaster', 'nightmare',
       'joke', 'scam', 'ripoff', 'fraud', 'fake', 'phony', 'bogus', 'sketchy',
-      
+
       // Emojis negativos como texto
       'thumbsdown', 'angry', 'crying', 'skull', 'poop', 'vomit', 'sick'
     ];
@@ -222,27 +222,27 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'exceptionally', 'extraordinarily', 'remarkably', 'particularly', 'especially',
       'highly', 'strongly', 'intensely', 'severely', 'seriously', 'critically',
       'massively', 'hugely', 'vastly', 'significantly', 'substantially', 'considerably',
-      
+
       // Español
       'muy', 'súper', 'ultra', 'mega', 'extremadamente', 'increíblemente', 'totalmente',
       'completamente', 'absolutamente', 'realmente', 'verdaderamente', 'profundamente',
       'bastante', 'demasiado', 'tan', 'tanto', 'mucho', 'poco', 'algo', 'nada',
       'enormemente', 'tremendamente', 'sumamente', 'altamente', 'especialmente',
-      
+
       // Alemán
       'sehr', 'extrem', 'unglaublich', 'absolut', 'völlig', 'komplett', 'wirklich',
       'ziemlich', 'eher', 'recht', 'ganz', 'etwas', 'leicht', 'wahrhaft', 'tief',
       'super', 'ultra', 'mega', 'hyper', 'enorm', 'immens', 'gewaltig',
       'außergewöhnlich', 'außerordentlich', 'bemerkenswert', 'besonders', 'speziell',
       'hoch', 'stark', 'intensiv', 'schwer', 'ernst', 'kritisch', 'massiv',
-      
+
       // Francés
       'très', 'extrêmement', 'incroyablement', 'absolument', 'totalement', 'complètement', 'vraiment',
       'assez', 'plutôt', 'relativement', 'pas mal', 'quelque peu', 'légèrement', 'vraiment', 'profondément',
       'super', 'ultra', 'méga', 'hyper', 'énormément', 'immensément', 'considérablement',
       'exceptionnellement', 'extraordinairement', 'remarquablement', 'particulièrement', 'spécialement',
       'hautement', 'fortement', 'intensément', 'sévèrement', 'sérieusement', 'gravement',
-      
+
       // Expresiones coloquiales
       'hella', 'super', 'crazy', 'mad', 'wicked', 'stupid', 'insanely', 'ridiculously',
       'damn', 'fucking', 'bloody', 'freaking', 'frickin', 'freakin'
@@ -253,34 +253,34 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       'not', 'no', 'never', 'none', 'nothing', 'nobody', 'nowhere', "don't", "won't", "can't",
       "shouldn't", "wouldn't", "couldn't", "mustn't", "needn't", "haven't", "hasn't", "hadn't",
       "isn't", "aren't", "wasn't", "weren't", "doesn't", "didn't", "ain't",
-      
+
       // Inglés adicional  
       'without', 'lack', 'lacking', 'missing', 'absent', 'void', 'devoid', 'empty',
       'fail', 'failed', 'failure', 'unable', 'impossible', 'cannot', 'hardly', 'barely',
       'scarcely', 'rarely', 'seldom', 'neither', 'nor', 'refuse', 'deny', 'reject',
-      
+
       // Español básico
       'no', 'nunca', 'jamás', 'nada', 'nadie', 'ningún', 'ninguna', 'ninguno', 'ningunos',
       'sin', 'falta', 'carece', 'ausente', 'vacío', 'imposible', 'incapaz',
-      
+
       // Español adicional
       'tampoco', 'apenas', 'escasamente', 'raramente', 'difícilmente', 'ni', 'rechazar',
       'negar', 'denegar', 'fallar', 'fracasar', 'fracaso', 'fallo', 'error',
-      
+
       // Alemán básico
       'nicht', 'nein', 'nie', 'niemals', 'nichts', 'niemand', 'nirgendwo', 'kein', 'keine',
       'ohne', 'fehlen', 'fehlend', 'vermissen', 'abwesend', 'leer', 'unmöglich', 'unfähig',
       // Alemán adicional
       'kaum', 'selten', 'weder', 'noch', 'ablehnen', 'verweigern', 'verneinen',
       'versagen', 'scheitern', 'fehler', 'mangel', 'verlust',
-      
+
       // Francés básico
       'ne', 'pas', 'non', 'jamais', 'rien', 'personne', 'nulle part', 'aucun', 'aucune',
       'sans', 'manquer', 'manquant', 'absent', 'vide', 'impossible', 'incapable',
       // Francés adicional
       'à peine', 'rarement', 'ni', 'refuser', 'nier', 'rejeter',
       'échouer', 'échec', 'erreur', 'défaut', 'perte', 'manque',
-      
+
       // Contracciones y coloquiales
       'aint', 'nope', 'nah', 'nay', 'nix', 'zilch', 'zip', 'zero', 'nil'
     ];
@@ -290,21 +290,21 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     let score = 0;
     let magnitude = 0;
     let wordCount = 0;
-    let sentimentWords: Array<{word: string, score: number, position: number}> = [];
+    let sentimentWords: Array<{ word: string, score: number, position: number }> = [];
 
     // Primera pasada: identificar palabras de sentimiento
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       let baseScore = 0;
-      
+
       if (positiveWords.includes(word)) {
         baseScore = 1.0;
       } else if (negativeWords.includes(word)) {
         baseScore = -1.0;
       }
-      
+
       if (baseScore !== 0) {
-        sentimentWords.push({word, score: baseScore, position: i});
+        sentimentWords.push({ word, score: baseScore, position: i });
         wordCount++;
       }
     }
@@ -314,20 +314,20 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       let finalScore = sentimentWord.score;
       let intensity = 1.0;
       const pos = sentimentWord.position;
-      
+
       // Buscar intensificadores en ventana de 3 palabras antes
       for (let j = Math.max(0, pos - 3); j < pos; j++) {
         const prevWord = words[j];
         if (intensifiers.includes(prevWord)) {
           // Diferentes niveles de intensificación
           if (['extremely', 'incredibly', 'absolutely', 'tremendously', 'enormously'].includes(prevWord) ||
-              ['extremadamente', 'increíblemente', 'absolutamente', 'tremendamente'].includes(prevWord)) {
+            ['extremadamente', 'increíblemente', 'absolutamente', 'tremendamente'].includes(prevWord)) {
             intensity = 2.0;
           } else if (['very', 'really', 'super', 'quite', 'pretty'].includes(prevWord) ||
-                     ['muy', 'súper', 'bastante', 'realmente'].includes(prevWord)) {
+            ['muy', 'súper', 'bastante', 'realmente'].includes(prevWord)) {
             intensity = 1.5;
           } else if (['somewhat', 'rather', 'fairly', 'slightly'].includes(prevWord) ||
-                     ['algo', 'poco', 'ligeramente'].includes(prevWord)) {
+            ['algo', 'poco', 'ligeramente'].includes(prevWord)) {
             intensity = 1.2;
           } else {
             intensity = 1.3; // intensificador genérico
@@ -335,7 +335,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
           break; // Solo tomar el intensificador más cercano
         }
       }
-      
+
       // Buscar negadores en ventana de 4 palabras antes
       let negated = false;
       for (let j = Math.max(0, pos - 4); j < pos; j++) {
@@ -345,19 +345,19 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
           break;
         }
       }
-      
+
       // Aplicar intensidad
       finalScore *= intensity;
-      
+
       // Aplicar negación (inversión parcial, no total)
       if (negated) {
         finalScore *= -0.75; // Negación no es inversión total
       }
-      
+
       // Considerar posición en el texto (las últimas palabras tienen más peso)
       const positionWeight = 1 + (pos / words.length) * 0.3;
       finalScore *= positionWeight;
-      
+
       score += finalScore;
       magnitude += Math.abs(finalScore);
     }
@@ -365,15 +365,15 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     // CÁLCULOS FINALES MEJORADOS
     let normalizedScore = 0;
     let normalizedMagnitude = 0;
-    
+
     if (wordCount > 0) {
       // Normalización más sofisticada
       const avgScore = score / wordCount;
       const textLength = words.length;
-      
+
       // Ajuste por longitud del texto
       const lengthFactor = Math.min(1.0, Math.log(textLength + 1) / Math.log(20));
-      
+
       // Normalización con factor de longitud
       normalizedScore = Math.max(-1, Math.min(1, avgScore * lengthFactor));
       normalizedMagnitude = (magnitude / wordCount) * lengthFactor;
@@ -383,8 +383,8 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     const density = wordCount / words.length; // Densidad de palabras de sentimiento
     const textLengthFactor = Math.min(1.0, words.length / 10); // Textos más largos = más confianza
     const magnitudeFactor = Math.min(1.0, normalizedMagnitude); // Mayor magnitud = más confianza
-    
-    const confidence = Math.min(0.95, Math.max(0.1, 
+
+    const confidence = Math.min(0.95, Math.max(0.1,
       (density * 0.4 + textLengthFactor * 0.3 + magnitudeFactor * 0.3)
     ));
 
@@ -410,7 +410,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     const emotionKeywords = {
       joy: [
         // Inglés
-        'happy', 'joy', 'joyful', 'excited', 'thrilled', 'delighted', 'cheerful', 'elated', 
+        'happy', 'joy', 'joyful', 'excited', 'thrilled', 'delighted', 'cheerful', 'elated',
         'love', 'loving', 'blissful', 'ecstatic', 'euphoric', 'gleeful', 'merry', 'jolly',
         'upbeat', 'optimistic', 'hopeful', 'bright', 'sunny', 'radiant', 'beaming',
         'celebrate', 'celebration', 'party', 'fun', 'enjoyable', 'pleasant', 'wonderful',
@@ -431,7 +431,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         // Emojis como texto
         'smile', 'laugh', 'heart', 'hearts', 'sunshine', 'rainbow', 'star', 'fire'
       ],
-      
+
       sadness: [
         // Inglés
         'sad', 'sadness', 'depressed', 'depression', 'disappointed', 'disappointment',
@@ -457,7 +457,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         // Emojis como texto
         'crying', 'tear', 'broken_heart', 'wilted_flower'
       ],
-      
+
       anger: [
         // Inglés
         'angry', 'anger', 'furious', 'rage', 'mad', 'irate', 'livid', 'enraged',
@@ -481,7 +481,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         // Emojis como texto
         'angry_face', 'rage', 'steam', 'explosion', 'fire'
       ],
-      
+
       fear: [
         // Inglés
         'scared', 'afraid', 'fear', 'fearful', 'terrified', 'terror', 'horrified',
@@ -507,7 +507,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         // Emojis como texto
         'fearful_face', 'scream', 'ghost', 'skull', 'warning'
       ],
-      
+
       surprise: [
         // Inglés
         'surprised', 'surprise', 'amazed', 'amazing', 'astonished', 'astounding',
@@ -531,7 +531,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
         // Emojis como texto
         'surprised_face', 'exploding_head', 'star_struck', 'mind_blown'
       ],
-      
+
       disgust: [
         // Inglés
         'disgusting', 'disgusted', 'disgust', 'gross', 'revolting', 'repulsive',
@@ -571,21 +571,21 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
       let emotionScore = 0;
       let keywordCount = 0;
-      
+
       keywords.forEach(keyword => {
         // Buscar coincidencias exactas y parciales
         const exactMatches = (lowerText.match(new RegExp(`\\b${keyword}\\b`, 'g')) || []).length;
         const partialMatches = (lowerText.match(new RegExp(keyword, 'g')) || []).length - exactMatches;
-        
+
         // Pesos diferentes para coincidencias exactas vs parciales
         emotionScore += exactMatches * 1.0 + partialMatches * 0.5;
         keywordCount += exactMatches + partialMatches;
       });
-      
+
       // Normalizar por densidad de palabras emocionales
       const textWords = lowerText.split(/\s+/).length;
       const density = keywordCount / Math.max(textWords, 1);
-      
+
       // Aplicar factor de densidad y limitar a rango [0, 1]
       emotions[emotion as keyof EmotionAnalysis] = Math.min(1, density * 3);
     }
@@ -613,7 +613,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
   private extractKeywords(text: string): string[] {
     const cleanText = this.preprocessText(text);
     const words = cleanText.toLowerCase().split(/\s+/);
-    
+
     // Stop words to exclude
     const stopWords = new Set([
       'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
@@ -626,15 +626,15 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
 
     // Extract hashtags
     const hashtags = (text.match(/#\w+/g) || []).map(tag => tag.toLowerCase());
-    
+
     // Extract mentions
     const mentions = (text.match(/@\w+/g) || []).map(mention => mention.toLowerCase());
 
     // Extract significant words (3+ characters, not stop words)
     const significantWords = words
-      .filter(word => 
-        word.length >= 3 && 
-        !stopWords.has(word) && 
+      .filter(word =>
+        word.length >= 3 &&
+        !stopWords.has(word) &&
         /^[a-z]+$/.test(word)
       )
       .filter((word, index, arr) => arr.indexOf(word) === index); // Remove duplicates
@@ -698,10 +698,10 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
 
     // Extract surrounding context (20 words before and after)
     const words = text.split(/\s+/);
-    const entityWordIndex = words.findIndex(word => 
+    const entityWordIndex = words.findIndex(word =>
       word.toLowerCase().includes(entity.toLowerCase())
     );
-    
+
     const contextStart = Math.max(0, entityWordIndex - 10);
     const contextEnd = Math.min(words.length, entityWordIndex + 10);
     const context = words.slice(contextStart, contextEnd).join(' ');
@@ -724,7 +724,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     const englishWords = ['the', 'of', 'and', 'to', 'a', 'in', 'is', 'it', 'you', 'that', 'he', 'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'words', 'but', 'not', 'what'];
     const germanWords = ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat', 'dass', 'sie', 'nach'];
     const frenchWords = ['le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'pouvoir', 'par', 'plus', 'dire', 'me', 'on', 'mon', 'lui'];
-    
+
     const words = text.toLowerCase().split(/\s+/);
     let spanishCount = 0;
     let englishCount = 0;
@@ -748,10 +748,10 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
 
     // Sort by count (descending) and return the language with highest count
     counts.sort((a, b) => b.count - a.count);
-    
+
     // If no language has a clear majority, default to English
     if (counts[0].count === 0) return 'en';
-    
+
     return counts[0].lang;
   }
 
@@ -770,7 +770,7 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
 
     // Flesch Reading Ease formula
     const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
-    
+
     return Math.max(0, Math.min(100, score));
   }
 
@@ -852,20 +852,20 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
       "she'll": "she will", "we'll": "we will", "they'll": "they will",
       "i'd": "i would", "you'd": "you would", "he'd": "he would",
       "she'd": "she would", "we'd": "we would", "they'd": "they would",
-      
+
       // Español - contracciones informales comunes
       "q ": "que ", "xq": "porque", "pq": "porque", "x": "por",
       "tb": "tambien", "tmb": "tambien", "d ": "de ", "pa": "para",
       "xa": "para", "xfa": "por favor", "pf": "por favor",
       "ke": "que", "kien": "quien", "komo": "como", "kuando": "cuando",
-      
+
       // Alemán - contracciones comunes
       "ich bin": "ich bin", "du bist": "du bist", "er ist": "er ist",
       "wir sind": "wir sind", "ihr seid": "ihr seid", "sie sind": "sie sind",
       "hab": "habe", "hast": "hast", "hat": "hat", "habt": "habt", "haben": "haben",
       "werd": "werde", "wirst": "wirst", "wird": "wird", "werdet": "werdet", "werden": "werden",
       "bin": "bin", "bist": "bist", "ist": "ist", "sind": "sind", "seid": "seid",
-      
+
       // Francés - contracciones comunes
       "j'ai": "je ai", "j'aime": "je aime", "j'étais": "je étais",
       "c'est": "ce est", "c'était": "ce était", "c'sera": "ce sera",
@@ -907,10 +907,10 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
     // PASO 7: Limpiar caracteres especiales manteniendo algunos importantes
     processed = processed.replace(/[^\w\sáéíóúñü.,!?#@]/g, ' '); // Mantener # y @ para hashtags y mentions
     processed = processed.replace(/\s+/g, ' '); // Espacios múltiples a uno solo
-    
+
     // PASO 8: Eliminar palabras muy cortas (1 carácter) excepto algunas importantes
     const importantSingleChars = ['a', 'i', 'y', 'o', 'u']; // "a", "I", "y" (and), "o" (or), "u" (you)
-    processed = processed.replace(/\b\w\b/g, (match) => 
+    processed = processed.replace(/\b\w\b/g, (match) =>
       importantSingleChars.includes(match.toLowerCase()) ? match : ' '
     );
 

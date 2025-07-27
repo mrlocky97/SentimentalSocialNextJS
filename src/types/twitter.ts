@@ -16,13 +16,13 @@ export interface Tweet {
   urls: string[];
   mediaUrls?: string[];
   campaignId?: string; // Associated campaign
-  
+
   // Tweet Classification
   isRetweet: boolean;
   isReply: boolean;
   isQuote: boolean;
   parentTweetId?: string; // If it's a reply or quote
-  
+
   // Geographic Data
   geoLocation?: {
     country?: string;
@@ -32,10 +32,10 @@ export interface Tweet {
       lng: number;
     };
   };
-  
+
   // Language Detection
   language: string; // ISO code
-  
+
   // Timestamps
   scrapedAt: Date;
   createdAt: Date; // Tweet creation date
@@ -55,7 +55,7 @@ export interface TwitterUser {
   bio?: string;
   website?: string;
   joinedDate?: Date;
-  
+
   // Influencer Metrics
   influenceScore?: number; // Calculated influence score
   engagementRate?: number; // Average engagement rate

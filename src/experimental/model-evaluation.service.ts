@@ -265,17 +265,15 @@ export class ModelEvaluationService {
       }
     ];
 
-    console.log(`✅ Loaded ${this.groundTruthData.length} ground truth samples for evaluation`);
   }
 
   /**
    * Evaluate our current rule-based model
    */
   async evaluateCurrentModel(): Promise<ModelComparison> {
-    console.log('🔬 Evaluating current rule-based sentiment model...');
-    
+
     const startTime = Date.now();
-    const predictions: Array<{actual: SentimentLabel, predicted: SentimentLabel, confidence: number}> = [];
+    const predictions: Array<{ actual: SentimentLabel, predicted: SentimentLabel, confidence: number }> = [];
 
     // Run predictions on all ground truth data
     for (const sample of this.groundTruthData) {
@@ -335,7 +333,7 @@ export class ModelEvaluationService {
    */
   async simulateModelComparisons(): Promise<ModelComparison[]> {
     const currentModel = await this.evaluateCurrentModel();
-    
+
     // Simulate other models with realistic performance metrics
     const simulatedModels: ModelComparison[] = [
       {
@@ -499,10 +497,10 @@ export class ModelEvaluationService {
   /**
    * Calculate comprehensive metrics for model evaluation
    */
-  private calculateMetrics(predictions: Array<{actual: SentimentLabel, predicted: SentimentLabel, confidence: number}>): Omit<ModelMetrics, 'processing_time_ms' | 'samples_count'> {
+  private calculateMetrics(predictions: Array<{ actual: SentimentLabel, predicted: SentimentLabel, confidence: number }>): Omit<ModelMetrics, 'processing_time_ms' | 'samples_count'> {
     const labels: SentimentLabel[] = ['positive', 'negative', 'neutral'];
     const n = predictions.length;
-    
+
     // Initialize confusion matrix
     const confusionMatrix: number[][] = [
       [0, 0, 0], // positive: [tp_pos, fp_neg, fp_neu]
@@ -511,7 +509,7 @@ export class ModelEvaluationService {
     ];
 
     // Calculate confusion matrix
-    predictions.forEach(({actual, predicted}) => {
+    predictions.forEach(({ actual, predicted }) => {
       const actualIdx = labels.indexOf(actual);
       const predictedIdx = labels.indexOf(predicted);
       confusionMatrix[actualIdx][predictedIdx]++;
@@ -538,16 +536,16 @@ export class ModelEvaluationService {
     const macroF1 = labels.reduce((sum, label) => sum + f1Score[label], 0) / labels.length;
 
     // For weighted averages, we need class support
-    const support = labels.map((_, idx) => 
+    const support = labels.map((_, idx) =>
       confusionMatrix[idx].reduce((sum, val) => sum + val, 0)
     );
     const totalSupport = support.reduce((sum, val) => sum + val, 0);
 
-    const weightedPrecision = labels.reduce((sum, label, idx) => 
+    const weightedPrecision = labels.reduce((sum, label, idx) =>
       sum + precision[label] * (support[idx] / totalSupport), 0);
-    const weightedRecall = labels.reduce((sum, label, idx) => 
+    const weightedRecall = labels.reduce((sum, label, idx) =>
       sum + recall[label] * (support[idx] / totalSupport), 0);
-    const weightedF1 = labels.reduce((sum, label, idx) => 
+    const weightedF1 = labels.reduce((sum, label, idx) =>
       sum + f1Score[label] * (support[idx] / totalSupport), 0);
 
     // Calculate accuracy
@@ -561,7 +559,7 @@ export class ModelEvaluationService {
       const predictedSum = confusionMatrix.reduce((s, row) => s + row[idx], 0);
       return sum + (actualSum * predictedSum) / (n * n);
     }, 0); // expected agreement
-    
+
     const cohenKappa = (po - pe) / (1 - pe) || 0;
 
     return {
@@ -604,13 +602,13 @@ export class ModelEvaluationService {
   ): string {
     const labels = ['positive', 'negative', 'neutral'];
     let report = '\n              precision    recall  f1-score   support\n\n';
-    
+
     labels.forEach((label, idx) => {
       report += `    ${label.padEnd(8)} ` +
-                `${precision[label].toFixed(2).padStart(9)} ` +
-                `${recall[label].toFixed(2).padStart(9)} ` +
-                `${f1Score[label].toFixed(2).padStart(9)} ` +
-                `${support[idx].toString().padStart(9)}\n`;
+        `${precision[label].toFixed(2).padStart(9)} ` +
+        `${recall[label].toFixed(2).padStart(9)} ` +
+        `${f1Score[label].toFixed(2).padStart(9)} ` +
+        `${support[idx].toString().padStart(9)}\n`;
     });
 
     const totalSupport = support.reduce((sum, val) => sum + val, 0);
@@ -619,10 +617,10 @@ export class ModelEvaluationService {
     const macroF1 = labels.reduce((sum, label) => sum + f1Score[label], 0) / labels.length;
 
     report += '\n   macro avg ' +
-              `${macroPrecision.toFixed(2).padStart(9)} ` +
-              `${macroRecall.toFixed(2).padStart(9)} ` +
-              `${macroF1.toFixed(2).padStart(9)} ` +
-              `${totalSupport.toString().padStart(9)}\n`;
+      `${macroPrecision.toFixed(2).padStart(9)} ` +
+      `${macroRecall.toFixed(2).padStart(9)} ` +
+      `${macroF1.toFixed(2).padStart(9)} ` +
+      `${totalSupport.toString().padStart(9)}\n`;
 
     return report;
   }
@@ -631,13 +629,12 @@ export class ModelEvaluationService {
    * Run complete experimental evaluation
    */
   async runCompleteExperiment(): Promise<ExperimentalResults> {
-    console.log('🚀 Starting comprehensive model evaluation experiment...');
-    
+
     const experimentId = `exp_${Date.now()}`;
     const models = await this.simulateModelComparisons();
-    
+
     // Find best model by F1 macro average
-    const bestModel = models.reduce((best, current) => 
+    const bestModel = models.reduce((best, current) =>
       current.metrics.f1_score.macro_avg > best.metrics.f1_score.macro_avg ? current : best
     );
 
@@ -645,7 +642,7 @@ export class ModelEvaluationService {
     const baselineAccuracy = models[0].metrics.accuracy; // Current model
     const bestAccuracy = bestModel.metrics.accuracy;
     const n = this.groundTruthData.length;
-    
+
     // Simplified McNemar's test approximation
     const zScore = Math.abs(bestAccuracy - baselineAccuracy) / Math.sqrt((baselineAccuracy * (1 - baselineAccuracy)) / n);
     const pValue = 2 * (1 - this.normalCDF(Math.abs(zScore))); // Two-tailed test
@@ -703,12 +700,12 @@ export class ModelEvaluationService {
    * Error function approximation
    */
   private erf(x: number): number {
-    const a1 =  0.254829592;
+    const a1 = 0.254829592;
     const a2 = -0.284496736;
-    const a3 =  1.421413741;
+    const a3 = 1.421413741;
     const a4 = -1.453152027;
-    const a5 =  1.061405429;
-    const p  =  0.3275911;
+    const a5 = 1.061405429;
+    const p = 0.3275911;
 
     const sign = x >= 0 ? 1 : -1;
     x = Math.abs(x);

@@ -71,9 +71,9 @@ export interface MarketingInsight {
   recommendation?: string;
 }
 
-export type InsightType = 
+export type InsightType =
   | 'brand_perception'
-  | 'competitor_analysis' 
+  | 'competitor_analysis'
   | 'trend_identification'
   | 'customer_feedback'
   | 'influencer_impact'

@@ -82,7 +82,6 @@ router.post('/analyze', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('🔍 Analyzing single tweet sentiment...');
     const analysis = await sentimentManager.analyzeTweet(tweet as Tweet, config);
 
     res.json({
@@ -183,11 +182,10 @@ router.post('/batch', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🔍 Starting batch sentiment analysis for ${tweets.length} tweets...`);
     const startTime = Date.now();
 
     const analyses = await sentimentManager.analyzeTweetsBatch(tweets as Tweet[], config);
-    
+
     const processingTime = Date.now() - startTime;
 
     // Generate statistics if requested
@@ -197,7 +195,7 @@ router.post('/batch', async (req: Request, res: Response) => {
     }
 
     // Create summary
-    const averageSentiment = analyses.length > 0 
+    const averageSentiment = analyses.length > 0
       ? analyses.reduce((sum, analysis) => sum + analysis.analysis.sentiment.score, 0) / analyses.length
       : 0;
 
@@ -208,7 +206,6 @@ router.post('/batch', async (req: Request, res: Response) => {
       sentimentDistribution: statistics?.sentimentDistribution
     };
 
-    console.log(`✅ Batch analysis completed: ${analyses.length} tweets in ${processingTime}ms`);
 
     res.json({
       success: true,
@@ -265,7 +262,6 @@ router.post('/statistics', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`📊 Generating statistics for ${analyses.length} analyses...`);
     const statistics = sentimentManager.generateStatistics(analyses);
 
     res.json({
@@ -323,7 +319,6 @@ router.post('/trends', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`📈 Generating sentiment trends for ${analyses.length} analyses...`);
     const trends = sentimentManager.generateSentimentTrends(analyses, intervalHours);
 
     res.json({
@@ -362,7 +357,6 @@ router.post('/trends', async (req: Request, res: Response) => {
  */
 router.get('/demo', async (req: Request, res: Response) => {
   try {
-    console.log('🎭 Running sentiment analysis demo...');
 
     // Sample tweets for demonstration
     const demoTweets: Tweet[] = [
@@ -546,8 +540,7 @@ router.post('/test', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🧪 Testing sentiment analysis for text: "${text.substring(0, 50)}..."`);
-    
+
     // Create a mock tweet for testing
     const mockTweet: Tweet = {
       id: 'test_tweet',

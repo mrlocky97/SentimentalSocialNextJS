@@ -162,14 +162,9 @@ async function startServer() {
     // Initialize database connection
     const database = DatabaseConnection.getInstance();
     await database.connect();
-    
+
     // Start Express server
     app.listen(PORT, () => {
-      console.log(`🚀 SentimentalSocial API Server running on port ${PORT}`);
-      console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
-      console.log(`🔍 API Info available at http://localhost:${PORT}/api/v1`);
-      console.log(`❤️  Health check available at http://localhost:${PORT}/health`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

@@ -44,13 +44,11 @@ export class TwitterCookieManager {
       if (fs.existsSync(this.cookiesPath)) {
         const data = fs.readFileSync(this.cookiesPath, 'utf8');
         this.sessionData = JSON.parse(data);
-        
+
         // Check if session is still valid
         if (this.sessionData && this.isSessionExpired()) {
-          console.log('🍪 Session expired, clearing cookies');
           this.clearCookies();
         } else if (this.sessionData) {
-          console.log('🍪 Loaded existing Twitter session cookies');
         }
       }
     } catch (error) {
@@ -66,7 +64,6 @@ export class TwitterCookieManager {
     try {
       if (this.sessionData) {
         fs.writeFileSync(this.cookiesPath, JSON.stringify(this.sessionData, null, 2));
-        console.log('🍪 Twitter session cookies saved successfully');
       }
     } catch (error) {
       console.error('❌ Error saving cookies:', error);
@@ -78,11 +75,11 @@ export class TwitterCookieManager {
    */
   private isSessionExpired(): boolean {
     if (!this.sessionData) return true;
-    
+
     const now = Date.now();
     const sessionAge = now - this.sessionData.timestamp;
     const isExpired = sessionAge > this.SESSION_DURATION || now > this.sessionData.expirationTime;
-    
+
     return isExpired;
   }
 
@@ -91,7 +88,7 @@ export class TwitterCookieManager {
    */
   public storeCookies(cookies: TwitterCookie[], userAgent: string): void {
     const now = Date.now();
-    
+
     this.sessionData = {
       cookies,
       timestamp: now,
@@ -99,9 +96,8 @@ export class TwitterCookieManager {
       isValid: true,
       expirationTime: now + this.SESSION_DURATION
     };
-    
+
     this.saveCookies();
-    console.log(`🍪 Stored ${cookies.length} Twitter session cookies`);
   }
 
   /**
@@ -111,7 +107,7 @@ export class TwitterCookieManager {
     if (!this.sessionData || this.isSessionExpired()) {
       return null;
     }
-    
+
     return this.sessionData.cookies;
   }
 
@@ -122,7 +118,7 @@ export class TwitterCookieManager {
     if (!this.sessionData || this.isSessionExpired()) {
       return null;
     }
-    
+
     return this.sessionData.userAgent;
   }
 
@@ -138,11 +134,10 @@ export class TwitterCookieManager {
    */
   public clearCookies(): void {
     this.sessionData = null;
-    
+
     try {
       if (fs.existsSync(this.cookiesPath)) {
         fs.unlinkSync(this.cookiesPath);
-        console.log('🍪 Cleared Twitter session cookies');
       }
     } catch (error) {
       console.error('❌ Error clearing cookies:', error);
@@ -220,7 +215,7 @@ export class TwitterCookieManager {
       if (scraper && scraper.getCookies) {
         const cookies = await scraper.getCookies();
         const userAgent = scraper.getUserAgent ? scraper.getUserAgent() : 'Mozilla/5.0 (compatible)';
-        
+
         if (cookies && cookies.length > 0) {
           this.storeCookies(cookies, userAgent);
         }
@@ -236,7 +231,7 @@ export class TwitterCookieManager {
   public getCookiesAsString(): string {
     const cookies = this.getCookies();
     if (!cookies || cookies.length === 0) return '';
-    
+
     return cookies
       .map(cookie => `${cookie.name}=${cookie.value}`)
       .join('; ');
@@ -263,7 +258,7 @@ export class TwitterCookieManager {
   public getSessionAgeMinutes(): number | null {
     const timestamp = this.getSessionTimestamp();
     if (!timestamp) return null;
-    
+
     return Math.floor((Date.now() - timestamp) / (1000 * 60));
   }
 }

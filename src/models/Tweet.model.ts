@@ -17,13 +17,13 @@ export interface ITweetDocument extends Document {
   urls: string[];
   mediaUrls?: string[];
   campaignId?: string;
-  
+
   // Tweet Classification
   isRetweet: boolean;
   isReply: boolean;
   isQuote: boolean;
   parentTweetId?: string;
-  
+
   // Geographic Data
   geoLocation?: {
     country?: string;
@@ -33,10 +33,10 @@ export interface ITweetDocument extends Document {
       lng: number;
     };
   };
-  
+
   // Language
   language: string;
-  
+
   // Timestamps
   scrapedAt: Date;
   tweetCreatedAt: Date; // Original tweet creation date
@@ -73,10 +73,10 @@ const tweetMetricsSchema = new Schema({
 const sentimentAnalysisSchema = new Schema({
   score: { type: Number, required: true, min: -1, max: 1 },
   magnitude: { type: Number, required: true, min: 0, max: 1 },
-  label: { 
-    type: String, 
-    required: true, 
-    enum: ['positive', 'negative', 'neutral'] 
+  label: {
+    type: String,
+    required: true,
+    enum: ['positive', 'negative', 'neutral']
   },
   confidence: { type: Number, required: true, min: 0, max: 1 },
   emotions: {
@@ -108,62 +108,62 @@ const tweetSchema = new Schema<ITweetDocument>({
     unique: true,
     index: true,
     validate: {
-      validator: function(tweetId: string) {
+      validator: function (tweetId: string) {
         return /^\d+$/.test(tweetId); // Twitter IDs are numeric strings
       },
       message: 'Tweet ID must be a numeric string'
     }
   },
-  
+
   content: {
     type: String,
     required: [true, 'Tweet content is required'],
     maxlength: [1000, 'Tweet content cannot exceed 1000 characters'],
     index: 'text' // Text search index
   },
-  
+
   author: {
     type: twitterUserSchema,
     required: [true, 'Tweet author is required']
   },
-  
+
   metrics: {
     type: tweetMetricsSchema,
     required: [true, 'Tweet metrics are required']
   },
-  
+
   sentiment: sentimentAnalysisSchema,
-  
+
   hashtags: [{
     type: String,
     trim: true,
     lowercase: true,
     maxlength: [50, 'Hashtag cannot exceed 50 characters'],
     validate: {
-      validator: function(hashtag: string) {
+      validator: function (hashtag: string) {
         return /^[a-zA-Z0-9_]+$/.test(hashtag);
       },
       message: 'Hashtag can only contain letters, numbers, and underscores'
     }
   }],
-  
+
   mentions: [{
     type: String,
     trim: true,
     lowercase: true,
     maxlength: [50, 'Mention cannot exceed 50 characters'],
     validate: {
-      validator: function(mention: string) {
+      validator: function (mention: string) {
         return /^[a-zA-Z0-9_]+$/.test(mention);
       },
       message: 'Mention can only contain letters, numbers, and underscores'
     }
   }],
-  
+
   urls: [{
     type: String,
     validate: {
-      validator: function(url: string) {
+      validator: function (url: string) {
         try {
           new URL(url);
           return true;
@@ -174,11 +174,11 @@ const tweetSchema = new Schema<ITweetDocument>({
       message: 'Invalid URL format'
     }
   }],
-  
+
   mediaUrls: [{
     type: String,
     validate: {
-      validator: function(url: string) {
+      validator: function (url: string) {
         try {
           new URL(url);
           return true;
@@ -189,62 +189,62 @@ const tweetSchema = new Schema<ITweetDocument>({
       message: 'Invalid media URL format'
     }
   }],
-  
+
   campaignId: {
     type: String,
     index: true,
     validate: {
-      validator: function(id: string) {
+      validator: function (id: string) {
         return mongoose.Types.ObjectId.isValid(id);
       },
       message: 'Campaign ID must be a valid ObjectId'
     }
   },
-  
+
   // Tweet Classification
   isRetweet: { type: Boolean, required: true, default: false, index: true },
   isReply: { type: Boolean, required: true, default: false, index: true },
   isQuote: { type: Boolean, required: true, default: false, index: true },
-  
+
   parentTweetId: {
     type: String,
     validate: {
-      validator: function(tweetId: string) {
+      validator: function (tweetId: string) {
         return /^\d+$/.test(tweetId);
       },
       message: 'Parent tweet ID must be a numeric string'
     }
   },
-  
+
   geoLocation: geoLocationSchema,
-  
+
   language: {
     type: String,
     required: [true, 'Language is required'],
     length: 2,
     default: 'en',
     validate: {
-      validator: function(lang: string) {
+      validator: function (lang: string) {
         return /^[a-z]{2}$/.test(lang);
       },
       message: 'Language must be a valid ISO 639-1 code'
     },
     index: true
   },
-  
+
   scrapedAt: {
     type: Date,
     required: [true, 'Scraped timestamp is required'],
     default: Date.now,
     index: true
   },
-  
+
   tweetCreatedAt: {
     type: Date,
     required: [true, 'Tweet creation date is required'],
     index: true
   }
-  
+
 }, {
   timestamps: true,
   versionKey: false
@@ -260,53 +260,53 @@ tweetSchema.index({
 });
 
 // Pre-save middleware
-tweetSchema.pre('save', function(next) {
+tweetSchema.pre('save', function (next) {
   // Calculate engagement if not provided
   if (this.metrics && this.author.followersCount > 0) {
     const totalEngagement = this.metrics.likes + this.metrics.retweets + this.metrics.replies + this.metrics.quotes;
     this.metrics.engagement = (totalEngagement / this.author.followersCount) * 100;
   }
-  
+
   // Ensure hashtags don't have # prefix
   this.hashtags = this.hashtags.map(tag => tag.replace('#', '').toLowerCase());
-  
+
   // Ensure mentions don't have @ prefix
   this.mentions = this.mentions.map(mention => mention.replace('@', '').toLowerCase());
-  
+
   next();
 });
 
 // Instance methods
-tweetSchema.methods.calculateEngagementRate = function(): number {
+tweetSchema.methods.calculateEngagementRate = function (): number {
   if (this.author.followersCount === 0) return 0;
   const totalEngagement = this.metrics.likes + this.metrics.retweets + this.metrics.replies + this.metrics.quotes;
   return (totalEngagement / this.author.followersCount) * 100;
 };
 
-tweetSchema.methods.isHighEngagement = function(): boolean {
+tweetSchema.methods.isHighEngagement = function (): boolean {
   return this.calculateEngagementRate() > 2; // 2% is considered high engagement
 };
 
-tweetSchema.methods.getAgeInHours = function(): number {
+tweetSchema.methods.getAgeInHours = function (): number {
   const now = new Date();
   const diffMs = now.getTime() - this.tweetCreatedAt.getTime();
   return diffMs / (1000 * 60 * 60);
 };
 
 // Static methods
-tweetSchema.statics.findByCampaign = function(campaignId: string, limit: number = 100) {
+tweetSchema.statics.findByCampaign = function (campaignId: string, limit: number = 100) {
   return this.find({ campaignId })
     .sort({ tweetCreatedAt: -1 })
     .limit(limit);
 };
 
-tweetSchema.statics.findByHashtag = function(hashtag: string, limit: number = 100) {
+tweetSchema.statics.findByHashtag = function (hashtag: string, limit: number = 100) {
   return this.find({ hashtags: hashtag.toLowerCase().replace('#', '') })
     .sort({ tweetCreatedAt: -1 })
     .limit(limit);
 };
 
-tweetSchema.statics.findBySentiment = function(sentiment: 'positive' | 'negative' | 'neutral', limit: number = 100) {
+tweetSchema.statics.findBySentiment = function (sentiment: 'positive' | 'negative' | 'neutral', limit: number = 100) {
   return this.find({ 'sentiment.label': sentiment })
     .sort({ tweetCreatedAt: -1 })
     .limit(limit);

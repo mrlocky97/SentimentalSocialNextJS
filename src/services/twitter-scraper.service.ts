@@ -88,7 +88,7 @@ export class TwitterScraperService {
   private rateLimitResetTime: Date = new Date();
   private requestCount: number = 0;
   private maxRequestsPerHour: number = 300; // Conservative limit
-  
+
   // Enhanced mock data for realistic variety
   private mockData = {
     sentiments: ['positive', 'negative', 'neutral'] as const,
@@ -162,8 +162,7 @@ export class TwitterScraperService {
    * Scrape tweets by hashtag
    */
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-    console.log(`Starting scrape for hashtag: #${hashtag}`);
-    
+
     if (this.isRateLimited) {
       throw new Error(`Rate limited. Reset time: ${this.rateLimitResetTime.toISOString()}`);
     }
@@ -181,9 +180,8 @@ export class TwitterScraperService {
     try {
       // Import twid dynamically to avoid import issues
       const twid = await this.importTwid();
-      
+
       const searchQuery = this.buildSearchQuery(hashtag, defaultOptions);
-      console.log(`Search Query: ${searchQuery}`);
 
       const scrapedData = await this.performScraping(twid, searchQuery, defaultOptions);
       const tweets = this.processTweets(scrapedData, defaultOptions);
@@ -220,8 +218,7 @@ export class TwitterScraperService {
    * Scrape tweets from a specific user
    */
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-    console.log(`Starting scrape for user: @${username}`);
-    
+
     const userOptions = { ...options, username };
     return this.scrapeByHashtag('', userOptions);
   }
@@ -242,10 +239,7 @@ export class TwitterScraperService {
    * Initialize mock Twitter scraper (real scraping handled by TwitterRealScraperService)
    */
   private async importTwid(): Promise<TwitterScraperInterface> {
-    console.log('Using mock Twitter scraper for development/testing');
-    console.log('For real scraping, use TwitterRealScraperService with cookie authentication');
-    console.log('See TWITTER_COOKIE_GUIDE.md for setup instructions');
-    
+
     // Always return mock scraper since real scraping is handled by TwitterRealScraperService
     return this.createMockTwid();
   }
@@ -254,17 +248,16 @@ export class TwitterScraperService {
    * Create a mock twid implementation for development/testing
    */
   private createMockTwid(): TwitterScraperInterface {
-    console.log('Using mock scraper (twid not available)');
-    
+
     return {
       scrape: async (query: string, options: ScrapingOptions) => {
         // Simulate delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Extract hashtag from query for more realistic content
         const hashtagMatch = query.match(/#(\w+)/);
         const hashtag = hashtagMatch ? hashtagMatch[1] : 'AI';
-        
+
         // Return mock data with hashtag context
         return this.generateMockScrapedData(options.maxTweets || 10, hashtag);
       }
@@ -276,19 +269,19 @@ export class TwitterScraperService {
    */
   private generateMockScrapedData(count: number, hashtag?: string) {
     const mockTweets = [];
-    
+
     for (let i = 0; i < count; i++) {
       const user = this.mockData.users[Math.floor(Math.random() * this.mockData.users.length)];
       const sentiment = this.mockData.sentiments[Math.floor(Math.random() * this.mockData.sentiments.length)];
       const tweetContent = this.generateRealisticTweet(hashtag || 'AI', sentiment);
-      
+
       // Generate realistic metrics based on user following and sentiment
       const baseEngagement = this.calculateBaseEngagement(user.followers, sentiment);
       const metrics = this.generateRealisticMetrics(baseEngagement);
-      
+
       // Generate a numeric ID that looks like a real Twitter ID (18-19 digits)
       const mockTweetId = String(Date.now() * 1000 + i); // Ensures uniqueness and realistic length
-      
+
       mockTweets.push({
         id: mockTweetId,
         text: tweetContent.text,
@@ -319,7 +312,7 @@ export class TwitterScraperService {
         }
       });
     }
-    
+
     return mockTweets;
   }
 
@@ -328,13 +321,13 @@ export class TwitterScraperService {
    */
   private generateRealisticTweet(hashtag: string, sentiment: string) {
     // Choose template based on hashtag
-    const templateKey = this.mockData.tweetTemplates[hashtag as keyof typeof this.mockData.tweetTemplates] 
+    const templateKey = this.mockData.tweetTemplates[hashtag as keyof typeof this.mockData.tweetTemplates]
       ? hashtag as keyof typeof this.mockData.tweetTemplates
       : 'default';
-    
+
     const templates = this.mockData.tweetTemplates[templateKey];
     let template = templates[Math.floor(Math.random() * templates.length)];
-    
+
     // Replace placeholders with random values
     Object.entries(this.mockData.replacements).forEach(([key, values]) => {
       const placeholder = `{${key}}`;
@@ -343,13 +336,13 @@ export class TwitterScraperService {
         template = template.replace(new RegExp(placeholder, 'g'), randomValue);
       }
     });
-    
+
     // Adjust sentiment tone
     template = this.adjustSentimentTone(template, sentiment);
-    
+
     // Extract hashtags from template
     const hashtags = template.match(/#\w+/g) || [`#${hashtag}`];
-    
+
     return {
       text: template,
       hashtags: hashtags
@@ -363,7 +356,7 @@ export class TwitterScraperService {
     const positiveModifiers = ['Amazing!', 'Incredible!', 'Love this!', '🚀', '💪', '✨', '🔥'];
     const negativeModifiers = ['Concerning...', 'Not sure about this', 'Disappointing', '😕', '⚠️', '😞'];
     const neutralModifiers = ['Interesting.', 'Worth considering.', 'Let me think about this.', '🤔', '💭'];
-    
+
     if (sentiment === 'positive' && Math.random() < 0.3) {
       const modifier = positiveModifiers[Math.floor(Math.random() * positiveModifiers.length)];
       text = `${text} ${modifier}`;
@@ -374,7 +367,7 @@ export class TwitterScraperService {
       const modifier = neutralModifiers[Math.floor(Math.random() * neutralModifiers.length)];
       text = `${text} ${modifier}`;
     }
-    
+
     return text;
   }
 
@@ -382,13 +375,13 @@ export class TwitterScraperService {
    * Calculate base engagement based on follower count and sentiment
    */
   private calculateBaseEngagement(followers: number, sentiment: string): number {
-    const baseRate = followers < 10000 ? 0.03 : 
-                    followers < 50000 ? 0.02 : 
-                    followers < 100000 ? 0.015 : 0.01;
-    
-    const sentimentMultiplier = sentiment === 'positive' ? 1.3 : 
-                               sentiment === 'negative' ? 0.7 : 1.0;
-    
+    const baseRate = followers < 10000 ? 0.03 :
+      followers < 50000 ? 0.02 :
+        followers < 100000 ? 0.015 : 0.01;
+
+    const sentimentMultiplier = sentiment === 'positive' ? 1.3 :
+      sentiment === 'negative' ? 0.7 : 1.0;
+
     return Math.floor(followers * baseRate * sentimentMultiplier);
   }
 
@@ -400,7 +393,7 @@ export class TwitterScraperService {
     const retweets = Math.floor(likes * (0.1 + Math.random() * 0.2)); // 10-30% of likes
     const replies = Math.floor(likes * (0.05 + Math.random() * 0.15)); // 5-20% of likes
     const views = likes * (8 + Math.random() * 12); // 8-20x likes for views
-    
+
     return {
       likes: Math.max(1, likes),
       retweets: Math.max(0, retweets),
@@ -424,10 +417,10 @@ export class TwitterScraperService {
    */
   private generateRandomMedia(text: string) {
     if (Math.random() > 0.3) return [];
-    
+
     const mediaTypes = ['photo', 'video', 'gif'];
     const type = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
-    
+
     return [{
       type,
       url: `https://via.placeholder.com/400x300?text=${type.toUpperCase()}`,
@@ -441,7 +434,7 @@ export class TwitterScraperService {
    */
   private generateRandomMentions(): string[] {
     if (Math.random() > 0.2) return [];
-    
+
     const mentions = ['@techreporter', '@airesearcher', '@innovationhub', '@startuplife'];
     const count = Math.floor(Math.random() * 2) + 1;
     return mentions.slice(0, count);
@@ -452,14 +445,14 @@ export class TwitterScraperService {
    */
   private generateRandomUrls(text: string): string[] {
     if (Math.random() > 0.15) return [];
-    
+
     const urls = [
       'https://techcrunch.com/article',
       'https://github.com/project',
       'https://medium.com/@author/post',
       'https://research.org/paper'
     ];
-    
+
     return [urls[Math.floor(Math.random() * urls.length)]];
   }
 
@@ -468,27 +461,27 @@ export class TwitterScraperService {
    */
   private buildSearchQuery(hashtag: string, options: ScrapingOptions): string {
     let query = '';
-    
+
     if (hashtag) {
       query += `#${hashtag}`;
     }
-    
+
     if (options.username) {
       query += ` from:${options.username}`;
     }
-    
+
     if (!options.includeRetweets) {
       query += ' -RT';
     }
-    
+
     if (options.minLikes && options.minLikes > 0) {
       query += ` min_faves:${options.minLikes}`;
     }
-    
+
     if (options.minRetweets && options.minRetweets > 0) {
       query += ` min_retweets:${options.minRetweets}`;
     }
-    
+
     return query.trim() || 'twitter';
   }
 
@@ -501,11 +494,10 @@ export class TwitterScraperService {
       includeReplies: options.includeReplies || false
     };
 
-    console.log(`Scraping with options:`, scrapingOptions);
-    
+
     // Add delay to avoid being blocked
     await this.delay(this.config.delay || 2000);
-    
+
     const result = await twid.scrape(query, scrapingOptions);
     return Array.isArray(result) ? result : [result];
   }
@@ -521,16 +513,16 @@ export class TwitterScraperService {
     for (const item of scrapedData) {
       try {
         const tweet = this.normalizeTweet(item);
-        
+
         // Apply filters
         if (options.maxAgeHours) {
           const tweetAge = now.getTime() - new Date(tweet.createdAt).getTime();
           if (tweetAge > maxAge) continue;
         }
-        
+
         if (options.minLikes && tweet.metrics.likes < options.minLikes) continue;
         if (options.minRetweets && tweet.metrics.retweets < options.minRetweets) continue;
-        
+
         tweets.push(tweet);
       } catch (error) {
         console.warn('Failed to process tweet:', error);
@@ -545,13 +537,13 @@ export class TwitterScraperService {
    */
   private normalizeTweet(scrapedTweet: ScrapedTweetData): Tweet {
     const createdAt = new Date(scrapedTweet.createdAt || new Date().toISOString());
-    
+
     // Generate numeric ID if not provided or if it's not numeric
     const originalId = scrapedTweet.id;
-    const numericId = originalId && /^\d+$/.test(originalId) 
-      ? originalId 
+    const numericId = originalId && /^\d+$/.test(originalId)
+      ? originalId
       : String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
-    
+
     return {
       id: numericId,
       tweetId: numericId,
@@ -609,14 +601,14 @@ export class TwitterScraperService {
    */
   private updateRateLimit() {
     this.requestCount++;
-    
+
     // Reset count every hour
     const now = new Date();
     if (now > this.rateLimitResetTime) {
       this.requestCount = 1;
       this.rateLimitResetTime = new Date(now.getTime() + 60 * 60 * 1000); // Reset in 1 hour
     }
-    
+
     // Check if we've hit the limit
     if (this.requestCount >= this.maxRequestsPerHour) {
       this.isRateLimited = true;

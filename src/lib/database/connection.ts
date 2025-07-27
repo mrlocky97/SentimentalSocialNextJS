@@ -10,7 +10,7 @@ class DatabaseConnection {
   private static instance: DatabaseConnection;
   private isConnected: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): DatabaseConnection {
     if (!DatabaseConnection.instance) {
@@ -21,14 +21,12 @@ class DatabaseConnection {
 
   async connect(): Promise<void> {
     if (this.isConnected) {
-      console.log('Database already connected');
       return;
     }
 
     try {
       const mongoUri = databaseConfig.mongodb.uri;
-      console.log('🔍 Using MongoDB URI:', mongoUri);
-      
+
       if (!mongoUri) {
         throw new Error('MongoDB URI is not defined in environment variables');
       }
@@ -38,7 +36,6 @@ class DatabaseConnection {
       } as mongoose.ConnectOptions);
 
       this.isConnected = true;
-      console.log('✅ MongoDB connected successfully');
 
       // Handle connection events
       mongoose.connection.on('error', (error) => {
@@ -72,7 +69,6 @@ class DatabaseConnection {
     try {
       await mongoose.disconnect();
       this.isConnected = false;
-      console.log('✅ MongoDB disconnected successfully');
     } catch (error) {
       console.error('❌ Error disconnecting from MongoDB:', error);
       throw error;
@@ -95,7 +91,7 @@ class DatabaseConnection {
       if (!this.isConnected || !mongoose.connection.db) {
         return false;
       }
-      
+
       await mongoose.connection.db.admin().ping();
       return true;
     } catch {

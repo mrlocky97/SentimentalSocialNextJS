@@ -11,12 +11,12 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 
 export class MongoUserRepository implements UserRepository {
-  
+
   async create(data: CreateUserRequest): Promise<User> {
     try {
       // Hash password
       const passwordHash = await bcrypt.hash(data.password, 12);
-      
+
       const userData = {
         email: data.email,
         username: data.username,
@@ -26,7 +26,7 @@ export class MongoUserRepository implements UserRepository {
 
       const user = new UserModel(userData);
       const savedUser = await user.save();
-      
+
       return this.documentToUser(savedUser);
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
@@ -48,13 +48,13 @@ export class MongoUserRepository implements UserRepository {
 
   async findMany(filter?: Partial<User>, options?: QueryOptions): Promise<User[]> {
     const query = UserModel.find(filter || {});
-    
+
     if (options?.limit) query.limit(options.limit);
     if (options?.offset) query.skip(options.offset);
     if (options?.sortBy && options?.sortOrder) {
       query.sort({ [options.sortBy]: options.sortOrder === 'asc' ? 1 : -1 });
     }
-    
+
     const users = await query.exec();
     return users.map(user => this.documentToUser(user));
   }
@@ -66,7 +66,7 @@ export class MongoUserRepository implements UserRepository {
         { $set: data },
         { new: true, runValidators: true }
       );
-      
+
       return user ? this.documentToUser(user) : null;
     } catch {
       return null;
@@ -164,31 +164,26 @@ export class MongoUserRepository implements UserRepository {
   async followUser(followerId: string, followingId: string): Promise<boolean> {
     // This would require a separate followers collection or embedded arrays
     // For now, just return true (implement based on your social features design)
-    console.log(`User ${followerId} following ${followingId}`);
     return true;
   }
 
   async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
     // Placeholder implementation
-    console.log(`User ${followerId} unfollowing ${followingId}`);
     return true;
   }
 
   async getFollowers(userId: string, options?: QueryOptions): Promise<User[]> {
     // Placeholder - would need followers collection
-    console.log(`Getting followers for ${userId}`, options);
     return [];
   }
 
   async getFollowing(userId: string, options?: QueryOptions): Promise<User[]> {
     // Placeholder - would need following collection  
-    console.log(`Getting following for ${userId}`, options);
     return [];
   }
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
     // Placeholder implementation
-    console.log(`Checking if ${followerId} follows ${followingId}`);
     return false;
   }
 

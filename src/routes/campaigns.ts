@@ -93,18 +93,18 @@ const campaignRepository = new MongoCampaignRepository();
 router.get('/', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
   try {
     const { page = 1, limit = 20, status, type, organizationId } = req.query;
-    
+
     // Build filter object
     const filter: CampaignFilter = {};
     if (status) filter.status = status as string as CampaignStatus;
     if (type) filter.type = type as string as CampaignType;
     if (organizationId) filter.organizationId = organizationId as string;
-    
+
     // Convert pagination params
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
-    
+
     // Get campaigns with pagination
     const campaigns = await campaignRepository.findMany(filter, {
       offset,
@@ -112,11 +112,11 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager', 'analyst']),
       sortBy: 'createdAt',
       sortOrder: 'desc'
     });
-    
+
     // Get total count for pagination
     const total = await campaignRepository.count(filter);
     const totalPages = Math.ceil(total / limitNum);
-    
+
     res.json({
       success: true,
       data: campaigns,
@@ -255,7 +255,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
   try {
     const campaignData: CreateCampaignRequest = req.body;
     const user = (req as unknown as { user: { id: string } }).user;
-    
+
     // Validate required fields
     if (!campaignData.name || !campaignData.type || !campaignData.dataSources || !campaignData.startDate || !campaignData.endDate) {
       return res.status(400).json({
@@ -271,11 +271,11 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
         }
       });
     }
-    
+
     // Validate that at least one tracking parameter is provided
-    if ((!campaignData.hashtags || campaignData.hashtags.length === 0) && 
-        (!campaignData.keywords || campaignData.keywords.length === 0) && 
-        (!campaignData.mentions || campaignData.mentions.length === 0)) {
+    if ((!campaignData.hashtags || campaignData.hashtags.length === 0) &&
+      (!campaignData.keywords || campaignData.keywords.length === 0) &&
+      (!campaignData.mentions || campaignData.mentions.length === 0)) {
       return res.status(400).json({
         success: false,
         error: {
@@ -285,7 +285,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
         }
       });
     }
-    
+
     // Add creator information
     const campaignToCreate = {
       ...campaignData,
@@ -295,10 +295,10 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
       mentions: campaignData.mentions || [],
       languages: campaignData.languages || ['en']
     };
-    
+
     // Create campaign
     const newCampaign = await campaignRepository.create(campaignToCreate);
-    
+
     res.status(201).json({
       success: true,
       data: newCampaign,
@@ -306,7 +306,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
     });
   } catch (error: unknown) {
     console.error('Error creating campaign:', error);
-    
+
     if (error instanceof Error) {
       if (error.message === 'VALIDATION_ERROR') {
         return res.status(400).json({
@@ -329,7 +329,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
         });
       }
     }
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -386,7 +386,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
 router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
       return res.status(400).json({
@@ -398,9 +398,9 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst'
         }
       });
     }
-    
+
     const campaign = await campaignRepository.findById(id);
-    
+
     if (!campaign) {
       return res.status(404).json({
         success: false,
@@ -411,7 +411,7 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst'
         }
       });
     }
-    
+
     res.json({
       success: true,
       data: campaign
@@ -513,7 +513,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
   try {
     const { id } = req.params;
     const updateData: UpdateCampaignRequest = req.body;
-    
+
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
       return res.status(400).json({
@@ -525,10 +525,10 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
         }
       });
     }
-    
+
     // Update campaign
     const updatedCampaign = await campaignRepository.update(id, updateData);
-    
+
     if (!updatedCampaign) {
       return res.status(404).json({
         success: false,
@@ -539,7 +539,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
         }
       });
     }
-    
+
     res.json({
       success: true,
       data: updatedCampaign,
@@ -547,7 +547,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
     });
   } catch (error: unknown) {
     console.error('Error updating campaign:', error);
-    
+
     if (error instanceof Error) {
       if (error.message === 'VALIDATION_ERROR') {
         return res.status(400).json({
@@ -570,7 +570,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
         });
       }
     }
-    
+
     res.status(500).json({
       success: false,
       error: {
@@ -628,7 +628,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
 router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
       return res.status(400).json({
@@ -640,7 +640,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         }
       });
     }
-    
+
     // Check if campaign exists before archiving
     const existingCampaign = await campaignRepository.findById(id);
     if (!existingCampaign) {
@@ -653,10 +653,10 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         }
       });
     }
-    
+
     // Archive campaign (soft delete)
     const archived = await campaignRepository.delete(id);
-    
+
     if (!archived) {
       return res.status(500).json({
         success: false,
@@ -667,7 +667,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         }
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Campaign archived successfully',

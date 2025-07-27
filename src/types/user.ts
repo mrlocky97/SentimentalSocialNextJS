@@ -19,14 +19,14 @@ export interface User {
   updatedAt: Date;
 }
 
-export type UserRole = 
+export type UserRole =
   | 'admin'           // Full system access
   | 'manager'         // Can create/manage campaigns
   | 'analyst'         // Can view and analyze data
   | 'onlyView'        // Read-only access
   | 'client';         // Limited client access
 
-export type Permission = 
+export type Permission =
   // Campaign permissions
   | 'campaigns:create'
   | 'campaigns:edit'
@@ -34,25 +34,25 @@ export type Permission =
   | 'campaigns:view'
   | 'campaigns:start_scraping'
   | 'campaigns:export_data'
-  
+
   // Analytics permissions
   | 'analytics:view'
   | 'analytics:export'
   | 'analytics:advanced'
-  
+
   // User management
   | 'users:create'
   | 'users:edit'
   | 'users:delete'
   | 'users:view'
   | 'users:assign_roles'
-  
+
   // System administration
   | 'system:settings'
   | 'system:logs'
   | 'system:backup'
   | 'system:monitoring'
-  
+
   // Data access
   | 'data:export'
   | 'data:delete'

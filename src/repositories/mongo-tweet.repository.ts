@@ -115,7 +115,7 @@ export class MongoTweetRepository {
     pagination: PaginationParams = { page: 1, limit: 50 }
   ): Promise<PaginatedResponse<ITweetDocument>> {
     const query = this.buildQuery(filters);
-    
+
     const { page, limit } = pagination;
     const skip = (page - 1) * limit;
 
@@ -260,7 +260,7 @@ export class MongoTweetRepository {
     const query = this.buildQuery(filters);
 
     // Basic counts and aggregations
-    const [basicStats, sentimentStats, hashtagStats, mentionStats, languageStats, timelineStats] = 
+    const [basicStats, sentimentStats, hashtagStats, mentionStats, languageStats, timelineStats] =
       await Promise.all([
         this.getBasicStats(query),
         this.getSentimentStats(query),
@@ -447,7 +447,7 @@ export class MongoTweetRepository {
     ]);
 
     const stats = results[0] || { totalTweets: 0, totalEngagement: 0 };
-    
+
     return {
       totalTweets: stats.totalTweets,
       totalEngagement: stats.totalEngagement,

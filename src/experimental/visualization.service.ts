@@ -22,19 +22,18 @@ export interface VisualizationReport {
     best_model: string;
     performance_improvement: string;
     processing_time_comparison: string;
-    accuracy_ranking: Array<{model: string, accuracy: number}>;
+    accuracy_ranking: Array<{ model: string, accuracy: number }>;
   };
   academic_insights: string[];
   export_formats: string[];
 }
 
 export class VisualizationService {
-  
+
   /**
    * Generate comprehensive visualization report from experimental results
    */
   generateVisualizationReport(results: ExperimentalResults): VisualizationReport {
-    console.log('📊 Generating visualization report...');
 
     const charts: ChartData[] = [
       this.generateAccuracyComparisonChart(results.models_compared),
@@ -49,7 +48,7 @@ export class VisualizationService {
     ];
 
     const accuracyRanking = results.models_compared
-      .map(m => ({model: m.model_name, accuracy: m.metrics.accuracy}))
+      .map(m => ({ model: m.model_name, accuracy: m.metrics.accuracy }))
       .sort((a, b) => b.accuracy - a.accuracy);
 
     const baselineModel = results.models_compared[0];
@@ -100,7 +99,7 @@ export class VisualizationService {
           ],
           borderColor: [
             '#FF6384',
-            '#36A2EB', 
+            '#36A2EB',
             '#FFCE56',
             '#4BC0C0'
           ],
@@ -159,7 +158,7 @@ export class VisualizationService {
             borderWidth: 1
           },
           {
-            label: 'Negative', 
+            label: 'Negative',
             data: models.map(m => (m.metrics.f1_score.negative * 100).toFixed(1)),
             backgroundColor: '#dc3545',
             borderColor: '#dc3545',
@@ -267,14 +266,14 @@ export class VisualizationService {
   private generateConfusionMatrixHeatmap(model: ModelComparison): ChartData {
     const matrix = model.metrics.confusion_matrix;
     const labels = ['Positive', 'Negative', 'Neutral'];
-    
+
     // Flatten matrix for heatmap format
     const heatmapData = [];
     for (let i = 0; i < matrix.length; i++) {
       for (let j = 0; j < matrix[i].length; j++) {
         heatmapData.push({
           x: labels[j],
-          y: labels[i], 
+          y: labels[i],
           value: matrix[i][j]
         });
       }
@@ -289,7 +288,7 @@ export class VisualizationService {
         datasets: [{
           label: 'Count',
           data: heatmapData,
-          backgroundColor: function(context: any) {
+          backgroundColor: function (context: any) {
             const value = context.parsed.v;
             const max = Math.max(...matrix.flat());
             const intensity = value / max;
@@ -331,7 +330,7 @@ export class VisualizationService {
    */
   private generateMetricsRadarChart(models: ModelComparison[]): ChartData {
     const metrics = ['accuracy', 'precision', 'recall', 'f1_score'];
-    
+
     return {
       type: 'radar',
       title: 'Comprehensive Metrics Comparison',
@@ -395,7 +394,7 @@ export class VisualizationService {
         datasets: [{
           data: [
             datasetInfo.positive_samples,
-            datasetInfo.negative_samples, 
+            datasetInfo.negative_samples,
             datasetInfo.neutral_samples
           ],
           backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
@@ -455,7 +454,7 @@ export class VisualizationService {
           },
           tooltip: {
             callbacks: {
-              label: function(context: any) {
+              label: function (context: any) {
                 return `${context.raw.label}: ${context.parsed.y.toFixed(1)}% accuracy, ${context.parsed.x}ms`;
               }
             }
@@ -564,10 +563,10 @@ export class VisualizationService {
    * Analyze speed vs accuracy trade-off
    */
   private analyzeSpeedAccuracyTradeoff(models: ModelComparison[]): string {
-    const fastestModel = models.reduce((fastest, current) => 
+    const fastestModel = models.reduce((fastest, current) =>
       current.metrics.processing_time_ms < fastest.metrics.processing_time_ms ? current : fastest
     );
-    const mostAccurateModel = models.reduce((most, current) => 
+    const mostAccurateModel = models.reduce((most, current) =>
       current.metrics.accuracy > most.metrics.accuracy ? current : most
     );
 

@@ -20,8 +20,8 @@ export interface TwitterAuthenticatedRequest extends Request {
  * Adds Twitter auth info to request but doesn't block the request
  */
 export const checkTwitterAuth = async (
-  req: TwitterAuthenticatedRequest, 
-  res: Response, 
+  req: TwitterAuthenticatedRequest,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -40,14 +40,14 @@ export const checkTwitterAuth = async (
     next();
   } catch (error) {
     console.error('Error checking Twitter auth:', error);
-    
+
     // Set default values and continue
     req.twitterAuth = {
       authenticated: false,
       hasValidSession: false,
       cookieCount: 0
     };
-    
+
     next();
   }
 };
@@ -57,8 +57,8 @@ export const checkTwitterAuth = async (
  * Blocks request if Twitter is not authenticated
  */
 export const requireTwitterAuth = async (
-  req: TwitterAuthenticatedRequest, 
-  res: Response, 
+  req: TwitterAuthenticatedRequest,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -112,8 +112,8 @@ export class TwitterAuthStatus {
         authenticated: hasValidSession,
         hasValidSession,
         cookieCount: cookies ? cookies.length : 0,
-        suggestion: hasValidSession 
-          ? undefined 
+        suggestion: hasValidSession
+          ? undefined
           : 'Please authenticate with Twitter using /api/v1/twitter-auth/login or /api/v1/twitter-auth/import-cookies'
       };
     } catch (error) {

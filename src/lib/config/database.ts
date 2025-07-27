@@ -14,7 +14,7 @@ export const databaseConfig = {
       w: 'majority',
     },
   },
-  
+
   // Example for PostgreSQL
   postgres: {
     host: process.env.DB_HOST || 'localhost',

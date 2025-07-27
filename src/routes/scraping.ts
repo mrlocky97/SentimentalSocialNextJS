@@ -22,7 +22,6 @@ const tweetDatabaseService = new TweetDatabaseService();
 async function getRealScraperService(): Promise<TwitterRealScraperService> {
   if (!realScraperService) {
     realScraperService = new TwitterRealScraperService();
-    console.log('Initialized Real Twitter Scraper Service');
   }
   return realScraperService;
 }
@@ -30,7 +29,6 @@ async function getRealScraperService(): Promise<TwitterRealScraperService> {
 function getMockScraperService(): TwitterScraperService {
   if (!mockScraperService) {
     mockScraperService = new TwitterScraperService();
-    console.log('Initialized Mock Twitter Scraper Service (fallback mode)');
   }
   return mockScraperService;
 }
@@ -39,7 +37,7 @@ function getMockScraperService(): TwitterScraperService {
 function shouldFallbackToMock(error: any): boolean {
   const errorMessage = error.message || '';
   const errorString = error.toString() || '';
-  
+
   return (
     errorMessage.includes('Forbidden') ||
     errorMessage.includes('Authentication') ||
@@ -67,14 +65,12 @@ async function performScraping<T>(
   operationName: string
 ): Promise<T> {
   try {
-    console.log(`Attempting ${operationName} with Real Twitter Scraper...`);
     const realScraper = await getRealScraperService();
     return await scrapingOperation(realScraper);
   } catch (error) {
     console.error(`Real scraper failed for ${operationName}:`, error);
-    
+
     if (shouldFallbackToMock(error)) {
-      console.log(`🎭 Falling back to Mock Scraper for ${operationName}...`);
       const mockScraper = getMockScraperService();
       // Cast mock scraper to match the interface for the operation
       return await scrapingOperation(mockScraper as any);
@@ -168,7 +164,6 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🕷️ Starting hashtag scraping for #${hashtag}...`);
     const startTime = Date.now();
 
     // Use unified scraping function that tries real scraper first
@@ -182,7 +177,6 @@ router.post('/hashtag', async (req: Request, res: Response) => {
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
@@ -190,9 +184,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
     // Save tweets to database automatically
     if (scrapingResult.tweets.length > 0) {
       try {
-        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
         const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
-        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
       } catch (dbError) {
         console.error('Error saving tweets to database:', dbError);
         // Don't fail the response, just log the error
@@ -201,7 +193,6 @@ router.post('/hashtag', async (req: Request, res: Response) => {
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`Hashtag scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -291,7 +282,6 @@ router.post('/user', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`Starting user scraping for @${username}...`);
     const startTime = Date.now();
 
     // Use unified scraping function that tries real scraper first
@@ -305,7 +295,6 @@ router.post('/user', async (req: Request, res: Response) => {
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
@@ -313,9 +302,7 @@ router.post('/user', async (req: Request, res: Response) => {
     // Save tweets to database automatically
     if (scrapingResult.tweets.length > 0) {
       try {
-        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
         const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
-        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
       } catch (dbError) {
         console.error('Error saving tweets to database:', dbError);
         // Don't fail the response, just log the error
@@ -324,7 +311,6 @@ router.post('/user', async (req: Request, res: Response) => {
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`User scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -414,7 +400,6 @@ router.post('/search', async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`🔍 Starting search scraping for: "${query}"...`);
     const startTime = Date.now();
 
     // Use unified scraping function that tries real scraper first
@@ -428,7 +413,6 @@ router.post('/search', async (req: Request, res: Response) => {
 
     let sentimentSummary = null;
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
-      console.log(`Analyzing sentiment for ${scrapingResult.tweets.length} tweets...`);
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
     }
@@ -436,9 +420,7 @@ router.post('/search', async (req: Request, res: Response) => {
     // Save tweets to database automatically
     if (scrapingResult.tweets.length > 0) {
       try {
-        console.log(`Saving ${scrapingResult.tweets.length} tweets to database...`);
         const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
-        console.log(`Database save completed: ${saveResult.saved} saved, ${saveResult.duplicates} duplicates, ${saveResult.errors} errors`);
       } catch (dbError) {
         console.error('Error saving tweets to database:', dbError);
         // Don't fail the response, just log the error
@@ -447,7 +429,6 @@ router.post('/search', async (req: Request, res: Response) => {
 
     const executionTime = Date.now() - startTime;
 
-    console.log(`Search scraping completed: ${scrapingResult.tweets.length} tweets in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -509,15 +490,15 @@ router.get('/status', async (req: Request, res: Response) => {
     // Always try to get real scraper status first
     let realScraperStatus = null;
     let isRealScraperAvailable = false;
-    
+
     try {
       const realScraper = await getRealScraperService();
       const rateLimitStatus = realScraper.getRateLimitStatus();
       const authStatus = realScraper.getAuthenticationStatus();
-      
+
       // Perform health check
       await realScraper.checkAuthenticationHealth();
-      
+
       realScraperStatus = {
         authenticated: (rateLimitStatus as any).isAuthenticated,
         authentication_monitoring: {
@@ -535,16 +516,15 @@ router.get('/status', async (req: Request, res: Response) => {
           reset_time: rateLimitStatus.resetTime
         }
       };
-      
+
       isRealScraperAvailable = true;
     } catch (error) {
-      console.log('Real scraper not available, will use mock as fallback');
       realScraperStatus = {
         error: error instanceof Error ? error.message : 'Unknown error',
         available: false
       };
     }
-    
+
     res.json({
       success: true,
       data: {

@@ -10,13 +10,13 @@ El Sistema Híbrido de Análisis de Sentimientos combina dos enfoques complement
 
 ### 📊 **Métricas de Rendimiento**
 
-| Métrica | Sistema Híbrido | Naive Bayes Solo | Rule-Based Solo |
-|---------|-----------------|------------------|-----------------|
-| **Accuracy** | **95.65%** | 69.57% | 52.17% |
-| **F1-Score** | **95.88%** | 73.49% | 65.43% |
-| **Precision** | **95.48%** | N/A | N/A |
-| **Recall** | **96.30%** | N/A | N/A |
-| **Velocidad** | **< 1ms** | < 1ms | ~2ms |
+| Métrica       | Sistema Híbrido | Naive Bayes Solo | Rule-Based Solo |
+| ------------- | --------------- | ---------------- | --------------- |
+| **Accuracy**  | **95.65%**      | 69.57%           | 52.17%          |
+| **F1-Score**  | **95.88%**      | 73.49%           | 65.43%          |
+| **Precision** | **95.48%**      | N/A              | N/A             |
+| **Recall**    | **96.30%**      | N/A              | N/A             |
+| **Velocidad** | **< 1ms**       | < 1ms            | ~2ms            |
 
 ### 🏆 **Mejoras Logradas**
 
@@ -64,14 +64,14 @@ El Sistema Híbrido de Análisis de Sentimientos combina dos enfoques complement
 
 ### 📍 **Endpoints Disponibles**
 
-| Endpoint | Método | Descripción | Auth Required |
-|----------|--------|-------------|---------------|
-| `/health` | GET | Health check del sistema | ❌ No |
-| `/analyze` | POST | Análisis individual | ✅ Sí |
-| `/batch` | POST | Análisis por lotes (max 100) | ✅ Sí |
-| `/compare` | POST | Comparar híbrido vs rule-based | ✅ Sí |
-| `/stats` | GET | Estadísticas del modelo | ✅ Sí |
-| `/retrain` | POST | Reentrenar modelo (admin only) | ✅ Admin |
+| Endpoint   | Método | Descripción                    | Auth Required |
+| ---------- | ------ | ------------------------------ | ------------- |
+| `/health`  | GET    | Health check del sistema       | ❌ No         |
+| `/analyze` | POST   | Análisis individual            | ✅ Sí         |
+| `/batch`   | POST   | Análisis por lotes (max 100)   | ✅ Sí         |
+| `/compare` | POST   | Comparar híbrido vs rule-based | ✅ Sí         |
+| `/stats`   | GET    | Estadísticas del modelo        | ✅ Sí         |
+| `/retrain` | POST   | Reentrenar modelo (admin only) | ✅ Admin      |
 
 ### 📝 **Ejemplo de Uso - Análisis Individual**
 
@@ -86,6 +86,7 @@ curl -X POST http://localhost:3001/api/v1/hybrid/analyze \
 ```
 
 **Respuesta:**
+
 ```json
 {
   "sentiment": {
@@ -113,7 +114,7 @@ curl -X POST http://localhost:3001/api/v1/hybrid/batch \
   -d '{
     "texts": [
       "Excelente producto",
-      "Terrible servicio", 
+      "Terrible servicio",
       "Producto normal"
     ]
   }'
@@ -225,13 +226,13 @@ npm run ml:optimize
 
 ### 🛡️ **Niveles de Acceso**
 
-| Rol | `/analyze` | `/batch` | `/compare` | `/stats` | `/retrain` |
-|-----|------------|----------|------------|----------|------------|
-| **client** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **onlyView** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **analyst** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **manager** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Rol          | `/analyze` | `/batch` | `/compare` | `/stats` | `/retrain` |
+| ------------ | ---------- | -------- | ---------- | -------- | ---------- |
+| **client**   | ✅         | ❌       | ❌         | ❌       | ❌         |
+| **onlyView** | ✅         | ❌       | ❌         | ❌       | ❌         |
+| **analyst**  | ✅         | ✅       | ✅         | ✅       | ❌         |
+| **manager**  | ✅         | ✅       | ✅         | ✅       | ❌         |
+| **admin**    | ✅         | ✅       | ✅         | ✅       | ✅         |
 
 ### 🔐 **Autenticación JWT**
 
@@ -254,11 +255,13 @@ POST /api/v1/auth/login
 ### 🌍 **Configuración de Producción**
 
 1. **Compilar el proyecto**:
+
    ```bash
    npm run build
    ```
 
 2. **Variables de entorno**:
+
    ```env
    NODE_ENV=production
    PORT=3001
@@ -293,14 +296,14 @@ POST /api/v1/auth/login
 ```typescript
 // Configuración óptima encontrada
 const config = {
-  smoothingFactor: 1.0,        // Laplace smoothing
-  minWordLength: 2,            // Palabras mínimo 2 caracteres
-  maxVocabularySize: 5000,     // Vocabulario máximo
-  enableBigrams: false,        // Deshabilitado (causaba errores)
+  smoothingFactor: 1.0, // Laplace smoothing
+  minWordLength: 2, // Palabras mínimo 2 caracteres
+  maxVocabularySize: 5000, // Vocabulario máximo
+  enableBigrams: false, // Deshabilitado (causaba errores)
   enableNegationHandling: false, // Deshabilitado en versión óptima
   enableIntensifierHandling: false,
-  minWordFrequency: 1,         // Frecuencia mínima
-  useSubwordFeatures: false
+  minWordFrequency: 1, // Frecuencia mínima
+  useSubwordFeatures: false,
 };
 ```
 
@@ -351,7 +354,7 @@ if (rbLabel === nbLabel) {
 Este sistema híbrido representa un **avance significativo** en análisis de sentimientos para aplicaciones de marketing en redes sociales:
 
 - **Precision profesional** comparable a servicios enterprise
-- **Velocidad excepcional** para aplicaciones en tiempo real  
+- **Velocidad excepcional** para aplicaciones en tiempo real
 - **Arquitectura robusta** lista para escalar a millones de análisis
 - **Implementación completa** desde research hasta producción
 
@@ -366,5 +369,5 @@ Este sistema híbrido representa un **avance significativo** en análisis de sen
 
 ---
 
-*© 2025 SentimentalSocial - Sistema Híbrido de Análisis de Sentimientos v1.0*
-*Desarrollado como parte del TFG en Análisis de Sentimientos Multiidioma*
+_© 2025 SentimentalSocial - Sistema Híbrido de Análisis de Sentimientos v1.0_
+_Desarrollado como parte del TFG en Análisis de Sentimientos Multiidioma_

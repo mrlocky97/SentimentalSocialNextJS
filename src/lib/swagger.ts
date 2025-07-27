@@ -132,7 +132,7 @@ const options: swaggerJsdoc.Options = {
           },
           required: ['id', 'email', 'username', 'displayName', 'role', 'permissions', 'isActive', 'isVerified', 'createdAt', 'updatedAt'],
         },
-        
+
         CreateUserRequest: {
           type: 'object',
           properties: {
@@ -587,8 +587,6 @@ export const setupSwagger = (app: Express): void => {
     res.send(specs);
   });
 
-  console.log('📚 Swagger documentation available at: /api-docs');
-  console.log('📋 API spec available at: /api-docs.json');
 };
 
 export default specs;

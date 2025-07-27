@@ -34,7 +34,7 @@ export class TweetDatabaseService {
     try {
       // Check if tweet already exists
       const existingTweet = await TweetModel.findOne({ tweetId: tweet.tweetId });
-      
+
       if (existingTweet) {
         // Update existing tweet with latest data
         const updated = await this.updateTweet(existingTweet, tweet);
@@ -49,16 +49,16 @@ export class TweetDatabaseService {
       // Create new tweet document
       const tweetData = this.mapScrapedTweetToDocument(tweet, campaignId);
       const newTweet = new TweetModel(tweetData);
-      
+
       await newTweet.save();
-      
+
       return {
         success: true,
         tweetId: tweet.tweetId,
         isNew: true,
         message: 'Tweet saved successfully'
       };
-      
+
     } catch (error: any) {
       console.error('Error saving tweet:', error);
       return {
@@ -88,54 +88,44 @@ export class TweetDatabaseService {
     }
 
     try {
-      console.log(`📊 Processing ${tweets.length} tweets for database storage...`);
-      console.log(`📊 First tweet sample:`, JSON.stringify(tweets[0], null, 2));
 
       // Get existing tweet IDs to check for duplicates
       const tweetIds = tweets.map(t => t.tweetId);
-      console.log(`📊 Tweet IDs to check:`, tweetIds);
-      
-      const existingTweets = await TweetModel.find({ 
-        tweetId: { $in: tweetIds } 
+
+      const existingTweets = await TweetModel.find({
+        tweetId: { $in: tweetIds }
       }).select('tweetId');
-      
-      console.log(`📊 Found ${existingTweets.length} existing tweets in database`);
-      
+
+
       const existingTweetIds = new Set(existingTweets.map(t => t.tweetId));
 
       // Separate new tweets from existing ones
       const newTweets = tweets.filter(t => !existingTweetIds.has(t.tweetId));
       const tweetsToUpdate = tweets.filter(t => existingTweetIds.has(t.tweetId));
 
-      console.log(`📊 New tweets to insert: ${newTweets.length}`);
-      console.log(`📊 Existing tweets to update: ${tweetsToUpdate.length}`);
 
       // Process new tweets in batches
       if (newTweets.length > 0) {
         const batchSize = 50; // Process in smaller batches to avoid memory issues
-        
+
         for (let i = 0; i < newTweets.length; i += batchSize) {
           const batch = newTweets.slice(i, i + batchSize);
-          
+
           try {
-            console.log(`📊 Processing batch ${i}-${i + batchSize} (${batch.length} tweets)`);
-            const tweetDocuments = batch.map(tweet => 
+            const tweetDocuments = batch.map(tweet =>
               this.mapScrapedTweetToDocument(tweet, campaignId)
             );
-            
-            console.log(`📊 Mapped tweet document sample:`, JSON.stringify(tweetDocuments[0], null, 2));
-            
+
+
             try {
               const insertedTweets = await TweetModel.insertMany(tweetDocuments, {
                 ordered: false // Continue inserting even if some fail
               });
-              
-              console.log(`📊 Successfully inserted ${insertedTweets.length} tweets`);
-              console.log(`📊 Inserted tweet IDs:`, insertedTweets.map(t => t.tweetId));
-              
+
+
               result.saved += insertedTweets.length;
               result.savedTweetIds.push(...insertedTweets.map(t => t.tweetId));
-              
+
             } catch (insertError: any) {
               console.error(`❌ Insert error details:`, {
                 name: insertError.name,
@@ -144,18 +134,17 @@ export class TweetDatabaseService {
                 writeErrors: insertError.writeErrors,
                 result: insertError.result
               });
-              
+
               // Check if it's a bulk write error with some successes
               if (insertError.insertedDocs && insertError.insertedDocs.length > 0) {
-                console.log(`📊 Partial success: ${insertError.insertedDocs.length} tweets inserted despite errors`);
                 result.saved += insertError.insertedDocs.length;
                 result.savedTweetIds.push(...insertError.insertedDocs.map((t: any) => t.tweetId));
               }
-              
+
               result.errors += batch.length - (insertError.insertedDocs?.length || 0);
               result.errorMessages.push(`Insert error: ${insertError.message}`);
             }
-            
+
           } catch (batchError: any) {
             console.error(`❌ Error in batch ${i}-${i + batchSize}:`, batchError);
             result.errors += batch.length;
@@ -183,7 +172,6 @@ export class TweetDatabaseService {
 
       result.duplicates = existingTweetIds.size;
 
-      console.log(`📊 Database save completed: ${result.saved} new, ${result.updated} updated, ${result.duplicates} duplicates, ${result.errors} errors`);
 
       return result;
 

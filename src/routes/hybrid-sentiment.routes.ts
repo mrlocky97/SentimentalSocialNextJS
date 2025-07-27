@@ -74,10 +74,10 @@ const hybridController = new HybridSentimentController();
  *                   type: string
  *                   format: date-time
  */
-router.post('/analyze', 
-  authenticateToken, 
-  requireRole(['admin', 'manager', 'analyst', 'onlyView', 'client']),
-  hybridController.analyzeHybrid.bind(hybridController)
+router.post('/analyze',
+    authenticateToken,
+    requireRole(['admin', 'manager', 'analyst', 'onlyView', 'client']),
+    hybridController.analyzeHybrid.bind(hybridController)
 );
 
 /**
@@ -112,9 +112,9 @@ router.post('/analyze',
  *         description: Análisis por lotes completado
  */
 router.post('/batch',
-  authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
-  hybridController.analyzeBatch.bind(hybridController)
+    authenticateToken,
+    requireRole(['admin', 'manager', 'analyst']),
+    hybridController.analyzeBatch.bind(hybridController)
 );
 
 /**
@@ -143,9 +143,9 @@ router.post('/batch',
  *         description: Comparación completada
  */
 router.post('/compare',
-  authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
-  hybridController.compareModels.bind(hybridController)
+    authenticateToken,
+    requireRole(['admin', 'manager', 'analyst']),
+    hybridController.compareModels.bind(hybridController)
 );
 
 /**
@@ -182,9 +182,9 @@ router.post('/compare',
  *                         type: string
  */
 router.get('/stats',
-  authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
-  hybridController.getModelStats.bind(hybridController)
+    authenticateToken,
+    requireRole(['admin', 'manager', 'analyst']),
+    hybridController.getModelStats.bind(hybridController)
 );
 
 /**
@@ -214,8 +214,8 @@ router.get('/stats',
  *                 checks:
  *                   type: object
  */
-router.get('/health', 
-  hybridController.healthCheck.bind(hybridController)
+router.get('/health',
+    hybridController.healthCheck.bind(hybridController)
 );
 
 /**
@@ -232,9 +232,9 @@ router.get('/health',
  *         description: Modelo reentrenado exitosamente
  */
 router.post('/retrain',
-  authenticateToken,
-  requireRole(['admin']),
-  hybridController.retrainModel.bind(hybridController)
+    authenticateToken,
+    requireRole(['admin']),
+    hybridController.retrainModel.bind(hybridController)
 );
 
 export default router;

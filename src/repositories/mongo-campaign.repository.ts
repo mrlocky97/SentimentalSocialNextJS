@@ -8,7 +8,7 @@ import { CreateCampaignRequest, UpdateCampaignRequest, CampaignFilter } from '..
 import { PaginationOptions } from '../types/common';
 
 export class MongoCampaignRepository {
-  
+
   /**
    * Create a new campaign
    */
@@ -33,7 +33,7 @@ export class MongoCampaignRepository {
 
       const campaign = new CampaignModel(campaignToCreate);
       const savedCampaign = await campaign.save();
-      
+
       return savedCampaign;
     } catch (error) {
       if (error instanceof Error) {
@@ -66,20 +66,20 @@ export class MongoCampaignRepository {
    * Find campaigns with filtering and pagination
    */
   async findMany(
-    filter: CampaignFilter = {}, 
+    filter: CampaignFilter = {},
     options: PaginationOptions = {}
   ): Promise<ICampaignDocument[]> {
     try {
-      const { 
-        offset = 0, 
-        limit = 20, 
-        sortBy = 'createdAt', 
-        sortOrder = 'desc' 
+      const {
+        offset = 0,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
       } = options;
 
       // Build MongoDB filter
       const mongoFilter: Record<string, unknown> = {};
-      
+
       if (filter.status) mongoFilter.status = filter.status;
       if (filter.type) mongoFilter.type = filter.type;
       if (filter.organizationId) mongoFilter.organizationId = filter.organizationId;
@@ -134,7 +134,7 @@ export class MongoCampaignRepository {
   async count(filter: CampaignFilter = {}): Promise<number> {
     try {
       const mongoFilter: Record<string, unknown> = {};
-      
+
       if (filter.status) mongoFilter.status = filter.status;
       if (filter.type) mongoFilter.type = filter.type;
       if (filter.organizationId) mongoFilter.organizationId = filter.organizationId;
@@ -286,7 +286,7 @@ export class MongoCampaignRepository {
    * Update campaign statistics
    */
   async updateStats(
-    id: string, 
+    id: string,
     stats: {
       totalTweets: number;
       totalEngagement: number;
@@ -299,7 +299,7 @@ export class MongoCampaignRepository {
     try {
       const updatedCampaign = await CampaignModel.findByIdAndUpdate(
         id,
-        { 
+        {
           stats,
           lastDataCollection: new Date(),
           updatedAt: new Date()
@@ -318,7 +318,7 @@ export class MongoCampaignRepository {
    * Search campaigns by text
    */
   async searchByText(
-    searchTerm: string, 
+    searchTerm: string,
     organizationId?: string,
     limit: number = 20
   ): Promise<ICampaignDocument[]> {

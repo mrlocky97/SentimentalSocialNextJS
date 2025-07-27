@@ -41,14 +41,12 @@ const visualizationService = new VisualizationService();
  */
 router.post('/evaluate', async (req: Request, res: Response) => {
   try {
-    console.log('🧪 Starting experimental evaluation...');
     const startTime = Date.now();
 
     // Run complete experiment
     const results = await evaluationService.runCompleteExperiment();
-    
+
     const executionTime = Date.now() - startTime;
-    console.log(`✅ Evaluation completed in ${executionTime}ms`);
 
     res.json({
       success: true,
@@ -105,18 +103,17 @@ router.post('/evaluate', async (req: Request, res: Response) => {
  */
 router.post('/visualize', async (req: Request, res: Response) => {
   try {
-    console.log('📊 Generating visualization report...');
     const format = req.body.format || 'json';
 
     // First run evaluation to get results
     const results = await evaluationService.runCompleteExperiment();
-    
+
     // Generate visualization report
     const visualizationReport = visualizationService.generateVisualizationReport(results);
 
     if (format === 'html') {
       const htmlReport = visualizationService.exportChartsToHTML(visualizationReport);
-      
+
       res.setHeader('Content-Type', 'text/html');
       res.send(htmlReport);
     } else {
@@ -170,13 +167,12 @@ router.post('/visualize', async (req: Request, res: Response) => {
  */
 router.get('/compare-models', async (req: Request, res: Response) => {
   try {
-    console.log('🔍 Generating model comparison...');
 
     // Simulate model comparisons (in real scenario, this would involve actual model training)
     const models = await evaluationService.simulateModelComparisons();
-    
+
     // Find best model
-    const bestModel = models.reduce((best, current) => 
+    const bestModel = models.reduce((best, current) =>
       current.metrics.f1_score.macro_avg > best.metrics.f1_score.macro_avg ? current : best
     );
 
@@ -195,7 +191,7 @@ router.get('/compare-models', async (req: Request, res: Response) => {
         recommendations,
         best_model: bestModel,
         comparison_criteria: [
-          'Accuracy', 'F1-Score', 'Processing Speed', 
+          'Accuracy', 'F1-Score', 'Processing Speed',
           'Interpretability', 'Scalability', 'Maintenance Cost'
         ]
       },
@@ -244,10 +240,9 @@ router.get('/compare-models', async (req: Request, res: Response) => {
  */
 router.get('/metrics', async (req: Request, res: Response) => {
   try {
-    console.log('📊 Calculating detailed metrics...');
 
     const currentModel = await evaluationService.evaluateCurrentModel();
-    
+
     // Industry benchmarks for comparison
     const benchmarks = {
       basic_rule_based: { accuracy: 0.65, f1_macro: 0.62 },
@@ -282,8 +277,8 @@ router.get('/metrics', async (req: Request, res: Response) => {
           confidence_level: '95%',
           sample_size: currentModel.metrics.samples_count,
           cohen_kappa_interpretation: currentModel.metrics.cohen_kappa > 0.8 ? 'Almost Perfect Agreement' :
-                                      currentModel.metrics.cohen_kappa > 0.6 ? 'Substantial Agreement' :
-                                      currentModel.metrics.cohen_kappa > 0.4 ? 'Moderate Agreement' : 'Fair Agreement'
+            currentModel.metrics.cohen_kappa > 0.6 ? 'Substantial Agreement' :
+              currentModel.metrics.cohen_kappa > 0.4 ? 'Moderate Agreement' : 'Fair Agreement'
         },
         recommendations: [
           currentModel.metrics.accuracy > 0.85 ? 'Model performs above academic standards' : 'Consider model improvements',
@@ -331,7 +326,6 @@ router.get('/metrics', async (req: Request, res: Response) => {
 router.get('/export/:format', async (req: Request, res: Response) => {
   try {
     const format = req.params.format;
-    console.log(`📁 Exporting results in ${format} format...`);
 
     // Run evaluation and generate visualization
     const results = await evaluationService.runCompleteExperiment();
@@ -385,16 +379,16 @@ router.get('/export/:format', async (req: Request, res: Response) => {
  */
 function generateCSVReport(results: any): string {
   let csv = 'Model,Type,Accuracy,Precision_Macro,Recall_Macro,F1_Macro,Cohen_Kappa,Processing_Time_ms\n';
-  
+
   results.models_compared.forEach((model: any) => {
     csv += `"${model.model_name}",` +
-           `"${model.model_type}",` +
-           `${model.metrics.accuracy.toFixed(4)},` +
-           `${model.metrics.precision.macro_avg.toFixed(4)},` +
-           `${model.metrics.recall.macro_avg.toFixed(4)},` +
-           `${model.metrics.f1_score.macro_avg.toFixed(4)},` +
-           `${model.metrics.cohen_kappa.toFixed(4)},` +
-           `${model.metrics.processing_time_ms}\n`;
+      `"${model.model_type}",` +
+      `${model.metrics.accuracy.toFixed(4)},` +
+      `${model.metrics.precision.macro_avg.toFixed(4)},` +
+      `${model.metrics.recall.macro_avg.toFixed(4)},` +
+      `${model.metrics.f1_score.macro_avg.toFixed(4)},` +
+      `${model.metrics.cohen_kappa.toFixed(4)},` +
+      `${model.metrics.processing_time_ms}\n`;
   });
 
   return csv;
