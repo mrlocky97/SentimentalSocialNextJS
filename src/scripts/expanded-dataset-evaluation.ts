@@ -5,10 +5,9 @@
 
 import { NaiveBayesSentimentModel } from '../experimental/naive-bayes.model';
 import { HybridSentimentAnalysisService } from '../services/hybrid-sentiment-analysis.service';
-import { getBalancedDataset } from '../data/training-dataset';
+import { getBalancedDataset, splitDataset } from '../data/training-dataset';
 // Importar el dataset expandido
 import { getExpandedTrainingDataset } from '../data/expanded-training-dataset';
-import { getTestDataset } from '../data/test-dataset';
 
 class ExpandedDatasetEvaluation {
   
@@ -62,8 +61,8 @@ class ExpandedDatasetEvaluation {
     await model.train(trainingData);
     const trainTime = Date.now() - trainStart;
 
-    // Obtener dataset de prueba
-    const testData = getTestDataset();
+    // Obtener dataset de prueba usando split
+    const { test: testData } = splitDataset(0.2); // 20% para pruebas
     console.log(`🧪 Evaluando en ${testData.length} ejemplos de prueba...`);
 
     // Evaluar modelo
@@ -215,7 +214,8 @@ class ExpandedDatasetEvaluation {
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     console.log('🧪 Evaluando sistema híbrido actualizado...');
-    const testData = getTestDataset().slice(0, 50); // Usar muestra para rapidez
+    const { test: testData } = splitDataset(0.1); // 10% para evaluación rápida
+    const testSample = testData.slice(0, 50); // Usar muestra para rapidez
     
     let correct = 0;
     const predictions: string[] = [];
@@ -223,7 +223,7 @@ class ExpandedDatasetEvaluation {
     const methods: string[] = [];
     const times: number[] = [];
 
-    for (const sample of testData) {
+    for (const sample of testSample) {
       try {
         const startTime = Date.now();
         const result = await hybridService.analyze(sample.text);
@@ -244,7 +244,7 @@ class ExpandedDatasetEvaluation {
       }
     }
 
-    const hybridAccuracy = correct / testData.length;
+    const hybridAccuracy = correct / testSample.length;
     const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
     
     // Distribución de métodos
@@ -259,7 +259,7 @@ class ExpandedDatasetEvaluation {
     console.log(`   🧩 Distribución de métodos:`);
     
     Object.entries(methodDistribution).forEach(([method, count]) => {
-      const percentage = ((count / testData.length) * 100).toFixed(1);
+      const percentage = ((count / testSample.length) * 100).toFixed(1);
       const emoji = method === 'hybrid' ? '🤝' : method === 'naive-bayes' ? '🧠' : '📏';
       console.log(`      ${emoji} ${method}: ${count} (${percentage}%)`);
     });
