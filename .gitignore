@@ -1,7 +1,10 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ========================================
+# SENTIMENTAL SOCIAL - GITIGNORE
+# Backend para análisis de sentimientos en redes sociales
+# ========================================
 
-# dependencies
-/node_modules
+# ==================== DEPENDENCIES ====================
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -9,124 +12,205 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+jspm_packages/
 
-# testing
-/coverage
-/test-results
-/playwright-report
-/playwright/.cache
+# ==================== BUILD & DIST ====================
+# Compiled TypeScript
+dist/
+build/
+out/
 
-# next.js
-/.next/
-/out/
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
 
-# production
-/build
-/dist
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
+# ==================== ENVIRONMENT & CONFIG ====================
+# Environment variables (SECURITY SENSITIVE)
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
 
-# vercel
-.vercel
+# Only allow .env.example (template)
+!.env.example
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# IDE and Editor files
-.vscode/settings.json
-.vscode/launch.json
-.vscode/extensions.json
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Logs
+# ==================== LOGS & DEBUG ====================
+# Application logs
 *.log
-logs
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Dependency directories
-jspm_packages/
+# ==================== TWITTER & SOCIAL MEDIA ====================
+# Twitter authentication files (SECURITY SENSITIVE)
+cookies.json
+manual-cookies.json
+twitter-session.json
+twitter-auth.json
+cookies-*.json
 
-# Optional npm cache directory
-.npm
+# Social media cache
+social-cache/
+twitter-cache/
 
-# Optional eslint cache
+# ==================== TESTING & COVERAGE ====================
+coverage/
+test-results/
+playwright-report/
+playwright/.cache
+.nyc_output/
+
+# ==================== MONGODB & DATABASE ====================
+# Database dumps
+*.dump
+*.sql
+db-backups/
+mongodb-data/
+
+# ==================== TEMPORARY & CACHE ====================
+# Temporary folders
+tmp/
+temp/
+.cache/
+.parcel-cache/
+
+# Cache directories
+.npm/
 .eslintcache
-
-# Optional stylelint cache
 .stylelintcache
-
-# Microbundle cache
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
 
-# Optional REPL history
+# ==================== OS & SYSTEM ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ==================== IDE & EDITORS ====================
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/tasks.json
+!.vscode/settings.template.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ==================== SENTIMENTAL SOCIAL SPECIFIC ====================
+# Academic evaluation results (can be large)
+tfg-evaluation-results/
+evaluation-reports/
+academic-papers/
+
+# ML Models & Training Data (if large)
+models/
+training-data/
+*.model
+*.pkl
+*.h5
+
+# Sentiment analysis cache
+sentiment-cache/
+analysis-results/
+
+# Upload directories
+uploads/
+public/uploads/*
+!public/uploads/.gitkeep
+
+# User generated content
+user-data/
+campaign-exports/
+
+# ==================== SECURITY & SECRETS ====================
+# JWT secrets and keys
+*.pem
+*.key
+*.crt
+*.p12
+jwt-*.json
+
+# API keys and tokens
+api-keys.json
+secrets.json
+credentials.json
+
+# ==================== PACKAGE MANAGERS ====================
+# Yarn
+.yarn-integrity
+.pnp.*
+
+# npm
+.npm
+*.tgz
+package-lock.json.backup
+
+# pnpm
+.pnpm-debug.log*
+
+# ==================== DEPLOYMENT & HOSTING ====================
+# Vercel
+.vercel
+
+# Heroku
+.heroku
+
+# AWS
+.aws/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# ==================== OPTIONAL REPL HISTORY ====================
 .node_repl_history
 
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Storybook build outputs
-.out
-.storybook-out
-storybook-static
-
-# Temporary folders
-tmp/
-temp/
-
-# Sentry Config File
+# ==================== SENTRY ====================
 .sentryclirc
-
-# Twitter authentication files (SECURITY SENSITIVE)
-cookies.json
-manual-cookies.json
-twitter-session.json
-
-# Application specific
-/public/uploads/*
-!/public/uploads/.gitkeep
-
-# Compiled TypeScript
-dist/
-build/
-
-/node_modules
-/tfg-evaluation-results
