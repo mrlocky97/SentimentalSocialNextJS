@@ -115,6 +115,12 @@ async function performScraping<T>(
  *                 type: boolean
  *                 description: Whether to analyze sentiment of collected tweets
  *                 default: true
+ *               language:
+ *                 type: string
+ *                 enum: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "ar", "ru", "hi", "all"]
+ *                 default: "all"
+ *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter)
+ *                 example: "es"
  *     responses:
  *       200:
  *         description: Tweets scraped successfully
@@ -147,7 +153,7 @@ async function performScraping<T>(
  */
 router.post('/hashtag', async (req: Request, res: Response) => {
   try {
-    const { hashtag, maxTweets = 50, includeReplies = false, analyzeSentiment = true } = req.body;
+    const { hashtag, maxTweets = 50, includeReplies = false, analyzeSentiment = true, language = 'all' } = req.body;
 
     if (!hashtag || typeof hashtag !== 'string') {
       return res.status(400).json({
@@ -164,13 +170,24 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       });
     }
 
+    // Validate language parameter
+    const validLanguages = ['en', 'es', 'fr', 'de'];
+    if (language && !validLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid language code. Must be one of: ${validLanguages.join(', ')}`,
+        example: { language: 'es' }
+      });
+    }
+
     const startTime = Date.now();
 
     // Use unified scraping function that tries real scraper first
     const scrapingResult = await performScraping(
       async (scraper) => await scraper.scrapeByHashtag(hashtag, {
         maxTweets,
-        includeReplies
+        includeReplies,
+        language
       }),
       `hashtag scraping for #${hashtag}`
     );

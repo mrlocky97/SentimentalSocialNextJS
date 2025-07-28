@@ -69,6 +69,7 @@ interface ScrapingOptions {
   maxAgeHours?: number;
   minLikes?: number;
   minRetweets?: number;
+  language?: string;
 }
 
 interface ScrapingResult {
@@ -522,6 +523,11 @@ export class TwitterScraperService {
 
         if (options.minLikes && tweet.metrics.likes < options.minLikes) continue;
         if (options.minRetweets && tweet.metrics.retweets < options.minRetweets) continue;
+
+        // Filter by language if specified (and not 'all')
+        if (options.language && options.language !== 'all' && tweet.language !== options.language) {
+          continue;
+        }
 
         tweets.push(tweet);
       } catch (error) {

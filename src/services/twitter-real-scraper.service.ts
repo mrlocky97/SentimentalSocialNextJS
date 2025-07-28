@@ -42,6 +42,7 @@ interface ScrapingOptions {
   maxAgeHours?: number;
   minLikes?: number;
   minRetweets?: number;
+  language?: string;
 }
 
 interface AuthenticationStatus {
@@ -476,6 +477,11 @@ export class TwitterRealScraperService {
 
         if (options.minLikes && tweet.metrics.likes < options.minLikes) continue;
         if (options.minRetweets && tweet.metrics.retweets < options.minRetweets) continue;
+
+        // Filter by language if specified (and not 'all')
+        if (options.language && options.language !== 'all' && tweet.language !== options.language) {
+          continue;
+        }
 
         // Skip retweets if not wanted
         if (!options.includeRetweets && tweet.isRetweet) continue;
