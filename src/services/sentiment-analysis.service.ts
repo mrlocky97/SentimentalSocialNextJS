@@ -4,10 +4,16 @@
  */
 
 import { SentimentAnalysisProvider, TextAnalysis, SentimentAnalysisConfig, SentimentResult, EntityAnalysis, MarketingInsight, BrandMention, HashtagSentiment, EmotionAnalysis, SentimentLabel } from '../types/sentiment';
+import { appCache } from '../lib/cache';
 
 export class SentimentAnalysisService implements SentimentAnalysisProvider {
   public name = 'Advanced Sentiment Analyzer';
   private defaultConfig: SentimentAnalysisConfig;
+  
+  // Pre-compiled regex patterns for performance
+  private static readonly POSITIVE_REGEX = /\b(?:excellent|amazing|great|awesome|fantastic|wonderful|perfect|love|like|good|best|brilliant|outstanding|superb|remarkable|incredible|magnificent|spectacular|extraordinary|phenomenal|terrific|marvelous|fabulous|delightful|pleasant|enjoyable|satisfying|impressive|admirable|commendable|praiseworthy|exceptional|superior|first-rate|top-notch|high-quality|valuable|beneficial|useful|helpful|effective|successful|profitable|worthwhile|advantageous|positive|optimistic|hopeful|confident|proud|grateful|thankful|blessed|fortunate|lucky)\b/gi;
+  
+  private static readonly NEGATIVE_REGEX = /\b(?:terrible|awful|horrible|bad|worst|hate|dislike|poor|disappointing|frustrating|annoying|useless|worthless|pathetic|disgusting|revolting|appalling|dreadful|atrocious|abysmal|deplorable|lamentable|regrettable|unfortunate|tragic|devastating|catastrophic|disastrous|ruinous|destructive|harmful|damaging|detrimental|negative|pessimistic|hopeless|despairing|depressed|sad|unhappy|miserable|distressed|troubled|worried|anxious|fearful|scared|terrified|horrified|shocked|outraged|furious|angry|irritated|frustrated|annoyed|disappointed|dissatisfied|displeased|upset|disturbed|concerned|alarmed|distressed)\b/gi;
 
   constructor() {
     this.defaultConfig = {
@@ -23,30 +29,37 @@ export class SentimentAnalysisService implements SentimentAnalysisProvider {
   }
 
   /**
-   * Analyze sentiment of a single text
+   * Analyze sentiment of a single text with caching
    */
   async analyze(text: string, config?: SentimentAnalysisConfig): Promise<TextAnalysis> {
+    const cacheKey = `sentiment_${text.substring(0, 50)}_${JSON.stringify(config)}`;
+    
+    // Check cache first
+    const cached = appCache.get<TextAnalysis>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const finalConfig = { ...this.defaultConfig, ...config };
 
     try {
-      // For now, we'll use a comprehensive rule-based approach
-      // In production, this would integrate with Google Cloud Natural Language API,
-      // AWS Comprehend, or Azure Text Analytics
-
       const sentiment = await this.analyzeSentiment(text);
       const keywords = this.extractKeywords(text);
       const entities = this.extractEntities(text, finalConfig);
       const language = this.detectLanguage(text);
 
-      return {
+      const result: TextAnalysis = {
         sentiment,
         keywords,
         entities,
         language,
         readabilityScore: this.calculateReadabilityScore(text)
       };
+
+      // Cache for 5 minutes
+      appCache.set(cacheKey, result, 300000);
+      return result;
     } catch (error) {
-      console.error('❌ Error analyzing sentiment:', error);
       throw new Error(`Failed to analyze sentiment: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

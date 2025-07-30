@@ -13,11 +13,24 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import specs from './lib/swagger';
+import { appConfig } from './lib/config/app';
+
+// Import performance middleware
+import {
+  compressionMiddleware,
+  performanceMiddleware,
+  sanitizeMiddleware,
+  cacheControlMiddleware,
+  createRateLimit,
+  authRateLimit,
+  scrapingRateLimit,
+  analyticsRateLimit
+} from './lib/middleware/performance';
 
 // Import database connection
 import DatabaseConnection from './lib/database/connection';
 
-// Import route modules
+// Import route modules - consolidated imports
 import campaignRoutes from './routes/campaigns';
 import adminRoutes from './routes/admin';
 import sentimentRoutes from './routes/sentiment';
@@ -30,34 +43,60 @@ import userRoutes from './routes/users';
 
 // Import Twitter authentication manager
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
+import { metricsService } from './lib/monitoring/metrics';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = appConfig.app.port || 3001;
 
 // Security middleware
 app.use(helmet());
 
+// Compression middleware
+app.use(compressionMiddleware);
+
+// Performance monitoring
+app.use(performanceMiddleware);
+
+// Request sanitization
+app.use(sanitizeMiddleware);
+
 // CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-}));
+app.use(cors(appConfig.api.cors));
 
 // Request logging
 app.use(morgan('combined'));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Global rate limiting (general protection)
+app.use(createRateLimit());
 
-// Health check endpoint
+// Body parsing middleware - optimized limits
+app.use(express.json({ limit: appConfig.uploads.maxFileSize }));
+app.use(express.urlencoded({ extended: true, limit: appConfig.uploads.maxFileSize }));
+
+// Health check endpoint - optimized response
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0',
+    environment: appConfig.app.environment,
+    version: appConfig.app.version,
+  });
+});
+
+// Metrics endpoint for monitoring
+app.get('/metrics', (req, res) => {
+  const healthReport = metricsService.generateHealthReport();
+  res.status(healthReport.status === 'critical' ? 503 : 200).json(healthReport);
+});
+
+// Performance metrics endpoint
+app.get('/api/v1/metrics', (req, res) => {
+  const systemMetrics = metricsService.getSystemMetrics();
+  res.json({
+    success: true,
+    data: systemMetrics,
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -77,16 +116,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
   },
 }));
 
-// API Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/campaigns', campaignRoutes);
-app.use('/api/v1/scraping', scrapingRoutes);
-app.use('/api/v1/twitter-auth', twitterAuthRoutes);
-app.use('/api/v1/sentiment', sentimentRoutes);
-app.use('/api/v1/experimental', experimentalRoutes);
-app.use('/api/v1/hybrid', hybridSentimentRoutes);
-app.use('/api/v1/admin', adminRoutes);
+// API Routes with specific rate limiting
+app.use('/api/v1/auth', authRateLimit, authRoutes);
+app.use('/api/v1/users', analyticsRateLimit, userRoutes);
+app.use('/api/v1/campaigns', analyticsRateLimit, campaignRoutes);
+app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
+app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
+app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
+app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
+app.use('/api/v1/hybrid', analyticsRateLimit, cacheControlMiddleware(300), hybridSentimentRoutes);
+app.use('/api/v1/admin', authRateLimit, adminRoutes);
 
 // API info endpoint
 app.get('/api/v1', (req, res) => {
