@@ -112,7 +112,6 @@ router.post('/import-cookies', authenticateToken, async (req: AuthenticatedReque
       });
     }
   } catch (error) {
-    console.error('Cookie import error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during cookie import'
@@ -146,7 +145,6 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
       sessionValid: hasSession
     });
   } catch (error) {
-    console.error('Twitter auth status error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to check authentication status'

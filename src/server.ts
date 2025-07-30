@@ -167,7 +167,6 @@ async function startServer() {
     await database.connect();
 
     // Initialize Twitter authentication
-    console.log('🐦 Initializing Twitter authentication...');
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.initializeOnStartup();
 
@@ -176,17 +175,6 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📚 Swagger UI available at http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health check at http://localhost:${PORT}/health`);
-      
-      // Log Twitter scraper status
-      const twitterStatus = twitterAuth.getStatus();
-      if (twitterStatus.ready) {
-        console.log('✅ Twitter scraper ready for use');
-      } else {
-        console.log('⚠️ Twitter scraper will use fallback to mock service');
-        if (twitterStatus.error) {
-          console.log(`⚠️ Reason: ${twitterStatus.error}`);
-        }
-      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

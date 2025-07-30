@@ -126,7 +126,6 @@ router.post('/visualize', async (req: Request, res: Response) => {
     }
 
   } catch (error) {
-    console.error('❌ Error generating visualization:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -290,7 +289,6 @@ router.get('/metrics', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error calculating metrics:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

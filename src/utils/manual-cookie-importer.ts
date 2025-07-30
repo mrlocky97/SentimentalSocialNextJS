@@ -22,7 +22,6 @@ export class ManualCookieImporter {
 
     try {
       if (!fs.existsSync(manualCookiesPath)) {
-        console.log('❌ manual-cookies.json not found');
         return false;
       }
 
@@ -34,7 +33,6 @@ export class ManualCookieImporter {
       );
 
       if (!hasValidCookies) {
-        console.log('⚠️ Please fill in the cookie values in manual-cookies.json');
         return false;
       }
 
@@ -67,7 +65,6 @@ export class ManualCookieImporter {
 
       return true;
     } catch (error) {
-      console.error('❌ Error parsing cookie JSON:', error);
       return false;
     }
   }
@@ -78,7 +75,6 @@ export class ManualCookieImporter {
   async testCookies(): Promise<boolean> {
     try {
       if (!this.cookieManager.hasValidSession()) {
-        console.log('❌ No valid session found');
         return false;
       }
 
@@ -87,7 +83,6 @@ export class ManualCookieImporter {
 
       return true;
     } catch (error) {
-      console.error('❌ Error testing cookies:', error);
       return false;
     }
   }

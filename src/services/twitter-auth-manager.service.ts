@@ -24,8 +24,6 @@ export class TwitterAuthManager {
    * Initialize Twitter authentication during server startup
    */
   async initializeOnStartup(): Promise<void> {
-    console.log('🐦 Initializing Twitter authentication...');
-    
     try {
       // Create scraper instance
       this.scraperService = new TwitterRealScraperService();
@@ -34,13 +32,9 @@ export class TwitterAuthManager {
       await this.attemptEarlyAuth();
       
       this.isInitialized = true;
-      console.log('✅ Twitter scraper ready for use');
       
     } catch (error) {
       this.initializationError = error instanceof Error ? error : new Error('Unknown initialization error');
-      console.warn('⚠️ Twitter authentication failed during startup');
-      console.warn('⚠️ Will attempt fallback to mock service when needed');
-      console.warn(`⚠️ Error: ${this.initializationError.message}`);
       
       // Don't throw error - let server start anyway
       this.isInitialized = true; // Mark as initialized even with error
@@ -59,13 +53,9 @@ export class TwitterAuthManager {
       throw new Error('Twitter credentials not configured in environment');
     }
 
-    console.log(`🔐 Attempting login for: ${username}`);
-    console.log(`📧 Using email: ${email}`);
-
     try {
       // Try to initialize the scraper (this will attempt login)
       await this.scraperService!.scrapeByHashtag('test', { maxTweets: 1 });
-      console.log('✅ Twitter authentication successful');
       
     } catch (error) {
       // Enhanced error analysis
@@ -127,7 +117,6 @@ export class TwitterAuthManager {
    * Force re-authentication (useful for recovery)
    */
   async forceReauth(): Promise<void> {
-    console.log('🔄 Forcing Twitter re-authentication...');
     this.scraperService = null;
     this.initializationError = null;
     this.isInitialized = false;

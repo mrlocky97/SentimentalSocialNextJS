@@ -1,11 +1,10 @@
 /**
  * Twitter Real Scraper Service
  * Uses @the-convocation/twitter-scraper for real Twitter data collection
- * Now with persistent cookie-based authentication
+ * Now with enhanced authentication and cookie support
  */
 
 import { Tweet } from '../types/twitter';
-import { TwitterCookieManager } from './twitter-cookie-manager.service';
 
 // Scraped Tweet Data Structure from @the-convocation/twitter-scraper
 interface ScrapedTweetData {
@@ -86,8 +85,12 @@ export class TwitterRealScraperService {
   private lastLoginAttempt: Date = new Date(0);
   private loginCooldown: number = 30 * 60 * 1000; // 30 minutes between login attempts
 
-  // Cookie management for persistent sessions
-  private cookieManager: TwitterCookieManager;
+  // Twitter credentials configuration
+  private twitterConfig: {
+    username: string;
+    password: string;
+    email: string;
+  };
 
   // Authentication monitoring
   private authStatus: AuthenticationStatus = {
@@ -107,20 +110,18 @@ export class TwitterRealScraperService {
       ...config
     };
 
-    // Initialize cookie manager
-    this.cookieManager = new TwitterCookieManager();
-
-    // Check if we have existing valid session
-    if (this.cookieManager.hasValidSession()) {
-      this.isAuthenticated = true;
-      this.updateAuthStatus(true);
-    }
+    // Initialize Twitter credentials from environment
+    this.twitterConfig = {
+      username: process.env.TWITTER_USERNAME || '',
+      password: process.env.TWITTER_PASSWORD || '',
+      email: process.env.TWITTER_EMAIL || ''
+    };
   }
 
   /**
    * Initialize and authenticate the scraper with cookie support
    */
-  private async initializeScraper() {
+  private async initializeScraper(): Promise<any> {
     if (this.scraper && this.isAuthenticated) {
       return this.scraper;
     }
@@ -136,136 +137,131 @@ export class TwitterRealScraperService {
       // Import the twitter scraper
       const { Scraper } = await import('@the-convocation/twitter-scraper');
 
-      // Check if we have existing valid cookies
-      const existingCookies = this.cookieManager.getCookies();
-      const savedUserAgent = this.cookieManager.getUserAgent();
+      this.scraper = new Scraper();
+      this.lastLoginAttempt = new Date();
+      this.loginAttempts++;
 
-      const scraperConfig: any = {
-        transform: {
-          request: (input: any, init: any) => {
-            // Add comprehensive headers and cookies
-            if (init) {
-              const cookieHeader = this.cookieManager.getCookiesAsString();
+      // Try authentication methods in priority order
+      let authSuccess = false;
+      let lastError: Error | null = null;
 
-              init.headers = {
-                ...init.headers,
-                'User-Agent': savedUserAgent || this.config.userAgent,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none',
-                'Cache-Control': 'max-age=0',
-              };
-
-              // Add cookies if available
-              if (cookieHeader) {
-                init.headers['Cookie'] = cookieHeader;
-              }
-            }
-            return [input, init];
-          },
-        },
-        // Additional configuration for better reliability
-        timeout: this.config.timeout,
-        retry: this.config.maxRetries,
-      };
-
-      this.scraper = new Scraper(scraperConfig);
-
-      // If we have valid cookies, try to use them first
-      if (this.cookieManager.hasValidSession()) {
-
+      // 1. Try cookies first if available
+      if (process.env.TWITTER_COOKIES && process.env.TWITTER_COOKIES.trim()) {
         try {
-          // Test if cookies are still valid by making a simple request
-          const isLoggedIn = await this.scraper.isLoggedIn();
-          if (isLoggedIn) {
-            this.isAuthenticated = true;
-            this.updateAuthStatus(true);
-            return this.scraper;
-          } else {
-            this.cookieManager.clearCookies();
-          }
+          await this.authenticateWithCookies();
+          authSuccess = true;
         } catch (error) {
-          this.cookieManager.clearCookies();
+          lastError = error instanceof Error ? error : new Error('Cookie auth failed');
         }
       }
 
-      // Get credentials from environment for fresh login
-      const username = process.env.TWITTER_USERNAME;
-      const password = process.env.TWITTER_PASSWORD;
-      const email = process.env.TWITTER_EMAIL;
-      const twoFactorSecret = process.env.TWITTER_2FA_SECRET;
-
-      if (!username || !password || !email) {
-        console.log('⚠️ Twitter credentials not found in environment variables');
-        console.log('⚠️ Required: TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_EMAIL');
-        console.log('⚠️ Using guest mode (limited functionality)');
-        return this.scraper;
+      // 2. Fallback to credentials if cookies failed or unavailable
+      if (!authSuccess) {
+        try {
+          await this.authenticateWithCredentials();
+          authSuccess = true;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('Credential auth failed');
+        }
       }
 
-      // Only attempt login if we haven't exceeded attempts
-      if (this.loginAttempts < this.maxLoginAttempts) {
+      if (!authSuccess) {
+        this.isAuthenticated = false;
+        this.scraper = null;
+        this.updateAuthStatus(false, lastError?.message);
+        throw lastError || new Error('All authentication methods failed');
+      }
 
-        this.lastLoginAttempt = new Date();
-        this.loginAttempts++;
-
-        // Add random delay before login to appear more human-like
-        const randomDelay = 3000 + Math.random() * 4000; // 3-7 seconds
-        await this.delay(randomDelay);
-
-        // Attempt to login with 2FA if available
-        await this.scraper.login(username, password, email);
-
+      // Verify authentication
+      try {
+        this.isAuthenticated = await this.scraper.isLoggedIn();
+      } catch (error) {
+        // Some scrapers might not have isLoggedIn method
         this.isAuthenticated = true;
-        this.updateAuthStatus(true);
-
-        // Save cookies after successful authentication
-        await this.saveCookiesAfterAuth();
-
+      }
+      
+      if (!this.isAuthenticated) {
+        this.scraper = null;
+        this.updateAuthStatus(false, 'Authentication verification failed');
+        throw new Error('Authentication verification failed');
       }
 
+      this.updateAuthStatus(true);
       return this.scraper;
 
     } catch (error) {
-      console.error('❌ Authentication failed:', error);
-      this.updateAuthStatus(false, error instanceof Error ? error.message : 'Authentication failed');
-
-      // Clear cookies on auth failure
-      this.cookieManager.invalidateSession();
-
-      // Handle specific error types
-      if (error instanceof Error) {
-        if (error.message.includes('429') || error.message.includes('rate limit')) {
-          this.loginAttempts = 0;
-        } else if (error.message.includes('Forbidden')) {
-        }
-      }
-
+      this.isAuthenticated = false;
+      this.scraper = null;
+      this.updateAuthStatus(false, error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
 
-  /**
-   * Save cookies after successful authentication
-   */
-  private async saveCookiesAfterAuth(): Promise<void> {
-    try {
-      // Extract cookies from the scraper
-      await this.cookieManager.extractCookiesFromScraper(this.scraper);
-    } catch (error) {
-      console.error('❌ Failed to save cookies:', error);
+  private async authenticateWithCookies(): Promise<void> {
+    if (!this.scraper || !process.env.TWITTER_COOKIES) {
+      throw new Error('Cookies not available');
     }
+
+    try {
+      const cookiesStr = process.env.TWITTER_COOKIES.trim();
+      if (!cookiesStr || cookiesStr === '') {
+        throw new Error('Empty cookies string');
+      }
+
+      const cookiesObj = JSON.parse(cookiesStr);
+      
+      // Validate essential cookies
+      if (!cookiesObj.auth_token || !cookiesObj.ct0) {
+        throw new Error('Missing essential cookies (auth_token or ct0)');
+      }
+
+      // Convert cookies object to string format expected by the scraper
+      const cookieStrings = Object.entries(cookiesObj).map(([name, value]) => 
+        `${name}=${value}; Domain=.x.com; Path=/`
+      );
+
+      // Check if setCookies method exists and what format it expects
+      if (typeof this.scraper.setCookies === 'function') {
+        await this.scraper.setCookies(cookieStrings);
+      } else if (typeof this.scraper.withCookies === 'function') {
+        this.scraper = this.scraper.withCookies(cookieStrings);
+      } else {
+        if (this.scraper.cookies) {
+          this.scraper.cookies = cookiesObj;
+        } else {
+          throw new Error('Scraper does not support cookie authentication');
+        }
+      }
+      
+    } catch (error) {
+      throw new Error(`Cookie authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async authenticateWithCredentials(): Promise<void> {
+    if (!this.scraper) {
+      throw new Error('Scraper not initialized');
+    }
+
+    // Validate credentials
+    if (!this.twitterConfig.username || !this.twitterConfig.password || !this.twitterConfig.email) {
+      throw new Error('Twitter credentials not configured in environment variables');
+    }
+
+    // Anti-detection delay
+    await this.delay(2000);
+    
+    await this.scraper.login(
+      this.twitterConfig.username,
+      this.twitterConfig.password,
+      this.twitterConfig.email
+    );
   }
 
   /**
    * Scrape tweets by hashtag
    */
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-
     try {
       await this.checkRateLimit();
       const scraper = await this.initializeScraper();
@@ -273,33 +269,20 @@ export class TwitterRealScraperService {
       const query = `#${hashtag}`;
       const maxTweets = options.maxTweets || 50;
 
-
-      // Add delay to avoid rate limiting
       await this.delay(this.config.delay || 3000);
 
-      // Search for tweets
       const searchResults = scraper.searchTweets(query, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
 
-      // Collect results
       for await (const tweet of searchResults) {
         scrapedTweets.push(tweet);
 
-        // Log progress
-        if (scrapedTweets.length % 10 === 0) {
-        }
-
-        // Respect rate limits
         if (scrapedTweets.length >= maxTweets) {
           break;
         }
       }
 
-
-      // Process and normalize tweets
       const processedTweets = this.processTweets(scrapedTweets, options);
-
-      // Update rate limit tracking
       this.requestCount++;
 
       return {
@@ -314,8 +297,6 @@ export class TwitterRealScraperService {
       };
 
     } catch (error) {
-      console.error(`❌ Error scraping hashtag #${hashtag}:`, error);
-
       // For authentication errors, re-throw so the route can handle fallback
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (
@@ -346,37 +327,26 @@ export class TwitterRealScraperService {
    * Scrape tweets from a specific user
    */
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-
     try {
       await this.checkRateLimit();
       const scraper = await this.initializeScraper();
 
       const maxTweets = options.maxTweets || 30;
 
-
-      // Add delay
       await this.delay(this.config.delay || 3000);
 
-      // Get user tweets
       const userTweets = scraper.getTweets(username, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
 
-      // Collect results
       for await (const tweet of userTweets) {
         scrapedTweets.push(tweet);
-
-        if (scrapedTweets.length % 5 === 0) {
-        }
 
         if (scrapedTweets.length >= maxTweets) {
           break;
         }
       }
 
-
-      // Process tweets
       const processedTweets = this.processTweets(scrapedTweets, options);
-
       this.requestCount++;
 
       return {
@@ -391,8 +361,6 @@ export class TwitterRealScraperService {
       };
 
     } catch (error) {
-      console.error(`❌ Error scraping user @${username}:`, error);
-
       // For authentication errors, re-throw so the route can handle fallback
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (
@@ -488,7 +456,8 @@ export class TwitterRealScraperService {
 
         tweets.push(tweet);
       } catch (error) {
-        console.warn('⚠️ Failed to process tweet:', error);
+        // Skip tweet processing errors
+        continue;
       }
     }
 
@@ -607,7 +576,6 @@ export class TwitterRealScraperService {
 
       return isLoggedIn;
     } catch (error) {
-      console.error('🔍 Auth health check failed:', error);
       this.updateAuthStatus(false, error instanceof Error ? error.message : 'Health check failed');
       return false;
     }

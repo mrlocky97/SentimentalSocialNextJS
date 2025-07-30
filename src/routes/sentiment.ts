@@ -91,7 +91,6 @@ router.post('/analyze', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error analyzing tweet sentiment:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to analyze tweet sentiment',
@@ -218,7 +217,6 @@ router.post('/batch', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in batch sentiment analysis:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to perform batch sentiment analysis',
@@ -271,7 +269,6 @@ router.post('/statistics', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error generating statistics:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate statistics',
@@ -336,7 +333,6 @@ router.post('/trends', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('❌ Error generating trends:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate sentiment trends',

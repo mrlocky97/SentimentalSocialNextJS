@@ -215,8 +215,6 @@ router.post('/register', async (req, res) => {
             message: 'User registered successfully',
         });
     } catch (error) {
-        console.error('Registration error:', error);
-
         if (error instanceof Error) {
             if (error.message === 'User with this email already exists') {
                 return res.status(409).json({
@@ -395,8 +393,6 @@ router.post('/login', async (req, res) => {
             message: 'Login successful',
         });
     } catch (error) {
-        console.error('Login error:', error);
-
         if (error instanceof Error) {
             if (error.message === 'Invalid email or password') {
                 return res.status(401).json({

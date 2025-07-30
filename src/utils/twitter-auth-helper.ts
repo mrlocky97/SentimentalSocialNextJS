@@ -169,7 +169,6 @@ export class TwitterAuthHelper {
           message: 'Existing cookies are valid and working'
         };
       } else {
-        console.log('❌ Existing cookies are invalid');
         this.cookieManager.clearCookies();
         return {
           success: false,
@@ -178,7 +177,6 @@ export class TwitterAuthHelper {
       }
 
     } catch (error) {
-      console.error('❌ Cookie test error:', error);
       return {
         success: false,
         message: `Cookie test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
