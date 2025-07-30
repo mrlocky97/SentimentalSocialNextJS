@@ -30,7 +30,6 @@ const userSchema = new Schema<IUserDocument>({
         unique: true,
         lowercase: true,
         trim: true,
-        index: true,
     },
     username: {
         type: String,
@@ -41,7 +40,6 @@ const userSchema = new Schema<IUserDocument>({
         minlength: 3,
         maxlength: 30,
         match: /^[a-zA-Z0-9_]+$/,
-        index: true,
     },
     displayName: {
         type: String,
@@ -62,7 +60,6 @@ const userSchema = new Schema<IUserDocument>({
         type: String,
         enum: ['admin', 'manager', 'analyst', 'onlyView', 'client'],
         default: 'client',
-        index: true,
     },
     permissions: {
         type: [String],
@@ -70,7 +67,6 @@ const userSchema = new Schema<IUserDocument>({
     },
     organizationId: {
         type: String,
-        index: true,
     },
     isVerified: {
         type: Boolean,
@@ -101,8 +97,9 @@ const userSchema = new Schema<IUserDocument>({
 });
 
 // Indexes for performance - Updated for marketing platform
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Note: email and username indexes are automatically created by unique: true
+// userSchema.index({ email: 1 }); // Removed - auto-created by unique: true
+// userSchema.index({ username: 1 }); // Removed - auto-created by unique: true
 userSchema.index({ role: 1 });
 userSchema.index({ organizationId: 1 });
 userSchema.index({ isVerified: 1, isActive: 1 });

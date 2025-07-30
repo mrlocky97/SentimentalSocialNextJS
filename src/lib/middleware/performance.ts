@@ -91,12 +91,24 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
   // Track request size
   const requestSize = parseInt(req.headers['content-length'] || '0', 10);
   
-  res.on('finish', () => {
+  // Set request size header early
+  if (!res.headersSent) {
+    res.setHeader('X-Request-Size', `${requestSize}b`);
+  }
+  
+  // Store original send method
+  const originalSend = res.send;
+  res.send = function(body: any) {
     const duration = Date.now() - start;
     const status = res.statusCode;
     const method = req.method;
     const url = req.originalUrl;
     const isSuccess = status < 400;
+    
+    // Set response time header before sending
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Time', `${duration}ms`);
+    }
     
     // Record metrics
     metricsService.recordRequest(duration, isSuccess);
@@ -106,32 +118,33 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
       console.warn(`Slow request: ${method} ${url} - ${duration}ms - ${status}`);
     }
     
-    // Cache performance metrics
-    const metricsKey = `perf_${method}_${url.split('?')[0]}`;
-    const existingMetrics = appCache.get<any>(metricsKey) || {
-      count: 0,
-      totalDuration: 0,
-      averageDuration: 0,
-      maxDuration: 0,
-      errors: 0,
-    };
+    // Cache performance metrics asynchronously
+    setImmediate(() => {
+      const metricsKey = `perf_${method}_${url.split('?')[0]}`;
+      const existingMetrics = appCache.get<any>(metricsKey) || {
+        count: 0,
+        totalDuration: 0,
+        averageDuration: 0,
+        maxDuration: 0,
+        errors: 0,
+      };
+      
+      existingMetrics.count++;
+      existingMetrics.totalDuration += duration;
+      existingMetrics.averageDuration = existingMetrics.totalDuration / existingMetrics.count;
+      existingMetrics.maxDuration = Math.max(existingMetrics.maxDuration, duration);
+      
+      if (status >= 400) {
+        existingMetrics.errors++;
+      }
+      
+      // Cache metrics for 1 hour
+      appCache.set(metricsKey, existingMetrics, 3600000);
+    });
     
-    existingMetrics.count++;
-    existingMetrics.totalDuration += duration;
-    existingMetrics.averageDuration = existingMetrics.totalDuration / existingMetrics.count;
-    existingMetrics.maxDuration = Math.max(existingMetrics.maxDuration, duration);
-    
-    if (status >= 400) {
-      existingMetrics.errors++;
-    }
-    
-    // Cache metrics for 1 hour
-    appCache.set(metricsKey, existingMetrics, 3600000);
-    
-    // Set performance headers
-    res.setHeader('X-Response-Time', `${duration}ms`);
-    res.setHeader('X-Request-Size', `${requestSize}b`);
-  });
+    // Call original send method
+    return originalSend.call(this, body);
+  };
   
   next();
 };
