@@ -28,6 +28,9 @@ import twitterAuthRoutes from './routes/twitter-auth';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 
+// Import Twitter authentication manager
+import { TwitterAuthManager } from './services/twitter-auth-manager.service';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -163,8 +166,27 @@ async function startServer() {
     const database = DatabaseConnection.getInstance();
     await database.connect();
 
+    // Initialize Twitter authentication
+    console.log('🐦 Initializing Twitter authentication...');
+    const twitterAuth = TwitterAuthManager.getInstance();
+    await twitterAuth.initializeOnStartup();
+
     // Start Express server
     app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📚 Swagger UI available at http://localhost:${PORT}/api-docs`);
+      console.log(`🏥 Health check at http://localhost:${PORT}/health`);
+      
+      // Log Twitter scraper status
+      const twitterStatus = twitterAuth.getStatus();
+      if (twitterStatus.ready) {
+        console.log('✅ Twitter scraper ready for use');
+      } else {
+        console.log('⚠️ Twitter scraper will use fallback to mock service');
+        if (twitterStatus.error) {
+          console.log(`⚠️ Reason: ${twitterStatus.error}`);
+        }
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

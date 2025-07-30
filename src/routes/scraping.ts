@@ -8,6 +8,7 @@ import { TwitterRealScraperService } from '../services/twitter-real-scraper.serv
 import { TwitterScraperService } from '../services/twitter-scraper.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
 import { TweetDatabaseService } from '../services/tweet-database.service';
+import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
 
 const router = Router();
 
@@ -20,10 +21,18 @@ const sentimentManager = new TweetSentimentAnalysisManager();
 const tweetDatabaseService = new TweetDatabaseService();
 
 async function getRealScraperService(): Promise<TwitterRealScraperService> {
-  if (!realScraperService) {
-    realScraperService = new TwitterRealScraperService();
+  // Use pre-authenticated scraper from startup
+  const twitterAuth = TwitterAuthManager.getInstance();
+  
+  if (twitterAuth.isReady()) {
+    return twitterAuth.getScraperService();
+  } else {
+    // Fallback: create new instance if startup auth failed
+    if (!realScraperService) {
+      realScraperService = new TwitterRealScraperService();
+    }
+    return realScraperService;
   }
-  return realScraperService;
 }
 
 function getMockScraperService(): TwitterScraperService {
@@ -504,6 +513,10 @@ router.post('/search', async (req: Request, res: Response) => {
  */
 router.get('/status', async (req: Request, res: Response) => {
   try {
+    // Get Twitter authentication status from startup manager
+    const twitterAuth = TwitterAuthManager.getInstance();
+    const authStatus = twitterAuth.getStatus();
+
     // Always try to get real scraper status first
     let realScraperStatus = null;
     let isRealScraperAvailable = false;
@@ -511,20 +524,23 @@ router.get('/status', async (req: Request, res: Response) => {
     try {
       const realScraper = await getRealScraperService();
       const rateLimitStatus = realScraper.getRateLimitStatus();
-      const authStatus = realScraper.getAuthenticationStatus();
-
-      // Perform health check
-      await realScraper.checkAuthenticationHealth();
+      const authStatusDetail = realScraper.getAuthenticationStatus();
 
       realScraperStatus = {
         authenticated: (rateLimitStatus as any).isAuthenticated,
+        startup_authentication: {
+          initialized: authStatus.initialized,
+          ready: authStatus.ready,
+          error: authStatus.error,
+          has_credentials: authStatus.hasCredentials
+        },
         authentication_monitoring: {
-          status: authStatus?.isAuthenticated ? 'authenticated' : 'failed',
-          last_check: authStatus?.lastCheck,
-          consecutive_failures: authStatus?.consecutiveFailures,
-          next_retry_time: authStatus?.nextRetryTime,
-          credentials_valid: authStatus?.credentialsValid,
-          last_error: authStatus?.lastError
+          status: authStatusDetail?.isAuthenticated ? 'authenticated' : 'failed',
+          last_check: authStatusDetail?.lastCheck,
+          consecutive_failures: authStatusDetail?.consecutiveFailures,
+          next_retry_time: authStatusDetail?.nextRetryTime,
+          credentials_valid: authStatusDetail?.credentialsValid,
+          last_error: authStatusDetail?.lastError
         },
         rate_limit: {
           available: !rateLimitStatus.isLimited,
@@ -534,11 +550,17 @@ router.get('/status', async (req: Request, res: Response) => {
         }
       };
 
-      isRealScraperAvailable = true;
+      isRealScraperAvailable = authStatus.ready;
     } catch (error) {
       realScraperStatus = {
         error: error instanceof Error ? error.message : 'Unknown error',
-        available: false
+        available: false,
+        startup_authentication: {
+          initialized: authStatus.initialized,
+          ready: authStatus.ready,
+          error: authStatus.error,
+          has_credentials: authStatus.hasCredentials
+        }
       };
     }
 
@@ -588,6 +610,59 @@ router.get('/status', async (req: Request, res: Response) => {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
       message: 'Failed to get scraping status'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/scraping/reauth:
+ *   post:
+ *     summary: Force Twitter re-authentication
+ *     description: Attempts to re-authenticate with Twitter if authentication failed during startup
+ *     tags: [Twitter Scraping]
+ *     responses:
+ *       200:
+ *         description: Re-authentication attempted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       500:
+ *         description: Re-authentication failed
+ */
+router.post('/reauth', async (req: Request, res: Response) => {
+  try {
+    console.log('🔄 Manual re-authentication requested...');
+    
+    const twitterAuth = TwitterAuthManager.getInstance();
+    await twitterAuth.forceReauth();
+    
+    const status = twitterAuth.getStatus();
+    
+    res.json({
+      success: true,
+      message: status.ready ? 'Twitter re-authentication successful' : 'Re-authentication completed with issues',
+      data: {
+        ready: status.ready,
+        error: status.error,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error during re-authentication:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      message: 'Failed to re-authenticate with Twitter'
     });
   }
 });
