@@ -39,7 +39,29 @@ export const appConfig = {
       max: getEnvNumber('RATE_LIMIT_MAX', 100),
     },
     cors: {
-      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+      origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+        const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+        
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        // If CORS_ORIGIN is '*', allow all origins
+        if (corsOrigin === '*') return callback(null, true);
+        
+        // If origin matches localhost with any port, allow it
+        if (origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+          return callback(null, true);
+        }
+        
+        // Check against specific origins
+        const allowedOrigins = corsOrigin.split(',');
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Deny all other origins
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
     },
   },
