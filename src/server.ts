@@ -40,6 +40,7 @@ import { scrapingRoutes } from './routes/scraping';
 import twitterAuthRoutes from './routes/twitter-auth';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import templateRoutes from './routes/templates';
 
 // Import Twitter authentication manager
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
@@ -120,6 +121,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 app.use('/api/v1/auth', authRateLimit, authRoutes);
 app.use('/api/v1/users', analyticsRateLimit, userRoutes);
 app.use('/api/v1/campaigns', analyticsRateLimit, campaignRoutes);
+app.use('/api/v1/templates', analyticsRateLimit, templateRoutes);
 app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
@@ -138,6 +140,7 @@ app.get('/api/v1', (req, res) => {
       auth: '/api/v1/auth',
       users: '/api/v1/users',
       campaigns: '/api/v1/campaigns',
+      templates: '/api/v1/templates',
       scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
       experimental: '/api/v1/experimental',
