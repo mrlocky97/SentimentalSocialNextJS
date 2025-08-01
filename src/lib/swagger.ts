@@ -303,141 +303,241 @@ const options: swaggerJsdoc.Options = {
           },
         },
 
-        // Tweet Schemas
+        // Tweet Schemas - Updated with realistic examples
         Tweet: {
           type: 'object',
+          description: 'A Twitter tweet with comprehensive sentiment analysis and engagement metrics',
           properties: {
             id: {
               type: 'string',
-              description: 'Tweet document ID',
+              description: 'Unique tweet document ID in our database',
               example: '60d0fe4f5311236168a109cd',
             },
             tweetId: {
               type: 'string',
-              description: 'Original Twitter ID',
-              example: '1234567890123456789',
+              description: 'Original Twitter tweet ID from Twitter API',
+              example: '1747234567890123456',
             },
             content: {
               type: 'string',
-              description: 'Tweet content',
-              example: 'Amazing product! Love the new features #brand2024',
+              description: 'Full text content of the tweet',
+              example: 'Just tried the new #iPhone15 and it\'s absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview',
             },
             author: {
               type: 'object',
+              description: 'Twitter user who posted the tweet',
               properties: {
                 id: {
                   type: 'string',
-                  description: 'Twitter user ID',
-                  example: 'twitter_user_123',
+                  description: 'Twitter user unique identifier',
+                  example: 'twitter_user_123456',
                 },
                 username: {
                   type: 'string',
-                  description: 'Twitter username',
-                  example: 'happycustomer',
+                  description: 'Twitter handle without @',
+                  example: 'techreviewerjohn',
                 },
                 displayName: {
                   type: 'string',
-                  description: 'Display name',
-                  example: 'Happy Customer',
+                  description: 'User\'s display name',
+                  example: 'John - Tech Reviewer',
                 },
                 verified: {
                   type: 'boolean',
-                  description: 'Whether user is verified',
-                  example: false,
+                  description: 'Whether user has Twitter verification badge',
+                  example: true,
                 },
                 followersCount: {
                   type: 'integer',
-                  description: 'Follower count',
-                  example: 1500,
+                  description: 'Number of followers the user has',
+                  example: 45000,
+                },
+                followingCount: {
+                  type: 'integer',
+                  description: 'Number of accounts the user follows',
+                  example: 1200,
+                },
+                tweetsCount: {
+                  type: 'integer',
+                  description: 'Total number of tweets posted by user',
+                  example: 3500,
+                },
+              },
+            },
+            metrics: {
+              type: 'object',
+              description: 'Engagement metrics for the tweet',
+              properties: {
+                likes: {
+                  type: 'integer',
+                  description: 'Number of likes on the tweet',
+                  example: 1250,
+                },
+                retweets: {
+                  type: 'integer',
+                  description: 'Number of retweets',
+                  example: 340,
+                },
+                replies: {
+                  type: 'integer',
+                  description: 'Number of replies',
+                  example: 89,
+                },
+                quotes: {
+                  type: 'integer',
+                  description: 'Number of quote tweets',
+                  example: 45,
+                },
+                engagement: {
+                  type: 'number',
+                  description: 'Calculated engagement rate (interactions/followers)',
+                  example: 0.038,
                 },
               },
             },
             sentiment: {
               type: 'object',
               nullable: true,
+              description: 'AI-powered sentiment analysis results',
               properties: {
                 score: {
                   type: 'number',
                   minimum: -1,
                   maximum: 1,
-                  description: 'Sentiment score',
-                  example: 0.8,
+                  description: 'Sentiment score: -1 (very negative) to +1 (very positive)',
+                  example: 0.87,
+                },
+                magnitude: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 1,
+                  description: 'Emotional intensity: 0 (neutral) to 1 (very emotional)',
+                  example: 0.92,
                 },
                 label: {
                   type: 'string',
                   enum: ['positive', 'negative', 'neutral'],
-                  description: 'Sentiment classification',
+                  description: 'Human-readable sentiment classification',
                   example: 'positive',
                 },
                 confidence: {
                   type: 'number',
                   minimum: 0,
                   maximum: 1,
-                  description: 'Confidence level',
-                  example: 0.95,
+                  description: 'Confidence in sentiment analysis (0-1)',
+                  example: 0.94,
                 },
                 keywords: {
                   type: 'array',
-                  items: {
-                    type: 'string',
-                  },
-                  description: 'Extracted keywords',
-                  example: ['amazing', 'love', 'features'],
+                  items: { type: 'string' },
+                  description: 'Key words that influenced sentiment',
+                  example: ['incredible', 'mind-blowing', 'recommended'],
                 },
-              },
-            },
-            metrics: {
-              type: 'object',
-              properties: {
-                likes: {
+                analyzedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'When sentiment analysis was performed',
+                  example: '2024-01-15T10:30:00Z',
+                },
+                processingTime: {
                   type: 'integer',
-                  description: 'Like count',
-                  example: 45,
-                },
-                retweets: {
-                  type: 'integer',
-                  description: 'Retweet count',
-                  example: 12,
-                },
-                replies: {
-                  type: 'integer',
-                  description: 'Reply count',
-                  example: 8,
-                },
-                engagement: {
-                  type: 'number',
-                  description: 'Engagement rate',
-                  example: 0.032,
+                  description: 'Analysis processing time in milliseconds',
+                  example: 245,
                 },
               },
             },
             hashtags: {
               type: 'array',
-              items: {
-                type: 'string',
-              },
-              description: 'Hashtags in tweet',
-              example: ['brand2024', 'newproduct'],
+              items: { type: 'string' },
+              description: 'Hashtags mentioned in the tweet',
+              example: ['#iPhone15', '#TechReview'],
+            },
+            mentions: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'User mentions in the tweet',
+              example: ['@Apple'],
+            },
+            urls: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'URLs shared in the tweet',
+              example: ['https://apple.com/iphone'],
+            },
+            language: {
+              type: 'string',
+              description: 'Detected language of the tweet (ISO code)',
+              example: 'en',
+            },
+            isRetweet: {
+              type: 'boolean',
+              description: 'Whether this is a retweet',
+              example: false,
+            },
+            isReply: {
+              type: 'boolean',
+              description: 'Whether this is a reply to another tweet',
+              example: false,
             },
             campaignId: {
               type: 'string',
               nullable: true,
-              description: 'Associated campaign ID',
-              example: '60d0fe4f5311236168a109cc',
-            },
-            tweetCreatedAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Original tweet timestamp',
-              example: '2024-01-15T10:30:00Z',
+              description: 'ID of associated marketing campaign',
+              example: '60d0fe4f5311236168a109ca',
             },
             scrapedAt: {
               type: 'string',
               format: 'date-time',
-              description: 'When tweet was scraped',
-              example: '2024-01-15T11:00:00Z',
+              description: 'When the tweet was scraped from Twitter',
+              example: '2024-01-15T10:25:00Z',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the tweet was originally posted on Twitter',
+              example: '2024-01-15T09:45:00Z',
             },
           },
+          required: ['id', 'tweetId', 'content', 'author', 'metrics', 'hashtags', 'mentions', 'urls'],
+          example: {
+            id: '60d0fe4f5311236168a109cd',
+            tweetId: '1747234567890123456',
+            content: 'Just tried the new #iPhone15 and it\'s absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview',
+            author: {
+              id: 'twitter_user_123456',
+              username: 'techreviewerjohn',
+              displayName: 'John - Tech Reviewer',
+              verified: true,
+              followersCount: 45000,
+              followingCount: 1200,
+              tweetsCount: 3500
+            },
+            metrics: {
+              likes: 1250,
+              retweets: 340,
+              replies: 89,
+              quotes: 45,
+              engagement: 0.038
+            },
+            sentiment: {
+              score: 0.87,
+              magnitude: 0.92,
+              label: 'positive',
+              confidence: 0.94,
+              keywords: ['incredible', 'mind-blowing', 'recommended'],
+              analyzedAt: '2024-01-15T10:30:00Z',
+              processingTime: 245
+            },
+            hashtags: ['#iPhone15', '#TechReview'],
+            mentions: ['@Apple'],
+            urls: ['https://apple.com/iphone'],
+            language: 'en',
+            isRetweet: false,
+            isReply: false,
+            campaignId: '60d0fe4f5311236168a109ca',
+            scrapedAt: '2024-01-15T10:25:00Z',
+            createdAt: '2024-01-15T09:45:00Z'
+          }
         },
 
         // Common Schemas
