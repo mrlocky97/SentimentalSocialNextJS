@@ -6,6 +6,9 @@
     "dev": "npx tsc --project tsconfig.server.json && node dist/server.js",
     "build": "npx tsc --project tsconfig.server.json",
     "start": "node dist/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "auth": "tsx src/utils/twitter-auth-helper.ts",
     "cookie-helper": "tsx src/utils/cookie-importer.ts",
     "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts",
@@ -50,7 +53,12 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
