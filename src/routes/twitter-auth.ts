@@ -4,8 +4,9 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { TwitterAuthHelper } from '../utils/twitter-auth-helper';
-import { TwitterCookieManager } from '../services/twitter-cookie-manager.service';
+// REMOVED: TwitterAuthHelper moved to backup (legacy manual auth)
+// import { TwitterAuthHelper } from '../utils/twitter-auth-helper';
+import { TwitterAuthManager } from '../services/twitter-auth-manager.service'; // Consolidated
 import { authenticateToken, AuthenticatedRequest } from '../middleware/express-auth';
 import fs from 'fs/promises';
 import path from 'path';
@@ -39,19 +40,23 @@ const router = Router();
 router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
 
-    const authHelper = new TwitterAuthHelper();
-    const result = await authHelper.authenticateManually();
+    const authManager = TwitterAuthManager.getInstance();
+    
+    // Force re-initialization if needed
+    await authManager.initializeOnStartup();
+    const sessionInfo = authManager.getSessionInfo();
 
-    if (result.success) {
+    if (sessionInfo.authenticated) {
       res.json({
         success: true,
         message: 'Twitter authentication successful',
-        cookiesSaved: result.cookiesSaved
+        authenticated: true,
+        cookieCount: sessionInfo.cookieCount
       });
     } else {
       res.status(401).json({
         success: false,
-        message: result.message || 'Authentication failed'
+        message: 'Twitter authentication failed - check credentials'
       });
     }
   } catch (error) {
@@ -92,32 +97,18 @@ router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: 
  *       500:
  *         description: Server error
  */
+// REMOVED: Manual cookie import endpoint (replaced by automatic TwitterAuthManager)
+// This functionality is now handled automatically via TwitterAuthManager.initializeOnStartup()
+
+/*
 router.post('/import-cookies', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-
-    // Use the manual cookie importer utility
-    const { ManualCookieImporter } = await import('../utils/manual-cookie-importer');
-    const importer = new ManualCookieImporter();
-    const success = await importer.importFromManualFile();
-
-    if (success) {
-      res.json({
-        success: true,
-        message: 'Cookies imported successfully'
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: 'Failed to import cookies - check manual-cookies.json file'
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during cookie import'
-    });
-  }
+  // This endpoint has been removed - TwitterAuthManager handles authentication automatically
+  res.status(410).json({
+    success: false,
+    message: 'Manual cookie import no longer supported - authentication is automatic'
+  });
 });
+*/
 
 /**
  * @swagger
@@ -134,15 +125,15 @@ router.post('/import-cookies', authenticateToken, async (req: AuthenticatedReque
  */
 router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const cookieManager = new TwitterCookieManager();
-    const hasSession = cookieManager.hasValidSession();
-    const cookies = cookieManager.getCookies();
+    const authManager = TwitterAuthManager.getInstance();
+    const sessionInfo = authManager.getSessionInfo();
 
     res.json({
       success: true,
-      authenticated: hasSession,
-      cookieCount: cookies ? cookies.length : 0,
-      sessionValid: hasSession
+      authenticated: sessionInfo.authenticated,
+      cookieCount: sessionInfo.cookieCount,
+      sessionValid: sessionInfo.authenticated,
+      expiresAt: sessionInfo.expiresAt
     });
   } catch (error) {
     res.status(500).json({
@@ -168,8 +159,8 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
 router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
 
-    const cookieManager = new TwitterCookieManager();
-    cookieManager.clearCookies();
+    const authManager = TwitterAuthManager.getInstance();
+    authManager.clearSession();
 
     res.json({
       success: true,
@@ -200,8 +191,8 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res:
 router.get('/validate-cookies', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
 
-    const cookieManager = new TwitterCookieManager();
-    const hasSession = cookieManager.hasValidSession();
+    const authManager = TwitterAuthManager.getInstance();
+    const hasSession = authManager.hasValidSession();
 
     res.json({
       success: true,
@@ -232,9 +223,8 @@ router.get('/validate-cookies', authenticateToken, async (req: AuthenticatedRequ
  */
 router.get('/session-info', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const cookieManager = new TwitterCookieManager();
-    const cookies = cookieManager.getCookies();
-    const hasSession = cookieManager.hasValidSession();
+    const authManager = TwitterAuthManager.getInstance();
+    const sessionInfo = authManager.getSessionInfo();
 
     // Check if manual cookies file exists
     const manualCookiesPath = path.join(process.cwd(), 'manual-cookies.json');
@@ -249,10 +239,10 @@ router.get('/session-info', authenticateToken, async (req: AuthenticatedRequest,
     res.json({
       success: true,
       sessionInfo: {
-        authenticated: hasSession,
-        cookieCount: cookies ? cookies.length : 0,
+        authenticated: sessionInfo.authenticated,
+        cookieCount: sessionInfo.cookieCount,
         hasManualCookies,
-        cookieNames: cookies ? cookies.map(c => c.name) : [],
+        expiresAt: sessionInfo.expiresAt,
         timestamp: new Date().toISOString()
       }
     });

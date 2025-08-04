@@ -34,7 +34,8 @@ import DatabaseConnection from './lib/database/connection';
 import campaignRoutes from './routes/campaigns';
 import adminRoutes from './routes/admin';
 import sentimentRoutes from './routes/sentiment';
-import experimentalRoutes from './routes/experimental.routes';
+// REMOVED: experimental routes (moved to backup for academic research)
+// import experimentalRoutes from './routes/experimental.routes';
 // TEMPORARILY DISABLED during consolidation
 // import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
 import { scrapingRoutes } from './routes/scraping';
@@ -126,7 +127,8 @@ app.use('/api/v1/templates', analyticsRateLimit, templateRoutes);
 app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
-app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
+// REMOVED: experimental routes (moved to backup for academic research)
+// app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
 // TEMPORARILY DISABLED during consolidation
 // app.use('/api/v1/hybrid', analyticsRateLimit, cacheControlMiddleware(300), hybridSentimentRoutes);
 app.use('/api/v1/admin', authRateLimit, adminRoutes);
@@ -145,7 +147,7 @@ app.get('/api/v1', (req, res) => {
       templates: '/api/v1/templates',
       scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
-      experimental: '/api/v1/experimental',
+      // experimental: '/api/v1/experimental', // Removed - moved to backup
       admin: '/api/v1/admin',
     },
     features: [
@@ -154,8 +156,8 @@ app.get('/api/v1', (req, res) => {
       'Twitter Data Scraping with Twikit (Unlimited)',
       'Real-time Sentiment Analysis',
       'Advanced Analytics & Reporting',
-      'Experimental Model Evaluation',
-      'Performance Benchmarking & Visualization',
+      // 'Experimental Model Evaluation', // Removed - moved to backup
+      // 'Performance Benchmarking & Visualization', // Removed - moved to backup
       'Data Export Capabilities',
     ],
   });

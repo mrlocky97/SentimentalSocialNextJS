@@ -1,11 +1,13 @@
 /**
- * Tweet Database Service
+ * Tweet Database Service - CONSOLIDATED
  * Service for saving and managing tweets in the database
+ * Integrated with MongoTweetRepository functionality
  */
 
 import { TweetModel, ITweetDocument } from '../models/Tweet.model';
 import { Tweet } from '../types/twitter';
 import mongoose from 'mongoose';
+import { MongoTweetRepository } from '../repositories/mongo-tweet.repository';
 
 export interface SaveTweetResult {
   success: boolean;
@@ -27,6 +29,28 @@ export interface BulkSaveResult {
 }
 
 export class TweetDatabaseService {
+  private repository: MongoTweetRepository;
+
+  constructor() {
+    this.repository = new MongoTweetRepository();
+  }
+
+  // Repository delegation methods
+  async getAnalytics(filters = {}) {
+    return this.repository.getAnalytics(filters);
+  }
+
+  async getHashtagTrends(hashtag: string, days = 30) {
+    return this.repository.getHashtagTrends(hashtag, days);
+  }
+
+  async findByHashtag(hashtag: string, pagination = { page: 1, limit: 100 }) {
+    return this.repository.findByHashtag(hashtag, pagination);
+  }
+
+  async searchByText(searchText: string, filters = {}, pagination = { page: 1, limit: 50 }) {
+    return this.repository.searchByText(searchText, filters, pagination);
+  }
   /**
    * Save a single tweet to the database
    */

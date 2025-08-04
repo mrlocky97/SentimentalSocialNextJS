@@ -1,17 +1,46 @@
 /**
- * Twitter Authentication Manager
- * Handles authentication during server startup
+ * Twitter Authentication Manager - CONSOLIDATED
+ * Handles authentication during server startup with integrated cookie management
  */
 
 import { TwitterRealScraperService } from './twitter-real-scraper.service';
+import fs from 'fs';
+import path from 'path';
+
+interface TwitterCookie {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+}
+
+interface SessionData {
+  cookies: TwitterCookie[];
+  timestamp: number;
+  userAgent: string;
+  isValid: boolean;
+  expirationTime: number;
+}
 
 export class TwitterAuthManager {
   private static instance: TwitterAuthManager;
   private scraperService: TwitterRealScraperService | null = null;
   private isInitialized: boolean = false;
   private initializationError: Error | null = null;
+  
+  // Integrated cookie management
+  private cookiesPath: string;
+  private sessionData: SessionData | null = null;
+  private readonly SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-  private constructor() {}
+  private constructor() {
+    this.cookiesPath = path.join(process.cwd(), 'cookies.json');
+    this.loadCookies();
+  }
 
   static getInstance(): TwitterAuthManager {
     if (!TwitterAuthManager.instance) {
@@ -39,6 +68,65 @@ export class TwitterAuthManager {
       // Don't throw error - let server start anyway
       this.isInitialized = true; // Mark as initialized even with error
     }
+  }
+
+  // Integrated cookie management methods
+  private loadCookies(): void {
+    try {
+      if (fs.existsSync(this.cookiesPath)) {
+        const data = fs.readFileSync(this.cookiesPath, 'utf8');
+        this.sessionData = JSON.parse(data);
+
+        // Check if session is still valid
+        if (this.sessionData && this.isSessionExpired()) {
+          this.clearCookies();
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cookies:', error);
+      this.clearCookies();
+    }
+  }
+
+  private isSessionExpired(): boolean {
+    if (!this.sessionData) return true;
+    return Date.now() > this.sessionData.expirationTime;
+  }
+
+  private clearCookies(): void {
+    this.sessionData = null;
+    if (fs.existsSync(this.cookiesPath)) {
+      fs.unlinkSync(this.cookiesPath);
+    }
+  }
+
+  /**
+   * Public method to clear cookies (for logout)
+   */
+  public clearSession(): void {
+    this.clearCookies();
+  }
+
+  /**
+   * Check if there's a valid session
+   */
+  public hasValidSession(): boolean {
+    return this.sessionData !== null && !this.isSessionExpired();
+  }
+
+  /**
+   * Get current session data for status checks
+   */
+  public getSessionInfo(): { authenticated: boolean; expiresAt?: number; cookieCount: number } {
+    if (!this.sessionData) {
+      return { authenticated: false, cookieCount: 0 };
+    }
+
+    return {
+      authenticated: !this.isSessionExpired(),
+      expiresAt: this.sessionData.expirationTime,
+      cookieCount: this.sessionData.cookies?.length || 0
+    };
   }
 
   /**
