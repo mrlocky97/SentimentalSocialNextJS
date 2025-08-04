@@ -4,7 +4,7 @@
  * Based on academic framework requirements
  */
 
-import { SentimentAnalysisService } from '../services/sentiment-analysis.service';
+import { SentimentAnalysisService } from '../services/backup-sentiment-analysis.service';
 import { Tweet } from '../types/twitter';
 import { SentimentLabel } from '../types/sentiment';
 

@@ -5,7 +5,7 @@
 
 import { TweetSentimentAnalysis, BrandMention, HashtagSentiment, MarketingInsight, SentimentAnalysisStats, SentimentTrend, SentimentAnalysisConfig, InsightType, ImpactLevel } from '../types/sentiment';
 import { Tweet } from '../types/twitter';
-import { SentimentAnalysisService } from './sentiment-analysis.service';
+import { SentimentAnalysisService } from './backup-sentiment-analysis.service';
 
 export class TweetSentimentAnalysisManager {
   private sentimentService: SentimentAnalysisService;

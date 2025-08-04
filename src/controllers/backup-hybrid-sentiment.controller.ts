@@ -1,20 +1,24 @@
 /**
+ * TEMPORARILY DISABLED - hybrid service removed during consolidation
  * Controlador de Análisis de Sentimientos Híbrido
  * Endpoints para el sistema híbrido optimizado
  */
 
+/*
 import { Request, Response } from 'express';
-import { HybridSentimentAnalysisService } from '../services/hybrid-sentiment-analysis.service';
-import { SentimentAnalysisService } from '../services/sentiment-analysis.service';
+// TEMPORARILY DISABLED - hybrid service removed during consolidation
+// import { HybridSentimentAnalysisService } from '../services/hybrid-sentiment-analysis.service';
+import { SentimentAnalysisService } from '../services/backup-sentiment-analysis.service';
 
 export class HybridSentimentController {
-    private hybridService: HybridSentimentAnalysisService;
+    private hybridService: any; // HybridSentimentAnalysisService;
     private ruleBasedService: SentimentAnalysisService;
 
     constructor() {
-        this.hybridService = new HybridSentimentAnalysisService();
+        // this.hybridService = new HybridSentimentAnalysisService();
         this.ruleBasedService = new SentimentAnalysisService();
     }
+*/
 
     /**
      * Análisis híbrido principal

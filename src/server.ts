@@ -35,7 +35,8 @@ import campaignRoutes from './routes/campaigns';
 import adminRoutes from './routes/admin';
 import sentimentRoutes from './routes/sentiment';
 import experimentalRoutes from './routes/experimental.routes';
-import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
+// TEMPORARILY DISABLED during consolidation
+// import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
 import { scrapingRoutes } from './routes/scraping';
 import twitterAuthRoutes from './routes/twitter-auth';
 import authRoutes from './routes/auth';
@@ -126,7 +127,8 @@ app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
 app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
-app.use('/api/v1/hybrid', analyticsRateLimit, cacheControlMiddleware(300), hybridSentimentRoutes);
+// TEMPORARILY DISABLED during consolidation
+// app.use('/api/v1/hybrid', analyticsRateLimit, cacheControlMiddleware(300), hybridSentimentRoutes);
 app.use('/api/v1/admin', authRateLimit, adminRoutes);
 
 // API info endpoint
