@@ -3,7 +3,7 @@
  * Tests only essential services without reactive components
  */
 
-import { TwitterScraperService } from '../services/backup-twitter-scraper.service';
+import TwitterScraperService from '../../backup/backup-twitter-scraper.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { AuthService } from '../services/auth.service';
