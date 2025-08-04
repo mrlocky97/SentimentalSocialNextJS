@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { appConfig } from '../config/app';
 import { appCache } from '../cache';
 import { metricsService } from '../monitoring/metrics';
@@ -43,8 +43,9 @@ export const createRateLimit = (options?: {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
-      // Use IP + User ID for authenticated requests
-      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      // Use proper IPv6-compatible key generation
+      const rawIp = req.ip || req.connection.remoteAddress || 'unknown';
+      const ip = ipKeyGenerator(rawIp);
       const userId = (req as any).user?.id;
       return userId ? `${ip}-${userId}` : ip;
     },

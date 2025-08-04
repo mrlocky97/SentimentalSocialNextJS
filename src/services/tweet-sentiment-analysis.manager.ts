@@ -3,16 +3,96 @@
  * Analyzes tweets and provides marketing insights
  */
 
-import { TweetSentimentAnalysis, BrandMention, HashtagSentiment, MarketingInsight, SentimentAnalysisStats, SentimentTrend, SentimentAnalysisConfig, InsightType, ImpactLevel } from '../types/sentiment';
+import { TweetSentimentAnalysis, BrandMention, HashtagSentiment, MarketingInsight, SentimentAnalysisStats, SentimentTrend, SentimentAnalysisConfig, InsightType, ImpactLevel, TextAnalysis, EntityAnalysis } from '../types/sentiment';
 import { Tweet } from '../types/twitter';
-import { SentimentAnalysisService } from './backup-sentiment-analysis.service';
+// REMOVED: Using internal sentiment analysis logic instead of backup service
+// import { SentimentAnalysisService } from './backup-sentiment-analysis.service';
+// import { analyzeHybridSentiment } from '../lib/sentiment/hybrid-sentiment-analyzer';
+
+/**
+ * Internal sentiment analysis logic
+ */
+
+class InternalSentimentAnalyzer {
+  analyze(text: string, config?: any): Promise<TextAnalysis> {
+    return new Promise((resolve) => {
+      // Simplified rule-based sentiment analysis
+      const lowerText = text.toLowerCase();
+      
+      // Positive words
+      const positiveWords = ['good', 'great', 'excellent', 'amazing', 'love', 'fantastic', 'awesome', 'perfect', 'wonderful', 'best', 'bueno', 'excelente', 'increíble', 'fantástico', 'perfecto', 'maravilloso', 'mejor'];
+      
+      // Negative words  
+      const negativeWords = ['bad', 'terrible', 'horrible', 'hate', 'worst', 'awful', 'disgusting', 'pathetic', 'useless', 'fail', 'malo', 'terrible', 'horrible', 'odio', 'peor', 'fatal', 'desastre'];
+      
+      let positiveScore = 0;
+      let negativeScore = 0;
+      
+      positiveWords.forEach(word => {
+        if (lowerText.includes(word)) positiveScore++;
+      });
+      
+      negativeWords.forEach(word => {
+        if (lowerText.includes(word)) negativeScore++;
+      });
+      
+      let score = 0;
+      let label: 'positive' | 'negative' | 'neutral' = 'neutral';
+      let confidence = 0.5;
+      
+      if (positiveScore > negativeScore) {
+        score = 0.3 + (positiveScore * 0.2);
+        label = 'positive';
+        confidence = Math.min(0.95, 0.6 + (positiveScore * 0.1));
+      } else if (negativeScore > positiveScore) {
+        score = -0.3 - (negativeScore * 0.2);
+        label = 'negative';
+        confidence = Math.min(0.95, 0.6 + (negativeScore * 0.1));
+      }
+      
+      // Extract basic keywords
+      const words = text.split(/\s+/).filter(word => word.length > 3);
+      const keywords = words.slice(0, 5); // Take first 5 meaningful words
+      
+      // Detect language (simple heuristic)
+      const spanishWords = ['el', 'la', 'que', 'de', 'es', 'y', 'pero', 'con', 'por'];
+      const isSpanish = spanishWords.some(word => lowerText.includes(word));
+      
+      const result: TextAnalysis = {
+        sentiment: {
+          score: Math.max(-1, Math.min(1, score)),
+          magnitude: Math.abs(score),
+          label,
+          confidence,
+          emotions: {
+            joy: label === 'positive' ? confidence : 0,
+            sadness: label === 'negative' ? confidence * 0.7 : 0,
+            anger: label === 'negative' ? confidence * 0.8 : 0,
+            fear: label === 'negative' ? confidence * 0.5 : 0,
+            surprise: 0.1,
+            disgust: label === 'negative' ? confidence * 0.6 : 0
+          }
+        },
+        keywords,
+        entities: [], // Simplified - no entity extraction
+        language: isSpanish ? 'es' : 'en'
+      };
+      
+      resolve(result);
+    });
+  }
+}
 
 export class TweetSentimentAnalysisManager {
-  private sentimentService: SentimentAnalysisService;
+  // REMOVED: External sentiment service dependency - now using internal logic
+  // private sentimentService: SentimentAnalysisService;
+  private sentimentAnalyzer: InternalSentimentAnalyzer;
   private defaultConfig: SentimentAnalysisConfig;
 
   constructor() {
-    this.sentimentService = new SentimentAnalysisService();
+    // REMOVED: External service initialization - using internal analysis
+    // this.sentimentService = new SentimentAnalysisService();
+    this.sentimentAnalyzer = new InternalSentimentAnalyzer();
     this.defaultConfig = {
       enableEmotionAnalysis: true,
       enableEntityExtraction: true,
@@ -33,8 +113,8 @@ export class TweetSentimentAnalysisManager {
 
     try {
 
-      // Perform text analysis
-      const textAnalysis = await this.sentimentService.analyze(tweet.content, finalConfig);
+      // Perform text analysis using internal analyzer
+      const textAnalysis = await this.sentimentAnalyzer.analyze(tweet.content, finalConfig);
 
       // Extract brand mentions
       const brandMentions = this.extractBrandMentions(tweet.content, finalConfig);
@@ -262,7 +342,7 @@ export class TweetSentimentAnalysisManager {
       try {
         // Create context for hashtag analysis
         const hashtagContext = `Talking about ${hashtag} ${content}`;
-        const analysis = await this.sentimentService.analyze(hashtagContext);
+        const analysis = await this.sentimentAnalyzer.analyze(hashtagContext);
 
         hashtagSentiments.push({
           hashtag,

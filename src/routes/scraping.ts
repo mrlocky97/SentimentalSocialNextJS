@@ -5,16 +5,18 @@
 
 import { Router, Request, Response } from 'express';
 import { TwitterRealScraperService } from '../services/twitter-real-scraper.service';
-import { TwitterScraperService } from '../services/backup-twitter-scraper.service';
+// REMOVED: Backup scraper moved to backup directory - using only real scraper now
+// import { TwitterScraperService } from '../services/backup-twitter-scraper.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
 
 const router = Router();
 
-// Always try real scraper first, fallback to mock only on specific failures
+// Using only real scraper service - backup/mock scraper removed
 let realScraperService: TwitterRealScraperService | null = null;
-let mockScraperService: TwitterScraperService | null = null;
+// REMOVED: Mock scraper functionality 
+// let mockScraperService: TwitterScraperService | null = null;
 
 // Initialize services
 const sentimentManager = new TweetSentimentAnalysisManager();
@@ -35,12 +37,13 @@ async function getRealScraperService(): Promise<TwitterRealScraperService> {
   }
 }
 
-function getMockScraperService(): TwitterScraperService {
-  if (!mockScraperService) {
-    mockScraperService = new TwitterScraperService();
-  }
-  return mockScraperService;
-}
+// REMOVED: Mock scraper functionality - using only real scraper
+// function getMockScraperService(): TwitterScraperService {
+//   if (!mockScraperService) {
+//     mockScraperService = new TwitterScraperService();
+//   }
+//   return mockScraperService;
+// }
 
 // Function to handle scraper failures and determine if we should use mock
 function shouldFallbackToMock(error: any): boolean {
@@ -79,14 +82,9 @@ async function performScraping<T>(
   } catch (error) {
     console.error(`Real scraper failed for ${operationName}:`, error);
 
-    if (shouldFallbackToMock(error)) {
-      const mockScraper = getMockScraperService();
-      // Cast mock scraper to match the interface for the operation
-      return await scrapingOperation(mockScraper as any);
-    } else {
-      // Re-throw non-authentication errors
-      throw error;
-    }
+    // REMOVED: Mock scraper fallback - now only using real scraper
+    // No fallback, re-throw error for proper error handling
+    throw error;
   }
 }
 
