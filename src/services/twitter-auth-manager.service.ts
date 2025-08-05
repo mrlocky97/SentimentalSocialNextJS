@@ -4,6 +4,7 @@
  */
 
 import { TwitterRealScraperService } from './twitter-real-scraper.service';
+import { credentialsEncryption } from '../lib/security/credentials-encryption';
 import fs from 'fs';
 import path from 'path';
 
@@ -133,12 +134,10 @@ export class TwitterAuthManager {
    * Attempt early authentication with enhanced error handling
    */
   private async attemptEarlyAuth(): Promise<void> {
-    const username = process.env.TWITTER_USERNAME;
-    const password = process.env.TWITTER_PASSWORD;
-    const email = process.env.TWITTER_EMAIL;
+    const credentials = this.getTwitterCredentials();
 
-    if (!username || !password || !email) {
-      throw new Error('Twitter credentials not configured in environment');
+    if (!credentials) {
+      throw new Error('Twitter credentials not configured');
     }
 
     try {
@@ -160,6 +159,51 @@ export class TwitterAuthManager {
       } else {
         throw new Error(`Twitter authentication failed: ${errorMessage}`);
       }
+    }
+  }
+
+  /**
+   * Get Twitter credentials from environment with security validation
+   */
+  private getTwitterCredentials(): { email: string; username: string; password: string } | null {
+    try {
+      // SECURITY: Check for master password for credential decryption
+      const masterPassword = process.env.TWITTER_MASTER_PASSWORD;
+      const encryptedCredsPath = path.join(process.cwd(), 'encrypted-twitter-creds.json');
+
+      // Try encrypted credentials first (more secure)
+      if (masterPassword && fs.existsSync(encryptedCredsPath)) {
+        console.log('🔒 Loading encrypted Twitter credentials...');
+        try {
+          const encryptedData = JSON.parse(fs.readFileSync(encryptedCredsPath, 'utf8'));
+          const decrypted = credentialsEncryption.decryptTwitterCredentials(encryptedData, masterPassword);
+          console.log('✅ Successfully decrypted Twitter credentials');
+          return decrypted;
+        } catch (error) {
+          console.error('❌ Failed to decrypt Twitter credentials:', error);
+          // Fall back to environment variables
+        }
+      }
+
+      // Fallback to environment variables (less secure but compatible)
+      const email = process.env.TWITTER_EMAIL;
+      const username = process.env.TWITTER_USERNAME;
+      const password = process.env.TWITTER_PASSWORD;
+
+      if (!email || !username || !password) {
+        console.warn('⚠️  Twitter credentials not found in environment variables');
+        console.warn('💡 Consider using encrypted credentials for better security');
+        return null;
+      }
+
+      // SECURITY: Warn about plaintext credentials
+      console.warn('⚠️  Using plaintext Twitter credentials from environment');
+      console.warn('🔒 Recommendation: Encrypt credentials using npm run encrypt-twitter-creds');
+
+      return { email, username, password };
+    } catch (error) {
+      console.error('❌ Error loading Twitter credentials:', error);
+      return null;
     }
   }
 
@@ -197,7 +241,7 @@ export class TwitterAuthManager {
       initialized: this.isInitialized,
       ready: this.isReady(),
       error: this.initializationError?.message || null,
-      hasCredentials: !!(process.env.TWITTER_USERNAME && process.env.TWITTER_PASSWORD && process.env.TWITTER_EMAIL)
+      hasCredentials: !!this.getTwitterCredentials()
     };
   }
 

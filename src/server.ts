@@ -43,6 +43,7 @@ import twitterAuthRoutes from './routes/twitter-auth';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import templateRoutes from './routes/templates';
+import securityRoutes from './routes/security';
 
 // Import Twitter authentication manager
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
@@ -127,6 +128,7 @@ app.use('/api/v1/templates', analyticsRateLimit, templateRoutes);
 app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
+app.use('/api/v1/security', authRateLimit, securityRoutes);
 // REMOVED: experimental routes (moved to backup for academic research)
 // app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
 // TEMPORARILY DISABLED during consolidation
@@ -147,6 +149,7 @@ app.get('/api/v1', (req, res) => {
       templates: '/api/v1/templates',
       scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
+      security: '/api/v1/security',
       // experimental: '/api/v1/experimental', // Removed - moved to backup
       admin: '/api/v1/admin',
     },
@@ -209,8 +212,7 @@ app.use((err: AppError, req: express.Request, res: express.Response, next: expre
 async function startServer() {
   try {
     // Initialize database connection
-    const database = DatabaseConnection.getInstance();
-    await database.connect();
+    await DatabaseConnection.connect();
 
     // Initialize Twitter authentication
     const twitterAuth = TwitterAuthManager.getInstance();

@@ -6,12 +6,30 @@
 import { env } from './env';
 
 export const databaseConfig = {
-  // MongoDB Atlas configuration
+  // MongoDB configuration with enhanced connection options
   mongodb: {
     uri: env.MONGODB_URI || 'mongodb://localhost:27017/sentimentalsocial',
     options: {
+      // Connection options
+      maxPoolSize: 10, // Maximum number of connections in the connection pool
+      minPoolSize: 5,  // Minimum number of connections in the connection pool
+      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+      serverSelectionTimeoutMS: 5000, // How long to try selecting a server
+      socketTimeoutMS: 45000, // How long a send or receive on a socket can take before timing out
+      connectTimeoutMS: 10000, // How long to wait for initial connection
+      
+      // Write concern options
       retryWrites: true,
       w: 'majority',
+      
+      // Buffer options - MongoDB native options
+      bufferCommands: false, // Disable mongoose buffering
+      
+      // Heartbeat and monitoring
+      heartbeatFrequencyMS: 10000, // Heartbeat frequency
+      
+      // Authentication (if needed)
+      authSource: 'admin',
     },
   },
 

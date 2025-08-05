@@ -11,6 +11,7 @@
     "test:coverage": "jest --coverage",
     "auth": "tsx src/utils/twitter-auth-helper.ts",
     "cookie-helper": "tsx src/utils/cookie-importer.ts",
+    "encrypt-twitter-creds": "tsx scripts/encrypt-twitter-creds.ts",
     "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts",
     "test:essential": "tsx src/scripts/essential-test.ts",
     "test:basic": "tsx src/scripts/test-basic.ts",

@@ -6,6 +6,8 @@
 import { Router } from 'express';
 import { AuthService, RegisterRequest, LoginRequest } from '../services/auth.service';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/express-auth';
+import { tokenBlacklistService } from '../lib/security/token-blacklist';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 const authService = new AuthService();
@@ -586,16 +588,38 @@ router.post('/refresh', async (req, res) => {
  */
 router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
     try {
-        // In a real implementation, you would:
-        // 1. Add the token to a blacklist
-        // 2. Invalidate refresh tokens
-        // 3. Log the logout event
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const { refreshToken, logoutAllDevices } = req.body;
+
+        if (token) {
+            // Decode token to get expiration
+            const decoded = jwt.decode(token) as any;
+            const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 60 * 60 * 1000);
+            
+            // Add current token to blacklist
+            tokenBlacklistService.blacklistToken(token, req.user!.id, expiresAt);
+        }
+
+        if (refreshToken) {
+            // Decode refresh token to get expiration
+            const decodedRefresh = jwt.decode(refreshToken) as any;
+            const refreshExpiresAt = decodedRefresh?.exp ? new Date(decodedRefresh.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            
+            // Add refresh token to blacklist
+            tokenBlacklistService.blacklistToken(refreshToken, req.user!.id, refreshExpiresAt);
+        }
+
+        if (logoutAllDevices) {
+            // In a complete implementation, you'd blacklist all user tokens
+            tokenBlacklistService.blacklistAllUserTokens(req.user!.id);
+        }
 
         res.json({
             success: true,
             data: {
                 loggedOutAt: new Date().toISOString(),
-                tokensInvalidated: 1,
+                tokensInvalidated: logoutAllDevices ? 'all' : (refreshToken ? 2 : 1),
             },
             message: 'Logout successful',
         });

@@ -59,6 +59,11 @@ twitter-session.json
 twitter-auth.json
 cookies-*.json
 
+# SECURITY: Encrypted credentials (NEVER COMMIT)
+encrypted-twitter-creds.json
+*.encrypted.json
+master-password.txt
+
 # Social media cache
 social-cache/
 twitter-cache/

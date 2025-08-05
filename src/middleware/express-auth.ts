@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { tokenBlacklistService } from '../lib/security/token-blacklist';
 
 // Extend Request interface to include user
 export interface AuthenticatedRequest extends Request {
@@ -25,7 +26,19 @@ interface JwtPayload {
     exp?: number;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+// SECURITY: JWT_SECRET is required - no fallback for production safety
+const JWT_SECRET = (() => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('🔒 SECURITY ERROR: JWT_SECRET environment variable is required');
+        process.exit(1);
+    }
+    if (secret.length < 32) {
+        console.error('🔒 SECURITY ERROR: JWT_SECRET must be at least 32 characters long');
+        process.exit(1);
+    }
+    return secret;
+})();
 
 /**
  * Middleware to verify JWT tokens
@@ -40,6 +53,19 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
             error: {
                 message: 'Access token is required',
                 code: 'TOKEN_REQUIRED',
+                timestamp: new Date().toISOString(),
+            },
+        });
+        return;
+    }
+
+    // SECURITY: Check if token is blacklisted
+    if (tokenBlacklistService.isTokenBlacklisted(token)) {
+        res.status(401).json({
+            success: false,
+            error: {
+                message: 'Token has been invalidated',
+                code: 'TOKEN_BLACKLISTED',
                 timestamp: new Date().toISOString(),
             },
         });
