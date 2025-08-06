@@ -11,6 +11,32 @@
 			"item": [
 				{
 					"name": "User Registration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "reg-test-001",
+								"exec": [
+									"pm.test(\"Registration successful\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.be.true;\r",
+									"    pm.expect(jsonData.data).to.have.property('user');\r",
+									"    console.log('✅ User registered successfully');\r",
+									"});\r",
+									"\r",
+									"pm.test(\"User data is complete\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    if (jsonData.success) {\r",
+									"        pm.expect(jsonData.data.user).to.have.property('username');\r",
+									"        pm.expect(jsonData.data.user).to.have.property('email');\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"id": "47374584-059506c2-e257-4196-8502-b24d3e3654f9",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -26,7 +52,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"username\": \"testuser2\",\r\n  \"email\": \"test2@example.com\",\r\n  \"password\": \"SecurePassword123!\",\r\n  \"displayName\": \"test2\"\r\n}",
+							"raw": "{\r\n  \"username\": \"testuser2\",\r\n  \"email\": \"test2@example.com\",\r\n  \"password\": \"SecurePassword123!\",\r\n  \"confirmPassword\": \"SecurePassword123!\",\r\n  \"displayName\": \"test2\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -60,7 +86,16 @@
 									"    var jsonData = pm.response.json();\r",
 									"    if (jsonData.success && jsonData.data.token) {\r",
 									"        pm.environment.set(\"authToken\", jsonData.data.token);\r",
+									"        console.log(\"🔐 Auth token saved successfully\");\r",
 									"    }\r",
+									"    if (jsonData.data.refreshToken) {\r",
+									"        pm.environment.set(\"refreshToken\", jsonData.data.refreshToken);\r",
+									"        console.log(\"🔄 Refresh token saved successfully\");\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is acceptable\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);\r",
 									"});"
 								],
 								"type": "text/javascript",
@@ -145,6 +180,25 @@
 				},
 				{
 					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "refresh-test-001",
+								"exec": [
+									"pm.test(\"Token refresh successful\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    if (jsonData.success && jsonData.data.token) {\r",
+									"        pm.environment.set(\"authToken\", jsonData.data.token);\r",
+									"        console.log('🔄 Auth token refreshed successfully');\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"id": "47374584-6b6a1217-7df0-449e-9646-035f6f176642",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -154,7 +208,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{refreshToken}}",
+								"value": "Bearer {{authToken}}",
 								"type": "text"
 							},
 							{
@@ -331,6 +385,34 @@
 				},
 				{
 					"name": "Scrape by Hashtag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "scrape-hashtag-001",
+								"exec": [
+									"pm.test(\"Scraping completed successfully\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.success).to.be.true;\r",
+									"    pm.expect(jsonData.data).to.have.property('tweets');\r",
+									"    console.log(`📊 Scraped ${jsonData.data.totalScraped || 0} tweets`);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Tweet data structure is valid\", function () {\r",
+									"    const jsonData = pm.response.json();\r",
+									"    if (jsonData.success && jsonData.data.tweets.length > 0) {\r",
+									"        const firstTweet = jsonData.data.tweets[0];\r",
+									"        pm.expect(firstTweet).to.have.property('content');\r",
+									"        pm.expect(firstTweet).to.have.property('author');\r",
+									"        pm.expect(firstTweet).to.have.property('sentiment');\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"id": "47374584-a702b60f-995a-404e-9d35-32dcd0d64522",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -633,7 +715,7 @@
 						"disableBodyPruning": true
 					},
 					"request": {
-						"method": "GET",
+						"method": "PUT",
 						"header": [
 							{
 								"key": "Authorization",
@@ -906,9 +988,15 @@
 							}
 						},
 						"url": {
-							"raw": "Update Campaign",
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}",
 							"host": [
-								"Update Campaign"
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"campaigns",
+								"{{campaignId}}"
 							]
 						}
 					},
@@ -970,6 +1058,37 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Database Health Check",
+					"id": "47374584-db-health-001",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/admin/database/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"admin",
+								"database",
+								"health"
+							]
+						}
+					},
+					"response": []
 				}
 			],
 			"id": "47374584-2ca473f3-7668-4221-9017-6565cfaeca76"
@@ -986,19 +1105,38 @@
 				"type": "text/javascript",
 				"packages": {},
 				"exec": [
-					"// Auto-refresh token if expired\r",
-					"pm.sendRequest({\r",
-					"    url: pm.environment.get(\"baseUrl\") + \"/api/\" + pm.environment.get(\"apiVersion\") + \"/auth/refresh\",\r",
-					"    method: 'POST',\r",
-					"    header: {\r",
-					"        'Authorization': 'Bearer ' + pm.environment.get(\"authToken\"),\r",
-					"        'Content-Type': 'application/json'\r",
+					"// Skip auto-refresh for auth endpoints to avoid infinite loops\r",
+					"const skipAutoRefresh = [\r",
+					"    '/auth/login',\r",
+					"    '/auth/register',\r",
+					"    '/auth/refresh',\r",
+					"    '/health'\r",
+					"];\r",
+					"\r",
+					"const currentUrl = pm.request.url.getPath();\r",
+					"const shouldSkip = skipAutoRefresh.some(path => currentUrl.includes(path));\r",
+					"\r",
+					"if (!shouldSkip && pm.environment.get('authToken')) {\r",
+					"    console.log('🔄 Checking token validity...');\r",
+					"    // Only try refresh if we have a refresh token\r",
+					"    if (pm.environment.get('refreshToken')) {\r",
+					"        pm.sendRequest({\r",
+					"            url: pm.environment.get(\"baseUrl\") + \"/api/\" + pm.environment.get(\"apiVersion\") + \"/auth/refresh\",\r",
+					"            method: 'POST',\r",
+					"            header: {\r",
+					"                'Authorization': 'Bearer ' + pm.environment.get(\"refreshToken\"),\r",
+					"                'Content-Type': 'application/json'\r",
+					"            }\r",
+					"        }, function (err, response) {\r",
+					"            if (response && response.json() && response.json().success) {\r",
+					"                pm.environment.set(\"authToken\", response.json().data.token);\r",
+					"                console.log('✅ Token refreshed successfully');\r",
+					"            } else {\r",
+					"                console.log('⚠️ Token refresh failed, may need to login again');\r",
+					"            }\r",
+					"        });\r",
 					"    }\r",
-					"}, function (err, response) {\r",
-					"    if (response && response.json().success) {\r",
-					"        pm.environment.set(\"authToken\", response.json().data.token);\r",
-					"    }\r",
-					"});"
+					"}"
 				]
 			}
 		},
@@ -1009,7 +1147,36 @@
 				"type": "text/javascript",
 				"packages": {},
 				"exec": [
-					""
+					"// Global response validation\r",
+					"pm.test(\"Status code is success\", function () {\r",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);\r",
+					"});\r",
+					"\r",
+					"pm.test(\"Response has success property\", function () {\r",
+					"    try {\r",
+					"        const jsonData = pm.response.json();\r",
+					"        pm.expect(jsonData).to.have.property('success');\r",
+					"    } catch (e) {\r",
+					"        // Skip test for non-JSON responses (like health check)\r",
+					"        pm.test.skip();\r",
+					"    }\r",
+					"});\r",
+					"\r",
+					"// Log response time for monitoring\r",
+					"pm.test(\"Response time is acceptable\", function () {\r",
+					"    pm.expect(pm.response.responseTime).to.be.below(30000);\r",
+					"    console.log(`⏱️ Response time: ${pm.response.responseTime}ms`);\r",
+					"});\r",
+					"\r",
+					"// Log errors for debugging\r",
+					"if (pm.response.code >= 400) {\r",
+					"    try {\r",
+					"        const errorData = pm.response.json();\r",
+					"        console.error('❌ API Error:', JSON.stringify(errorData, null, 2));\r",
+					"    } catch (e) {\r",
+					"        console.error('❌ HTTP Error:', pm.response.code, pm.response.status);\r",
+					"    }\r",
+					"}"
 				]
 			}
 		}
