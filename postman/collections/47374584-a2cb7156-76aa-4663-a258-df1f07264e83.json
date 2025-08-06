@@ -1,0 +1,1017 @@
+{
+	"info": {
+		"_postman_id": "47374584-a2cb7156-76aa-4663-a258-df1f07264e83",
+		"name": "SentimentalSocial API",
+		"description": "StartFragmentAPI endpoints for Social media sentiment analysis platformEndFragment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "ENDPOINTS DE AUTENTICACIÓN",
+			"item": [
+				{
+					"name": "User Registration",
+					"id": "47374584-059506c2-e257-4196-8502-b24d3e3654f9",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"testuser2\",\r\n  \"email\": \"test2@example.com\",\r\n  \"password\": \"SecurePassword123!\",\r\n  \"displayName\": \"test2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "10f3b425-cadb-4b9a-b938-d36cf3e0afbc",
+								"exec": [
+									"pm.test(\"Login successful\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    if (jsonData.success && jsonData.data.token) {\r",
+									"        pm.environment.set(\"authToken\", jsonData.data.token);\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"id": "47374584-048b74c7-1ea4-4de6-a0d2-5e0c0a25c91e",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"test2@example.com\",\r\n    \"password\": \"SecurePassword123!\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User Logout",
+					"id": "47374584-a7c6a947-859f-4193-b427-f81e1c7e4745",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"id": "47374584-6b6a1217-7df0-449e-9646-035f6f176642",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{refreshToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-82fa1c85-0fbe-453e-9810-cb5bed907aed"
+		},
+		{
+			"name": "ENDPOINTS DE TWITTER AUTH",
+			"item": [
+				{
+					"name": "Twitter Auth Status",
+					"id": "47374584-05564093-14d2-4c61-89fc-e447972162ca",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"twitter-auth",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set Twitter Credentials",
+					"id": "47374584-56ce6d0b-35f5-4ce9-8855-44d3d92725b7",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"consumerKey\": \"your_consumer_key\",\r\n  \"consumerSecret\": \"your_consumer_secret\",\r\n  \"accessToken\": \"your_access_token\",\r\n  \"accessTokenSecret\": \"your_access_token_secret\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/credentials",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"twitter-auth",
+								"credentials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Authenticate Twitter",
+					"id": "47374584-5b0dabc9-093b-4cce-9948-568095857744",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/authenticate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"twitter-auth",
+								"authenticate"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-e66365d5-bc50-4150-a1ad-4ce3bce2876b"
+		},
+		{
+			"name": "ENDPOINTS DE SCRAPING",
+			"item": [
+				{
+					"name": "Scraping Status",
+					"id": "47374584-b9ae015d-ea87-46c0-9a83-552d083873a3",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"scraping",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Scrape by Hashtag",
+					"id": "47374584-a702b60f-995a-404e-9d35-32dcd0d64522",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"hashtag\": \"run\",\r\n    \"limit\": 10,\r\n    \"language\": \"en\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/hashtag",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"scraping",
+								"hashtag"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Scrape by User",
+					"id": "47374584-38613105-12aa-496f-8b73-cd2b79dd4183",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"elonmusk\",\r\n    \"limit\": 30,\r\n    \"language\": \"en\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"scraping",
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Scrape by Search",
+					"id": "47374584-8e223e79-689b-4e48-97e1-4f88c00046dd",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"query\": \"artificial intelligence\",\r\n  \"limit\": 20,\r\n  \"language\": \"en\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/search",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"scraping",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Re-authenticate Scraper",
+					"id": "47374584-0b359d78-3f9b-4c57-99c0-7e375efea575",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/reauth",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"scraping",
+								"reauth"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-4bccb14c-d130-4eb4-84ac-fdae9056cb5c"
+		},
+		{
+			"name": "ENDPOINTS DE ANÁLISIS DE SENTIMIENTOS",
+			"item": [
+				{
+					"name": "Analyze Single Text",
+					"id": "47374584-2597f5b2-b557-4379-92cf-86d029fc8fde",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"text\": \"I love this new technology! It's amazing.\",\r\n    \"language\": \"en\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"sentiment",
+								"analyze"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Multiple Texts",
+					"id": "47374584-86027b59-7713-4fbe-9ae4-f789b9eeded1",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"texts\": [\r\n        \"This is great!\",\r\n        \"I hate this product\",\r\n        \"It's okay, nothing special\"\r\n    ],\r\n    \"language\": \"en\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/batch",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"sentiment",
+								"batch"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-be6d392b-c8c5-46d3-b255-718c896f8c27"
+		},
+		{
+			"name": "ENDPOINTS DE USUARIOS",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"id": "47374584-11d5d36f-e3bd-4513-8e41-04553d1258f8",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile",
+					"id": "47374584-6144c5c1-f9d0-4a29-a04b-21d149f68ecb",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"newusername\",\r\n    \"email\": \"newemail@example.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User Account",
+					"id": "47374584-ce783bf3-fa11-4009-9319-d4d761e14ebe",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-70f7cdd4-9460-46c4-bc54-0741feb86b57"
+		},
+		{
+			"name": "ENDPOINTS DE SEGURIDAD",
+			"item": [
+				{
+					"name": "Token Blacklist Status",
+					"id": "47374584-c0799a4a-f37c-45c2-8f17-40fb3a8932c7",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/security/blacklist/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"security",
+								"blacklist",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Token Blacklist Stats",
+					"id": "47374584-69d43205-4270-4065-9d0d-385b7d475de1",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/security/blacklist/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"security",
+								"blacklist",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Security Health Check",
+					"id": "47374584-7fbca23e-6a45-4a00-9a5d-fc01dde658bc",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/security/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"security",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-bbb4d03d-571e-4d35-b537-2e862399e836"
+		},
+		{
+			"name": "ENDPOINTS DE CAMPAÑAS",
+			"item": [
+				{
+					"name": "Create Campaign",
+					"id": "47374584-822a2f75-17d6-45de-995f-dab77abf1bb6",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Brand Sentiment Analysis\",\r\n    \"description\": \"Monitor brand mentions and sentiment\",\r\n    \"hashtags\": [\r\n        \"#mybrand\",\r\n        \"#product\"\r\n    ],\r\n    \"keywords\": [\r\n        \"my brand\",\r\n        \"our product\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"campaigns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Campaigns",
+					"id": "47374584-db020c41-1623-4609-9597-54cb77f8b952",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"campaigns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Campaign",
+					"id": "47374584-c1860654-6204-4236-bc82-0a77c1bffb76",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Updated Campaign Name\",\r\n    \"status\": \"active\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "Update Campaign",
+							"host": [
+								"Update Campaign"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-2f1f73f0-3b41-47ba-b401-d5065f59d2ed"
+		},
+		{
+			"name": "ENDPOINTS DE SISTEMA",
+			"item": [
+				{
+					"name": "Health Check",
+					"id": "47374584-6f0fb92b-c450-4b9c-9584-43a818209cb8",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "System Status",
+					"id": "47374584-9d3f3769-ba9c-4ca4-9bf2-7eaf61d8ff3d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/admin/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"admin",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "47374584-2ca473f3-7668-4221-9017-6565cfaeca76"
+		}
+	],
+	"auth": {
+		"type": "bearer"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "1f7af489-3a4b-4c0b-b1e8-38d5109fbca1",
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Auto-refresh token if expired\r",
+					"pm.sendRequest({\r",
+					"    url: pm.environment.get(\"baseUrl\") + \"/api/\" + pm.environment.get(\"apiVersion\") + \"/auth/refresh\",\r",
+					"    method: 'POST',\r",
+					"    header: {\r",
+					"        'Authorization': 'Bearer ' + pm.environment.get(\"authToken\"),\r",
+					"        'Content-Type': 'application/json'\r",
+					"    }\r",
+					"}, function (err, response) {\r",
+					"    if (response && response.json().success) {\r",
+					"        pm.environment.set(\"authToken\", response.json().data.token);\r",
+					"    }\r",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "c3d2d163-765e-48b3-bc67-f81ff53eba32",
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
