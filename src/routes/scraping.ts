@@ -567,7 +567,6 @@ router.get('/status', async (req: Request, res: Response) => {
       data: {
         service_status: 'operational',
         primary_scraper: 'real',
-        fallback_scraper: 'mock',
         real_scraper_available: isRealScraperAvailable,
         real_scraper_status: realScraperStatus,
         scraper_info: {
@@ -575,17 +574,6 @@ router.get('/status', async (req: Request, res: Response) => {
             type: '@the-convocation/twitter-scraper',
             supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
             authentication: 'cookie-based'
-          },
-          fallback: {
-            type: 'mock',
-            supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
-            mock_features: {
-              realistic_users: 8,
-              sentiment_variety: 3,
-              template_categories: ['AI', 'Technology', 'default'],
-              dynamic_content: true,
-              realistic_metrics: true
-            }
           },
           limits: {
             max_tweets_per_request: 1000,

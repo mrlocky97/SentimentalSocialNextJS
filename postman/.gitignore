@@ -1,0 +1,11 @@
+# Postman files
+*.postman_globals.json
+
+# Environment files with sensitive data (if needed)
+# *.postman_environment.json
+
+# Newman reports
+newman/
+
+# Temporary files
+.tmp/

@@ -273,12 +273,13 @@
 								"twitter-auth",
 								"status"
 							]
-						}
+						},
+						"description": "Check Twitter session authentication status for scraping"
 					},
 					"response": []
 				},
 				{
-					"name": "Set Twitter Credentials",
+					"name": "Twitter Auth Login",
 					"id": "47374584-56ce6d0b-35f5-4ce9-8855-44d3d92725b7",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -297,17 +298,8 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"consumerKey\": \"your_consumer_key\",\r\n  \"consumerSecret\": \"your_consumer_secret\",\r\n  \"accessToken\": \"your_access_token\",\r\n  \"accessTokenSecret\": \"your_access_token_secret\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
-							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/credentials",
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/login",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -315,14 +307,15 @@
 								"api",
 								"{{apiVersion}}",
 								"twitter-auth",
-								"credentials"
+								"login"
 							]
-						}
+						},
+						"description": "Force re-authentication for Twitter scraping using environment credentials"
 					},
 					"response": []
 				},
 				{
-					"name": "Authenticate Twitter",
+					"name": "Twitter Auth Logout",
 					"id": "47374584-5b0dabc9-093b-4cce-9948-568095857744",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -342,7 +335,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/authenticate",
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/logout",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -350,9 +343,72 @@
 								"api",
 								"{{apiVersion}}",
 								"twitter-auth",
-								"authenticate"
+								"logout"
 							]
-						}
+						},
+						"description": "Clear Twitter session and cookies"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Twitter Cookies",
+					"id": "47374584-7c8f3a2d-94e5-4f67-b123-456789abcdef",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/validate-cookies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"twitter-auth",
+								"validate-cookies"
+							]
+						},
+						"description": "Test if current Twitter session cookies are still valid"
+					},
+					"response": []
+				},
+				{
+					"name": "Twitter Session Info",
+					"id": "47374584-9d1e4b8c-65f2-4a90-c345-678901234567",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/session-info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"twitter-auth",
+								"session-info"
+							]
+						},
+						"description": "Get comprehensive information about current Twitter session"
 					},
 					"response": []
 				}
