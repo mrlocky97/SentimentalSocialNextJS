@@ -4,7 +4,7 @@
  */
 
 import TwitterScraperService from '../../backup/backup-twitter-scraper.service';
-import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
+import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { AuthService } from '../services/auth.service';
 

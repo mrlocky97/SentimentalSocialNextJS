@@ -3,7 +3,7 @@
  * Aseguran que el core del sistema funciona correctamente
  */
 
-import { TweetSentimentAnalysisManager } from '../../src/services/tweet-sentiment-analysis.manager';
+import { TweetSentimentAnalysisManager } from '../../src/services/tweet-sentiment-analysis.manager.service';
 import { createTestTweet } from '../utils/test-helpers';
 
 describe('TweetSentimentAnalysisManager - CRÍTICO', () => {

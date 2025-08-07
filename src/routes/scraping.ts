@@ -4,10 +4,10 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { TwitterRealScraperService } from '../services/twitter-real-scraper.service';
+import { TwitterRealScraperService } from '../services/twitter-scraper.service';
 // REMOVED: Backup scraper moved to backup directory - using only real scraper now
 // import { TwitterScraperService } from '../services/backup-twitter-scraper.service';
-import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
+import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
 

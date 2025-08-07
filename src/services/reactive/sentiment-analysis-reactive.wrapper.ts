@@ -12,7 +12,7 @@ import {
   retry,
   timeout
 } from 'rxjs/operators';
-import { TweetSentimentAnalysisManager } from '../tweet-sentiment-analysis.manager';
+import { TweetSentimentAnalysisManager } from '../tweet-sentiment-analysis.manager.service';
 import { Tweet } from '../../types/twitter';
 
 export interface SentimentAnalysisRequest {

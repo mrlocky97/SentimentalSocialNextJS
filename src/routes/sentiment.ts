@@ -4,7 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager';
+import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { Tweet } from '../types/twitter';
 import { SentimentAnalysisConfig } from '../types/sentiment';
 

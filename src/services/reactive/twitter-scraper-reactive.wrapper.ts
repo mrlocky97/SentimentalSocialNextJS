@@ -11,7 +11,7 @@ import {
   retry,
   timeout
 } from 'rxjs/operators';
-import { TwitterRealScraperService } from '../twitter-real-scraper.service';
+import { TwitterRealScraperService } from '../twitter-scraper.service';
 import { Tweet } from '../../types/twitter';
 
 export interface ScrapingRequest {

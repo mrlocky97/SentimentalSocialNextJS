@@ -3,7 +3,7 @@
  * Handles authentication during server startup with integrated cookie management
  */
 
-import { TwitterRealScraperService } from './twitter-real-scraper.service';
+import { TwitterRealScraperService } from './twitter-scraper.service';
 import { credentialsEncryption } from '../lib/security/credentials-encryption';
 import fs from 'fs';
 import path from 'path';
