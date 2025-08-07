@@ -253,8 +253,6 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  *                 minimum: 1
  *                 maximum: 500
  *                 example: 30
- *                 minimum: 1
- *                 maximum: 500
  *               includeReplies:
  *                 type: boolean
  *                 description: Whether to include reply tweets
