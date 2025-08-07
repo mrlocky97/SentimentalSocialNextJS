@@ -1,22 +1,17 @@
 /**
  * Twitter Scraping Routes
- * Only using twikit for scraping - no official API
+ * Using twikit for scraping - no official API
  */
 
 import { Router, Request, Response } from 'express';
 import { TwitterRealScraperService } from '../services/twitter-scraper.service';
-// REMOVED: Backup scraper moved to backup directory - using only real scraper now
-// import { TwitterScraperService } from '../services/backup-twitter-scraper.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
 
 const router = Router();
 
-// Using only real scraper service - backup/mock scraper removed
 let realScraperService: TwitterRealScraperService | null = null;
-// REMOVED: Mock scraper functionality 
-// let mockScraperService: TwitterScraperService | null = null;
 
 // Initialize services
 const sentimentManager = new TweetSentimentAnalysisManager();
@@ -37,41 +32,7 @@ async function getRealScraperService(): Promise<TwitterRealScraperService> {
   }
 }
 
-// REMOVED: Mock scraper functionality - using only real scraper
-// function getMockScraperService(): TwitterScraperService {
-//   if (!mockScraperService) {
-//     mockScraperService = new TwitterScraperService();
-//   }
-//   return mockScraperService;
-// }
-
-// Function to handle scraper failures and determine if we should use mock
-function shouldFallbackToMock(error: any): boolean {
-  const errorMessage = error.message || '';
-  const errorString = error.toString() || '';
-
-  return (
-    errorMessage.includes('Forbidden') ||
-    errorMessage.includes('Authentication') ||
-    errorMessage.includes('Unauthorized') ||
-    errorMessage.includes('Cookie') ||
-    errorMessage.includes('Login') ||
-    errorMessage.includes('Session') ||
-    errorMessage.includes('AuthenticationError') ||
-    errorMessage.includes('not logged-in') ||
-    errorMessage.includes('Scraper is not logged-in') ||
-    errorString.includes('Forbidden') ||
-    errorString.includes('AuthenticationError') ||
-    errorString.includes('not logged-in') ||
-    errorString.includes('Scraper is not logged-in') ||
-    error.status === 401 ||
-    error.status === 403 ||
-    error.name === 'AuthenticationError' ||
-    (error.code && (error.code === 401 || error.code === 403))
-  );
-}
-
-// Unified scraping function that tries real scraper first, then fallback to mock
+// Unified scraping function using real scraper
 async function performScraping<T>(
   scrapingOperation: (scraper: TwitterRealScraperService) => Promise<T>,
   operationName: string
@@ -81,9 +42,6 @@ async function performScraping<T>(
     return await scrapingOperation(realScraper);
   } catch (error) {
     console.error(`Real scraper failed for ${operationName}:`, error);
-
-    // REMOVED: Mock scraper fallback - now only using real scraper
-    // No fallback, re-throw error for proper error handling
     throw error;
   }
 }
@@ -110,10 +68,16 @@ async function performScraping<T>(
  *                 example: "JustDoIt"
  *               maxTweets:
  *                 type: number
- *                 description: Maximum number of tweets to collect
- *                 default: 50
+ *                 description: Maximum number of tweets to collect (alternative to limit)
  *                 minimum: 1
  *                 maximum: 1000
+ *                 example: 50
+ *               limit:
+ *                 type: number
+ *                 description: Maximum number of tweets to collect (takes priority over maxTweets if provided). If neither is provided, defaults to 50
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 example: 50
  *               includeReplies:
  *                 type: boolean
  *                 description: Whether to include reply tweets
@@ -125,8 +89,8 @@ async function performScraping<T>(
  *               language:
  *                 type: string
  *                 enum: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "ar", "ru", "hi", "all"]
- *                 default: "all"
- *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter)
+ *                 default: "en"
+ *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter). Defaults to English
  *                 example: "es"
  *     responses:
  *       200:
@@ -160,7 +124,17 @@ async function performScraping<T>(
  */
 router.post('/hashtag', async (req: Request, res: Response) => {
   try {
-    const { hashtag, maxTweets = 50, includeReplies = false, analyzeSentiment = true, language = 'all' } = req.body;
+    const { 
+      hashtag, 
+      maxTweets, // No default value - will be set below
+      limit, // Alternative parameter name
+      includeReplies = false, 
+      analyzeSentiment = true, 
+      language = 'en' // Default to English instead of 'all'
+    } = req.body;
+
+    // Use limit if provided, otherwise use maxTweets, otherwise default to 50
+    const tweetsToRetrieve = limit || maxTweets || 50;
 
     if (!hashtag || typeof hashtag !== 'string') {
       return res.status(400).json({
@@ -170,15 +144,16 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       });
     }
 
-    if (maxTweets < 1 || maxTweets > 1000) {
+    if (tweetsToRetrieve < 1 || tweetsToRetrieve > 1000) {
       return res.status(400).json({
         success: false,
-        error: 'maxTweets must be between 1 and 1000'
+        error: 'maxTweets/limit must be between 1 and 1000',
+        provided: tweetsToRetrieve
       });
     }
 
     // Validate language parameter
-    const validLanguages = ['en', 'es', 'fr', 'de'];
+    const validLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru', 'hi', 'all'];
     if (language && !validLanguages.includes(language)) {
       return res.status(400).json({
         success: false,
@@ -189,10 +164,10 @@ router.post('/hashtag', async (req: Request, res: Response) => {
 
     const startTime = Date.now();
 
-    // Use unified scraping function that tries real scraper first
+    // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
       async (scraper) => await scraper.scrapeByHashtag(hashtag, {
-        maxTweets,
+        maxTweets: tweetsToRetrieve,
         includeReplies,
         language
       }),
@@ -222,6 +197,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       success: true,
       data: {
         hashtag: `#${hashtag}`,
+        requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
         totalScraped: scrapingResult.tweets.length,
         tweets: scrapingResult.tweets,
@@ -232,7 +208,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
         }
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} tweets for #${hashtag}`
+      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets for #${hashtag}`
     });
 
   } catch (error) {
@@ -267,8 +243,16 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  *                 example: "nike"
  *               maxTweets:
  *                 type: number
- *                 description: Maximum number of tweets to collect
- *                 default: 30
+ *                 description: Maximum number of tweets to collect (alternative to limit)
+ *                 minimum: 1
+ *                 maximum: 500
+ *                 example: 30
+ *               limit:
+ *                 type: number
+ *                 description: Maximum number of tweets to collect (takes priority over maxTweets if provided). If neither is provided, defaults to 30
+ *                 minimum: 1
+ *                 maximum: 500
+ *                 example: 30
  *                 minimum: 1
  *                 maximum: 500
  *               includeReplies:
@@ -289,7 +273,16 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  */
 router.post('/user', async (req: Request, res: Response) => {
   try {
-    const { username, maxTweets = 30, includeReplies = false, analyzeSentiment = true } = req.body;
+    const { 
+      username, 
+      maxTweets, // No default value - will be set below
+      limit, // Alternative parameter name
+      includeReplies = false, 
+      analyzeSentiment = true 
+    } = req.body;
+
+    // Use limit if provided, otherwise use maxTweets, otherwise default to 30
+    const tweetsToRetrieve = limit || maxTweets || 30;
 
     if (!username || typeof username !== 'string') {
       return res.status(400).json({
@@ -299,19 +292,20 @@ router.post('/user', async (req: Request, res: Response) => {
       });
     }
 
-    if (maxTweets < 1 || maxTweets > 500) {
+    if (tweetsToRetrieve < 1 || tweetsToRetrieve > 500) {
       return res.status(400).json({
         success: false,
-        error: 'maxTweets must be between 1 and 500'
+        error: 'maxTweets/limit must be between 1 and 500',
+        provided: tweetsToRetrieve
       });
     }
 
     const startTime = Date.now();
 
-    // Use unified scraping function that tries real scraper first
+    // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
       async (scraper) => await scraper.scrapeByUser(username, {
-        maxTweets,
+        maxTweets: tweetsToRetrieve,
         includeReplies
       }),
       `user scraping for @${username}`
@@ -340,6 +334,7 @@ router.post('/user', async (req: Request, res: Response) => {
       success: true,
       data: {
         username: `@${username}`,
+        requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
         totalScraped: scrapingResult.tweets.length,
         tweets: scrapingResult.tweets,
@@ -350,7 +345,7 @@ router.post('/user', async (req: Request, res: Response) => {
         }
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} tweets from @${username}`
+      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets from @${username}`
     });
 
   } catch (error) {
@@ -385,13 +380,21 @@ router.post('/user', async (req: Request, res: Response) => {
  *                 example: "nike shoes OR adidas sneakers"
  *               maxTweets:
  *                 type: number
- *                 description: Maximum number of tweets to collect
- *                 default: 50
+ *                 description: Maximum number of tweets to collect (alternative to limit)
  *                 minimum: 1
  *                 maximum: 1000
+ *                 example: 50
+ *               limit:
+ *                 type: number
+ *                 description: Maximum number of tweets to collect (takes priority over maxTweets if provided). If neither is provided, defaults to 50
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 example: 50
  *               language:
  *                 type: string
- *                 description: Language filter (es, en, etc.)
+ *                 enum: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "ar", "ru", "hi", "all"]
+ *                 default: "en"
+ *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter). Defaults to English
  *                 example: "es"
  *               analyzeSentiment:
  *                 type: boolean
@@ -407,7 +410,16 @@ router.post('/user', async (req: Request, res: Response) => {
  */
 router.post('/search', async (req: Request, res: Response) => {
   try {
-    const { query, maxTweets = 50, language, analyzeSentiment = true } = req.body;
+    const { 
+      query, 
+      maxTweets, // No default value - will be set below
+      limit, // Alternative parameter name
+      language = 'en', // Default to English like other endpoints
+      analyzeSentiment = true 
+    } = req.body;
+
+    // Use limit if provided, otherwise use maxTweets, otherwise default to 50
+    const tweetsToRetrieve = limit || maxTweets || 50;
 
     if (!query || typeof query !== 'string') {
       return res.status(400).json({
@@ -417,20 +429,32 @@ router.post('/search', async (req: Request, res: Response) => {
       });
     }
 
-    if (maxTweets < 1 || maxTweets > 1000) {
+    if (tweetsToRetrieve < 1 || tweetsToRetrieve > 1000) {
       return res.status(400).json({
         success: false,
-        error: 'maxTweets must be between 1 and 1000'
+        error: 'maxTweets/limit must be between 1 and 1000',
+        provided: tweetsToRetrieve
+      });
+    }
+
+    // Validate language parameter
+    const validLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru', 'hi', 'all'];
+    if (language && !validLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid language code. Must be one of: ${validLanguages.join(', ')}`,
+        example: { language: 'es' }
       });
     }
 
     const startTime = Date.now();
 
-    // Use unified scraping function that tries real scraper first
+    // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
       async (scraper) => await scraper.scrapeByHashtag(query, {
-        maxTweets,
-        includeReplies: false
+        maxTweets: tweetsToRetrieve,
+        includeReplies: false,
+        language
       }),
       `search scraping for: "${query}"`
     );
@@ -453,11 +477,11 @@ router.post('/search', async (req: Request, res: Response) => {
 
     const executionTime = Date.now() - startTime;
 
-
     res.json({
       success: true,
       data: {
         query,
+        requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
         totalScraped: scrapingResult.tweets.length,
         tweets: scrapingResult.tweets,
@@ -468,7 +492,7 @@ router.post('/search', async (req: Request, res: Response) => {
         }
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} tweets for query: "${query}"`
+      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets for query: "${query}"`
     });
 
   } catch (error) {
@@ -587,7 +611,7 @@ router.get('/status', async (req: Request, res: Response) => {
           status: 'ready'
         }
       },
-      message: `Scraping service operational - Real scraper ${isRealScraperAvailable ? 'AVAILABLE' : 'UNAVAILABLE'} (automatic fallback to mock)`
+      message: `Scraping service operational - Real scraper ${isRealScraperAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}`
     });
 
   } catch (error) {

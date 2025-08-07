@@ -4,7 +4,8 @@
  */
 
 import { Router } from 'express';
-import { AuthService, RegisterRequest, LoginRequest } from '../services/auth.service';
+import { AuthService } from '../services/auth.service';
+import { RegisterRequest, LoginRequest } from '../types/auth';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/express-auth';
 import { tokenBlacklistService } from '../lib/security/token-blacklist';
 import jwt from 'jsonwebtoken';

@@ -5,30 +5,10 @@
 
 import bcrypt from 'bcryptjs';
 import { generateToken, generateRefreshToken } from '../middleware/express-auth';
-import { User, UserAuth, CreateUserRequest } from '../types/user';
+import { CreateUserRequest } from '../types/user';
+import { RegisterRequest, LoginRequest, AuthResponse } from '../types/auth';
 import { MongoUserRepository } from '../repositories/mongo-user.repository';
 import { isValidEmail, isValidPassword } from '../lib/utils/validation.utils';
-
-export interface RegisterRequest {
-    email: string;
-    password: string;
-    displayName: string;
-    username: string;
-    role?: 'admin' | 'manager' | 'analyst' | 'onlyView' | 'client';
-}
-
-export interface LoginRequest {
-    email: string;
-    password: string;
-    rememberMe?: boolean;
-}
-
-export interface AuthResponse {
-    user: Omit<User, 'password'>;
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-}
 
 export class AuthService {
     private userRepository: MongoUserRepository;

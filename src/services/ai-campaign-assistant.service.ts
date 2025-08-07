@@ -3,33 +3,7 @@
  * Intelligent assistant that guides users through campaign optimization
  */
 
-export interface AssistantRecommendation {
-  id: string;
-  type: 'quick_action' | 'strategic_advice' | 'learning_tip' | 'best_practice';
-  urgency: 'low' | 'medium' | 'high' | 'critical';
-  title: string;
-  message: string;
-  learnMore?: string;
-  actionButton?: {
-    text: string;
-    action: string;
-    parameters?: Record<string, any>;
-  };
-  dismissible: boolean;
-  showUntil?: Date;
-}
-
-export interface CampaignHealthScore {
-  overall: number; // 0-100
-  breakdown: {
-    setup: number;        // Campaign configuration quality
-    performance: number;  // Current results
-    optimization: number; // How well optimized
-    risk: number;        // Risk management
-  };
-  grade: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'F';
-  improvements: string[];
-}
+import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
 
 export class AICampaignAssistantService {
 

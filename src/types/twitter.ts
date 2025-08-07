@@ -267,3 +267,124 @@ export interface StartScrapingRequest {
   maxTweets?: number;
   priority?: 'low' | 'normal' | 'high';
 }
+
+// Twitter Scraper Service Types
+export interface ScrapedTweetData {
+  id?: string;
+  text?: string;
+  content?: string; // Alternative field name
+  user?: {
+    id_str?: string;
+    id?: string;
+    userId?: string;
+    screen_name?: string;
+    username?: string;
+    handle?: string;
+    name?: string;
+    displayName?: string;
+    display_name?: string;
+    verified?: boolean;
+    is_verified?: boolean;
+    followers_count?: number;
+    followersCount?: number;
+    followers?: number;
+    following_count?: number;
+    followingCount?: number;
+    following?: number;
+    statuses_count?: number;
+    statusesCount?: number;
+    tweets_count?: number;
+    tweetsCount?: number;
+    profile_image_url_https?: string;
+    profile_image_url?: string;
+    avatar?: string;
+    profileImageUrl?: string;
+    description?: string;
+    bio?: string;
+    location?: string;
+    url?: string;
+    website?: string;
+  };
+  author?: any; // Alternative user object name
+  account?: any; // Another alternative
+  favorite_count?: number;
+  favoriteCount?: number;
+  retweet_count?: number;
+  retweetCount?: number;
+  reply_count?: number;
+  replyCount?: number;
+  quote_count?: number;
+  quoteCount?: number;
+  created_at?: string;
+  createdAt?: string;
+  hashtags?: string[];
+  mentions?: any[];
+  urls?: any[];
+  media?: any[];
+  is_retweet?: boolean;
+  isRetweet?: boolean;
+  is_quote_status?: boolean;
+  isQuote?: boolean;
+  lang?: string;
+  language?: string;
+}
+
+export interface ScrapingOptions {
+  hashtag?: string;
+  username?: string;
+  maxTweets?: number;
+  includeReplies?: boolean;
+  includeRetweets?: boolean;
+  maxAgeHours?: number;
+  minLikes?: number;
+  minRetweets?: number;
+  language?: string;
+}
+
+export interface AuthenticationStatus {
+  isAuthenticated: boolean;
+  lastCheck: Date;
+  lastError?: string;
+  consecutiveFailures: number;
+  nextRetryTime?: Date;
+  credentialsValid: boolean;
+}
+
+export interface ScrapingResult {
+  tweets: Tweet[];
+  totalFound: number;
+  totalScraped: number;
+  errors: string[];
+  rateLimit: {
+    remaining: number;
+    resetTime: Date;
+  };
+}
+
+export interface ScrapingConfig {
+  headless?: boolean;
+  timeout?: number;
+  delay?: number;
+  maxRetries?: number;
+  userAgent?: string;
+}
+
+// Twitter Authentication Types
+export interface TwitterCookie {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+}
+
+export interface SessionData {
+  cookies: TwitterCookie[];
+  timestamp: number;
+  userAgent: string;
+  isValid: boolean;
+  expirationTime: number;
+}

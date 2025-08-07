@@ -5,9 +5,6 @@
 
 import { TweetSentimentAnalysis, BrandMention, HashtagSentiment, MarketingInsight, SentimentAnalysisStats, SentimentTrend, SentimentAnalysisConfig, InsightType, ImpactLevel, TextAnalysis, EntityAnalysis } from '../types/sentiment';
 import { Tweet } from '../types/twitter';
-// REMOVED: Using internal sentiment analysis logic instead of backup service
-// import { SentimentAnalysisService } from './backup-sentiment-analysis.service';
-// import { analyzeHybridSentiment } from '../lib/sentiment/hybrid-sentiment-analyzer';
 
 /**
  * Internal sentiment analysis logic

@@ -6,7 +6,6 @@
 
 import { TweetModel, ITweetDocument } from '../models/Tweet.model';
 import { Tweet } from '../types/twitter';
-import mongoose from 'mongoose';
 import { MongoTweetRepository } from '../repositories/mongo-tweet.repository';
 
 export interface SaveTweetResult {

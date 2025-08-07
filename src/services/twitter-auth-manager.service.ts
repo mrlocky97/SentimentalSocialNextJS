@@ -4,28 +4,10 @@
  */
 
 import { TwitterRealScraperService } from './twitter-scraper.service';
+import { SessionData } from '../types/twitter';
 import { credentialsEncryption } from '../lib/security/credentials-encryption';
 import fs from 'fs';
 import path from 'path';
-
-interface TwitterCookie {
-  name: string;
-  value: string;
-  domain: string;
-  path: string;
-  expires?: number;
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: 'Strict' | 'Lax' | 'None';
-}
-
-interface SessionData {
-  cookies: TwitterCookie[];
-  timestamp: number;
-  userAgent: string;
-  isValid: boolean;
-  expirationTime: number;
-}
 
 export class TwitterAuthManager {
   private static instance: TwitterAuthManager;

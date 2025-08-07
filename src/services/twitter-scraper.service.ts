@@ -4,109 +4,14 @@
  * Now with enhanced authentication and cookie support
  */
 
-import { Tweet } from '../types/twitter';
-
-// Scraped Tweet Data Structure from @the-convocation/twitter-scraper
-// Expanded to handle multiple possible field names and structures
-interface ScrapedTweetData {
-  id?: string;
-  text?: string;
-  content?: string; // Alternative field name
-  user?: {
-    id_str?: string;
-    id?: string;
-    userId?: string;
-    screen_name?: string;
-    username?: string;
-    handle?: string;
-    name?: string;
-    displayName?: string;
-    display_name?: string;
-    verified?: boolean;
-    is_verified?: boolean;
-    followers_count?: number;
-    followersCount?: number;
-    followers?: number;
-    following_count?: number;
-    followingCount?: number;
-    following?: number;
-    statuses_count?: number;
-    statusesCount?: number;
-    tweets_count?: number;
-    tweetsCount?: number;
-    profile_image_url_https?: string;
-    profile_image_url?: string;
-    avatar?: string;
-    profileImageUrl?: string;
-    description?: string;
-    bio?: string;
-    location?: string;
-    url?: string;
-    website?: string;
-  };
-  author?: any; // Alternative user object name
-  account?: any; // Another alternative
-  favorite_count?: number;
-  favoriteCount?: number;
-  retweet_count?: number;
-  retweetCount?: number;
-  reply_count?: number;
-  replyCount?: number;
-  quote_count?: number;
-  quoteCount?: number;
-  created_at?: string;
-  createdAt?: string;
-  hashtags?: string[];
-  mentions?: any[];
-  urls?: any[];
-  media?: any[];
-  is_retweet?: boolean;
-  isRetweet?: boolean;
-  is_quote_status?: boolean;
-  isQuote?: boolean;
-  lang?: string;
-  language?: string;
-}
-
-interface ScrapingOptions {
-  hashtag?: string;
-  username?: string;
-  maxTweets?: number;
-  includeReplies?: boolean;
-  includeRetweets?: boolean;
-  maxAgeHours?: number;
-  minLikes?: number;
-  minRetweets?: number;
-  language?: string;
-}
-
-interface AuthenticationStatus {
-  isAuthenticated: boolean;
-  lastCheck: Date;
-  lastError?: string;
-  consecutiveFailures: number;
-  nextRetryTime?: Date;
-  credentialsValid: boolean;
-}
-
-interface ScrapingResult {
-  tweets: Tweet[];
-  totalFound: number;
-  totalScraped: number;
-  errors: string[];
-  rateLimit: {
-    remaining: number;
-    resetTime: Date;
-  };
-}
-
-interface ScrapingConfig {
-  headless?: boolean;
-  timeout?: number;
-  delay?: number;
-  maxRetries?: number;
-  userAgent?: string;
-}
+import { 
+  Tweet,
+  ScrapedTweetData,
+  ScrapingOptions,
+  AuthenticationStatus,
+  ScrapingResult,
+  ScrapingConfig
+} from '../types/twitter';
 
 export class TwitterRealScraperService {
   private config: ScrapingConfig;
