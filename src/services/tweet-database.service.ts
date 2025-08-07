@@ -4,9 +4,9 @@
  * Integrated with MongoTweetRepository functionality
  */
 
-import { TweetModel, ITweetDocument } from '../models/Tweet.model';
-import { Tweet } from '../types/twitter';
+import { ITweetDocument, TweetModel } from '../models/Tweet.model';
 import { MongoTweetRepository } from '../repositories/mongo-tweet.repository';
+import { Tweet } from '../types/twitter';
 
 export interface SaveTweetResult {
   success: boolean;
@@ -65,7 +65,7 @@ export class TweetDatabaseService {
           success: true,
           tweetId: tweet.tweetId,
           isNew: false,
-          message: 'Tweet updated successfully'
+          message: 'Tweet updated successfully',
         };
       }
 
@@ -79,14 +79,13 @@ export class TweetDatabaseService {
         success: true,
         tweetId: tweet.tweetId,
         isNew: true,
-        message: 'Tweet saved successfully'
+        message: 'Tweet saved successfully',
       };
-
     } catch (error: any) {
       console.error('Error saving tweet:', error);
       return {
         success: false,
-        error: error.message || 'Unknown error occurred while saving tweet'
+        error: error.message || 'Unknown error occurred while saving tweet',
       };
     }
   }
@@ -103,7 +102,7 @@ export class TweetDatabaseService {
       duplicates: 0,
       errors: 0,
       savedTweetIds: [],
-      errorMessages: []
+      errorMessages: [],
     };
 
     if (tweets.length === 0) {
@@ -111,21 +110,18 @@ export class TweetDatabaseService {
     }
 
     try {
-
       // Get existing tweet IDs to check for duplicates
-      const tweetIds = tweets.map(t => t.tweetId);
+      const tweetIds = tweets.map((t) => t.tweetId);
 
       const existingTweets = await TweetModel.find({
-        tweetId: { $in: tweetIds }
+        tweetId: { $in: tweetIds },
       }).select('tweetId');
 
-
-      const existingTweetIds = new Set(existingTweets.map(t => t.tweetId));
+      const existingTweetIds = new Set(existingTweets.map((t) => t.tweetId));
 
       // Separate new tweets from existing ones
-      const newTweets = tweets.filter(t => !existingTweetIds.has(t.tweetId));
-      const tweetsToUpdate = tweets.filter(t => existingTweetIds.has(t.tweetId));
-
+      const newTweets = tweets.filter((t) => !existingTweetIds.has(t.tweetId));
+      const tweetsToUpdate = tweets.filter((t) => existingTweetIds.has(t.tweetId));
 
       // Process new tweets in batches
       if (newTweets.length > 0) {
@@ -135,27 +131,24 @@ export class TweetDatabaseService {
           const batch = newTweets.slice(i, i + batchSize);
 
           try {
-            const tweetDocuments = batch.map(tweet =>
+            const tweetDocuments = batch.map((tweet) =>
               this.mapScrapedTweetToDocument(tweet, campaignId)
             );
 
-
             try {
               const insertedTweets = await TweetModel.insertMany(tweetDocuments, {
-                ordered: false // Continue inserting even if some fail
+                ordered: false, // Continue inserting even if some fail
               });
 
-
               result.saved += insertedTweets.length;
-              result.savedTweetIds.push(...insertedTweets.map(t => t.tweetId));
-
+              result.savedTweetIds.push(...insertedTweets.map((t) => t.tweetId));
             } catch (insertError: any) {
-              console.error(`❌ Insert error details:`, {
+              console.error(`Insert error details:`, {
                 name: insertError.name,
                 message: insertError.message,
                 code: insertError.code,
                 writeErrors: insertError.writeErrors,
-                result: insertError.result
+                result: insertError.result,
               });
 
               // Check if it's a bulk write error with some successes
@@ -167,7 +160,6 @@ export class TweetDatabaseService {
               result.errors += batch.length - (insertError.insertedDocs?.length || 0);
               result.errorMessages.push(`Insert error: ${insertError.message}`);
             }
-
           } catch (batchError: any) {
             console.error(`❌ Error in batch ${i}-${i + batchSize}:`, batchError);
             result.errors += batch.length;
@@ -195,9 +187,7 @@ export class TweetDatabaseService {
 
       result.duplicates = existingTweetIds.size;
 
-
       return result;
-
     } catch (error: any) {
       console.error('Bulk save error:', error);
       result.success = false;
@@ -217,7 +207,7 @@ export class TweetDatabaseService {
       replies: newTweetData.metrics.replies,
       quotes: newTweetData.metrics.quotes,
       views: newTweetData.metrics.views || 0,
-      engagement: newTweetData.metrics.engagement
+      engagement: newTweetData.metrics.engagement,
     };
 
     // Update author metrics (follower count may have changed)
@@ -238,8 +228,13 @@ export class TweetDatabaseService {
         emotions: newTweetData.sentiment.emotions,
         keywords: newTweetData.sentiment.keywords || [],
         analyzedAt: new Date(),
-        processingTime: newTweetData.sentiment.processingTime
+        processingTime: newTweetData.sentiment.processingTime,
       };
+    }
+
+    // Update campaignId if provided and different
+    if (newTweetData.campaignId && newTweetData.campaignId !== existingTweet.campaignId) {
+      existingTweet.campaignId = newTweetData.campaignId;
     }
 
     await existingTweet.save();
@@ -266,7 +261,7 @@ export class TweetDatabaseService {
         website: tweet.author.website,
         joinedDate: tweet.author.joinedDate,
         influenceScore: tweet.author.influenceScore,
-        engagementRate: tweet.author.engagementRate
+        engagementRate: tweet.author.engagementRate,
       },
       metrics: {
         likes: tweet.metrics.likes,
@@ -274,18 +269,20 @@ export class TweetDatabaseService {
         replies: tweet.metrics.replies,
         quotes: tweet.metrics.quotes,
         views: tweet.metrics.views || 0,
-        engagement: tweet.metrics.engagement
+        engagement: tweet.metrics.engagement,
       },
-      sentiment: tweet.sentiment ? {
-        score: tweet.sentiment.score,
-        magnitude: tweet.sentiment.magnitude,
-        label: tweet.sentiment.label,
-        confidence: tweet.sentiment.confidence,
-        emotions: tweet.sentiment.emotions,
-        keywords: tweet.sentiment.keywords || [],
-        analyzedAt: new Date(),
-        processingTime: tweet.sentiment.processingTime
-      } : undefined,
+      sentiment: tweet.sentiment
+        ? {
+            score: tweet.sentiment.score,
+            magnitude: tweet.sentiment.magnitude,
+            label: tweet.sentiment.label,
+            confidence: tweet.sentiment.confidence,
+            emotions: tweet.sentiment.emotions,
+            keywords: tweet.sentiment.keywords || [],
+            analyzedAt: new Date(),
+            processingTime: tweet.sentiment.processingTime,
+          }
+        : undefined,
       hashtags: tweet.hashtags.map((tag: string) => tag.replace('#', '').toLowerCase()),
       mentions: tweet.mentions.map((mention: string) => mention.replace('@', '').toLowerCase()),
       urls: tweet.urls,
@@ -296,7 +293,7 @@ export class TweetDatabaseService {
       isQuote: tweet.isQuote,
       language: tweet.language || 'en',
       scrapedAt: new Date(),
-      tweetCreatedAt: new Date(tweet.createdAt)
+      tweetCreatedAt: new Date(tweet.createdAt),
     };
   }
 
@@ -305,9 +302,7 @@ export class TweetDatabaseService {
    */
   async getTweetsByCampaign(campaignId: string, limit: number = 100): Promise<ITweetDocument[]> {
     try {
-      return await TweetModel.find({ campaignId })
-        .sort({ tweetCreatedAt: -1 })
-        .limit(limit);
+      return await TweetModel.find({ campaignId }).sort({ tweetCreatedAt: -1 }).limit(limit);
     } catch (error) {
       console.error('Error fetching tweets by campaign:', error);
       return [];
@@ -341,26 +336,21 @@ export class TweetDatabaseService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const [
-        totalTweets,
-        tweetsToday,
-        uniqueAuthors,
-        sentimentStats
-      ] = await Promise.all([
+      const [totalTweets, tweetsToday, uniqueAuthors, sentimentStats] = await Promise.all([
         TweetModel.countDocuments(),
         TweetModel.countDocuments({ scrapedAt: { $gte: today } }),
         TweetModel.distinct('author.username'),
         TweetModel.aggregate([
           { $match: { 'sentiment.score': { $exists: true } } },
-          { $group: { _id: null, avgSentiment: { $avg: '$sentiment.score' } } }
-        ])
+          { $group: { _id: null, avgSentiment: { $avg: '$sentiment.score' } } },
+        ]),
       ]);
 
       return {
         totalTweets,
         tweetsToday,
         uniqueAuthors: uniqueAuthors.length,
-        averageSentiment: sentimentStats[0]?.avgSentiment || 0
+        averageSentiment: sentimentStats[0]?.avgSentiment || 0,
       };
     } catch (error) {
       console.error('Error getting storage stats:', error);
@@ -368,7 +358,7 @@ export class TweetDatabaseService {
         totalTweets: 0,
         tweetsToday: 0,
         uniqueAuthors: 0,
-        averageSentiment: 0
+        averageSentiment: 0,
       };
     }
   }

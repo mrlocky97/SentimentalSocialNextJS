@@ -330,6 +330,8 @@ export interface ScrapedTweetData {
 }
 
 export interface ScrapingOptions {
+  campaingId?: string;
+  limit?: number;
   hashtag?: string;
   username?: string;
   maxTweets?: number;

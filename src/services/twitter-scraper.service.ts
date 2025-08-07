@@ -157,13 +157,14 @@ export class TwitterRealScraperService {
       const query = `#${hashtag}`;
       const searchResults = scraper.searchTweets(query, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
-
+      let count = 0;
       for await (const tweet of searchResults) {
+        if (count >= maxTweets) break;
         scrapedTweets.push(tweet);
-        if (scrapedTweets.length >= maxTweets) break;
+        count++;
       }
 
-      const processedTweets = this.processTweets(scrapedTweets, options);
+      const processedTweets = this.processTweets(scrapedTweets.slice(0, maxTweets), options);
       this.requestCount++;
 
       return {
@@ -194,13 +195,14 @@ export class TwitterRealScraperService {
 
       const userTweets = scraper.getTweets(username, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
-
+      let count = 0;
       for await (const tweet of userTweets) {
+        if (count >= maxTweets) break;
         scrapedTweets.push(tweet);
-        if (scrapedTweets.length >= maxTweets) break;
+        count++;
       }
 
-      const processedTweets = this.processTweets(scrapedTweets, options);
+      const processedTweets = this.processTweets(scrapedTweets.slice(0, maxTweets), options);
       this.requestCount++;
 
       return {
@@ -323,8 +325,12 @@ export class TwitterRealScraperService {
           if (tweetAge > maxAge) continue;
         }
 
-        // Filtrado por idioma
-        if (shouldFilterLanguage && tweet.language !== targetLanguage) continue;
+        // Filtrado por idioma (solo si options.language está definido y no es 'all')
+        if (shouldFilterLanguage) {
+          // Si el tweet no tiene idioma detectado, igual lo aceptamos
+          if (tweet.language && tweet.language !== 'unknown' && tweet.language !== targetLanguage)
+            continue;
+        }
 
         tweets.push(tweet);
       } catch (error) {
@@ -341,6 +347,17 @@ export class TwitterRealScraperService {
   private normalizeTweet(data: ScrapedTweetData, now: Date): Tweet {
     const tweetId =
       data.id || `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
+
+    // Placeholder para análisis de sentimiento (ajustado al tipo SentimentAnalysis)
+    const sentiment = {
+      score: 0,
+      label: 'neutral' as 'neutral',
+      magnitude: 0,
+      confidence: 1,
+      keywords: [],
+      analyzedAt: now,
+      processingTime: 0,
+    };
 
     return {
       id: tweetId,
@@ -370,6 +387,7 @@ export class TwitterRealScraperService {
         ? new Date(data.createdAt)
         : now,
       updatedAt: now,
+      sentiment,
     };
   }
 

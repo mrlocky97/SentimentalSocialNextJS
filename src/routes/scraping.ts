@@ -305,7 +305,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
-    async (scraper, options) => scraper.scrapeByHashtag(req.body.hashtag, options),
+    async (scraper, options) => scraper.scrapeByHashtag(req.body.hashtag, req.body),
     { type: 'hashtag', identifier: req.body.hashtag, exampleValue: 'JustDoIt' },
     { languageFilter: true }
   );
