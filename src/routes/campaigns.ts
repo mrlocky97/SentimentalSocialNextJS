@@ -5,11 +5,13 @@
 
 import { Router } from 'express';
 import { MongoCampaignRepository } from '../repositories/mongo-campaign.repository';
+import { TweetDatabaseService } from '../services/tweet-database.service';
 import { authenticateToken, requireRole } from '../middleware/express-auth';
 import { CreateCampaignRequest, UpdateCampaignRequest, CampaignFilter, CampaignStatus, CampaignType } from '../types/campaign';
 
 const router = Router();
 const campaignRepository = new MongoCampaignRepository();
+const tweetDatabaseService = new TweetDatabaseService();
 
 /**
  * @swagger
@@ -682,6 +684,174 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         code: 'DELETE_CAMPAIGN_ERROR',
         timestamp: new Date().toISOString()
       }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/campaigns/{campaignId}/tweets:
+ *   get:
+ *     summary: Get tweets from a specific campaign
+ *     description: Retrieves stored tweets associated with a campaign ID
+ *     tags: [Campaigns]
+ *     parameters:
+ *       - in: path
+ *         name: campaignId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Campaign ID to retrieve tweets for
+ *         example: "mi_campana_dev_2024"
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 100
+ *         description: Maximum number of tweets to retrieve
+ *     responses:
+ *       200:
+ *         description: Campaign tweets retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     campaignId:
+ *                       type: string
+ *                     totalTweets:
+ *                       type: number
+ *                     tweetsWithSentiment:
+ *                       type: number
+ *                     averageSentiment:
+ *                       type: number
+ *                     tweets:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Tweet'
+ *                     statistics:
+ *                       type: object
+ *       404:
+ *         description: Campaign not found
+ *       500:
+ *         description: Retrieval failed
+ */
+router.get('/:campaignId/tweets', async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 100;
+
+    if (!campaignId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Campaign ID is required'
+      });
+    }
+
+    const tweets = await tweetDatabaseService.getTweetsByCampaign(campaignId, limit);
+
+    // Calculate basic stats
+    const totalTweets = tweets.length;
+    const withSentiment = tweets.filter(t => t.sentiment?.score !== undefined).length;
+    const avgSentiment = withSentiment > 0 
+      ? tweets.reduce((sum, t) => sum + (t.sentiment?.score || 0), 0) / withSentiment 
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        campaignId,
+        totalTweets,
+        tweetsWithSentiment: withSentiment,
+        averageSentiment: avgSentiment,
+        tweets: tweets,
+        statistics: {
+          sentiment_distribution: {
+            positive: tweets.filter(t => (t.sentiment?.score || 0) > 0.1).length,
+            neutral: tweets.filter(t => Math.abs(t.sentiment?.score || 0) <= 0.1).length,
+            negative: tweets.filter(t => (t.sentiment?.score || 0) < -0.1).length
+          },
+          total_engagement: tweets.reduce((sum, t) => sum + (t.metrics?.likes || 0) + (t.metrics?.retweets || 0), 0),
+          unique_authors: [...new Set(tweets.map(t => t.author?.username))].length
+        }
+      },
+      message: `Retrieved ${totalTweets} tweets for campaign: ${campaignId}`
+    });
+
+  } catch (error) {
+    console.error('Error retrieving campaign tweets:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      message: 'Failed to retrieve campaign tweets'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/campaigns/overview:
+ *   get:
+ *     summary: Get campaigns overview with basic statistics
+ *     description: Returns overview of all campaigns with tweet counts and basic metrics
+ *     tags: [Campaigns]
+ *     responses:
+ *       200:
+ *         description: Campaign overview retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     overview:
+ *                       type: object
+ *                       properties:
+ *                         totalTweets:
+ *                           type: number
+ *                         tweetsToday:
+ *                           type: number
+ *                         uniqueAuthors:
+ *                           type: number
+ *                         averageSentiment:
+ *                           type: number
+ *       500:
+ *         description: Retrieval failed
+ */
+router.get('/overview', async (req, res) => {
+  try {
+    // Use the repository to get campaign statistics
+    const stats = await tweetDatabaseService.getStorageStats();
+
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalTweets: stats.totalTweets,
+          tweetsToday: stats.tweetsToday,
+          uniqueAuthors: stats.uniqueAuthors,
+          averageSentiment: stats.averageSentiment
+        },
+        message: "Use specific campaign endpoints or database queries to get detailed campaign data"
+      },
+      message: 'Campaign overview retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error retrieving campaign overview:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      message: 'Failed to retrieve campaign overview'
     });
   }
 });

@@ -3,11 +3,11 @@
  * Using twikit for scraping - no official API
  */
 
-import { Router, Request, Response } from 'express';
-import { TwitterRealScraperService } from '../services/twitter-scraper.service';
-import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
+import { Request, Response, Router } from 'express';
 import { TweetDatabaseService } from '../services/tweet-database.service';
+import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
+import { TwitterRealScraperService } from '../services/twitter-scraper.service';
 
 const router = Router();
 
@@ -20,7 +20,7 @@ const tweetDatabaseService = new TweetDatabaseService();
 async function getRealScraperService(): Promise<TwitterRealScraperService> {
   // Use pre-authenticated scraper from startup
   const twitterAuth = TwitterAuthManager.getInstance();
-  
+
   if (twitterAuth.isReady()) {
     return twitterAuth.getScraperService();
   } else {
@@ -38,10 +38,16 @@ async function performScraping<T>(
   operationName: string
 ): Promise<T> {
   try {
+    console.log(`🔍 DEBUG: Starting ${operationName}`);
     const realScraper = await getRealScraperService();
-    return await scrapingOperation(realScraper);
+    console.log(`🔍 DEBUG: Got scraper service for ${operationName}`);
+
+    const result = await scrapingOperation(realScraper);
+    console.log(`🔍 DEBUG: ${operationName} completed successfully`);
+
+    return result;
   } catch (error) {
-    console.error(`Real scraper failed for ${operationName}:`, error);
+    console.error(`🔍 DEBUG: Real scraper failed for ${operationName}:`, error);
     throw error;
   }
 }
@@ -88,10 +94,14 @@ async function performScraping<T>(
  *                 default: true
  *               language:
  *                 type: string
- *                 enum: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "ar", "ru", "hi", "all"]
+ *                 enum: ["en", "es", "fr", "de"]
  *                 default: "en"
  *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter). Defaults to English
  *                 example: "es"
+ *               campaignId:
+ *                 type: string
+ *                 description: Optional campaign ID to associate with the scraped tweets. If not provided, a default campaign ID will be generated.
+ *                 example: "my_nike_campaign_2024"
  *     responses:
  *       200:
  *         description: Tweets scraped successfully
@@ -124,13 +134,14 @@ async function performScraping<T>(
  */
 router.post('/hashtag', async (req: Request, res: Response) => {
   try {
-    const { 
-      hashtag, 
+    const {
+      hashtag,
       maxTweets, // No default value - will be set below
       limit, // Alternative parameter name
-      includeReplies = false, 
-      analyzeSentiment = true, 
-      language = 'en' // Default to English instead of 'all'
+      includeReplies = false,
+      analyzeSentiment = true,
+      language = 'en', // Default to English instead of 'all'
+      campaignId, // Optional campaign ID from user
     } = req.body;
 
     // Use limit if provided, otherwise use maxTweets, otherwise default to 50
@@ -140,7 +151,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Hashtag is required and must be a string',
-        example: { hashtag: 'JustDoIt', maxTweets: 50 }
+        example: { hashtag: 'JustDoIt', maxTweets: 50 },
       });
     }
 
@@ -148,50 +159,137 @@ router.post('/hashtag', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'maxTweets/limit must be between 1 and 1000',
-        provided: tweetsToRetrieve
+        provided: tweetsToRetrieve,
       });
     }
 
     // Validate language parameter
-    const validLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru', 'hi', 'all'];
+    const validLanguages = ['en', 'es', 'fr', 'de'];
     if (language && !validLanguages.includes(language)) {
       return res.status(400).json({
         success: false,
         error: `Invalid language code. Must be one of: ${validLanguages.join(', ')}`,
-        example: { language: 'es' }
+        example: { language: 'es' },
       });
     }
 
     const startTime = Date.now();
 
+    // 🔍 DEBUG: Log scraping parameters
+    console.log('🔍 DEBUG: Starting scraping with parameters:', {
+      hashtag,
+      tweetsToRetrieve,
+      includeReplies,
+      language,
+      campaignId,
+    });
+
     // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
-      async (scraper) => await scraper.scrapeByHashtag(hashtag, {
-        maxTweets: tweetsToRetrieve,
-        includeReplies,
-        language
-      }),
+      async (scraper) =>
+        await scraper.scrapeByHashtag(hashtag, {
+          maxTweets: tweetsToRetrieve,
+          includeReplies,
+          language,
+        }),
       `hashtag scraping for #${hashtag}`
     );
 
+    // 🔍 DEBUG: Log scraping result
+    console.log('🔍 DEBUG: Scraping result:', {
+      totalFound: scrapingResult.totalFound,
+      tweetsLength: scrapingResult.tweets?.length || 0,
+      rateLimitRemaining: scrapingResult.rateLimit?.remaining,
+      firstTweetSample: scrapingResult.tweets?.[0]
+        ? {
+            id: scrapingResult.tweets[0].id,
+            content: scrapingResult.tweets[0].content?.substring(0, 50) + '...',
+            author: scrapingResult.tweets[0].author?.username,
+          }
+        : 'No tweets found',
+    });
+
     let sentimentSummary = null;
+    let tweetsWithSentiment = scrapingResult.tweets;
+
+    // Analyze sentiment BEFORE saving to database
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
+      console.log(
+        `🔍 DEBUG: Starting sentiment analysis for ${scrapingResult.tweets.length} tweets`
+      );
+
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
+      console.log(`🔍 DEBUG: Sentiment analysis completed, got ${analyses.length} analyses`);
+
       sentimentSummary = sentimentManager.generateStatistics(analyses);
+      console.log(`🔍 DEBUG: Sentiment summary generated:`, {
+        totalAnalyzed: sentimentSummary?.totalAnalyzed || 0,
+        averageSentiment: sentimentSummary?.averageSentiment || 0,
+      });
+
+      // Update tweets with sentiment analysis results - map the analysis data correctly
+      tweetsWithSentiment = scrapingResult.tweets.map((tweet, index) => {
+        const analysis = analyses[index];
+        if (analysis) {
+          return {
+            ...tweet,
+            sentiment: {
+              score: analysis.analysis.sentiment.score,
+              magnitude: analysis.analysis.sentiment.magnitude,
+              label:
+                analysis.analysis.sentiment.label === 'very_positive' ||
+                analysis.analysis.sentiment.label === 'positive'
+                  ? 'positive'
+                  : analysis.analysis.sentiment.label === 'very_negative' ||
+                    analysis.analysis.sentiment.label === 'negative'
+                  ? 'negative'
+                  : 'neutral',
+              confidence: analysis.analysis.sentiment.confidence,
+              emotions: analysis.analysis.sentiment.emotions,
+              keywords: analysis.analysis.keywords,
+              analyzedAt: analysis.analyzedAt,
+              processingTime: Date.now() - analysis.analyzedAt.getTime(),
+            },
+          };
+        }
+        return tweet;
+      });
+
+      console.log(
+        `🔍 DEBUG: Tweets mapped with sentiment, final count: ${tweetsWithSentiment.length}`
+      );
+    } else {
+      console.log(
+        `🔍 DEBUG: Skipping sentiment analysis - analyzeSentiment: ${analyzeSentiment}, tweets.length: ${scrapingResult.tweets.length}`
+      );
     }
 
-    // Save tweets to database automatically
-    if (scrapingResult.tweets.length > 0) {
+    // Save tweets to database with sentiment data and campaign ID
+    if (tweetsWithSentiment.length > 0) {
       try {
-        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        // Use provided campaign ID or generate a default one
+        const finalCampaignId =
+          campaignId || `hashtag_${hashtag}_${new Date().toISOString().split('T')[0]}`;
+        console.log(
+          `🔍 DEBUG: Saving ${tweetsWithSentiment.length} tweets to database with campaignId: ${finalCampaignId}`
+        );
+
+        await tweetDatabaseService.saveTweetsBulk(tweetsWithSentiment, finalCampaignId);
+        console.log(`🔍 DEBUG: Successfully saved tweets to database`);
       } catch (dbError) {
-        console.error('Error saving tweets to database:', dbError);
-        // Don't fail the response, just log the error
+        console.error('🔍 DEBUG: Error saving tweets to database:', dbError);
       }
+    } else {
+      console.log(
+        `🔍 DEBUG: No tweets to save - tweetsWithSentiment.length: ${tweetsWithSentiment.length}`
+      );
     }
 
     const executionTime = Date.now() - startTime;
-
+    const finalCampaignId =
+      tweetsWithSentiment.length > 0
+        ? campaignId || `hashtag_${hashtag}_${new Date().toISOString().split('T')[0]}`
+        : undefined;
 
     res.json({
       success: true,
@@ -199,24 +297,32 @@ router.post('/hashtag', async (req: Request, res: Response) => {
         hashtag: `#${hashtag}`,
         requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
-        totalScraped: scrapingResult.tweets.length,
-        tweets: scrapingResult.tweets,
+        totalScraped: tweetsWithSentiment.length,
+        tweets: tweetsWithSentiment,
         sentiment_summary: sentimentSummary,
+        campaignId: finalCampaignId,
+        campaignInfo: {
+          id: finalCampaignId,
+          type: campaignId ? 'user-provided' : 'auto-generated',
+          source: 'hashtag',
+        },
         rate_limit: {
           remaining: scrapingResult.rateLimit.remaining,
-          reset_time: scrapingResult.rateLimit.resetTime
-        }
+          reset_time: scrapingResult.rateLimit.resetTime,
+        },
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets for #${hashtag}`
+      message: `Successfully scraped ${
+        tweetsWithSentiment.length
+      } of ${tweetsToRetrieve} requested tweets for #${hashtag}${
+        analyzeSentiment ? ' with sentiment analysis' : ''
+      }${finalCampaignId ? ` → Campaign: ${finalCampaignId}` : ''}`,
     });
-
   } catch (error) {
-    console.error('Error in hashtag scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to scrape tweets by hashtag'
+      message: 'Failed to scrape tweets by hashtag',
     });
   }
 });
@@ -261,6 +367,10 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  *                 type: boolean
  *                 description: Whether to analyze sentiment of collected tweets
  *                 default: true
+ *               campaignId:
+ *                 type: string
+ *                 description: Optional campaign ID to associate with the scraped tweets. If not provided, a default campaign ID will be generated.
+ *                 example: "nike_monitoring_campaign"
  *     responses:
  *       200:
  *         description: User tweets scraped successfully
@@ -271,12 +381,13 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  */
 router.post('/user', async (req: Request, res: Response) => {
   try {
-    const { 
-      username, 
+    const {
+      username,
       maxTweets, // No default value - will be set below
       limit, // Alternative parameter name
-      includeReplies = false, 
-      analyzeSentiment = true 
+      includeReplies = false,
+      analyzeSentiment = true,
+      campaignId, // Optional campaign ID from user
     } = req.body;
 
     // Use limit if provided, otherwise use maxTweets, otherwise default to 30
@@ -286,7 +397,7 @@ router.post('/user', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Username is required and must be a string',
-        example: { username: 'nike', maxTweets: 30 }
+        example: { username: 'nike', maxTweets: 30 },
       });
     }
 
@@ -294,7 +405,7 @@ router.post('/user', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'maxTweets/limit must be between 1 and 500',
-        provided: tweetsToRetrieve
+        provided: tweetsToRetrieve,
       });
     }
 
@@ -302,31 +413,69 @@ router.post('/user', async (req: Request, res: Response) => {
 
     // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
-      async (scraper) => await scraper.scrapeByUser(username, {
-        maxTweets: tweetsToRetrieve,
-        includeReplies
-      }),
+      async (scraper) =>
+        await scraper.scrapeByUser(username, {
+          maxTweets: tweetsToRetrieve,
+          includeReplies,
+        }),
       `user scraping for @${username}`
     );
 
     let sentimentSummary = null;
+    let tweetsWithSentiment = scrapingResult.tweets;
+
+    // Analyze sentiment BEFORE saving to database
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
+
+      // Update tweets with sentiment analysis results - map the analysis data correctly
+      tweetsWithSentiment = scrapingResult.tweets.map((tweet, index) => {
+        const analysis = analyses[index];
+        if (analysis) {
+          return {
+            ...tweet,
+            sentiment: {
+              score: analysis.analysis.sentiment.score,
+              magnitude: analysis.analysis.sentiment.magnitude,
+              label:
+                analysis.analysis.sentiment.label === 'very_positive' ||
+                analysis.analysis.sentiment.label === 'positive'
+                  ? 'positive'
+                  : analysis.analysis.sentiment.label === 'very_negative' ||
+                    analysis.analysis.sentiment.label === 'negative'
+                  ? 'negative'
+                  : 'neutral',
+              confidence: analysis.analysis.sentiment.confidence,
+              emotions: analysis.analysis.sentiment.emotions,
+              keywords: analysis.analysis.keywords,
+              analyzedAt: analysis.analyzedAt,
+              processingTime: Date.now() - analysis.analyzedAt.getTime(),
+            },
+          };
+        }
+        return tweet;
+      });
     }
 
-    // Save tweets to database automatically
-    if (scrapingResult.tweets.length > 0) {
+    // Save tweets to database with sentiment data and campaign ID
+    if (tweetsWithSentiment.length > 0) {
       try {
-        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        // Use provided campaign ID or generate a default one
+        const finalCampaignId =
+          campaignId || `user_${username}_${new Date().toISOString().split('T')[0]}`;
+
+        await tweetDatabaseService.saveTweetsBulk(tweetsWithSentiment, finalCampaignId);
       } catch (dbError) {
         console.error('Error saving tweets to database:', dbError);
-        // Don't fail the response, just log the error
       }
     }
 
     const executionTime = Date.now() - startTime;
-
+    const finalCampaignId =
+      tweetsWithSentiment.length > 0
+        ? campaignId || `user_${username}_${new Date().toISOString().split('T')[0]}`
+        : undefined;
 
     res.json({
       success: true,
@@ -334,24 +483,33 @@ router.post('/user', async (req: Request, res: Response) => {
         username: `@${username}`,
         requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
-        totalScraped: scrapingResult.tweets.length,
-        tweets: scrapingResult.tweets,
+        totalScraped: tweetsWithSentiment.length,
+        tweets: tweetsWithSentiment,
         sentiment_summary: sentimentSummary,
+        campaignId: finalCampaignId,
+        campaignInfo: {
+          id: finalCampaignId,
+          type: campaignId ? 'user-provided' : 'auto-generated',
+          source: 'user',
+        },
         rate_limit: {
           remaining: scrapingResult.rateLimit.remaining,
-          reset_time: scrapingResult.rateLimit.resetTime
-        }
+          reset_time: scrapingResult.rateLimit.resetTime,
+        },
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets from @${username}`
+      message: `Successfully scraped ${
+        tweetsWithSentiment.length
+      } of ${tweetsToRetrieve} requested tweets from @${username}${
+        analyzeSentiment ? ' with sentiment analysis' : ''
+      }${finalCampaignId ? ` → Campaign: ${finalCampaignId}` : ''}`,
     });
-
   } catch (error) {
     console.error('Error in user scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to scrape tweets from user'
+      message: 'Failed to scrape tweets from user',
     });
   }
 });
@@ -390,7 +548,7 @@ router.post('/user', async (req: Request, res: Response) => {
  *                 example: 50
  *               language:
  *                 type: string
- *                 enum: ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "ar", "ru", "hi", "all"]
+ *                 enum: ["en", "es", "fr", "de"]
  *                 default: "en"
  *                 description: Language filter for tweets (ISO 639-1 codes or 'all' for no filter). Defaults to English
  *                 example: "es"
@@ -398,6 +556,10 @@ router.post('/user', async (req: Request, res: Response) => {
  *                 type: boolean
  *                 description: Whether to analyze sentiment of collected tweets
  *                 default: true
+ *               campaignId:
+ *                 type: string
+ *                 description: Optional campaign ID to associate with the scraped tweets. If not provided, a default campaign ID will be generated.
+ *                 example: "search_nike_vs_adidas_2024"
  *     responses:
  *       200:
  *         description: Search completed successfully
@@ -408,12 +570,13 @@ router.post('/user', async (req: Request, res: Response) => {
  */
 router.post('/search', async (req: Request, res: Response) => {
   try {
-    const { 
-      query, 
+    const {
+      query,
       maxTweets, // No default value - will be set below
       limit, // Alternative parameter name
       language = 'en', // Default to English like other endpoints
-      analyzeSentiment = true 
+      analyzeSentiment = true,
+      campaignId, // Optional campaign ID from user
     } = req.body;
 
     // Use limit if provided, otherwise use maxTweets, otherwise default to 50
@@ -423,7 +586,7 @@ router.post('/search', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Search query is required and must be a string',
-        example: { query: 'nike shoes', maxTweets: 50 }
+        example: { query: 'nike shoes', maxTweets: 50 },
       });
     }
 
@@ -431,17 +594,17 @@ router.post('/search', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'maxTweets/limit must be between 1 and 1000',
-        provided: tweetsToRetrieve
+        provided: tweetsToRetrieve,
       });
     }
 
     // Validate language parameter
-    const validLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh', 'ar', 'ru', 'hi', 'all'];
+    const validLanguages = ['en', 'es', 'fr', 'de'];
     if (language && !validLanguages.includes(language)) {
       return res.status(400).json({
         success: false,
         error: `Invalid language code. Must be one of: ${validLanguages.join(', ')}`,
-        example: { language: 'es' }
+        example: { language: 'es' },
       });
     }
 
@@ -449,31 +612,72 @@ router.post('/search', async (req: Request, res: Response) => {
 
     // Use unified scraping function with real scraper
     const scrapingResult = await performScraping(
-      async (scraper) => await scraper.scrapeByHashtag(query, {
-        maxTweets: tweetsToRetrieve,
-        includeReplies: false,
-        language
-      }),
+      async (scraper) =>
+        await scraper.scrapeByHashtag(query, {
+          maxTweets: tweetsToRetrieve,
+          includeReplies: false,
+          language,
+        }),
       `search scraping for: "${query}"`
     );
 
     let sentimentSummary = null;
+    let tweetsWithSentiment = scrapingResult.tweets;
+
+    // Analyze sentiment BEFORE saving to database
     if (analyzeSentiment && scrapingResult.tweets.length > 0) {
       const analyses = await sentimentManager.analyzeTweetsBatch(scrapingResult.tweets);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
+
+      // Update tweets with sentiment analysis results - map the analysis data correctly
+      tweetsWithSentiment = scrapingResult.tweets.map((tweet, index) => {
+        const analysis = analyses[index];
+        if (analysis) {
+          return {
+            ...tweet,
+            sentiment: {
+              score: analysis.analysis.sentiment.score,
+              magnitude: analysis.analysis.sentiment.magnitude,
+              label:
+                analysis.analysis.sentiment.label === 'very_positive' ||
+                analysis.analysis.sentiment.label === 'positive'
+                  ? 'positive'
+                  : analysis.analysis.sentiment.label === 'very_negative' ||
+                    analysis.analysis.sentiment.label === 'negative'
+                  ? 'negative'
+                  : 'neutral',
+              confidence: analysis.analysis.sentiment.confidence,
+              emotions: analysis.analysis.sentiment.emotions,
+              keywords: analysis.analysis.keywords,
+              analyzedAt: analysis.analyzedAt,
+              processingTime: Date.now() - analysis.analyzedAt.getTime(),
+            },
+          };
+        }
+        return tweet;
+      });
     }
 
-    // Save tweets to database automatically
-    if (scrapingResult.tweets.length > 0) {
+    // Save tweets to database with sentiment data and campaign ID
+    if (tweetsWithSentiment.length > 0) {
       try {
-        const saveResult = await tweetDatabaseService.saveTweetsBulk(scrapingResult.tweets);
+        // Use provided campaign ID or generate a default one
+        const sanitizedQuery = query.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+        const finalCampaignId =
+          campaignId || `search_${sanitizedQuery}_${new Date().toISOString().split('T')[0]}`;
+
+        await tweetDatabaseService.saveTweetsBulk(tweetsWithSentiment, finalCampaignId);
       } catch (dbError) {
         console.error('Error saving tweets to database:', dbError);
-        // Don't fail the response, just log the error
       }
     }
 
     const executionTime = Date.now() - startTime;
+    const sanitizedQuery = query.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+    const finalCampaignId =
+      tweetsWithSentiment.length > 0
+        ? campaignId || `search_${sanitizedQuery}_${new Date().toISOString().split('T')[0]}`
+        : undefined;
 
     res.json({
       success: true,
@@ -481,24 +685,33 @@ router.post('/search', async (req: Request, res: Response) => {
         query,
         requested: tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
-        totalScraped: scrapingResult.tweets.length,
-        tweets: scrapingResult.tweets,
+        totalScraped: tweetsWithSentiment.length,
+        tweets: tweetsWithSentiment,
         sentiment_summary: sentimentSummary,
+        campaignId: finalCampaignId,
+        campaignInfo: {
+          id: finalCampaignId,
+          type: campaignId ? 'user-provided' : 'auto-generated',
+          source: 'search',
+        },
         rate_limit: {
           remaining: scrapingResult.rateLimit.remaining,
-          reset_time: scrapingResult.rateLimit.resetTime
-        }
+          reset_time: scrapingResult.rateLimit.resetTime,
+        },
       },
       execution_time: executionTime,
-      message: `Successfully scraped ${scrapingResult.tweets.length} of ${tweetsToRetrieve} requested tweets for query: "${query}"`
+      message: `Successfully scraped ${
+        tweetsWithSentiment.length
+      } of ${tweetsToRetrieve} requested tweets for query: "${query}"${
+        analyzeSentiment ? ' with sentiment analysis' : ''
+      }${finalCampaignId ? ` → Campaign: ${finalCampaignId}` : ''}`,
     });
-
   } catch (error) {
     console.error('Error in search scraping:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to scrape tweets by search'
+      message: 'Failed to scrape tweets by search',
     });
   }
 });
@@ -552,7 +765,7 @@ router.get('/status', async (req: Request, res: Response) => {
           initialized: authStatus.initialized,
           ready: authStatus.ready,
           error: authStatus.error,
-          has_credentials: authStatus.hasCredentials
+          has_credentials: authStatus.hasCredentials,
         },
         authentication_monitoring: {
           status: authStatusDetail?.isAuthenticated ? 'authenticated' : 'failed',
@@ -560,14 +773,14 @@ router.get('/status', async (req: Request, res: Response) => {
           consecutive_failures: authStatusDetail?.consecutiveFailures,
           next_retry_time: authStatusDetail?.nextRetryTime,
           credentials_valid: authStatusDetail?.credentialsValid,
-          last_error: authStatusDetail?.lastError
+          last_error: authStatusDetail?.lastError,
         },
         rate_limit: {
           available: !rateLimitStatus.isLimited,
           requests_used: rateLimitStatus.requestCount,
           requests_remaining: rateLimitStatus.remaining,
-          reset_time: rateLimitStatus.resetTime
-        }
+          reset_time: rateLimitStatus.resetTime,
+        },
       };
 
       isRealScraperAvailable = authStatus.ready;
@@ -579,8 +792,8 @@ router.get('/status', async (req: Request, res: Response) => {
           initialized: authStatus.initialized,
           ready: authStatus.ready,
           error: authStatus.error,
-          has_credentials: authStatus.hasCredentials
-        }
+          has_credentials: authStatus.hasCredentials,
+        },
       };
     }
 
@@ -595,29 +808,34 @@ router.get('/status', async (req: Request, res: Response) => {
           primary: {
             type: '@the-convocation/twitter-scraper',
             supports: ['hashtag_search', 'user_tweets', 'keyword_search'],
-            authentication: 'cookie-based'
+            authentication: 'cookie-based',
           },
           limits: {
             max_tweets_per_request: 1000,
             max_user_tweets: 500,
-            rate_limit_window: '1 hour'
-          }
+            rate_limit_window: '1 hour',
+          },
         },
-        credentials_configured: !!(process.env.TWITTER_USERNAME && process.env.TWITTER_PASSWORD && process.env.TWITTER_EMAIL),
+        credentials_configured: !!(
+          process.env.TWITTER_USERNAME &&
+          process.env.TWITTER_PASSWORD &&
+          process.env.TWITTER_EMAIL
+        ),
         last_scraping: {
           timestamp: new Date().toISOString(),
-          status: 'ready'
-        }
+          status: 'ready',
+        },
       },
-      message: `Scraping service operational - Real scraper ${isRealScraperAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}`
+      message: `Scraping service operational - Real scraper ${
+        isRealScraperAvailable ? 'AVAILABLE' : 'UNAVAILABLE'
+      }`,
     });
-
   } catch (error) {
     console.error('Error getting scraping status:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to get scraping status'
+      message: 'Failed to get scraping status',
     });
   }
 });
@@ -650,25 +868,26 @@ router.post('/reauth', async (req: Request, res: Response) => {
   try {
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.forceReauth();
-    
+
     const status = twitterAuth.getStatus();
-    
+
     res.json({
       success: true,
-      message: status.ready ? 'Twitter re-authentication successful' : 'Re-authentication completed with issues',
+      message: status.ready
+        ? 'Twitter re-authentication successful'
+        : 'Re-authentication completed with issues',
       data: {
         ready: status.ready,
         error: status.error,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     console.error('Error during re-authentication:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to re-authenticate with Twitter'
+      message: 'Failed to re-authenticate with Twitter',
     });
   }
 });

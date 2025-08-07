@@ -4,7 +4,7 @@
  */
 
 import { TweetSentimentAnalysis, BrandMention, HashtagSentiment, MarketingInsight, SentimentAnalysisStats, SentimentTrend, SentimentAnalysisConfig, InsightType, ImpactLevel, TextAnalysis, EntityAnalysis } from '../types/sentiment';
-import { Tweet } from '../types/twitter';
+import { SentimentAnalysis, Tweet } from '../types/twitter';
 
 /**
  * Internal sentiment analysis logic
@@ -514,5 +514,36 @@ export class TweetSentimentAnalysisManager {
         end: new Date()
       }
     };
+  }
+
+  mapTweetsWithSentiment(tweets: Tweet[], analyses: TweetSentimentAnalysis[]): (Tweet & { sentiment: { score: number; magnitude: number; label: string; confidence: number; emotions: any; keywords: string[]; analyzedAt: Date; processingTime: number; } })[] {
+    // Returns an array of tweets with sentiment fields added
+    return tweets.map((tweet, index) => {
+      const analysis = analyses[index];
+      if (!analysis) return tweet as Tweet & { sentiment: any };
+
+      const { sentiment, keywords } = analysis.analysis;
+      const emotions = sentiment.emotions;
+
+      const label = ['very_positive', 'positive'].includes(sentiment.label)
+        ? 'positive'
+        : ['very_negative', 'negative'].includes(sentiment.label)
+          ? 'negative'
+          : 'neutral';
+
+      return {
+        ...tweet,
+        sentiment: {
+          score: sentiment.score,
+          magnitude: sentiment.magnitude,
+          label,
+          confidence: sentiment.confidence,
+          emotions,
+          keywords,
+          analyzedAt: analysis.analyzedAt,
+          processingTime: Date.now() - analysis.analyzedAt.getTime()
+        }
+      };
+    });
   }
 }
