@@ -626,8 +626,6 @@ router.get('/status', async (req: Request, res: Response) => {
  */
 router.post('/reauth', async (req: Request, res: Response) => {
   try {
-    console.log('🔄 Manual re-authentication requested...');
-    
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.forceReauth();
     

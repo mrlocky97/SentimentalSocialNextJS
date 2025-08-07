@@ -7,29 +7,65 @@
 import { Tweet } from '../types/twitter';
 
 // Scraped Tweet Data Structure from @the-convocation/twitter-scraper
+// Expanded to handle multiple possible field names and structures
 interface ScrapedTweetData {
   id?: string;
   text?: string;
+  content?: string; // Alternative field name
   user?: {
     id_str?: string;
+    id?: string;
+    userId?: string;
     screen_name?: string;
+    username?: string;
+    handle?: string;
     name?: string;
+    displayName?: string;
+    display_name?: string;
     verified?: boolean;
+    is_verified?: boolean;
     followers_count?: number;
+    followersCount?: number;
+    followers?: number;
+    following_count?: number;
+    followingCount?: number;
+    following?: number;
+    statuses_count?: number;
+    statusesCount?: number;
+    tweets_count?: number;
+    tweetsCount?: number;
     profile_image_url_https?: string;
+    profile_image_url?: string;
+    avatar?: string;
+    profileImageUrl?: string;
+    description?: string;
+    bio?: string;
+    location?: string;
+    url?: string;
+    website?: string;
   };
+  author?: any; // Alternative user object name
+  account?: any; // Another alternative
   favorite_count?: number;
+  favoriteCount?: number;
   retweet_count?: number;
+  retweetCount?: number;
   reply_count?: number;
+  replyCount?: number;
   quote_count?: number;
+  quoteCount?: number;
   created_at?: string;
+  createdAt?: string;
   hashtags?: string[];
   mentions?: any[];
   urls?: any[];
   media?: any[];
   is_retweet?: boolean;
+  isRetweet?: boolean;
   is_quote_status?: boolean;
+  isQuote?: boolean;
   lang?: string;
+  language?: string;
 }
 
 interface ScrapingOptions {
@@ -103,9 +139,9 @@ export class TwitterRealScraperService {
   constructor(config: ScrapingConfig = {}) {
     this.config = {
       headless: true,
-      timeout: 60000, // Longer timeout
-      delay: 10000, // 10 seconds between requests
-      maxRetries: 1, // Only 1 retry to avoid blocks
+      timeout: 45000, // Reduced timeout for faster responses
+      delay: 2000, // Reduced delay for better performance (was 10000)
+      maxRetries: 1,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       ...config
     };
@@ -126,11 +162,10 @@ export class TwitterRealScraperService {
       return this.scraper;
     }
 
-    // Check login cooldown
+    // Fast cooldown check
     const timeSinceLastAttempt = Date.now() - this.lastLoginAttempt.getTime();
     if (this.loginAttempts >= this.maxLoginAttempts && timeSinceLastAttempt < this.loginCooldown) {
-      const remainingCooldown = Math.ceil((this.loginCooldown - timeSinceLastAttempt) / 60000);
-      throw new Error(`Login attempts exceeded. Please wait ${remainingCooldown} minutes before trying again.`);
+      throw new Error(`Login attempts exceeded. Please wait before trying again.`);
     }
 
     try {
@@ -141,48 +176,44 @@ export class TwitterRealScraperService {
       this.lastLoginAttempt = new Date();
       this.loginAttempts++;
 
-      // Try authentication methods in priority order
+      // Fast authentication with priority order
       let authSuccess = false;
-      let lastError: Error | null = null;
 
-      // 1. Try cookies first if available
-      if (process.env.TWITTER_COOKIES && process.env.TWITTER_COOKIES.trim()) {
+      // 1. Try cookies first (fastest)
+      if (process.env.TWITTER_COOKIES?.trim()) {
         try {
           await this.authenticateWithCookies();
           authSuccess = true;
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Cookie auth failed');
+          // Continue to credentials
         }
       }
 
-      // 2. Fallback to credentials if cookies failed or unavailable
+      // 2. Fallback to credentials
       if (!authSuccess) {
         try {
           await this.authenticateWithCredentials();
           authSuccess = true;
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Credential auth failed');
+          throw new Error('Authentication failed');
         }
       }
 
       if (!authSuccess) {
         this.isAuthenticated = false;
         this.scraper = null;
-        this.updateAuthStatus(false, lastError?.message);
-        throw lastError || new Error('All authentication methods failed');
+        throw new Error('All authentication methods failed');
       }
 
-      // Verify authentication
+      // Quick auth verification
       try {
         this.isAuthenticated = await this.scraper.isLoggedIn();
       } catch (error) {
-        // Some scrapers might not have isLoggedIn method
-        this.isAuthenticated = true;
+        this.isAuthenticated = true; // Assume success if verification unavailable
       }
       
       if (!this.isAuthenticated) {
         this.scraper = null;
-        this.updateAuthStatus(false, 'Authentication verification failed');
         throw new Error('Authentication verification failed');
       }
 
@@ -259,7 +290,7 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Scrape tweets by hashtag
+   * Scrape tweets by hashtag - Optimized for performance
    */
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
     try {
@@ -269,17 +300,16 @@ export class TwitterRealScraperService {
       const query = `#${hashtag}`;
       const maxTweets = options.maxTweets || 50;
 
-      await this.delay(this.config.delay || 3000);
+      // Reduced delay for better performance while maintaining safety
+      await this.delay(this.config.delay || 2000);
 
       const searchResults = scraper.searchTweets(query, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
 
+      // Optimized collection with early break
       for await (const tweet of searchResults) {
         scrapedTweets.push(tweet);
-
-        if (scrapedTweets.length >= maxTweets) {
-          break;
-        }
+        if (scrapedTweets.length >= maxTweets) break;
       }
 
       const processedTweets = this.processTweets(scrapedTweets, options);
@@ -297,24 +327,20 @@ export class TwitterRealScraperService {
       };
 
     } catch (error) {
-      // For authentication errors, re-throw so the route can handle fallback
+      // Fast error handling
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes('Forbidden') ||
-        errorMessage.includes('Authentication') ||
-        errorMessage.includes('not logged-in') ||
-        errorMessage.includes('Scraper is not logged-in') ||
-        (error instanceof Error && error.name === 'AuthenticationError')
-      ) {
-        throw error;
-      }
+      const isAuthError = errorMessage.includes('Forbidden') || 
+                         errorMessage.includes('Authentication') || 
+                         errorMessage.includes('not logged-in') ||
+                         errorMessage.includes('Scraper is not logged-in');
+      
+      if (isAuthError) throw error;
 
-      // For other errors, return empty result
       return {
         tweets: [],
         totalFound: 0,
         totalScraped: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown scraping error'],
+        errors: [errorMessage],
         rateLimit: {
           remaining: this.maxRequestsPerHour - this.requestCount,
           resetTime: this.rateLimitResetTime
@@ -324,7 +350,7 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Scrape tweets from a specific user
+   * Scrape tweets from a specific user - Optimized for performance
    */
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
     try {
@@ -333,17 +359,16 @@ export class TwitterRealScraperService {
 
       const maxTweets = options.maxTweets || 30;
 
-      await this.delay(this.config.delay || 3000);
+      // Reduced delay for better performance
+      await this.delay(this.config.delay || 2000);
 
       const userTweets = scraper.getTweets(username, maxTweets);
       const scrapedTweets: ScrapedTweetData[] = [];
 
+      // Optimized collection with early break
       for await (const tweet of userTweets) {
         scrapedTweets.push(tweet);
-
-        if (scrapedTweets.length >= maxTweets) {
-          break;
-        }
+        if (scrapedTweets.length >= maxTweets) break;
       }
 
       const processedTweets = this.processTweets(scrapedTweets, options);
@@ -361,24 +386,20 @@ export class TwitterRealScraperService {
       };
 
     } catch (error) {
-      // For authentication errors, re-throw so the route can handle fallback
+      // Fast error handling
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes('Forbidden') ||
-        errorMessage.includes('Authentication') ||
-        errorMessage.includes('not logged-in') ||
-        errorMessage.includes('Scraper is not logged-in') ||
-        (error instanceof Error && error.name === 'AuthenticationError')
-      ) {
-        throw error;
-      }
+      const isAuthError = errorMessage.includes('Forbidden') || 
+                         errorMessage.includes('Authentication') || 
+                         errorMessage.includes('not logged-in') ||
+                         errorMessage.includes('Scraper is not logged-in');
+      
+      if (isAuthError) throw error;
 
-      // For other errors, return empty result
       return {
         tweets: [],
         totalFound: 0,
         totalScraped: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown scraping error'],
+        errors: [errorMessage],
         rateLimit: {
           remaining: this.maxRequestsPerHour - this.requestCount,
           resetTime: this.rateLimitResetTime
@@ -426,18 +447,23 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Process and normalize scraped tweets
+   * Process and normalize scraped tweets - Optimized for performance
    */
   private processTweets(scrapedData: ScrapedTweetData[], options: ScrapingOptions): Tweet[] {
     const tweets: Tweet[] = [];
     const now = new Date();
     const maxAge = options.maxAgeHours ? options.maxAgeHours * 60 * 60 * 1000 : Infinity;
 
-    for (const item of scrapedData) {
+    // Pre-compile language filter for better performance
+    const shouldFilterLanguage = options.language && options.language !== 'all';
+    const targetLanguage = options.language;
+
+    for (let i = 0; i < scrapedData.length; i++) {
+      const item = scrapedData[i];
       try {
         const tweet = this.normalizeTweet(item);
 
-        // Apply filters
+        // Apply filters efficiently - fail fast approach
         if (options.maxAgeHours) {
           const tweetAge = now.getTime() - new Date(tweet.createdAt).getTime();
           if (tweetAge > maxAge) continue;
@@ -445,18 +471,17 @@ export class TwitterRealScraperService {
 
         if (options.minLikes && tweet.metrics.likes < options.minLikes) continue;
         if (options.minRetweets && tweet.metrics.retweets < options.minRetweets) continue;
-
-        // Filter by language if specified (and not 'all')
-        if (options.language && options.language !== 'all' && tweet.language !== options.language) {
-          continue;
-        }
-
-        // Skip retweets if not wanted
+        
+        // Language filter - optimized
+        if (shouldFilterLanguage && tweet.language !== targetLanguage) continue;
+        
+        // Retweet filter
         if (!options.includeRetweets && tweet.isRetweet) continue;
 
         tweets.push(tweet);
+        
       } catch (error) {
-        // Skip tweet processing errors
+        // Skip tweet processing errors silently for performance
         continue;
       }
     }
@@ -465,50 +490,158 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Normalize scraped data to our Tweet interface
+   * Normalize scraped data to our Tweet interface - Optimized
    */
   private normalizeTweet(data: ScrapedTweetData): Tweet {
-    const tweetId = data.id || `scraped_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date();
+    const tweetId = data.id || `scraped_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Optimized author data extraction
+    const authorData = this.extractAuthorData(data);
+    
+    // Pre-calculate metrics to avoid repeated property access
+    const likes = data.favorite_count || data.favoriteCount || 0;
+    const retweets = data.retweet_count || data.retweetCount || 0;
+    const replies = data.reply_count || data.replyCount || 0;
+    const quotes = data.quote_count || data.quoteCount || 0;
 
     return {
       id: tweetId,
       tweetId,
-      content: data.text || '',
-      author: {
-        id: data.user?.id_str || 'unknown',
-        username: data.user?.screen_name || 'unknown',
-        displayName: data.user?.name || data.user?.screen_name || 'Unknown User',
-        avatar: data.user?.profile_image_url_https || '',
-        verified: data.user?.verified || false,
-        followersCount: data.user?.followers_count || 0,
-        followingCount: 0, // Not available in basic scraping
-        tweetsCount: 0, // Not available in basic scraping
+      content: data.text || data.content || '',
+      author: authorData,
+      metrics: {
+        likes,
+        retweets,
+        replies,
+        quotes,
+        views: likes * 10, // Estimate views
+        engagement: 0 // Will be calculated later if needed
+      },
+      hashtags: data.hashtags || this.extractHashtags(data.text || ''),
+      mentions: (data.mentions || []).map((mention: any) => mention.screen_name || mention.username || ''),
+      urls: (data.urls || []).map((url: any) => url.expanded_url || url.url || ''),
+      mediaUrls: (data.media || []).map((mediaItem: any) => mediaItem.media_url_https || mediaItem.url || ''),
+      isRetweet: data.is_retweet || data.isRetweet || false,
+      isReply: (data.text || '').startsWith('@') || false,
+      isQuote: data.is_quote_status || data.isQuote || false,
+      language: this.detectTweetLanguage(data),
+      scrapedAt: now,
+      createdAt: data.created_at ? new Date(data.created_at) : (data.createdAt ? new Date(data.createdAt) : now),
+      updatedAt: now
+    };
+  }
+
+  /**
+   * Extract author data - Optimized for performance
+   */
+  private extractAuthorData(data: ScrapedTweetData): any {
+    const now = new Date();
+    
+    // Fast direct field extraction (new scraper format)
+    const directUserId = (data as any).userId;
+    const directUsername = (data as any).username;
+    const directName = (data as any).name;
+    
+    if (directUserId || directUsername || directName) {
+      return {
+        id: directUserId || 'unknown',
+        username: directUsername || 'unknown',
+        displayName: directName || directUsername || 'Unknown User',
+        avatar: '',
+        verified: false,
+        followersCount: 0,
+        followingCount: 0,
+        tweetsCount: 0,
         location: '',
         bio: '',
         website: '',
         joinedDate: now
-      },
-      metrics: {
-        likes: data.favorite_count || 0,
-        retweets: data.retweet_count || 0,
-        replies: data.reply_count || 0,
-        quotes: data.quote_count || 0,
-        views: (data.favorite_count || 0) * 10, // Estimate views
-        engagement: 0 // Will be calculated later
-      },
-      hashtags: data.hashtags || [],
-      mentions: (data.mentions || []).map((mention: any) => mention.screen_name || mention.username || ''),
-      urls: (data.urls || []).map((url: any) => url.expanded_url || url.url || ''),
-      mediaUrls: (data.media || []).map((mediaItem: any) => mediaItem.media_url_https || mediaItem.url || ''),
-      isRetweet: data.is_retweet || false,
-      isReply: data.text?.startsWith('@') || false,
-      isQuote: data.is_quote_status || false,
-      language: data.lang || 'en',
-      scrapedAt: now,
-      createdAt: data.created_at ? new Date(data.created_at) : now,
-      updatedAt: now
+      };
+    }
+    
+    // Traditional user object structure
+    const user = data.user || (data as any).author || (data as any).account;
+    
+    if (!user) {
+      return {
+        id: 'unknown',
+        username: 'unknown',
+        displayName: 'Unknown User',
+        avatar: '',
+        verified: false,
+        followersCount: 0,
+        followingCount: 0,
+        tweetsCount: 0,
+        location: '',
+        bio: '',
+        website: '',
+        joinedDate: now
+      };
+    }
+
+    // Extract with optimized property access
+    return {
+      id: user.id_str || user.id || user.userId || 'unknown',
+      username: user.screen_name || user.username || user.handle || 'unknown',
+      displayName: user.name || user.displayName || user.display_name || user.username || 'Unknown User',
+      avatar: user.profile_image_url_https || user.profile_image_url || user.avatar || user.profileImageUrl || '',
+      verified: user.verified || user.is_verified || false,
+      followersCount: user.followers_count || user.followersCount || user.followers || 0,
+      followingCount: user.following_count || user.followingCount || user.following || 0,
+      tweetsCount: user.statuses_count || user.statusesCount || user.tweets_count || user.tweetsCount || 0,
+      location: user.location || '',
+      bio: user.description || user.bio || '',
+      website: user.url || user.website || '',
+      joinedDate: now
     };
+  }
+
+  /**
+   * Extract hashtags from text if not provided in data
+   */
+  private extractHashtags(text: string): string[] {
+    const hashtagRegex = /#(\w+)/g;
+    const matches = text.match(hashtagRegex);
+    return matches ? matches.map(tag => tag.substring(1)) : [];
+  }
+
+  /**
+   * Detect tweet language - Optimized for performance
+   */
+  private detectTweetLanguage(data: ScrapedTweetData): string {
+    // First try the raw language fields from the scraper (fastest)
+    if (data.lang && data.lang !== 'und') return data.lang;
+    if (data.language && data.language !== 'und') return data.language;
+
+    // Fast content-based detection for most common languages
+    const text = data.text || data.content || '';
+    if (!text.trim()) return 'unknown';
+
+    const textLower = text.toLowerCase();
+    
+    // Quick Spanish detection
+    if (/\b(el|la|de|en|que|y|es|se|no|por|con|para|muy|pero|más|como|este|otro|todo|hacer|estar)\b/.test(textLower)) {
+      return 'es';
+    }
+    
+    // Quick Portuguese detection
+    if (/\b(o|a|de|em|que|e|do|da|para|com|não|mais|por|muito|ser|ter|fazer|estar)\b/.test(textLower)) {
+      return 'pt';
+    }
+
+    // Quick French detection
+    if (/\b(le|la|de|et|à|un|il|être|avoir|que|pour|dans|sur|avec|ne|pas)\b/.test(textLower)) {
+      return 'fr';
+    }
+
+    // Quick German detection
+    if (/\b(der|die|das|und|in|den|von|zu|ist|mit|sich|auf|für|als|sie|ein)\b/.test(textLower)) {
+      return 'de';
+    }
+
+    // Default to unknown for performance
+    return 'unknown';
   }
 
   /**

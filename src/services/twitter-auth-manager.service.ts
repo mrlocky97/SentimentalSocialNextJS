@@ -84,7 +84,6 @@ export class TwitterAuthManager {
         }
       }
     } catch (error) {
-      console.error('Error loading cookies:', error);
       this.clearCookies();
     }
   }
@@ -173,14 +172,11 @@ export class TwitterAuthManager {
 
       // Try encrypted credentials first (more secure)
       if (masterPassword && fs.existsSync(encryptedCredsPath)) {
-        console.log('🔒 Loading encrypted Twitter credentials...');
         try {
           const encryptedData = JSON.parse(fs.readFileSync(encryptedCredsPath, 'utf8'));
           const decrypted = credentialsEncryption.decryptTwitterCredentials(encryptedData, masterPassword);
-          console.log('✅ Successfully decrypted Twitter credentials');
           return decrypted;
         } catch (error) {
-          console.error('❌ Failed to decrypt Twitter credentials:', error);
           // Fall back to environment variables
         }
       }
@@ -191,18 +187,11 @@ export class TwitterAuthManager {
       const password = process.env.TWITTER_PASSWORD;
 
       if (!email || !username || !password) {
-        console.warn('⚠️  Twitter credentials not found in environment variables');
-        console.warn('💡 Consider using encrypted credentials for better security');
         return null;
       }
 
-      // SECURITY: Warn about plaintext credentials
-      console.warn('⚠️  Using plaintext Twitter credentials from environment');
-      console.warn('🔒 Recommendation: Encrypt credentials using npm run encrypt-twitter-creds');
-
       return { email, username, password };
     } catch (error) {
-      console.error('❌ Error loading Twitter credentials:', error);
       return null;
     }
   }

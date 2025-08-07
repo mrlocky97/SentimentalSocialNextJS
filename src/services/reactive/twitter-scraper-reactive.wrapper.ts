@@ -56,7 +56,6 @@ class ReactiveTwitterScraperWrapper {
       timeout(30000), // 30 second timeout
       retry(2),
       catchError(error => {
-        console.error('Scraping request error:', error);
         return from([]);
       }),
       shareReplay(1)
@@ -94,7 +93,6 @@ class ReactiveTwitterScraperWrapper {
     )).pipe(
       map(results => results.flat()),
       catchError(error => {
-        console.error('Batch scraping error:', error);
         return from([]);
       }),
       shareReplay(1)

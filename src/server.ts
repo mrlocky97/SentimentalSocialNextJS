@@ -186,14 +186,6 @@ interface AppError extends Error {
 }
 
 app.use((err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error occurred:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-  });
-
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === 'development';
 

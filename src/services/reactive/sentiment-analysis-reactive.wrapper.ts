@@ -52,7 +52,6 @@ class ReactiveSentimentAnalysisWrapper {
       timeout(10000), // 10 second timeout
       retry(2),
       catchError(error => {
-        console.error('Tweet analysis error:', error);
         return from([{ error: 'Analysis failed', tweetId: tweet.id }]);
       }),
       shareReplay(1)
@@ -87,7 +86,6 @@ class ReactiveSentimentAnalysisWrapper {
       tweets.map(tweet => this.processSingleTweet(tweet))
     )).pipe(
       catchError(error => {
-        console.error('Batch analysis error:', error);
         return from([]);
       }),
       shareReplay(1)
