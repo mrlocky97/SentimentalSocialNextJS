@@ -98,6 +98,14 @@ export class TweetSentimentAnalysisManager {
     this.naiveBayesService.train(examples);
   }
 
+  async saveNaiveBayesToFile(filePath: string): Promise<void> {
+    return this.naiveBayesService.saveToFile(filePath);
+  }
+
+  async loadNaiveBayesFromFile(filePath: string): Promise<void> {
+    return this.naiveBayesService.loadFromFile(filePath);
+  }
+
   predictNaiveBayes(text: string): { label: SentimentLabel; confidence: number } {
     return this.naiveBayesService.predict(text);
   }
