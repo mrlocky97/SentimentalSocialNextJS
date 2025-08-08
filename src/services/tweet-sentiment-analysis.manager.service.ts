@@ -1,6 +1,6 @@
 /**
- * Tweet Sentiment Analysis Manager
- * Analyzes tweets and provides marketing insights
+ * Tweet Sentiment Analysis Manager - Optimizado
+ * Analiza tweets y proporciona información de marketing con mejoras de rendimiento
  */
 
 import {
@@ -9,232 +9,71 @@ import {
   MarketingInsight,
   SentimentAnalysisConfig,
   SentimentAnalysisStats,
+  SentimentLabel,
   SentimentTrend,
   TextAnalysis,
   TweetSentimentAnalysis,
 } from '../types/sentiment';
 import { Tweet } from '../types/twitter';
+import { InternalSentimentAnalyzer } from './internal-sentiment-analyzer.service';
+import {
+  NaiveBayesSentimentService,
+  NaiveBayesTrainingExample,
+} from './naive-bayes-sentiment.service';
 
-/**
- * Internal sentiment analysis logic
- */
+// Listas predefinidas para detección de emociones
+const EMOTIONAL_WORDS = new Set([
+  'amazing',
+  'terrible',
+  'love',
+  'hate',
+  'best',
+  'worst',
+  'incredible',
+  'awful',
+  'fantastic',
+  'horrible',
+]);
 
-class InternalSentimentAnalyzer {
-  analyze(text: string, config?: any): Promise<TextAnalysis> {
-    return new Promise((resolve) => {
-      // Simplified rule-based sentiment analysis
-      const lowerText = text.toLowerCase();
+const POSITIVE_WORDS = new Set([
+  'love',
+  'great',
+  'amazing',
+  'best',
+  'excellent',
+  'perfect',
+  'awesome',
+  'fantastic',
+  'superb',
+  'outstanding',
+]);
 
-      // Positive words
-      const positiveWords = [
-        'good',
-        'great',
-        'excellent',
-        'amazing',
-        'love',
-        'fantastic',
-        'awesome',
-        'perfect',
-        'wonderful',
-        'best',
-        'bueno',
-        'excelente',
-        'increíble',
-        'fantástico',
-        'perfecto',
-        'maravilloso',
-        'mejor',
-      ];
-
-      // Negative words
-      const negativeWords = [
-        'bad',
-        'terrible',
-        'horrible',
-        'hate',
-        'worst',
-        'awful',
-        'disgusting',
-        'pathetic',
-        'useless',
-        'fail',
-        'malo',
-        'terrible',
-        'horrible',
-        'odio',
-        'peor',
-        'fatal',
-        'desastre',
-      ];
-
-      // Emoji sentiment map (más realista y variado)
-      const emojiSentiment: Record<string, number> = {
-        // Muy positivos
-        '😀': 1,
-        '😃': 1,
-        '😄': 1,
-        '😁': 1,
-        '😆': 0.8,
-        '😊': 0.8,
-        '😍': 1,
-        '🥰': 1,
-        '😇': 0.7,
-        '😎': 0.7,
-        '👍': 0.7,
-        '❤️': 1,
-        '💖': 1,
-        '🤩': 1,
-        '🥳': 1,
-        '�': 0.8,
-        // Positivos
-        '�😂': 0.5,
-        '😅': 0.5,
-        '😜': 0.5,
-        '😋': 0.5,
-        '😌': 0.5,
-        '😻': 0.5,
-        '😽': 0.5,
-        '😸': 0.5,
-        '😹': 0.5,
-        '😺': 0.5,
-        // Muy negativos
-        '😢': -1,
-        '😭': -1,
-        '😞': -0.8,
-        '😔': -0.8,
-        '😡': -1,
-        '😠': -1,
-        '😤': -0.8,
-        '👎': -0.7,
-        '💔': -1,
-        '😩': -0.8,
-        '😫': -0.8,
-        '😱': -0.7,
-        '😨': -0.7,
-        '😰': -0.7,
-        '😓': -0.7,
-        // Negativos
-        '�': -0.5,
-        '�': -0.5,
-        '😬': -0.5,
-        '�😑': -0.3,
-        '�': -0.3,
-        '�😶': -0.3,
-        '�': -0.5,
-        '�': -0.5,
-        '�': -0.5,
-        '😿': -0.5,
-        '🙀': -0.5,
-        // Neutros
-        '🤔': 0,
-        '😏': 0,
-        '😳': 0,
-        '😮': 0,
-        '😯': 0,
-        '😲': 0,
-        '😴': 0,
-        '😪': 0,
-        '�‍🌫️': 0,
-        '😐': 0,
-        '😑': 0,
-        '😶': 0,
-      };
-
-      let positiveScore = 0;
-      let negativeScore = 0;
-      let emojiScore = 0;
-      let emojiCount = 0;
-      let positiveEmojiCount = 0;
-      let negativeEmojiCount = 0;
-
-      positiveWords.forEach((word) => {
-        if (lowerText.includes(word)) positiveScore++;
-      });
-
-      negativeWords.forEach((word) => {
-        if (lowerText.includes(word)) negativeScore++;
-      });
-
-      // Emoji analysis (más realista: suma todos los emojis y pondera por cantidad)
-      const emojiMatches = Array.from(
-        text.matchAll(
-          /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{1F191}-\u{1F251}\u{1F004}|\u{1F0CF}|\u{1F170}-\u{1F171}|\u{1F17E}-\u{1F17F}|\u{1F18E}|\u{3030}|\u{2B50}|\u{2B06}|\u{2194}-\u{2199}|\u{21A9}-\u{21AA}|\u{2934}-\u{2935}|\u{25AA}-\u{25AB}|\u{25FE}-\u{25FF}|\u{25B6}|\u{25C0}|\u{25FB}-\u{25FC}|\u{25FD}-\u{25FE}|\u{25B2}|\u{25BC}|\u{25C6}|\u{25C7}|\u{25CB}|\u{25CF}|\u{25A0}|\u{25A1}|\u{25B3}|\u{25B4}|\u{25B5}|\u{25B8}|\u{25B9}|\u{25BA}|\u{25BB}|\u{25BC}|\u{25BD}|\u{25BE}|\u{25BF}|\u{25C2}|\u{25C3}|\u{25C4}|\u{25C5}|\u{25C8}|\u{25C9}|\u{25CA}|\u{25CB}|\u{25CC}|\u{25CD}|\u{25CE}|\u{25CF}|\u{25D0}|\u{25D1}|\u{25D2}|\u{25D3}|\u{25D4}|\u{25D5}|\u{25D6}|\u{25D7}|\u{25D8}|\u{25D9}|\u{25DA}|\u{25DB}|\u{25DC}|\u{25DD}|\u{25DE}|\u{25DF}|\u{25E0}|\u{25E1}|\u{25E2}|\u{25E3}|\u{25E4}|\u{25E5}|\u{25E6}|\u{25E7}|\u{25E8}|\u{25E9}|\u{25EA}|\u{25EB}|\u{25EC}|\u{25ED}|\u{25EE}|\u{25EF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}]/gu
-        )
-      );
-      if (emojiMatches.length > 0) {
-        for (const match of emojiMatches) {
-          const emoji = match[0];
-          emojiCount++;
-          if (emojiSentiment[emoji] !== undefined) {
-            emojiScore += emojiSentiment[emoji];
-            if (emojiSentiment[emoji] > 0) positiveEmojiCount++;
-            if (emojiSentiment[emoji] < 0) negativeEmojiCount++;
-          }
-        }
-      }
-
-      // Score base por palabras
-      let score = positiveScore * 0.2 - negativeScore * 0.2;
-      // Sumar el score de emojis, ponderando por cantidad y fuerza
-      if (emojiCount > 0) {
-        score += (emojiScore / emojiCount) * Math.min(1, emojiCount * 0.5); // más emojis, más peso
-      }
-
-      // Etiqueta y confianza más realista
-      let label: 'positive' | 'negative' | 'neutral' = 'neutral';
-      let confidence = 0.5;
-      if (score > 0.15) {
-        label = 'positive';
-        confidence = Math.min(0.99, 0.6 + Math.abs(score) + positiveEmojiCount * 0.05);
-      } else if (score < -0.15) {
-        label = 'negative';
-        confidence = Math.min(0.99, 0.6 + Math.abs(score) + negativeEmojiCount * 0.05);
-      }
-
-      // Extract basic keywords
-      const words = text.split(/\s+/).filter((word) => word.length > 3);
-      const keywords = words.slice(0, 5); // Take first 5 meaningful words
-
-      // Detect language (simple heuristic)
-      const spanishWords = ['el', 'la', 'que', 'de', 'es', 'y', 'pero', 'con', 'por'];
-      const isSpanish = spanishWords.some((word) => lowerText.includes(word));
-
-      const result: TextAnalysis = {
-        sentiment: {
-          score: Math.max(-1, Math.min(1, score)),
-          magnitude: Math.abs(score),
-          label,
-          confidence,
-          emotions: {
-            joy: label === 'positive' ? confidence : 0,
-            sadness: label === 'negative' ? confidence * 0.7 : 0,
-            anger: label === 'negative' ? confidence * 0.8 : 0,
-            fear: label === 'negative' ? confidence * 0.5 : 0,
-            surprise: 0.1,
-            disgust: label === 'negative' ? confidence * 0.6 : 0,
-          },
-        },
-        keywords,
-        entities: [], // Simplified - no entity extraction
-        language: isSpanish ? 'es' : 'en',
-      };
-
-      resolve(result);
-    });
-  }
-}
+const NEGATIVE_WORDS = new Set([
+  'hate',
+  'terrible',
+  'worst',
+  'awful',
+  'horrible',
+  'bad',
+  'disappointing',
+  'poor',
+  'failure',
+  'disaster',
+]);
 
 export class TweetSentimentAnalysisManager {
-  // REMOVED: External sentiment service dependency - now using internal logic
-  // private sentimentService: SentimentAnalysisService;
   private sentimentAnalyzer: InternalSentimentAnalyzer;
+  private naiveBayesService: NaiveBayesSentimentService;
   private defaultConfig: SentimentAnalysisConfig;
 
   constructor() {
-    // REMOVED: External service initialization - using internal analysis
-    // this.sentimentService = new SentimentAnalysisService();
     this.sentimentAnalyzer = new InternalSentimentAnalyzer();
-    this.defaultConfig = {
+    this.naiveBayesService = new NaiveBayesSentimentService();
+    this.defaultConfig = this.createDefaultConfig();
+  }
+
+  private createDefaultConfig(): SentimentAnalysisConfig {
+    return {
       enableEmotionAnalysis: true,
       enableEntityExtraction: true,
       enableBrandMentionDetection: true,
@@ -255,32 +94,29 @@ export class TweetSentimentAnalysisManager {
     };
   }
 
-  /**
-   * Analyze a single tweet with marketing insights
-   */
+  trainNaiveBayes(examples: NaiveBayesTrainingExample[]) {
+    this.naiveBayesService.train(examples);
+  }
+
+  predictNaiveBayes(text: string): { label: SentimentLabel; confidence: number } {
+    return this.naiveBayesService.predict(text);
+  }
+
   async analyzeTweet(
     tweet: Tweet,
-    config?: Partial<SentimentAnalysisConfig>
+    config?: Partial<SentimentAnalysisConfig>,
+    method: 'rule' | 'naive' = 'rule'
   ): Promise<TweetSentimentAnalysis> {
     const finalConfig = { ...this.defaultConfig, ...config };
 
     try {
-      // Perform text analysis using internal analyzer
-      const textAnalysis = await this.sentimentAnalyzer.analyze(tweet.content, finalConfig);
-
-      // Extract brand mentions
+      const textAnalysis = await this.performTextAnalysis(tweet, finalConfig, method);
       const brandMentions = this.extractBrandMentions(tweet.content, finalConfig);
-
-      // Analyze hashtag sentiments
       const hashtagSentiments = await this.analyzeHashtagSentiments(
         tweet.hashtags || [],
         tweet.content
       );
-
-      // Calculate influence score
       const influenceScore = this.calculateInfluenceScore(tweet);
-
-      // Generate marketing insights
       const marketingInsights = this.generateMarketingInsights(
         tweet,
         textAnalysis,
@@ -288,7 +124,7 @@ export class TweetSentimentAnalysisManager {
         influenceScore
       );
 
-      const analysis: TweetSentimentAnalysis = {
+      return {
         tweetId: tweet.tweetId,
         content: tweet.content,
         analysis: textAnalysis,
@@ -298,8 +134,6 @@ export class TweetSentimentAnalysisManager {
         marketingInsights,
         analyzedAt: new Date(),
       };
-
-      return analysis;
     } catch (error) {
       console.error(`❌ Error analyzing tweet ${tweet.tweetId}:`, error);
       throw new Error(
@@ -308,9 +142,43 @@ export class TweetSentimentAnalysisManager {
     }
   }
 
-  /**
-   * Analyze multiple tweets in batch
-   */
+  private async performTextAnalysis(
+    tweet: Tweet,
+    config: SentimentAnalysisConfig,
+    method: 'rule' | 'naive'
+  ): Promise<TextAnalysis> {
+    if (method === 'naive') {
+      const nbResult = this.naiveBayesService.predict(tweet.content);
+      return {
+        sentiment: {
+          score: nbResult.label === 'positive' ? 1 : nbResult.label === 'negative' ? -1 : 0,
+          magnitude: Math.abs(nbResult.confidence),
+          label: nbResult.label,
+          confidence: nbResult.confidence,
+          emotions: {
+            joy: 0,
+            sadness: 0,
+            anger: 0,
+            fear: 0,
+            surprise: 0,
+            disgust: 0,
+          },
+        },
+        keywords: this.extractKeywords(tweet.content),
+        entities: [],
+        language: tweet.language || 'en',
+      };
+    }
+    return this.sentimentAnalyzer.analyze(tweet.content, config);
+  }
+
+  private extractKeywords(content: string): string[] {
+    return content
+      .split(/\s+/)
+      .filter((w) => w.length > 3)
+      .slice(0, 5);
+  }
+
   async analyzeTweetsBatch(
     tweets: Tweet[],
     config?: Partial<SentimentAnalysisConfig>
@@ -320,71 +188,71 @@ export class TweetSentimentAnalysisManager {
 
     for (let i = 0; i < tweets.length; i++) {
       try {
-        const analysis = await this.analyzeTweet(tweets[i], config);
-        results.push(analysis);
-
-        // Progress logging
-        if ((i + 1) % 10 === 0) {
-        }
+        results.push(await this.analyzeTweet(tweets[i], config));
       } catch (error) {
         errors.push(
           `Tweet ${tweets[i].tweetId}: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
-        console.error(`❌ Failed to analyze tweet ${i + 1}:`, error);
+        if (errors.length > 10) break; // Limitar errores
       }
     }
 
     if (errors.length > 0) {
-      console.warn('❌ Errors during batch analysis:', errors);
+      console.warn('❌ Errors during batch analysis:', errors.slice(0, 10));
     }
 
     return results;
   }
 
-  /**
-   * Generate comprehensive statistics from analyzed tweets
-   */
   generateStatistics(analyses: TweetSentimentAnalysis[]): SentimentAnalysisStats {
-    if (analyses.length === 0) {
-      return this.createEmptyStats();
-    }
+    if (analyses.length === 0) return this.createEmptyStats();
 
-    // Calculate average sentiment
-    const averageSentiment =
-      analyses.reduce((sum, analysis) => sum + analysis.analysis.sentiment.score, 0) /
-      analyses.length;
-
-    // Calculate sentiment distribution
-    const distribution = {
+    let totalSentiment = 0;
+    const distribution: { [key in SentimentLabel | 'very_positive' | 'very_negative']: number } = {
       very_positive: 0,
       positive: 0,
       neutral: 0,
       negative: 0,
       very_negative: 0,
     };
-    analyses.forEach((analysis) => {
-      distribution[analysis.analysis.sentiment.label]++;
-    });
 
-    // Calculate percentages
+    const keywordCounts = new Map<string, { count: number; totalSentiment: number }>();
+    const brandStats = new Map<string, { mentions: number; totalSentiment: number }>();
+    const timestamps: number[] = [];
+
+    for (const analysis of analyses) {
+      const sentiment = analysis.analysis.sentiment;
+      totalSentiment += sentiment.score;
+      distribution[sentiment.label]++;
+
+      // Procesar keywords
+      for (const keyword of analysis.analysis.keywords) {
+        const entry = keywordCounts.get(keyword) || { count: 0, totalSentiment: 0 };
+        entry.count++;
+        entry.totalSentiment += sentiment.score;
+        keywordCounts.set(keyword, entry);
+      }
+
+      // Procesar menciones de marca
+      for (const mention of analysis.brandMentions) {
+        const brand = mention.brand;
+        const entry = brandStats.get(brand) || { mentions: 0, totalSentiment: 0 };
+        entry.mentions++;
+        entry.totalSentiment += mention.sentiment.score;
+        brandStats.set(brand, entry);
+      }
+
+      timestamps.push(analysis.analyzedAt.getTime());
+    }
+
+    // Calcular estadísticas finales
+    const averageSentiment = totalSentiment / analyses.length;
     Object.keys(distribution).forEach((key) => {
       distribution[key as keyof typeof distribution] =
         (distribution[key as keyof typeof distribution] / analyses.length) * 100;
     });
 
-    // Extract top keywords
-    const keywordCounts: { [key: string]: { count: number; totalSentiment: number } } = {};
-    analyses.forEach((analysis) => {
-      analysis.analysis.keywords.forEach((keyword) => {
-        if (!keywordCounts[keyword]) {
-          keywordCounts[keyword] = { count: 0, totalSentiment: 0 };
-        }
-        keywordCounts[keyword].count++;
-        keywordCounts[keyword].totalSentiment += analysis.analysis.sentiment.score;
-      });
-    });
-
-    const topKeywords = Object.entries(keywordCounts)
+    const topKeywords = Array.from(keywordCounts.entries())
       .map(([keyword, data]) => ({
         keyword,
         frequency: data.count,
@@ -393,19 +261,7 @@ export class TweetSentimentAnalysisManager {
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 20);
 
-    // Calculate brand mention stats
-    const brandStats: { [brand: string]: { mentions: number; totalSentiment: number } } = {};
-    analyses.forEach((analysis) => {
-      analysis.brandMentions.forEach((mention) => {
-        if (!brandStats[mention.brand]) {
-          brandStats[mention.brand] = { mentions: 0, totalSentiment: 0 };
-        }
-        brandStats[mention.brand].mentions++;
-        brandStats[mention.brand].totalSentiment += mention.sentiment.score;
-      });
-    });
-
-    const brandMentionStats = Object.entries(brandStats)
+    const brandMentionStats = Array.from(brandStats.entries())
       .map(([brand, data]) => ({
         brand,
         mentions: data.mentions,
@@ -413,105 +269,78 @@ export class TweetSentimentAnalysisManager {
       }))
       .sort((a, b) => b.mentions - a.mentions);
 
-    // Get time range
-    const timestamps = analyses.map((a) => new Date(a.analyzedAt));
-    const timeRange = {
-      start: new Date(Math.min(...timestamps.map((t) => t.getTime()))),
-      end: new Date(Math.max(...timestamps.map((t) => t.getTime()))),
-    };
-
     return {
       totalAnalyzed: analyses.length,
       averageSentiment,
       sentimentDistribution: distribution,
       topKeywords,
       brandMentionStats,
-      timeRange,
+      timeRange: {
+        start: new Date(Math.min(...timestamps)),
+        end: new Date(Math.max(...timestamps)),
+      },
     };
   }
 
-  /**
-   * Generate sentiment trends over time
-   */
   generateSentimentTrends(
     analyses: TweetSentimentAnalysis[],
     intervalHours: number = 1
   ): SentimentTrend[] {
     if (analyses.length === 0) return [];
 
-    // Group analyses by time intervals
-    const timeGroups: { [key: string]: TweetSentimentAnalysis[] } = {};
+    const intervalMs = intervalHours * 60 * 60 * 1000;
+    const timeGroups = new Map<string, TweetSentimentAnalysis[]>();
 
-    analyses.forEach((analysis) => {
-      const timestamp = new Date(analysis.analyzedAt);
-      const intervalStart = new Date(
-        Math.floor(timestamp.getTime() / (intervalHours * 60 * 60 * 1000)) *
-          (intervalHours * 60 * 60 * 1000)
-      );
+    for (const analysis of analyses) {
+      const timestamp = analysis.analyzedAt.getTime();
+      const intervalStart = new Date(Math.floor(timestamp / intervalMs) * intervalMs);
       const key = intervalStart.toISOString();
 
-      if (!timeGroups[key]) {
-        timeGroups[key] = [];
-      }
-      timeGroups[key].push(analysis);
-    });
+      const group = timeGroups.get(key) || [];
+      group.push(analysis);
+      timeGroups.set(key, group);
+    }
 
-    // Calculate trends for each interval
-    const trends = Object.entries(timeGroups).map(([timestamp, groupAnalyses]) => {
-      const avgSentiment =
-        groupAnalyses.reduce((sum, analysis) => sum + analysis.analysis.sentiment.score, 0) /
-        groupAnalyses.length;
+    return Array.from(timeGroups.entries())
+      .map(([timestamp, group]) => {
+        const totalSentiment = group.reduce((sum, a) => sum + a.analysis.sentiment.score, 0);
+        const avgSentiment = totalSentiment / group.length;
+        const allKeywords = group.flatMap((a) => a.analysis.keywords);
 
-      const allKeywords = groupAnalyses.flatMap((analysis) => analysis.analysis.keywords);
-      const topKeywords = this.getTopKeywords(allKeywords, 5);
-
-      return {
-        timestamp: new Date(timestamp),
-        sentiment: avgSentiment,
-        volume: groupAnalyses.length,
-        keywords: topKeywords,
-      };
-    });
-
-    return trends.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        return {
+          timestamp: new Date(timestamp),
+          sentiment: avgSentiment,
+          volume: group.length,
+          keywords: this.getTopKeywords(allKeywords, 5),
+        };
+      })
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
-  /**
-   * Extract brand mentions from tweet content
-   */
   private extractBrandMentions(content: string, config: SentimentAnalysisConfig): BrandMention[] {
     const mentions: BrandMention[] = [];
     const lowerContent = content.toLowerCase();
 
-    config.brandKeywords.forEach((brand) => {
-      const regex = new RegExp(`\\b${brand}\\b`, 'gi');
-      const matches = content.match(regex);
+    for (const brand of config.brandKeywords) {
+      if (!lowerContent.includes(brand.toLowerCase())) continue;
 
-      if (matches) {
-        // Extract context around brand mention
-        const brandIndex = lowerContent.indexOf(brand.toLowerCase());
-        const contextStart = Math.max(0, brandIndex - 30);
-        const contextEnd = Math.min(content.length, brandIndex + brand.length + 30);
-        const context = content.substring(contextStart, contextEnd);
+      const brandIndex = lowerContent.indexOf(brand.toLowerCase());
+      const context = content.substring(
+        Math.max(0, brandIndex - 30),
+        Math.min(content.length, brandIndex + brand.length + 30)
+      );
 
-        // Calculate sentiment for this specific mention
-        const sentiment = this.calculateMentionSentiment(context);
-
-        mentions.push({
-          brand: brand,
-          sentiment,
-          context,
-          confidence: 0.8, // High confidence for exact brand matches
-        });
-      }
-    });
+      mentions.push({
+        brand,
+        sentiment: this.calculateMentionSentiment(context),
+        context,
+        confidence: 0.8,
+      });
+    }
 
     return mentions;
   }
 
-  /**
-   * Analyze sentiment of hashtags
-   */
   private async analyzeHashtagSentiments(
     hashtags: string[],
     content: string
@@ -520,14 +349,12 @@ export class TweetSentimentAnalysisManager {
 
     for (const hashtag of hashtags) {
       try {
-        // Create context for hashtag analysis
         const hashtagContext = `Talking about ${hashtag} ${content}`;
         const analysis = await this.sentimentAnalyzer.analyze(hashtagContext);
-
         hashtagSentiments.push({
           hashtag,
           sentiment: analysis.sentiment,
-          frequency: 1, // Individual tweet frequency is always 1
+          frequency: 1,
         });
       } catch (error) {
         console.error(`Error analyzing hashtag ${hashtag}:`, error);
@@ -537,32 +364,20 @@ export class TweetSentimentAnalysisManager {
     return hashtagSentiments;
   }
 
-  /**
-   * Calculate influence score based on tweet metrics
-   */
   private calculateInfluenceScore(tweet: Tweet): number {
     const metrics = tweet.metrics || { likes: 0, retweets: 0, replies: 0, views: 0 };
     const author = tweet.author;
 
-    // Engagement score (0-40 points)
+    // Cálculos optimizados
     const totalEngagement = metrics.likes + metrics.retweets * 2 + metrics.replies * 1.5;
     const engagementScore = Math.min(40, Math.log10(totalEngagement + 1) * 10);
-
-    // Author influence score (0-30 points)
     const followerScore = Math.min(20, Math.log10((author.followersCount || 0) + 1) * 2);
     const verifiedBonus = author.verified ? 10 : 0;
-    const authorScore = followerScore + verifiedBonus;
-
-    // Reach score (0-30 points)
     const reachScore = Math.min(30, Math.log10((metrics.views || totalEngagement) + 1) * 3);
 
-    const totalScore = engagementScore + authorScore + reachScore;
-    return Math.min(100, totalScore);
+    return Math.min(100, engagementScore + followerScore + verifiedBonus + reachScore);
   }
 
-  /**
-   * Generate marketing insights from analysis
-   */
   private generateMarketingInsights(
     tweet: Tweet,
     textAnalysis: any,
@@ -571,109 +386,86 @@ export class TweetSentimentAnalysisManager {
   ): MarketingInsight[] {
     const insights: MarketingInsight[] = [];
 
-    // Brand perception insights
-    brandMentions.forEach((mention) => {
-      if (mention.sentiment.score < -0.5) {
+    // Procesar menciones de marca
+    for (const mention of brandMentions) {
+      const sentimentScore = mention.sentiment.score;
+      const impactLevel = influenceScore > 70 ? 'high' : influenceScore > 40 ? 'medium' : 'low';
+
+      if (sentimentScore < -0.5) {
         insights.push({
           type: 'brand_perception',
-          description: `Negative sentiment detected for ${
-            mention.brand
-          } (${mention.sentiment.score.toFixed(2)})`,
-          impact: influenceScore > 70 ? 'high' : influenceScore > 40 ? 'medium' : 'low',
+          description: `Negative sentiment detected for ${mention.brand} (${sentimentScore.toFixed(
+            2
+          )})`,
+          impact: impactLevel,
           actionable: true,
-          recommendation: `Monitor and respond to negative sentiment about ${mention.brand}. Consider damage control measures.`,
+          recommendation: `Monitor and respond to negative sentiment about ${mention.brand}`,
         });
-      } else if (mention.sentiment.score > 0.5) {
+      } else if (sentimentScore > 0.5) {
         insights.push({
           type: 'brand_perception',
-          description: `Positive sentiment detected for ${
-            mention.brand
-          } (${mention.sentiment.score.toFixed(2)})`,
-          impact: influenceScore > 70 ? 'high' : 'medium',
+          description: `Positive sentiment detected for ${mention.brand} (${sentimentScore.toFixed(
+            2
+          )})`,
+          impact: impactLevel,
           actionable: true,
-          recommendation: `Amplify this positive mention through engagement and sharing.`,
+          recommendation: `Amplify this positive mention`,
         });
       }
-    });
+    }
 
-    // Influencer impact insights
+    // Detección de influencers
     if (influenceScore > 80) {
       insights.push({
         type: 'influencer_impact',
-        description: `High-influence user (score: ${influenceScore.toFixed(
-          1
-        )}) posted about your brand`,
+        description: `High-influence user (score: ${influenceScore.toFixed(1)})`,
         impact: 'high',
         actionable: true,
-        recommendation:
-          'Engage with this influential user to maximize reach and build relationships.',
+        recommendation: 'Engage with this influential user',
       });
     }
 
-    // Customer feedback insights
-    if (
-      textAnalysis.sentiment.label === 'negative' ||
-      textAnalysis.sentiment.label === 'very_negative'
-    ) {
+    // Detección de comentarios negativos
+    const sentimentLabel = textAnalysis.sentiment.label;
+    if (sentimentLabel === 'negative' || sentimentLabel === 'very_negative') {
       insights.push({
         type: 'customer_feedback',
-        description: `Customer complaint or negative feedback detected (${textAnalysis.sentiment.score.toFixed(
-          2
-        )})`,
+        description: `Customer complaint detected (${textAnalysis.sentiment.score.toFixed(2)})`,
         impact: influenceScore > 50 ? 'high' : 'medium',
         actionable: true,
-        recommendation:
-          'Respond promptly to address customer concerns and demonstrate good customer service.',
+        recommendation: 'Respond to address concerns',
       });
     }
 
-    // Trend identification
-    const emotionalWords = textAnalysis.keywords.filter((keyword: string) =>
-      ['amazing', 'terrible', 'love', 'hate', 'best', 'worst', 'incredible', 'awful'].includes(
-        keyword.toLowerCase()
-      )
+    // Detección de lenguaje emocional
+    const emotionalWords = textAnalysis.keywords.filter((kw: string) =>
+      EMOTIONAL_WORDS.has(kw.toLowerCase())
     );
 
     if (emotionalWords.length > 0) {
       insights.push({
         type: 'trend_identification',
-        description: `Emotional language detected: ${emotionalWords.join(', ')}`,
+        description: `Emotional language: ${emotionalWords.join(', ')}`,
         impact: 'medium',
         actionable: true,
-        recommendation:
-          'Monitor for trending emotional responses and adjust messaging accordingly.',
+        recommendation: 'Monitor emotional responses',
       });
     }
 
     return insights;
   }
 
-  /**
-   * Calculate sentiment for a specific mention context
-   */
   private calculateMentionSentiment(context: string): any {
-    // Simplified sentiment calculation for mention context
-    const positiveWords = ['love', 'great', 'amazing', 'best', 'excellent', 'perfect', 'awesome'];
-    const negativeWords = [
-      'hate',
-      'terrible',
-      'worst',
-      'awful',
-      'horrible',
-      'bad',
-      'disappointing',
-    ];
-
-    const lowerContext = context.toLowerCase();
     let score = 0;
+    const lowerContext = context.toLowerCase();
 
-    positiveWords.forEach((word) => {
+    for (const word of POSITIVE_WORDS) {
       if (lowerContext.includes(word)) score += 0.3;
-    });
+    }
 
-    negativeWords.forEach((word) => {
+    for (const word of NEGATIVE_WORDS) {
       if (lowerContext.includes(word)) score -= 0.3;
-    });
+    }
 
     score = Math.max(-1, Math.min(1, score));
 
@@ -685,24 +477,18 @@ export class TweetSentimentAnalysisManager {
     };
   }
 
-  /**
-   * Get top keywords from a list
-   */
   private getTopKeywords(keywords: string[], limit: number): string[] {
-    const counts: { [key: string]: number } = {};
-    keywords.forEach((keyword) => {
-      counts[keyword] = (counts[keyword] || 0) + 1;
-    });
+    const counts = new Map<string, number>();
+    for (const keyword of keywords) {
+      counts.set(keyword, (counts.get(keyword) || 0) + 1);
+    }
 
-    return Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([keyword]) => keyword);
   }
 
-  /**
-   * Create empty statistics object
-   */
   private createEmptyStats(): SentimentAnalysisStats {
     return {
       totalAnalyzed: 0,
@@ -726,31 +512,29 @@ export class TweetSentimentAnalysisManager {
   mapTweetsWithSentiment(
     tweets: Tweet[],
     analyses: TweetSentimentAnalysis[]
-  ): (Tweet & {
-    sentiment: {
-      score: number;
-      magnitude: number;
-      label: string;
-      confidence: number;
-      emotions: any;
-      keywords: string[];
-      analyzedAt: Date;
-      processingTime: number;
-    };
-  })[] {
-    // Returns an array of tweets with sentiment fields added
+  ): (Tweet & { sentiment: any })[] {
     return tweets.map((tweet, index) => {
       const analysis = analyses[index];
-      if (!analysis) return tweet as Tweet & { sentiment: any };
+      const defaultSentiment = {
+        score: 0,
+        magnitude: 0,
+        label: 'neutral' as 'neutral' | 'positive' | 'negative',
+        confidence: 0,
+        emotions: {},
+        keywords: [],
+        analyzedAt: new Date(),
+        processingTime: 0,
+      };
+
+      if (!analysis) {
+        return {
+          ...tweet,
+          sentiment: defaultSentiment,
+        };
+      }
 
       const { sentiment, keywords } = analysis.analysis;
-      const emotions = sentiment.emotions;
-
-      const label = ['very_positive', 'positive'].includes(sentiment.label)
-        ? 'positive'
-        : ['very_negative', 'negative'].includes(sentiment.label)
-        ? 'negative'
-        : 'neutral';
+      const label = this.normalizeSentimentLabel(sentiment.label);
 
       return {
         ...tweet,
@@ -759,12 +543,18 @@ export class TweetSentimentAnalysisManager {
           magnitude: sentiment.magnitude,
           label,
           confidence: sentiment.confidence,
-          emotions,
+          emotions: sentiment.emotions,
           keywords,
           analyzedAt: analysis.analyzedAt,
           processingTime: Date.now() - analysis.analyzedAt.getTime(),
         },
       };
     });
+  }
+
+  private normalizeSentimentLabel(label: string): 'neutral' | 'positive' | 'negative' {
+    if (label.includes('positive')) return 'positive';
+    if (label.includes('negative')) return 'negative';
+    return 'neutral';
   }
 }
