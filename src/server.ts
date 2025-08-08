@@ -7,47 +7,56 @@ import dotenv from 'dotenv';
 // Load environment variables first
 dotenv.config();
 
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
-import specs from './lib/swagger';
 import { appConfig } from './lib/config/app';
+import specs from './lib/swagger';
 
 // Import performance middleware
 import {
+  analyticsRateLimit,
+  authRateLimit,
+  cacheControlMiddleware,
   compressionMiddleware,
+  createRateLimit,
   performanceMiddleware,
   sanitizeMiddleware,
-  cacheControlMiddleware,
-  createRateLimit,
-  authRateLimit,
   scrapingRateLimit,
-  analyticsRateLimit
 } from './lib/middleware/performance';
 
 // Import database connection
 import DatabaseConnection from './lib/database/connection';
 
 // Import route modules - consolidated imports
-import campaignRoutes from './routes/campaigns';
 import adminRoutes from './routes/admin';
+import campaignRoutes from './routes/campaigns';
 import sentimentRoutes from './routes/sentiment';
 // REMOVED: experimental routes (moved to backup for academic research)
 // import experimentalRoutes from './routes/experimental.routes';
 // TEMPORARILY DISABLED during consolidation
 // import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
-import { scrapingRoutes } from './routes/scraping';
-import twitterAuthRoutes from './routes/twitter-auth';
 import authRoutes from './routes/auth';
-import userRoutes from './routes/users';
-import templateRoutes from './routes/templates';
+import { scrapingRoutes } from './routes/scraping';
 import securityRoutes from './routes/security';
+import templateRoutes from './routes/templates';
+import twitterAuthRoutes from './routes/twitter-auth';
+import userRoutes from './routes/users';
 
 // Import Twitter authentication manager
-import { TwitterAuthManager } from './services/twitter-auth-manager.service';
 import { metricsService } from './lib/monitoring/metrics';
+import { TwitterAuthManager } from './services/twitter-auth-manager.service';
+// Import sentiment analysis manager and training data
+import fs from 'fs';
+import path from 'path';
+import { trainingData } from './data/training-data';
+import { TweetSentimentAnalysisManager } from './services/tweet-sentiment-analysis.manager.service';
+
+// Create a singleton instance of the sentiment manager to be used throughout the app
+export const sentimentManager = new TweetSentimentAnalysisManager();
+const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
 
 const app = express();
 const PORT = appConfig.app.port || 3001;
@@ -105,20 +114,24 @@ app.get('/api/v1/metrics', (req, res) => {
 });
 
 // Swagger UI setup
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  explorer: true,
-  customCss: `
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: `
     .swagger-ui .topbar { display: none }
     .swagger-ui .info .title { color: #1976d2 }
   `,
-  customSiteTitle: 'SentimentalSocial API Documentation',
-  swaggerOptions: {
-    docExpansion: 'none',
-    filter: true,
-    showRequestDuration: true,
-    tryItOutEnabled: true,
-  },
-}));
+    customSiteTitle: 'SentimentalSocial API Documentation',
+    swaggerOptions: {
+      docExpansion: 'none',
+      filter: true,
+      showRequestDuration: true,
+      tryItOutEnabled: true,
+    },
+  })
+);
 
 // API Routes with specific rate limiting
 app.use('/api/v1/auth', authRateLimit, authRoutes);
@@ -185,20 +198,22 @@ interface AppError extends Error {
   code?: string;
 }
 
-app.use((err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
+app.use(
+  (err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Don't leak error details in production
+    const isDevelopment = process.env.NODE_ENV === 'development';
 
-  res.status(err.status || 500).json({
-    success: false,
-    error: {
-      message: err.message || 'Internal server error',
-      code: err.code || 'INTERNAL_ERROR',
-      ...(isDevelopment && { stack: err.stack }),
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
+    res.status(err.status || 500).json({
+      success: false,
+      error: {
+        message: err.message || 'Internal server error',
+        code: err.code || 'INTERNAL_ERROR',
+        ...(isDevelopment && { stack: err.stack }),
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+);
 
 // Start server
 async function startServer() {
@@ -209,6 +224,28 @@ async function startServer() {
     // Initialize Twitter authentication
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.initializeOnStartup();
+
+    // Initialize and train sentiment analysis model
+    console.log('🧠 Initializing sentiment analysis model...');
+    try {
+      // Check if model file exists
+      if (fs.existsSync(modelPath)) {
+        console.log('📂 Loading pre-trained model from disk...');
+        await sentimentManager.loadNaiveBayesFromFile(modelPath);
+        console.log('✅ Model loaded successfully.');
+      } else {
+        console.log('🔄 No pre-trained model found. Training new model...');
+        console.log(`💾 Training with ${trainingData.length} examples...`);
+        await sentimentManager.trainNaiveBayes(trainingData);
+        console.log('✅ Model trained successfully. Saving to disk...');
+        await sentimentManager.saveNaiveBayesToFile(modelPath);
+        console.log('💾 Model saved for future use.');
+      }
+    } catch (modelError) {
+      console.error('❌ Error initializing sentiment model:', modelError);
+      console.log('🔄 Falling back to training a new model without persistence...');
+      await sentimentManager.trainNaiveBayes(trainingData);
+    }
 
     // Start Express server
     app.listen(PORT, () => {

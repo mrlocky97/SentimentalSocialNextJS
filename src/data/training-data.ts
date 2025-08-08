@@ -1,4 +1,4 @@
-import { NaiveBayesTrainingExample } from '@/services/naive-bayes-sentiment.service';
+import { NaiveBayesTrainingExample } from '../services/naive-bayes-sentiment.service';
 
 export const trainingData: NaiveBayesTrainingExample[] = [
   // English - Positive
