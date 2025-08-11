@@ -4,21 +4,25 @@
  */
 
 import { Observable, Subject, BehaviorSubject, timer, combineLatest } from 'rxjs';
-import { 
-  map, 
-  filter, 
-  mergeMap, 
-  catchError, 
-  tap, 
+import {
+  map,
+  filter,
+  mergeMap,
+  catchError,
+  tap,
   shareReplay,
   debounceTime,
-  distinctUntilChanged
+  distinctUntilChanged,
 } from 'rxjs/operators';
 import { notificationSystem } from './notification-system';
 
 export interface OptimizationTask {
   id: string;
-  type: 'hashtag_optimization' | 'timing_optimization' | 'content_optimization' | 'audience_optimization';
+  type:
+    | 'hashtag_optimization'
+    | 'timing_optimization'
+    | 'content_optimization'
+    | 'audience_optimization';
   campaignId: string;
   priority: 'critical' | 'high' | 'medium' | 'low';
   data: any;
@@ -63,14 +67,14 @@ class SmartAutoOptimizationSystem {
     failedTasks: 0,
     averageImprovement: 0,
     systemLoad: 0,
-    successRate: 0
+    successRate: 0,
   });
 
   private systemMetrics$ = new BehaviorSubject<SystemMetrics>({
     cpuUsage: 0,
     memoryUsage: 0,
     activeConnections: 0,
-    queueLength: 0
+    queueLength: 0,
   });
 
   private runningTasks = new Map<string, OptimizationTask>();
@@ -86,18 +90,20 @@ class SmartAutoOptimizationSystem {
    * Initialize task processing pipeline
    */
   private initializeProcessing(): void {
-    this.taskQueue$.pipe(
-      // Debounce rapid task submissions
-      debounceTime(1000),
-      // Filter by system resources
-      filter(() => this.checkResourceAvailability()),
-      // Process with concurrency control
-      mergeMap(task => this.processTask(task), this.MAX_CONCURRENT_TASKS),
-      shareReplay(1)
-    ).subscribe({
-      next: (result) => this.handleTaskResult(result),
-      error: (error) => console.error('Task processing error:', error)
-    });
+    this.taskQueue$
+      .pipe(
+        // Debounce rapid task submissions
+        debounceTime(1000),
+        // Filter by system resources
+        filter(() => this.checkResourceAvailability()),
+        // Process with concurrency control
+        mergeMap((task) => this.processTask(task), this.MAX_CONCURRENT_TASKS),
+        shareReplay(1)
+      )
+      .subscribe({
+        next: (result) => this.handleTaskResult(result),
+        error: (error) => console.error('Task processing error:', error),
+      });
   }
 
   /**
@@ -105,13 +111,13 @@ class SmartAutoOptimizationSystem {
    */
   private initializeMonitoring(): void {
     // Simulate system metrics monitoring
-    timer(0, 5000).pipe(
-      map(() => this.getCurrentSystemMetrics()),
-      distinctUntilChanged((prev, curr) => 
-        Math.abs(prev.cpuUsage - curr.cpuUsage) < 5
-      ),
-      tap(metrics => this.updateSystemLoad(metrics))
-    ).subscribe(metrics => this.systemMetrics$.next(metrics));
+    timer(0, 5000)
+      .pipe(
+        map(() => this.getCurrentSystemMetrics()),
+        distinctUntilChanged((prev, curr) => Math.abs(prev.cpuUsage - curr.cpuUsage) < 5),
+        tap((metrics) => this.updateSystemLoad(metrics))
+      )
+      .subscribe((metrics) => this.systemMetrics$.next(metrics));
   }
 
   /**
@@ -132,7 +138,7 @@ class SmartAutoOptimizationSystem {
       data,
       createdAt: new Date(),
       scheduledAt,
-      status: 'pending'
+      status: 'pending',
     };
 
     // Queue task
@@ -144,16 +150,16 @@ class SmartAutoOptimizationSystem {
       title: 'Optimization Scheduled',
       message: `${type} optimization scheduled for campaign ${campaignId}`,
       data: { taskId: task.id },
-      priority: 'low'
+      priority: 'low',
     });
 
-    return new Observable<OptimizationResult>(subscriber => {
+    return new Observable<OptimizationResult>((subscriber) => {
       this.processTask(task).subscribe({
         next: (result) => {
           subscriber.next(result);
           subscriber.complete();
         },
-        error: (error) => subscriber.error(error)
+        error: (error) => subscriber.error(error),
       });
     });
   }
@@ -162,10 +168,10 @@ class SmartAutoOptimizationSystem {
    * Get optimization recommendations
    */
   getRecommendations(campaignId: string, metrics: any): Observable<string[]> {
-    return new Observable<string[]>(subscriber => {
+    return new Observable<string[]>((subscriber) => {
       // Simulate ML-based recommendations
       const recommendations = this.generateRecommendations(metrics);
-      
+
       setTimeout(() => {
         subscriber.next(recommendations);
         subscriber.complete();
@@ -196,15 +202,12 @@ class SmartAutoOptimizationSystem {
     activeTasks: number;
     queueLength: number;
   }> {
-    return combineLatest([
-      this.stats$,
-      this.systemMetrics$
-    ]).pipe(
+    return combineLatest([this.stats$, this.systemMetrics$]).pipe(
       map(([stats, metrics]) => ({
         stats,
         metrics,
         activeTasks: this.runningTasks.size,
-        queueLength: 0 // Would track in real implementation
+        queueLength: 0, // Would track in real implementation
       }))
     );
   }
@@ -214,27 +217,31 @@ class SmartAutoOptimizationSystem {
    */
   private processTask(task: OptimizationTask): Observable<OptimizationResult> {
     this.runningTasks.set(task.id, { ...task, status: 'running' });
-    
-    return new Observable<OptimizationResult>(subscriber => {
+
+    return new Observable<OptimizationResult>((subscriber) => {
       // Simulate optimization processing
-      this.performOptimization(task).then(result => {
-        this.runningTasks.delete(task.id);
-        subscriber.next(result);
-        subscriber.complete();
-      }).catch(error => {
-        this.runningTasks.delete(task.id);
-        subscriber.error(error);
-      });
+      this.performOptimization(task)
+        .then((result) => {
+          this.runningTasks.delete(task.id);
+          subscriber.next(result);
+          subscriber.complete();
+        })
+        .catch((error) => {
+          this.runningTasks.delete(task.id);
+          subscriber.error(error);
+        });
     }).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error(`Task ${task.id} failed:`, error);
-        return [{
-          taskId: task.id,
-          success: false,
-          improvements: [],
-          metrics: { before: {}, after: {}, improvement: 0 },
-          recommendations: ['Task failed - please retry']
-        }];
+        return [
+          {
+            taskId: task.id,
+            success: false,
+            improvements: [],
+            metrics: { before: {}, after: {}, improvement: 0 },
+            recommendations: ['Task failed - please retry'],
+          },
+        ];
       })
     );
   }
@@ -247,7 +254,7 @@ class SmartAutoOptimizationSystem {
     await this.delay(2000 + Math.random() * 3000);
 
     const improvementPercentage = Math.random() * 25 + 5; // 5-30% improvement
-    
+
     const result: OptimizationResult = {
       taskId: task.id,
       success: Math.random() > 0.1, // 90% success rate
@@ -255,9 +262,9 @@ class SmartAutoOptimizationSystem {
       metrics: {
         before: this.generateMetrics(),
         after: this.generateMetrics(improvementPercentage),
-        improvement: improvementPercentage
+        improvement: improvementPercentage,
       },
-      recommendations: this.generateRecommendations(task.data)
+      recommendations: this.generateRecommendations(task.data),
     };
 
     // Send notification based on result
@@ -283,9 +290,11 @@ class SmartAutoOptimizationSystem {
    */
   private checkResourceAvailability(): boolean {
     const metrics = this.systemMetrics$.value;
-    return metrics.cpuUsage < this.RESOURCE_THRESHOLD && 
-           metrics.memoryUsage < this.RESOURCE_THRESHOLD &&
-           this.runningTasks.size < this.MAX_CONCURRENT_TASKS;
+    return (
+      metrics.cpuUsage < this.RESOURCE_THRESHOLD &&
+      metrics.memoryUsage < this.RESOURCE_THRESHOLD &&
+      this.runningTasks.size < this.MAX_CONCURRENT_TASKS
+    );
   }
 
   /**
@@ -296,7 +305,7 @@ class SmartAutoOptimizationSystem {
       cpuUsage: Math.random() * 30 + 20, // 20-50%
       memoryUsage: Math.random() * 25 + 35, // 35-60%
       activeConnections: Math.floor(Math.random() * 50 + 10),
-      queueLength: this.runningTasks.size
+      queueLength: this.runningTasks.size,
     };
   }
 
@@ -308,25 +317,25 @@ class SmartAutoOptimizationSystem {
       hashtag_optimization: [
         'Identified trending hashtags',
         'Removed low-performing hashtags',
-        'Added niche-specific hashtags'
+        'Added niche-specific hashtags',
       ],
       timing_optimization: [
         'Optimized posting schedule',
         'Identified peak engagement hours',
-        'Adjusted frequency based on audience activity'
+        'Adjusted frequency based on audience activity',
       ],
       content_optimization: [
         'Improved sentiment score',
         'Enhanced keyword relevance',
-        'Optimized content length'
+        'Optimized content length',
       ],
       audience_optimization: [
         'Refined target demographics',
         'Identified high-value segments',
-        'Improved engagement targeting'
-      ]
+        'Improved engagement targeting',
+      ],
     };
-    
+
     return improvements[type] || ['General optimization applied'];
   }
 
@@ -339,9 +348,9 @@ class SmartAutoOptimizationSystem {
       'Monitor competitor hashtag performance',
       'Increase posting frequency during peak hours',
       'Focus on high-engagement content types',
-      'Analyze audience feedback for content optimization'
+      'Analyze audience feedback for content optimization',
     ];
-    
+
     return recommendations.slice(0, Math.floor(Math.random() * 3) + 2);
   }
 
@@ -353,7 +362,7 @@ class SmartAutoOptimizationSystem {
       engagement: Math.random() * 5 + 2,
       reach: Math.floor(Math.random() * 10000 + 5000),
       clicks: Math.floor(Math.random() * 500 + 100),
-      shares: Math.floor(Math.random() * 100 + 20)
+      shares: Math.floor(Math.random() * 100 + 20),
     };
 
     if (improvement > 0) {
@@ -361,7 +370,7 @@ class SmartAutoOptimizationSystem {
         engagement: base.engagement * (1 + improvement / 100),
         reach: Math.floor(base.reach * (1 + improvement / 100)),
         clicks: Math.floor(base.clicks * (1 + improvement / 100)),
-        shares: Math.floor(base.shares * (1 + improvement / 100))
+        shares: Math.floor(base.shares * (1 + improvement / 100)),
       };
     }
 
@@ -376,9 +385,10 @@ class SmartAutoOptimizationSystem {
     const newCompleted = current.completedTasks + (result.success ? 1 : 0);
     const newFailed = current.failedTasks + (result.success ? 0 : 1);
     const totalTasks = current.totalTasks + 1;
-    
-    const newAvgImprovement = result.success 
-      ? ((current.averageImprovement * current.completedTasks) + result.metrics.improvement) / newCompleted
+
+    const newAvgImprovement = result.success
+      ? (current.averageImprovement * current.completedTasks + result.metrics.improvement) /
+        newCompleted
       : current.averageImprovement;
 
     this.stats$.next({
@@ -387,7 +397,7 @@ class SmartAutoOptimizationSystem {
       failedTasks: newFailed,
       averageImprovement: newAvgImprovement,
       systemLoad: this.systemMetrics$.value.cpuUsage,
-      successRate: newCompleted / totalTasks
+      successRate: newCompleted / totalTasks,
     });
   }
 
@@ -398,7 +408,7 @@ class SmartAutoOptimizationSystem {
     const current = this.stats$.value;
     this.stats$.next({
       ...current,
-      systemLoad: (metrics.cpuUsage + metrics.memoryUsage) / 2
+      systemLoad: (metrics.cpuUsage + metrics.memoryUsage) / 2,
     });
   }
 
@@ -406,7 +416,7 @@ class SmartAutoOptimizationSystem {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

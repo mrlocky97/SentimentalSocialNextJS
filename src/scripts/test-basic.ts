@@ -36,7 +36,7 @@ async function testBasicServices() {
         verified: false,
         followersCount: 100,
         followingCount: 50,
-        tweetsCount: 10
+        tweetsCount: 10,
       },
       metrics: { likes: 5, retweets: 2, replies: 1, quotes: 0, engagement: 0.08 },
       hashtags: ['#awesome'],
@@ -48,14 +48,17 @@ async function testBasicServices() {
       language: 'en',
       scrapedAt: new Date(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     const sentimentManager = new TweetSentimentAnalysisManager();
     const sentimentResult = await sentimentManager.analyzeTweet(mockTweet);
     const sentimentScore = sentimentResult.analysis.sentiment.score;
-    const sentimentLabel = sentimentScore > 0.3 ? 'positive' : sentimentScore < -0.3 ? 'negative' : 'neutral';
-    console.log(`   ✅ Sentiment Analysis: ${sentimentLabel} (${(sentimentScore * 100).toFixed(1)}%)`);
+    const sentimentLabel =
+      sentimentScore > 0.3 ? 'positive' : sentimentScore < -0.3 ? 'negative' : 'neutral';
+    console.log(
+      `   ✅ Sentiment Analysis: ${sentimentLabel} (${(sentimentScore * 100).toFixed(1)}%)`
+    );
 
     // Test 4: Database Connection (Quick Test)
     console.log('💾 Testing Database Connection...');
@@ -68,10 +71,10 @@ async function testBasicServices() {
         confidence: sentimentResult.analysis.sentiment.confidence,
         keywords: ['amazing', 'awesome'],
         analyzedAt: new Date(),
-        processingTime: 150
-      }
+        processingTime: 150,
+      },
     };
-    
+
     const dbService = new TweetDatabaseService();
     const dbResult = await dbService.saveTweet(mockTweetWithSentiment, 'test-basic-campaign');
     console.log('   ✅ Database connection operational');
@@ -82,8 +85,9 @@ async function testBasicServices() {
     console.log('\n🎉 Basic Services Test Completed!');
     console.log('✅ Core services operational');
     console.log(`⏱️  Execution time: ${executionTime.toFixed(2)} seconds`);
-    console.log(`🏆 ${executionTime < 3 ? '⚡ ULTRA FAST' : executionTime < 5 ? '🚀 FAST' : '✅ GOOD'} performance!`);
-
+    console.log(
+      `🏆 ${executionTime < 3 ? '⚡ ULTRA FAST' : executionTime < 5 ? '🚀 FAST' : '✅ GOOD'} performance!`
+    );
   } catch (error) {
     const endTime = Date.now();
     const executionTime = (endTime - startTime) / 1000;

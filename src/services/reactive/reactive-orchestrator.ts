@@ -4,15 +4,15 @@
  */
 
 import { Observable, Subject, BehaviorSubject, combineLatest, merge, timer } from 'rxjs';
-import { 
-  map, 
-  filter, 
-  switchMap, 
-  catchError, 
-  tap, 
+import {
+  map,
+  filter,
+  switchMap,
+  catchError,
+  tap,
   shareReplay,
   startWith,
-  distinctUntilChanged
+  distinctUntilChanged,
 } from 'rxjs/operators';
 
 // Import reactive services
@@ -80,7 +80,7 @@ class ReactiveServicesOrchestrator {
     overall: 'healthy',
     services: [],
     timestamp: new Date(),
-    alerts: []
+    alerts: [],
   });
   private stats$ = new BehaviorSubject<OrchestratorStats>({
     totalWorkflows: 0,
@@ -90,7 +90,7 @@ class ReactiveServicesOrchestrator {
     systemUptime: 0,
     averageWorkflowTime: 0,
     servicesOnline: 0,
-    totalServices: 5
+    totalServices: 5,
   });
 
   private readonly startTime = Date.now();
@@ -105,10 +105,12 @@ class ReactiveServicesOrchestrator {
    * Initialize health monitoring
    */
   private initializeHealthMonitoring(): void {
-    timer(0, this.healthCheckInterval).pipe(
-      switchMap(() => this.checkSystemHealth()),
-      tap(health => this.handleHealthStatus(health))
-    ).subscribe(health => this.systemHealth$.next(health));
+    timer(0, this.healthCheckInterval)
+      .pipe(
+        switchMap(() => this.checkSystemHealth()),
+        tap((health) => this.handleHealthStatus(health))
+      )
+      .subscribe((health) => this.systemHealth$.next(health));
   }
 
   /**
@@ -117,10 +119,10 @@ class ReactiveServicesOrchestrator {
   private initializeStatsTracking(): void {
     combineLatest([
       this.workflows$,
-      timer(0, 10000) // Every 10 seconds
-    ]).pipe(
-      map(([workflows]) => this.calculateStats(workflows))
-    ).subscribe(stats => this.stats$.next(stats));
+      timer(0, 10000), // Every 10 seconds
+    ])
+      .pipe(map(([workflows]) => this.calculateStats(workflows)))
+      .subscribe((stats) => this.stats$.next(stats));
   }
 
   /**
@@ -138,10 +140,10 @@ class ReactiveServicesOrchestrator {
       steps: steps.map((step, index) => ({
         ...step,
         id: `step_${index + 1}`,
-        status: 'pending'
+        status: 'pending',
       })),
       status: 'pending',
-      progress: 0
+      progress: 0,
     };
 
     // Add to workflows
@@ -162,13 +164,15 @@ class ReactiveServicesOrchestrator {
       throw new Error(`Workflow ${workflowId} not found`);
     }
 
-    return new Observable<Workflow>(subscriber => {
-      this.runWorkflow(workflow).then(result => {
-        subscriber.next(result);
-        subscriber.complete();
-      }).catch(error => {
-        subscriber.error(error);
-      });
+    return new Observable<Workflow>((subscriber) => {
+      this.runWorkflow(workflow)
+        .then((result) => {
+          subscriber.next(result);
+          subscriber.complete();
+        })
+        .catch((error) => {
+          subscriber.error(error);
+        });
     });
   }
 
@@ -181,36 +185,36 @@ class ReactiveServicesOrchestrator {
         name: 'Scrape Twitter Data',
         service: 'twitter-scraper',
         action: 'batchScrape',
-        inputs: { queries: data.hashtags, priority: 'high' }
+        inputs: { queries: data.hashtags, priority: 'high' },
       },
       {
         name: 'Analyze Sentiment',
         service: 'sentiment-analysis',
         action: 'analyzeBatch',
-        inputs: { texts: [] } // Will be populated from previous step
+        inputs: { texts: [] }, // Will be populated from previous step
       },
       {
         name: 'Predict Engagement',
         service: 'predictive-analytics',
         action: 'predict',
-        inputs: { type: 'engagement', campaignId, data }
+        inputs: { type: 'engagement', campaignId, data },
       },
       {
         name: 'Generate Optimization',
         service: 'auto-optimization',
         action: 'scheduleOptimization',
-        inputs: { type: 'hashtag_optimization', campaignId, data }
+        inputs: { type: 'hashtag_optimization', campaignId, data },
       },
       {
         name: 'Send Notification',
         service: 'notification',
         action: 'notify',
-        inputs: { 
-          type: 'success', 
+        inputs: {
+          type: 'success',
           title: 'Optimization Complete',
-          message: `Campaign ${campaignId} optimization workflow completed`
-        }
-      }
+          message: `Campaign ${campaignId} optimization workflow completed`,
+        },
+      },
     ];
 
     return this.createWorkflow(
@@ -238,18 +242,14 @@ class ReactiveServicesOrchestrator {
    * Get all workflows
    */
   getWorkflows(): Observable<Workflow[]> {
-    return this.workflows$.pipe(
-      map(workflowMap => Array.from(workflowMap.values()))
-    );
+    return this.workflows$.pipe(map((workflowMap) => Array.from(workflowMap.values())));
   }
 
   /**
    * Get workflow by ID
    */
   getWorkflow(id: string): Observable<Workflow | undefined> {
-    return this.workflows$.pipe(
-      map(workflows => workflows.get(id))
-    );
+    return this.workflows$.pipe(map((workflows) => workflows.get(id)));
   }
 
   /**
@@ -257,7 +257,7 @@ class ReactiveServicesOrchestrator {
    */
   private async runWorkflow(workflow: Workflow): Promise<Workflow> {
     const workflows = this.workflows$.value;
-    
+
     // Start workflow
     workflow.status = 'running';
     workflow.startedAt = new Date();
@@ -269,28 +269,28 @@ class ReactiveServicesOrchestrator {
       title: 'Workflow Started',
       message: `Workflow "${workflow.name}" is now running`,
       data: { workflowId: workflow.id },
-      priority: 'medium'
+      priority: 'medium',
     });
 
     try {
       for (let i = 0; i < workflow.steps.length; i++) {
         const step = workflow.steps[i];
         const stepStartTime = Date.now();
-        
+
         // Update step status
         step.status = 'running';
-        workflow.progress = ((i) / workflow.steps.length) * 100;
+        workflow.progress = (i / workflow.steps.length) * 100;
         workflows.set(workflow.id, workflow);
         this.workflows$.next(workflows);
 
         // Execute step
         const result = await this.executeStep(step, workflow);
-        
+
         // Update step completion
         step.status = result.success ? 'completed' : 'failed';
         step.outputs = result.outputs;
         step.duration = Date.now() - stepStartTime;
-        
+
         if (!result.success) {
           throw new Error(`Step "${step.name}" failed: ${result.error}`);
         }
@@ -300,18 +300,17 @@ class ReactiveServicesOrchestrator {
       workflow.status = 'completed';
       workflow.progress = 100;
       workflow.completedAt = new Date();
-      
+
       notificationSystem.sendSuccess(
         'Workflow Completed',
         `Workflow "${workflow.name}" completed successfully`,
         { workflowId: workflow.id }
       );
-
     } catch (error: any) {
       // Workflow failed
       workflow.status = 'failed';
       workflow.completedAt = new Date();
-      
+
       notificationSystem.sendError(
         'Workflow Failed',
         `Workflow "${workflow.name}" failed: ${error.message}`,
@@ -327,7 +326,10 @@ class ReactiveServicesOrchestrator {
   /**
    * Execute individual workflow step
    */
-  private async executeStep(step: WorkflowStep, workflow: Workflow): Promise<{ success: boolean; outputs?: any; error?: string }> {
+  private async executeStep(
+    step: WorkflowStep,
+    workflow: Workflow
+  ): Promise<{ success: boolean; outputs?: any; error?: string }> {
     try {
       let result: any;
 
@@ -362,14 +364,16 @@ class ReactiveServicesOrchestrator {
    */
   private async executeTwitterScraperStep(step: WorkflowStep): Promise<any> {
     const { action, inputs } = step;
-    
+
     switch (action) {
       case 'batchScrape':
         return new Promise((resolve, reject) => {
-          reactiveTwitterScraper.batchScrape(inputs.queries, inputs.options || {}, inputs.priority).subscribe({
-            next: (result: any) => resolve(result),
-            error: (error: any) => reject(error)
-          });
+          reactiveTwitterScraper
+            .batchScrape(inputs.queries, inputs.options || {}, inputs.priority)
+            .subscribe({
+              next: (result: any) => resolve(result),
+              error: (error: any) => reject(error),
+            });
         });
       default:
         throw new Error(`Unknown Twitter scraper action: ${action}`);
@@ -381,23 +385,25 @@ class ReactiveServicesOrchestrator {
    */
   private async executeSentimentAnalysisStep(step: WorkflowStep): Promise<any> {
     const { action, inputs } = step;
-    
+
     switch (action) {
       case 'analyzeBatch':
         // Convert text strings to Tweet objects for the wrapper
-        const tweets = (inputs.texts || ['Sample text for analysis']).map((text: string, index: number) => ({
-          id: `temp_${index}`,
-          text,
-          user: 'temp_user',
-          created_at: new Date().toISOString(),
-          retweet_count: 0,
-          favorite_count: 0
-        }));
-        
+        const tweets = (inputs.texts || ['Sample text for analysis']).map(
+          (text: string, index: number) => ({
+            id: `temp_${index}`,
+            text,
+            user: 'temp_user',
+            created_at: new Date().toISOString(),
+            retweet_count: 0,
+            favorite_count: 0,
+          })
+        );
+
         return new Promise((resolve, reject) => {
           reactiveSentimentAnalyzer.analyzeTweetsBatch(tweets).subscribe({
             next: (result: any) => resolve(result),
-            error: (error: any) => reject(error)
+            error: (error: any) => reject(error),
           });
         });
       default:
@@ -410,13 +416,13 @@ class ReactiveServicesOrchestrator {
    */
   private async executePredictiveAnalyticsStep(step: WorkflowStep): Promise<any> {
     const { action, inputs } = step;
-    
+
     switch (action) {
       case 'predict':
         return new Promise((resolve, reject) => {
           predictiveAnalyticsSystem.predict(inputs.type, inputs.campaignId, inputs.data).subscribe({
             next: (result: any) => resolve(result),
-            error: (error: any) => reject(error)
+            error: (error: any) => reject(error),
           });
         });
       default:
@@ -429,19 +435,16 @@ class ReactiveServicesOrchestrator {
    */
   private async executeAutoOptimizationStep(step: WorkflowStep): Promise<any> {
     const { action, inputs } = step;
-    
+
     switch (action) {
       case 'scheduleOptimization':
         return new Promise((resolve, reject) => {
-          autoOptimizationSystem.scheduleOptimization(
-            inputs.type, 
-            inputs.campaignId, 
-            inputs.data, 
-            inputs.priority
-          ).subscribe({
-            next: (result: any) => resolve(result),
-            error: (error: any) => reject(error)
-          });
+          autoOptimizationSystem
+            .scheduleOptimization(inputs.type, inputs.campaignId, inputs.data, inputs.priority)
+            .subscribe({
+              next: (result: any) => resolve(result),
+              error: (error: any) => reject(error),
+            });
         });
       default:
         throw new Error(`Unknown auto optimization action: ${action}`);
@@ -453,7 +456,7 @@ class ReactiveServicesOrchestrator {
    */
   private async executeNotificationStep(step: WorkflowStep): Promise<any> {
     const { action, inputs } = step;
-    
+
     switch (action) {
       case 'notify':
         notificationSystem.notify(inputs);
@@ -472,12 +475,12 @@ class ReactiveServicesOrchestrator {
       await this.checkServiceHealth('Sentiment Analysis', reactiveSentimentAnalyzer),
       await this.checkServiceHealth('Notification System', notificationSystem),
       await this.checkServiceHealth('Auto Optimization', autoOptimizationSystem),
-      await this.checkServiceHealth('Predictive Analytics', predictiveAnalyticsSystem)
+      await this.checkServiceHealth('Predictive Analytics', predictiveAnalyticsSystem),
     ];
 
-    const healthyServices = services.filter(s => s.status === 'healthy').length;
-    const warningServices = services.filter(s => s.status === 'warning').length;
-    const errorServices = services.filter(s => s.status === 'error').length;
+    const healthyServices = services.filter((s) => s.status === 'healthy').length;
+    const warningServices = services.filter((s) => s.status === 'warning').length;
+    const errorServices = services.filter((s) => s.status === 'error').length;
 
     let overall: SystemHealth['overall'];
     if (errorServices > 0) {
@@ -500,7 +503,7 @@ class ReactiveServicesOrchestrator {
       overall,
       services,
       timestamp: new Date(),
-      alerts
+      alerts,
     };
   }
 
@@ -510,10 +513,10 @@ class ReactiveServicesOrchestrator {
   private async checkServiceHealth(name: string, service: any): Promise<ServiceStatus> {
     // Simulate health check
     await this.delay(100);
-    
+
     const isHealthy = Math.random() > 0.1; // 90% healthy
     const responseTime = Math.random() * 100 + 50; // 50-150ms
-    
+
     return {
       name,
       status: isHealthy ? 'healthy' : 'warning',
@@ -522,8 +525,8 @@ class ReactiveServicesOrchestrator {
       performance: {
         responseTime,
         successRate: Math.random() * 0.1 + 0.9, // 90-100%
-        throughput: Math.random() * 100 + 50 // 50-150 ops/min
-      }
+        throughput: Math.random() * 100 + 50, // 50-150 ops/min
+      },
     };
   }
 
@@ -532,11 +535,11 @@ class ReactiveServicesOrchestrator {
    */
   private handleHealthStatus(health: SystemHealth): void {
     const current = this.stats$.value;
-    
+
     this.stats$.next({
       ...current,
-      servicesOnline: health.services.filter(s => s.status === 'healthy').length,
-      systemUptime: Date.now() - this.startTime
+      servicesOnline: health.services.filter((s) => s.status === 'healthy').length,
+      systemUptime: Date.now() - this.startTime,
     });
   }
 
@@ -545,18 +548,18 @@ class ReactiveServicesOrchestrator {
    */
   private calculateStats(workflows: Map<string, Workflow>): OrchestratorStats {
     const workflowArray = Array.from(workflows.values());
-    const completed = workflowArray.filter(w => w.status === 'completed');
-    const failed = workflowArray.filter(w => w.status === 'failed');
-    const active = workflowArray.filter(w => w.status === 'running' || w.status === 'pending');
+    const completed = workflowArray.filter((w) => w.status === 'completed');
+    const failed = workflowArray.filter((w) => w.status === 'failed');
+    const active = workflowArray.filter((w) => w.status === 'running' || w.status === 'pending');
 
-    const avgTime = completed.length > 0
-      ? completed.reduce((sum, w) => {
-          const duration = w.completedAt && w.startedAt 
-            ? w.completedAt.getTime() - w.startedAt.getTime()
-            : 0;
-          return sum + duration;
-        }, 0) / completed.length
-      : 0;
+    const avgTime =
+      completed.length > 0
+        ? completed.reduce((sum, w) => {
+            const duration =
+              w.completedAt && w.startedAt ? w.completedAt.getTime() - w.startedAt.getTime() : 0;
+            return sum + duration;
+          }, 0) / completed.length
+        : 0;
 
     const current = this.stats$.value;
 
@@ -568,7 +571,7 @@ class ReactiveServicesOrchestrator {
       systemUptime: Date.now() - this.startTime,
       averageWorkflowTime: avgTime,
       servicesOnline: current.servicesOnline,
-      totalServices: current.totalServices
+      totalServices: current.totalServices,
     };
   }
 
@@ -576,7 +579,7 @@ class ReactiveServicesOrchestrator {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

@@ -3,13 +3,13 @@
  * Tests only reactive services with minimal timeouts
  */
 
-import { 
+import {
   initializeReactiveServices,
   reactiveTwitterScraper,
   reactiveSentimentAnalyzer,
   notificationSystem,
   getSystemStatus,
-  defaultReactiveConfig
+  defaultReactiveConfig,
 } from '../services/reactive';
 
 import { firstValueFrom, timeout } from 'rxjs';
@@ -27,7 +27,7 @@ async function testReactiveServices() {
       enableMetrics: false, // Disable for speed
       maxConcurrentRequests: 2,
       retryAttempts: 1,
-      cacheTimeout: 10000 // 10 seconds only
+      cacheTimeout: 10000, // 10 seconds only
     });
     console.log('   ✅ Reactive services initialized');
 
@@ -43,12 +43,27 @@ async function testReactiveServices() {
         id: 'reactive-1',
         tweetId: 'r-1',
         content: 'Amazing reactive service!',
-        author: { id: 'u1', username: 'user1', displayName: 'User 1', verified: false, followersCount: 10, followingCount: 5, tweetsCount: 1 },
+        author: {
+          id: 'u1',
+          username: 'user1',
+          displayName: 'User 1',
+          verified: false,
+          followersCount: 10,
+          followingCount: 5,
+          tweetsCount: 1,
+        },
         metrics: { likes: 1, retweets: 0, replies: 0, quotes: 0, engagement: 0.1 },
-        hashtags: [], mentions: [], urls: [],
-        isRetweet: false, isReply: false, isQuote: false,
-        language: 'en', scrapedAt: new Date(), createdAt: new Date(), updatedAt: new Date()
-      }
+        hashtags: [],
+        mentions: [],
+        urls: [],
+        isRetweet: false,
+        isReply: false,
+        isQuote: false,
+        language: 'en',
+        scrapedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
 
     try {
@@ -77,7 +92,7 @@ async function testReactiveServices() {
       type: 'info',
       title: 'Reactive Test',
       message: 'Testing reactive notification system',
-      priority: 'low'
+      priority: 'low',
     });
     console.log('   ✅ Notification sent successfully');
 
@@ -87,8 +102,9 @@ async function testReactiveServices() {
     console.log('\n🎉 Reactive Services Test Completed!');
     console.log('⚡ RxJS services operational');
     console.log(`⏱️  Execution time: ${executionTime.toFixed(2)} seconds`);
-    console.log(`🏆 ${executionTime < 3 ? '⚡ ULTRA FAST' : executionTime < 5 ? '🚀 FAST' : '✅ GOOD'} performance!`);
-
+    console.log(
+      `🏆 ${executionTime < 3 ? '⚡ ULTRA FAST' : executionTime < 5 ? '🚀 FAST' : '✅ GOOD'} performance!`
+    );
   } catch (error) {
     const endTime = Date.now();
     const executionTime = (endTime - startTime) / 1000;

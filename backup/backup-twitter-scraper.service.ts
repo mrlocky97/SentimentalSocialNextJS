@@ -6,7 +6,7 @@
 
 import { Tweet } from '../types/twitter';
 
-// Twitter Scraper Interface Definition  
+// Twitter Scraper Interface Definition
 interface TwitterScraperInterface {
   scrape(query: string, options: ScrapingOptions): Promise<ScrapedTweetData[]>;
 }
@@ -96,7 +96,7 @@ export class TwitterScraperService {
     sentimentScores: {
       positive: [0.6, 0.7, 0.8, 0.9, 0.95],
       negative: [0.1, 0.2, 0.3, 0.4, 0.45],
-      neutral: [0.45, 0.5, 0.55]
+      neutral: [0.45, 0.5, 0.55],
     },
     users: [
       { username: 'techguru23', name: 'Sarah Chen', verified: false, followers: 15420 },
@@ -105,47 +105,94 @@ export class TwitterScraperService {
       { username: 'digitalmarketer', name: 'Alex Thompson', verified: false, followers: 23456 },
       { username: 'innovationhub', name: 'Innovation Hub', verified: true, followers: 145789 },
       { username: 'futurist2025', name: 'Emma Rodriguez', verified: false, followers: 8934 },
-      { username: 'techreporter', name: 'Ryan O\'Connor', verified: true, followers: 67890 },
-      { username: 'codingwiz', name: 'Priya Patel', verified: false, followers: 12345 }
+      { username: 'techreporter', name: "Ryan O'Connor", verified: true, followers: 67890 },
+      { username: 'codingwiz', name: 'Priya Patel', verified: false, followers: 12345 },
     ],
     tweetTemplates: {
       AI: [
         "Just witnessed {AI_TECH} in action and I'm blown away! The future is here. #AI #Innovation #Technology",
-        "The ethical implications of {AI_TECH} are fascinating. We need more discussions about responsible AI development. #Ethics #AI",
-        "Hot take: {AI_TECH} will revolutionize {INDUSTRY} in the next 2 years. Mark my words! 🚀 #AI #Prediction",
-        "Struggled with {PROBLEM} for hours. Then tried {AI_TECH} and solved it in minutes. Mind = blown 🤯 #AI #Productivity",
-        "The {AI_TECH} announcement today has me thinking about the future of work. Exciting and scary at the same time! #AI #Future"
+        'The ethical implications of {AI_TECH} are fascinating. We need more discussions about responsible AI development. #Ethics #AI',
+        'Hot take: {AI_TECH} will revolutionize {INDUSTRY} in the next 2 years. Mark my words! 🚀 #AI #Prediction',
+        'Struggled with {PROBLEM} for hours. Then tried {AI_TECH} and solved it in minutes. Mind = blown 🤯 #AI #Productivity',
+        'The {AI_TECH} announcement today has me thinking about the future of work. Exciting and scary at the same time! #AI #Future',
       ],
       Technology: [
-        "Breaking: {TECH_COMPANY} just released {NEW_TECH}. This changes everything! #Technology #Innovation #Tech",
-        "Remember when {OLD_TECH} was revolutionary? Now we have {NEW_TECH}. Technology moves so fast! #Technology #Progress",
+        'Breaking: {TECH_COMPANY} just released {NEW_TECH}. This changes everything! #Technology #Innovation #Tech',
+        'Remember when {OLD_TECH} was revolutionary? Now we have {NEW_TECH}. Technology moves so fast! #Technology #Progress',
         "PSA: If you're not using {TECH_TOOL} yet, you're missing out. Game changer for {USE_CASE}! #Technology #Productivity",
-        "The convergence of {TECH1} and {TECH2} is creating unprecedented opportunities. Exciting times! #Technology #Innovation",
-        "Just finished reading about {TECH_TREND}. The implications for {INDUSTRY} are massive. Thread below 👇 #Technology"
+        'The convergence of {TECH1} and {TECH2} is creating unprecedented opportunities. Exciting times! #Technology #Innovation',
+        'Just finished reading about {TECH_TREND}. The implications for {INDUSTRY} are massive. Thread below 👇 #Technology',
       ],
       default: [
-        "Interesting perspective on {TOPIC}. Would love to hear more thoughts from the community! #Discussion",
+        'Interesting perspective on {TOPIC}. Would love to hear more thoughts from the community! #Discussion',
         "Today's {TOPIC} developments have me thinking about the bigger picture. What's your take? #Thoughts",
-        "The more I learn about {TOPIC}, the more fascinated I become. Any recommended resources? #Learning",
-        "Hot take on {TOPIC}: {OPINION}. Probably controversial but here we go! #Opinion #Discussion",
-        "Quick reminder: {TOPIC} isn't just a trend, it's the future. Time to adapt! #Future #Change"
-      ]
+        'The more I learn about {TOPIC}, the more fascinated I become. Any recommended resources? #Learning',
+        'Hot take on {TOPIC}: {OPINION}. Probably controversial but here we go! #Opinion #Discussion',
+        "Quick reminder: {TOPIC} isn't just a trend, it's the future. Time to adapt! #Future #Change",
+      ],
     },
     replacements: {
-      AI_TECH: ['GPT-4', 'Claude AI', 'Midjourney', 'ChatGPT', 'DALL-E', 'GitHub Copilot', 'AutoGPT', 'LangChain'],
-      TECH_COMPANY: ['Google', 'Microsoft', 'Apple', 'Meta', 'Amazon', 'OpenAI', 'Anthropic', 'Tesla'],
-      NEW_TECH: ['neural interfaces', 'quantum computing', 'AR glasses', 'autonomous vehicles', 'smart contracts'],
+      AI_TECH: [
+        'GPT-4',
+        'Claude AI',
+        'Midjourney',
+        'ChatGPT',
+        'DALL-E',
+        'GitHub Copilot',
+        'AutoGPT',
+        'LangChain',
+      ],
+      TECH_COMPANY: [
+        'Google',
+        'Microsoft',
+        'Apple',
+        'Meta',
+        'Amazon',
+        'OpenAI',
+        'Anthropic',
+        'Tesla',
+      ],
+      NEW_TECH: [
+        'neural interfaces',
+        'quantum computing',
+        'AR glasses',
+        'autonomous vehicles',
+        'smart contracts',
+      ],
       OLD_TECH: ['dial-up internet', 'flip phones', 'CDs', 'fax machines', 'paper maps'],
       TECH_TOOL: ['Notion', 'Figma', 'VS Code', 'Slack', 'Discord', 'Linear', 'Vercel', 'Supabase'],
-      USE_CASE: ['project management', 'design work', 'coding', 'team collaboration', 'data analysis'],
+      USE_CASE: [
+        'project management',
+        'design work',
+        'coding',
+        'team collaboration',
+        'data analysis',
+      ],
       TECH1: ['AI', 'blockchain', 'IoT', 'AR/VR', '5G'],
-      TECH2: ['cloud computing', 'edge computing', 'quantum computing', 'biotechnology', 'nanotechnology'],
+      TECH2: [
+        'cloud computing',
+        'edge computing',
+        'quantum computing',
+        'biotechnology',
+        'nanotechnology',
+      ],
       TECH_TREND: ['Web3', 'metaverse', 'digital twins', 'edge AI', 'quantum supremacy'],
       INDUSTRY: ['healthcare', 'finance', 'education', 'manufacturing', 'entertainment', 'retail'],
-      TOPIC: ['innovation', 'sustainability', 'remote work', 'digital transformation', 'startup culture'],
+      TOPIC: [
+        'innovation',
+        'sustainability',
+        'remote work',
+        'digital transformation',
+        'startup culture',
+      ],
       PROBLEM: ['data analysis', 'code debugging', 'design consistency', 'workflow optimization'],
-      OPINION: ['this will change everything', 'adoption will be slower than expected', 'regulation is needed', 'we\'re not ready for this']
-    }
+      OPINION: [
+        'this will change everything',
+        'adoption will be slower than expected',
+        'regulation is needed',
+        "we're not ready for this",
+      ],
+    },
   };
 
   constructor(config: ScrapingConfig = {}) {
@@ -154,8 +201,9 @@ export class TwitterScraperService {
       timeout: 30000,
       delay: 2000, // 2 seconds between requests
       maxRetries: 3,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      ...config
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      ...config,
     };
   }
 
@@ -163,7 +211,6 @@ export class TwitterScraperService {
    * Scrape tweets by hashtag
    */
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-
     if (this.isRateLimited) {
       throw new Error(`Rate limited. Reset time: ${this.rateLimitResetTime.toISOString()}`);
     }
@@ -175,7 +222,7 @@ export class TwitterScraperService {
       maxAgeHours: 168, // 7 days to match mock data generation
       minLikes: 0,
       minRetweets: 0,
-      ...options
+      ...options,
     };
 
     try {
@@ -196,10 +243,9 @@ export class TwitterScraperService {
         errors: [],
         rateLimit: {
           remaining: this.maxRequestsPerHour - this.requestCount,
-          resetTime: this.rateLimitResetTime
-        }
+          resetTime: this.rateLimitResetTime,
+        },
       };
-
     } catch (error) {
       console.error('Scraping error:', error);
       return {
@@ -209,8 +255,8 @@ export class TwitterScraperService {
         errors: [error instanceof Error ? error.message : 'Unknown scraping error'],
         rateLimit: {
           remaining: this.maxRequestsPerHour - this.requestCount,
-          resetTime: this.rateLimitResetTime
-        }
+          resetTime: this.rateLimitResetTime,
+        },
       };
     }
   }
@@ -219,7 +265,6 @@ export class TwitterScraperService {
    * Scrape tweets from a specific user
    */
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
-
     const userOptions = { ...options, username };
     return this.scrapeByHashtag('', userOptions);
   }
@@ -232,7 +277,7 @@ export class TwitterScraperService {
       isLimited: this.isRateLimited,
       remaining: this.maxRequestsPerHour - this.requestCount,
       resetTime: this.rateLimitResetTime,
-      requestCount: this.requestCount
+      requestCount: this.requestCount,
     };
   }
 
@@ -240,7 +285,6 @@ export class TwitterScraperService {
    * Initialize mock Twitter scraper (real scraping handled by TwitterRealScraperService)
    */
   private async importTwid(): Promise<TwitterScraperInterface> {
-
     // Always return mock scraper since real scraping is handled by TwitterRealScraperService
     return this.createMockTwid();
   }
@@ -249,11 +293,10 @@ export class TwitterScraperService {
    * Create a mock twid implementation for development/testing
    */
   private createMockTwid(): TwitterScraperInterface {
-
     return {
       scrape: async (query: string, options: ScrapingOptions) => {
         // Simulate delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Extract hashtag from query for more realistic content
         const hashtagMatch = query.match(/#(\w+)/);
@@ -261,7 +304,7 @@ export class TwitterScraperService {
 
         // Return mock data with hashtag context
         return this.generateMockScrapedData(options.maxTweets || 10, hashtag);
-      }
+      },
     };
   }
 
@@ -273,7 +316,8 @@ export class TwitterScraperService {
 
     for (let i = 0; i < count; i++) {
       const user = this.mockData.users[Math.floor(Math.random() * this.mockData.users.length)];
-      const sentiment = this.mockData.sentiments[Math.floor(Math.random() * this.mockData.sentiments.length)];
+      const sentiment =
+        this.mockData.sentiments[Math.floor(Math.random() * this.mockData.sentiments.length)];
       const tweetContent = this.generateRealisticTweet(hashtag || 'AI', sentiment);
 
       // Generate realistic metrics based on user following and sentiment
@@ -293,7 +337,10 @@ export class TwitterScraperService {
           verified: user.verified,
           followersCount: user.followers,
           followers: user.followers,
-          avatar: `https://via.placeholder.com/50?text=${user.name.split(' ').map(n => n[0]).join('')}`
+          avatar: `https://via.placeholder.com/50?text=${user.name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')}`,
         },
         metrics,
         likes: metrics.likes,
@@ -309,8 +356,11 @@ export class TwitterScraperService {
         language: 'en',
         sentiment: {
           label: sentiment,
-          score: this.mockData.sentimentScores[sentiment][Math.floor(Math.random() * this.mockData.sentimentScores[sentiment].length)]
-        }
+          score:
+            this.mockData.sentimentScores[sentiment][
+              Math.floor(Math.random() * this.mockData.sentimentScores[sentiment].length)
+            ],
+        },
       });
     }
 
@@ -322,8 +372,10 @@ export class TwitterScraperService {
    */
   private generateRealisticTweet(hashtag: string, sentiment: string) {
     // Choose template based on hashtag
-    const templateKey = this.mockData.tweetTemplates[hashtag as keyof typeof this.mockData.tweetTemplates]
-      ? hashtag as keyof typeof this.mockData.tweetTemplates
+    const templateKey = this.mockData.tweetTemplates[
+      hashtag as keyof typeof this.mockData.tweetTemplates
+    ]
+      ? (hashtag as keyof typeof this.mockData.tweetTemplates)
       : 'default';
 
     const templates = this.mockData.tweetTemplates[templateKey];
@@ -346,7 +398,7 @@ export class TwitterScraperService {
 
     return {
       text: template,
-      hashtags: hashtags
+      hashtags: hashtags,
     };
   }
 
@@ -355,8 +407,21 @@ export class TwitterScraperService {
    */
   private adjustSentimentTone(text: string, sentiment: string): string {
     const positiveModifiers = ['Amazing!', 'Incredible!', 'Love this!', '🚀', '💪', '✨', '🔥'];
-    const negativeModifiers = ['Concerning...', 'Not sure about this', 'Disappointing', '😕', '⚠️', '😞'];
-    const neutralModifiers = ['Interesting.', 'Worth considering.', 'Let me think about this.', '🤔', '💭'];
+    const negativeModifiers = [
+      'Concerning...',
+      'Not sure about this',
+      'Disappointing',
+      '😕',
+      '⚠️',
+      '😞',
+    ];
+    const neutralModifiers = [
+      'Interesting.',
+      'Worth considering.',
+      'Let me think about this.',
+      '🤔',
+      '💭',
+    ];
 
     if (sentiment === 'positive' && Math.random() < 0.3) {
       const modifier = positiveModifiers[Math.floor(Math.random() * positiveModifiers.length)];
@@ -376,12 +441,11 @@ export class TwitterScraperService {
    * Calculate base engagement based on follower count and sentiment
    */
   private calculateBaseEngagement(followers: number, sentiment: string): number {
-    const baseRate = followers < 10000 ? 0.03 :
-      followers < 50000 ? 0.02 :
-        followers < 100000 ? 0.015 : 0.01;
+    const baseRate =
+      followers < 10000 ? 0.03 : followers < 50000 ? 0.02 : followers < 100000 ? 0.015 : 0.01;
 
-    const sentimentMultiplier = sentiment === 'positive' ? 1.3 :
-      sentiment === 'negative' ? 0.7 : 1.0;
+    const sentimentMultiplier =
+      sentiment === 'positive' ? 1.3 : sentiment === 'negative' ? 0.7 : 1.0;
 
     return Math.floor(followers * baseRate * sentimentMultiplier);
   }
@@ -399,7 +463,7 @@ export class TwitterScraperService {
       likes: Math.max(1, likes),
       retweets: Math.max(0, retweets),
       replies: Math.max(0, replies),
-      views: Math.max(likes, Math.floor(views))
+      views: Math.max(likes, Math.floor(views)),
     };
   }
 
@@ -408,7 +472,7 @@ export class TwitterScraperService {
    */
   private generateRealisticTimestamp(): string {
     const now = Date.now();
-    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
     const randomTime = sevenDaysAgo + Math.random() * (now - sevenDaysAgo);
     return new Date(randomTime).toISOString();
   }
@@ -422,12 +486,14 @@ export class TwitterScraperService {
     const mediaTypes = ['photo', 'video', 'gif'];
     const type = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
 
-    return [{
-      type,
-      url: `https://via.placeholder.com/400x300?text=${type.toUpperCase()}`,
-      width: 400,
-      height: 300
-    }];
+    return [
+      {
+        type,
+        url: `https://via.placeholder.com/400x300?text=${type.toUpperCase()}`,
+        width: 400,
+        height: 300,
+      },
+    ];
   }
 
   /**
@@ -451,7 +517,7 @@ export class TwitterScraperService {
       'https://techcrunch.com/article',
       'https://github.com/project',
       'https://medium.com/@author/post',
-      'https://research.org/paper'
+      'https://research.org/paper',
     ];
 
     return [urls[Math.floor(Math.random() * urls.length)]];
@@ -489,12 +555,15 @@ export class TwitterScraperService {
   /**
    * Perform the actual scraping using twid
    */
-  private async performScraping(twid: TwitterScraperInterface, query: string, options: ScrapingOptions): Promise<ScrapedTweetData[]> {
+  private async performScraping(
+    twid: TwitterScraperInterface,
+    query: string,
+    options: ScrapingOptions
+  ): Promise<ScrapedTweetData[]> {
     const scrapingOptions = {
       maxTweets: options.maxTweets || 100,
-      includeReplies: options.includeReplies || false
+      includeReplies: options.includeReplies || false,
     };
-
 
     // Add delay to avoid being blocked
     await this.delay(this.config.delay || 2000);
@@ -546,9 +615,10 @@ export class TwitterScraperService {
 
     // Generate numeric ID if not provided or if it's not numeric
     const originalId = scrapedTweet.id;
-    const numericId = originalId && /^\d+$/.test(originalId)
-      ? originalId
-      : String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
+    const numericId =
+      originalId && /^\d+$/.test(originalId)
+        ? originalId
+        : String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
 
     return {
       id: numericId,
@@ -557,12 +627,13 @@ export class TwitterScraperService {
       author: {
         id: scrapedTweet.author?.id || scrapedTweet.author?.username || 'unknown',
         username: scrapedTweet.author?.username || 'unknown',
-        displayName: scrapedTweet.author?.displayName || scrapedTweet.author?.name || 'Unknown User',
+        displayName:
+          scrapedTweet.author?.displayName || scrapedTweet.author?.name || 'Unknown User',
         verified: scrapedTweet.author?.verified || false,
         followersCount: scrapedTweet.author?.followersCount || scrapedTweet.author?.followers || 0,
         followingCount: 0,
         tweetsCount: 0,
-        avatar: scrapedTweet.author?.avatar || scrapedTweet.author?.profileImageUrl || ''
+        avatar: scrapedTweet.author?.avatar || scrapedTweet.author?.profileImageUrl || '',
       },
       metrics: {
         likes: scrapedTweet.metrics?.likes || scrapedTweet.likes || 0,
@@ -570,19 +641,23 @@ export class TwitterScraperService {
         replies: scrapedTweet.metrics?.replies || scrapedTweet.replies || 0,
         quotes: 0, // Not available in scraping
         views: scrapedTweet.metrics?.views || scrapedTweet.views || 0,
-        engagement: 0 // Will be calculated later
+        engagement: 0, // Will be calculated later
       },
-      hashtags: scrapedTweet.hashtags || this.extractHashtags(scrapedTweet.text || scrapedTweet.content || ''),
-      mentions: scrapedTweet.mentions || this.extractMentions(scrapedTweet.text || scrapedTweet.content || ''),
+      hashtags:
+        scrapedTweet.hashtags ||
+        this.extractHashtags(scrapedTweet.text || scrapedTweet.content || ''),
+      mentions:
+        scrapedTweet.mentions ||
+        this.extractMentions(scrapedTweet.text || scrapedTweet.content || ''),
       urls: scrapedTweet.urls || [],
-      mediaUrls: scrapedTweet.media?.map(m => m.url) || [],
+      mediaUrls: scrapedTweet.media?.map((m) => m.url) || [],
       isRetweet: scrapedTweet.isRetweet || false,
       isReply: scrapedTweet.isReply || false,
       isQuote: false,
       language: scrapedTweet.lang || 'en',
       scrapedAt: new Date(),
       createdAt,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -626,7 +701,7 @@ export class TwitterScraperService {
    * Add delay between requests
    */
   private async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

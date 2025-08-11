@@ -92,9 +92,9 @@
 ```javascript
 // Prompts para generar ejemplos balanceados
 const prompts = [
-  "Generate 10 positive product reviews in Spanish",
-  "Create negative service comments in English",
-  "Generate neutral social media posts in German",
+  'Generate 10 positive product reviews in Spanish',
+  'Create negative service comments in English',
+  'Generate neutral social media posts in German',
 ];
 ```
 

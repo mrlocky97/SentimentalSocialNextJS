@@ -4,15 +4,15 @@
  */
 
 import { Observable, Subject, BehaviorSubject, timer, from } from 'rxjs';
-import { 
-  map, 
-  filter, 
-  switchMap, 
-  catchError, 
-  tap, 
+import {
+  map,
+  filter,
+  switchMap,
+  catchError,
+  tap,
   shareReplay,
   debounceTime,
-  scan
+  scan,
 } from 'rxjs/operators';
 import { notificationSystem } from './notification-system';
 
@@ -74,10 +74,10 @@ class PredictiveAnalyticsSystem {
       recall: 0.88,
       f1Score: 0.85,
       lastTraining: new Date(),
-      dataPoints: 10000
+      dataPoints: 10000,
     },
     trendsAnalyzed: 0,
-    alertsGenerated: 0
+    alertsGenerated: 0,
   });
 
   private trends$ = new BehaviorSubject<TrendAnalysis>({
@@ -85,7 +85,7 @@ class PredictiveAnalyticsSystem {
     declining: [],
     emerging: [],
     stable: [],
-    confidence: 0
+    confidence: 0,
   });
 
   private predictionHistory = new Map<string, PredictionResult>();
@@ -101,33 +101,38 @@ class PredictiveAnalyticsSystem {
    * Initialize prediction processing pipeline
    */
   private initializePredictionProcessing(): void {
-    this.predictionQueue$.pipe(
-      debounceTime(500),
-      switchMap(request => this.processPrediction(request)),
-      shareReplay(1)
-    ).subscribe({
-      next: (result) => this.handlePredictionResult(result),
-      error: (error) => console.error('Prediction processing error:', error)
-    });
+    this.predictionQueue$
+      .pipe(
+        debounceTime(500),
+        switchMap((request) => this.processPrediction(request)),
+        shareReplay(1)
+      )
+      .subscribe({
+        next: (result) => this.handlePredictionResult(result),
+        error: (error) => console.error('Prediction processing error:', error),
+      });
   }
 
   /**
    * Initialize trend analysis
    */
   private initializeTrendAnalysis(): void {
-    timer(0, 30000).pipe( // Every 30 seconds
-      switchMap(() => this.analyzeTrends()),
-      tap(trends => this.checkForAlerts(trends))
-    ).subscribe(trends => this.trends$.next(trends));
+    timer(0, 30000)
+      .pipe(
+        // Every 30 seconds
+        switchMap(() => this.analyzeTrends()),
+        tap((trends) => this.checkForAlerts(trends))
+      )
+      .subscribe((trends) => this.trends$.next(trends));
   }
 
   /**
    * Initialize model updating
    */
   private initializeModelUpdating(): void {
-    timer(this.MODEL_UPDATE_INTERVAL, this.MODEL_UPDATE_INTERVAL).pipe(
-      tap(() => this.updateModels())
-    ).subscribe();
+    timer(this.MODEL_UPDATE_INTERVAL, this.MODEL_UPDATE_INTERVAL)
+      .pipe(tap(() => this.updateModels()))
+      .subscribe();
   }
 
   /**
@@ -145,18 +150,18 @@ class PredictiveAnalyticsSystem {
       campaignId,
       data,
       timeFrame,
-      confidence: 0
+      confidence: 0,
     };
 
     this.predictionQueue$.next(request);
 
-    return new Observable<PredictionResult>(subscriber => {
+    return new Observable<PredictionResult>((subscriber) => {
       this.processPrediction(request).subscribe({
         next: (result) => {
           subscriber.next(result);
           subscriber.complete();
         },
-        error: (error) => subscriber.error(error)
+        error: (error) => subscriber.error(error),
       });
     });
   }
@@ -180,18 +185,14 @@ class PredictiveAnalyticsSystem {
    */
   getPredictionHistory(campaignId?: string): PredictionResult[] {
     const history = Array.from(this.predictionHistory.values());
-    return campaignId 
-      ? history.filter(p => p.prediction.campaignId === campaignId)
-      : history;
+    return campaignId ? history.filter((p) => p.prediction.campaignId === campaignId) : history;
   }
 
   /**
    * Get model performance metrics
    */
   getModelMetrics(): Observable<ModelMetrics> {
-    return this.stats$.pipe(
-      map(stats => stats.modelPerformance)
-    );
+    return this.stats$.pipe(map((stats) => stats.modelPerformance));
   }
 
   /**
@@ -220,18 +221,20 @@ class PredictiveAnalyticsSystem {
    */
   private processPrediction(request: PredictionRequest): Observable<PredictionResult> {
     return from(this.performPrediction(request)).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error(`Prediction ${request.id} failed:`, error);
-        return [{
-          requestId: request.id,
-          type: request.type,
-          prediction: null,
-          confidence: 0,
-          accuracy: 0,
-          factors: [],
-          recommendations: ['Prediction failed - please retry'],
-          createdAt: new Date()
-        }];
+        return [
+          {
+            requestId: request.id,
+            type: request.type,
+            prediction: null,
+            confidence: 0,
+            accuracy: 0,
+            factors: [],
+            recommendations: ['Prediction failed - please retry'],
+            createdAt: new Date(),
+          },
+        ];
       })
     );
   }
@@ -254,31 +257,56 @@ class PredictiveAnalyticsSystem {
       case 'engagement':
         prediction = this.predictEngagement(request.data);
         factors = ['Historical engagement', 'Content quality', 'Timing', 'Audience activity'];
-        recommendations = ['Post during peak hours', 'Use engaging visuals', 'Include call-to-action'];
+        recommendations = [
+          'Post during peak hours',
+          'Use engaging visuals',
+          'Include call-to-action',
+        ];
         break;
 
       case 'virality':
         prediction = this.predictVirality(request.data);
         factors = ['Content uniqueness', 'Emotional appeal', 'Network effect', 'Trending topics'];
-        recommendations = ['Use trending hashtags', 'Create shareable content', 'Engage with influencers'];
+        recommendations = [
+          'Use trending hashtags',
+          'Create shareable content',
+          'Engage with influencers',
+        ];
         break;
 
       case 'sentiment':
         prediction = this.predictSentiment(request.data);
         factors = ['Language tone', 'Keywords', 'Context', 'Historical sentiment'];
-        recommendations = ['Monitor sentiment closely', 'Adjust messaging tone', 'Respond to feedback'];
+        recommendations = [
+          'Monitor sentiment closely',
+          'Adjust messaging tone',
+          'Respond to feedback',
+        ];
         break;
 
       case 'optimal_timing':
         prediction = this.predictOptimalTimes(request.data);
-        factors = ['Audience timezone', 'Historical engagement', 'Platform algorithms', 'Content type'];
-        recommendations = ['Schedule posts for predicted times', 'Test different time slots', 'Monitor performance'];
+        factors = [
+          'Audience timezone',
+          'Historical engagement',
+          'Platform algorithms',
+          'Content type',
+        ];
+        recommendations = [
+          'Schedule posts for predicted times',
+          'Test different time slots',
+          'Monitor performance',
+        ];
         break;
 
       case 'hashtag_performance':
         prediction = this.predictHashtagPerformance(request.data);
         factors = ['Hashtag popularity', 'Relevance score', 'Competition level', 'Trend momentum'];
-        recommendations = ['Use high-performing hashtags', 'Mix popular and niche tags', 'Monitor hashtag trends'];
+        recommendations = [
+          'Use high-performing hashtags',
+          'Mix popular and niche tags',
+          'Monitor hashtag trends',
+        ];
         break;
 
       default:
@@ -293,7 +321,7 @@ class PredictiveAnalyticsSystem {
       accuracy,
       factors,
       recommendations,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     // Store in history
@@ -306,7 +334,7 @@ class PredictiveAnalyticsSystem {
         title: 'High-Confidence Prediction',
         message: `${request.type} prediction completed with ${(confidence * 100).toFixed(1)}% confidence`,
         data: { predictionId: request.id },
-        priority: 'high'
+        priority: 'high',
       });
     }
 
@@ -327,23 +355,39 @@ class PredictiveAnalyticsSystem {
     await this.delay(500);
 
     const trendingTopics = [
-      'AI revolution', 'sustainability', 'remote work', 'digital transformation',
-      'mental health', 'cryptocurrency', 'climate change', 'innovation'
+      'AI revolution',
+      'sustainability',
+      'remote work',
+      'digital transformation',
+      'mental health',
+      'cryptocurrency',
+      'climate change',
+      'innovation',
     ];
 
     const declining = [
-      'traditional advertising', 'physical retail', 'cable TV',
-      'fossil fuels', 'password authentication'
+      'traditional advertising',
+      'physical retail',
+      'cable TV',
+      'fossil fuels',
+      'password authentication',
     ];
 
     const emerging = [
-      'quantum computing', 'metaverse marketing', 'voice commerce',
-      'AR shopping', 'blockchain voting', 'green technology'
+      'quantum computing',
+      'metaverse marketing',
+      'voice commerce',
+      'AR shopping',
+      'blockchain voting',
+      'green technology',
     ];
 
     const stable = [
-      'social media marketing', 'e-commerce', 'mobile apps',
-      'cloud computing', 'data analytics'
+      'social media marketing',
+      'e-commerce',
+      'mobile apps',
+      'cloud computing',
+      'data analytics',
     ];
 
     return {
@@ -351,7 +395,7 @@ class PredictiveAnalyticsSystem {
       declining: this.randomSample(declining, 3),
       emerging: this.randomSample(emerging, 3),
       stable: this.randomSample(stable, 4),
-      confidence: Math.random() * 0.2 + 0.8 // 80-100%
+      confidence: Math.random() * 0.2 + 0.8, // 80-100%
     };
   }
 
@@ -375,7 +419,7 @@ class PredictiveAnalyticsSystem {
         title: 'Declining Trends',
         message: `Consider pivoting away from: ${trends.declining.join(', ')}`,
         data: { declining: trends.declining },
-        priority: 'medium'
+        priority: 'medium',
       });
     }
   }
@@ -391,12 +435,12 @@ class PredictiveAnalyticsSystem {
       recall: Math.min(0.99, current.modelPerformance.recall + Math.random() * 0.02),
       f1Score: Math.min(0.99, current.modelPerformance.f1Score + Math.random() * 0.02),
       lastTraining: new Date(),
-      dataPoints: current.modelPerformance.dataPoints + Math.floor(Math.random() * 1000 + 500)
+      dataPoints: current.modelPerformance.dataPoints + Math.floor(Math.random() * 1000 + 500),
     };
 
     this.stats$.next({
       ...current,
-      modelPerformance: newMetrics
+      modelPerformance: newMetrics,
     });
 
     notificationSystem.notify({
@@ -404,7 +448,7 @@ class PredictiveAnalyticsSystem {
       title: 'Models Updated',
       message: `ML models retrained with improved accuracy: ${(newMetrics.accuracy * 100).toFixed(1)}%`,
       data: { metrics: newMetrics },
-      priority: 'low'
+      priority: 'low',
     });
   }
 
@@ -414,12 +458,14 @@ class PredictiveAnalyticsSystem {
   private handlePredictionResult(result: PredictionResult): void {
     const current = this.stats$.value;
     const isAccurate = result.accuracy > 0.8;
-    
+
     this.stats$.next({
       ...current,
       totalPredictions: current.totalPredictions + 1,
       accuratePredictions: current.accuratePredictions + (isAccurate ? 1 : 0),
-      averageConfidence: ((current.averageConfidence * current.totalPredictions) + result.confidence) / (current.totalPredictions + 1)
+      averageConfidence:
+        (current.averageConfidence * current.totalPredictions + result.confidence) /
+        (current.totalPredictions + 1),
     });
   }
 
@@ -430,7 +476,7 @@ class PredictiveAnalyticsSystem {
       expectedShares: Math.floor(Math.random() * 200 + 20),
       expectedComments: Math.floor(Math.random() * 100 + 10),
       engagementRate: Math.random() * 5 + 2,
-      peakTime: new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000)
+      peakTime: new Date(Date.now() + Math.random() * 24 * 60 * 60 * 1000),
     };
   }
 
@@ -439,7 +485,7 @@ class PredictiveAnalyticsSystem {
       viralityScore: Math.random() * 10,
       sharesPotential: Math.floor(Math.random() * 10000),
       reachMultiplier: Math.random() * 5 + 1,
-      viralityProbability: Math.random()
+      viralityProbability: Math.random(),
     };
   }
 
@@ -449,7 +495,7 @@ class PredictiveAnalyticsSystem {
       overallSentiment: sentiments[Math.floor(Math.random() * sentiments.length)],
       sentimentScore: Math.random() * 2 - 1, // -1 to 1
       emotionalTone: Math.random() > 0.5 ? 'emotional' : 'rational',
-      controversyLevel: Math.random() * 10
+      controversyLevel: Math.random() * 10,
     };
   }
 
@@ -464,9 +510,9 @@ class PredictiveAnalyticsSystem {
       scoresByHashtag: {
         '#trending': Math.random() * 10,
         '#viral': Math.random() * 10,
-        '#engagement': Math.random() * 10
+        '#engagement': Math.random() * 10,
       },
-      recommendations: ['Use 3-5 hashtags', 'Mix popular and niche', 'Monitor performance']
+      recommendations: ['Use 3-5 hashtags', 'Mix popular and niche', 'Monitor performance'],
     };
   }
 
@@ -476,7 +522,7 @@ class PredictiveAnalyticsSystem {
     return {
       campaignId,
       patterns: ['Peak at 9 AM', 'Decline after 6 PM', 'Weekend boost'],
-      insights: ['Audience most active in mornings', 'Video content performs best']
+      insights: ['Audience most active in mornings', 'Video content performs best'],
     };
   }
 
@@ -488,12 +534,12 @@ class PredictiveAnalyticsSystem {
   private async simulateHashtagAnalysis(hashtags: string[]): Promise<any> {
     await this.delay(600);
     return {
-      performance: hashtags.map(tag => ({
+      performance: hashtags.map((tag) => ({
         hashtag: tag,
         score: Math.random() * 10,
-        reach: Math.floor(Math.random() * 100000)
+        reach: Math.floor(Math.random() * 100000),
       })),
-      recommendations: ['Focus on top 3 hashtags', 'Avoid oversaturated tags']
+      recommendations: ['Focus on top 3 hashtags', 'Avoid oversaturated tags'],
     };
   }
 
@@ -506,7 +552,7 @@ class PredictiveAnalyticsSystem {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

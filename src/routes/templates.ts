@@ -42,37 +42,42 @@ const router = express.Router();
  *                   items:
  *                     $ref: '#/components/schemas/CampaignTemplate'
  */
-router.get('/', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const { category } = req.query;
-    
-    let templates;
-    if (category) {
-      templates = CampaignTemplatesService.getTemplatesByCategory(category as string);
-    } else {
-      templates = CampaignTemplatesService.getTemplates();
-    }
+router.get(
+  '/',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const { category } = req.query;
 
-    res.json({
-      success: true,
-      data: templates,
-      meta: {
-        total: templates.length,
-        categories: ['marketing', 'brand-monitoring', 'competitor-analysis', 'crisis-management']
+      let templates;
+      if (category) {
+        templates = CampaignTemplatesService.getTemplatesByCategory(category as string);
+      } else {
+        templates = CampaignTemplatesService.getTemplates();
       }
-    });
-  } catch (error: unknown) {
-    console.error('Error fetching templates:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch campaign templates',
-        code: 'FETCH_TEMPLATES_ERROR',
-        timestamp: new Date().toISOString()
-      }
-    });
+
+      res.json({
+        success: true,
+        data: templates,
+        meta: {
+          total: templates.length,
+          categories: ['marketing', 'brand-monitoring', 'competitor-analysis', 'crisis-management'],
+        },
+      });
+    } catch (error: unknown) {
+      console.error('Error fetching templates:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to fetch campaign templates',
+          code: 'FETCH_TEMPLATES_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -96,38 +101,43 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager', 'analyst']),
  *       404:
  *         description: Template not found
  */
-router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const template = CampaignTemplatesService.getTemplate(id);
+router.get(
+  '/:id',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const template = CampaignTemplatesService.getTemplate(id);
 
-    if (!template) {
-      return res.status(404).json({
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'Template not found',
+            code: 'TEMPLATE_NOT_FOUND',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        data: template,
+      });
+    } catch (error: unknown) {
+      console.error('Error fetching template:', error);
+      res.status(500).json({
         success: false,
         error: {
-          message: 'Template not found',
-          code: 'TEMPLATE_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        }
+          message: 'Failed to fetch template',
+          code: 'FETCH_TEMPLATE_ERROR',
+          timestamp: new Date().toISOString(),
+        },
       });
     }
-
-    res.json({
-      success: true,
-      data: template
-    });
-  } catch (error: unknown) {
-    console.error('Error fetching template:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch template',
-        code: 'FETCH_TEMPLATE_ERROR',
-        timestamp: new Date().toISOString()
-      }
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -190,59 +200,64 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst'
  *                 data:
  *                   $ref: '#/components/schemas/CreateCampaignRequest'
  */
-router.post('/:id/generate', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, hashtags, keywords, mentions, organizationId } = req.body;
+router.post(
+  '/:id/generate',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, hashtags, keywords, mentions, organizationId } = req.body;
 
-    if (!name || !organizationId) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Campaign name and organization ID are required',
-          code: 'MISSING_REQUIRED_FIELDS',
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    const campaignConfig = CampaignTemplatesService.generateCampaignFromTemplate(id, {
-      name,
-      hashtags,
-      keywords,
-      mentions,
-      organizationId
-    });
-
-    res.json({
-      success: true,
-      data: campaignConfig,
-      message: 'Campaign configuration generated from template'
-    });
-  } catch (error: unknown) {
-    console.error('Error generating campaign from template:', error);
-    
-    if (error instanceof Error && error.message === 'Template not found') {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'Template not found',
-          code: 'TEMPLATE_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to generate campaign from template',
-        code: 'GENERATE_CAMPAIGN_ERROR',
-        timestamp: new Date().toISOString()
+      if (!name || !organizationId) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Campaign name and organization ID are required',
+            code: 'MISSING_REQUIRED_FIELDS',
+            timestamp: new Date().toISOString(),
+          },
+        });
       }
-    });
+
+      const campaignConfig = CampaignTemplatesService.generateCampaignFromTemplate(id, {
+        name,
+        hashtags,
+        keywords,
+        mentions,
+        organizationId,
+      });
+
+      res.json({
+        success: true,
+        data: campaignConfig,
+        message: 'Campaign configuration generated from template',
+      });
+    } catch (error: unknown) {
+      console.error('Error generating campaign from template:', error);
+
+      if (error instanceof Error && error.message === 'Template not found') {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'Template not found',
+            code: 'TEMPLATE_NOT_FOUND',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to generate campaign from template',
+          code: 'GENERATE_CAMPAIGN_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -306,28 +321,33 @@ router.post('/:id/generate', authenticateToken, requireRole(['admin', 'manager',
  *                       items:
  *                         type: string
  */
-router.post('/smart-suggestions', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const userInput = req.body;
-    
-    const suggestions = AICampaignAssistantService.generateSmartCampaignSuggestions(userInput);
+router.post(
+  '/smart-suggestions',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const userInput = req.body;
 
-    res.json({
-      success: true,
-      data: suggestions,
-      message: 'Smart campaign suggestions generated'
-    });
-  } catch (error: unknown) {
-    console.error('Error generating smart suggestions:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to generate smart suggestions',
-        code: 'SMART_SUGGESTIONS_ERROR',
-        timestamp: new Date().toISOString()
-      }
-    });
+      const suggestions = AICampaignAssistantService.generateSmartCampaignSuggestions(userInput);
+
+      res.json({
+        success: true,
+        data: suggestions,
+        message: 'Smart campaign suggestions generated',
+      });
+    } catch (error: unknown) {
+      console.error('Error generating smart suggestions:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to generate smart suggestions',
+          code: 'SMART_SUGGESTIONS_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
-});
+);
 
 export default router;

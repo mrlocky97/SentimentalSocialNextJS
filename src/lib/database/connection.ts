@@ -14,7 +14,7 @@ class DatabaseConnection {
   private maxRetries: number = 5;
   private retryDelay: number = 5000; // 5 seconds
 
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): DatabaseConnection {
     if (!DatabaseConnection.instance) {
@@ -62,12 +62,14 @@ class DatabaseConnection {
 
       // Setup event handlers
       this.setupEventHandlers();
-
     } catch (error) {
       this.isConnecting = false;
       this.connectionAttempts++;
 
-      console.error(`❌ MongoDB connection failed (attempt ${this.connectionAttempts}/${this.maxRetries}):`, error);
+      console.error(
+        `❌ MongoDB connection failed (attempt ${this.connectionAttempts}/${this.maxRetries}):`,
+        error
+      );
 
       if (this.connectionAttempts < this.maxRetries) {
         console.log(`🔄 Retrying connection in ${this.retryDelay / 1000} seconds...`);
@@ -97,7 +99,7 @@ class DatabaseConnection {
       // Auto-reconnect after disconnection
       setTimeout(() => {
         if (!this.isConnected && !this.isConnecting) {
-          this.connect().catch(err => console.error('Auto-reconnect failed:', err));
+          this.connect().catch((err) => console.error('Auto-reconnect failed:', err));
         }
       }, this.retryDelay);
     });
@@ -159,16 +161,17 @@ class DatabaseConnection {
       0: 'disconnected',
       1: 'connected',
       2: 'connecting',
-      3: 'disconnecting'
+      3: 'disconnecting',
     };
 
     return {
       connected: this.isConnected,
       readyState: mongoose.connection.readyState,
-      readyStateText: readyStates[mongoose.connection.readyState as keyof typeof readyStates] || 'unknown',
+      readyStateText:
+        readyStates[mongoose.connection.readyState as keyof typeof readyStates] || 'unknown',
       host: mongoose.connection.host || 'unknown',
       port: mongoose.connection.port || 0,
-      database: mongoose.connection.db?.databaseName || 'unknown'
+      database: mongoose.connection.db?.databaseName || 'unknown',
     };
   }
 
@@ -177,7 +180,7 @@ class DatabaseConnection {
       if (!this.isConnected) {
         return false;
       }
-      
+
       // Simple ping to test connection
       await mongoose.connection.db?.admin().ping();
       return true;

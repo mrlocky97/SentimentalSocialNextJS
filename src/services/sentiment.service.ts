@@ -482,7 +482,7 @@ export class SentimentService {
     const path = require('path');
     const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
 
-    let modelInfo = {
+    const modelInfo = {
       exists: fs.existsSync(modelPath),
       size: 0,
       lastModified: null,
@@ -638,10 +638,10 @@ export class SentimentService {
     const textLength = words.length;
 
     // Count matches by language
-    let spanishCount = spanishPatterns.filter((word) =>
+    const spanishCount = spanishPatterns.filter((word) =>
       new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
     ).length;
-    let englishCount = englishPatterns.filter((word) =>
+    const englishCount = englishPatterns.filter((word) =>
       new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
     ).length;
 
@@ -663,7 +663,7 @@ export class SentimentService {
     ).length;
 
     // Determine language and emotional profile
-    let langInfo: LanguageInfo = {
+    const langInfo: LanguageInfo = {
       language: 'unknown',
       negativeScore: 0,
       positiveScore: 0,

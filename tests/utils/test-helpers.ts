@@ -21,7 +21,7 @@ export function createTestTweet(overrides: Partial<Tweet> = {}): Tweet {
     scrapedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -34,7 +34,7 @@ export function createTestUser(overrides: Partial<TwitterUser> = {}): TwitterUse
     followersCount: 100,
     followingCount: 50,
     tweetsCount: 200,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -45,6 +45,6 @@ export function createTestMetrics(overrides: Partial<TweetMetrics> = {}): TweetM
     replies: 1,
     quotes: 0,
     engagement: 13,
-    ...overrides
+    ...overrides,
   };
 }

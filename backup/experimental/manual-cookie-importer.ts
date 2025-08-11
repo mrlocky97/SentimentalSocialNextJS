@@ -28,8 +28,8 @@ export class ManualCookieImporter {
       const cookieData = JSON.parse(fs.readFileSync(manualCookiesPath, 'utf8'));
 
       // Validate that cookies have been filled in
-      const hasValidCookies = cookieData.cookies.some((cookie: any) =>
-        !cookie.value.includes('PEGA_AQUI')
+      const hasValidCookies = cookieData.cookies.some(
+        (cookie: any) => !cookie.value.includes('PEGA_AQUI')
       );
 
       if (!hasValidCookies) {
@@ -38,11 +38,10 @@ export class ManualCookieImporter {
 
       // Set current timestamp
       cookieData.timestamp = Date.now();
-      cookieData.expirationTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+      cookieData.expirationTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
       // Import into cookie manager
       this.cookieManager.storeCookies(cookieData.cookies, cookieData.userAgent);
-
 
       return true;
     } catch (error) {
@@ -59,7 +58,7 @@ export class ManualCookieImporter {
       const cookieData = JSON.parse(cookiesJSON);
 
       cookieData.timestamp = Date.now();
-      cookieData.expirationTime = Date.now() + (24 * 60 * 60 * 1000);
+      cookieData.expirationTime = Date.now() + 24 * 60 * 60 * 1000;
 
       this.cookieManager.storeCookies(cookieData.cookies, cookieData.userAgent);
 
@@ -77,7 +76,6 @@ export class ManualCookieImporter {
       if (!this.cookieManager.hasValidSession()) {
         return false;
       }
-
 
       const status = this.cookieManager.getSessionStatus();
 

@@ -351,7 +351,7 @@ export class TwitterRealScraperService {
     // Placeholder para análisis de sentimiento (ajustado al tipo SentimentAnalysis)
     const sentiment = {
       score: 0,
-      label: 'neutral' as 'neutral',
+      label: 'neutral' as const,
       magnitude: 0,
       confidence: 1,
       keywords: [],
@@ -384,8 +384,8 @@ export class TwitterRealScraperService {
       createdAt: data.created_at
         ? new Date(data.created_at)
         : data.createdAt
-        ? new Date(data.createdAt)
-        : now,
+          ? new Date(data.createdAt)
+          : now,
       updatedAt: now,
       sentiment,
     };

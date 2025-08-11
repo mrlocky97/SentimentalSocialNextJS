@@ -130,7 +130,18 @@ const options: swaggerJsdoc.Options = {
               example: '2024-01-15T10:30:00Z',
             },
           },
-          required: ['id', 'email', 'username', 'displayName', 'role', 'permissions', 'isActive', 'isVerified', 'createdAt', 'updatedAt'],
+          required: [
+            'id',
+            'email',
+            'username',
+            'displayName',
+            'role',
+            'permissions',
+            'isActive',
+            'isVerified',
+            'createdAt',
+            'updatedAt',
+          ],
         },
 
         CreateUserRequest: {
@@ -306,7 +317,8 @@ const options: swaggerJsdoc.Options = {
         // Tweet Schemas - Updated with realistic examples
         Tweet: {
           type: 'object',
-          description: 'A Twitter tweet with comprehensive sentiment analysis and engagement metrics',
+          description:
+            'A Twitter tweet with comprehensive sentiment analysis and engagement metrics',
           properties: {
             id: {
               type: 'string',
@@ -321,7 +333,8 @@ const options: swaggerJsdoc.Options = {
             content: {
               type: 'string',
               description: 'Full text content of the tweet',
-              example: 'Just tried the new #iPhone15 and it\'s absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview',
+              example:
+                "Just tried the new #iPhone15 and it's absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview",
             },
             author: {
               type: 'object',
@@ -339,7 +352,7 @@ const options: swaggerJsdoc.Options = {
                 },
                 displayName: {
                   type: 'string',
-                  description: 'User\'s display name',
+                  description: "User's display name",
                   example: 'John - Tech Reviewer',
                 },
                 verified: {
@@ -498,11 +511,21 @@ const options: swaggerJsdoc.Options = {
               example: '2024-01-15T09:45:00Z',
             },
           },
-          required: ['id', 'tweetId', 'content', 'author', 'metrics', 'hashtags', 'mentions', 'urls'],
+          required: [
+            'id',
+            'tweetId',
+            'content',
+            'author',
+            'metrics',
+            'hashtags',
+            'mentions',
+            'urls',
+          ],
           example: {
             id: '60d0fe4f5311236168a109cd',
             tweetId: '1747234567890123456',
-            content: 'Just tried the new #iPhone15 and it\'s absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview',
+            content:
+              "Just tried the new #iPhone15 and it's absolutely incredible! 📱✨ The camera quality is mind-blowing. Highly recommended! @Apple #TechReview",
             author: {
               id: 'twitter_user_123456',
               username: 'techreviewerjohn',
@@ -510,14 +533,14 @@ const options: swaggerJsdoc.Options = {
               verified: true,
               followersCount: 45000,
               followingCount: 1200,
-              tweetsCount: 3500
+              tweetsCount: 3500,
             },
             metrics: {
               likes: 1250,
               retweets: 340,
               replies: 89,
               quotes: 45,
-              engagement: 0.038
+              engagement: 0.038,
             },
             sentiment: {
               score: 0.87,
@@ -526,7 +549,7 @@ const options: swaggerJsdoc.Options = {
               confidence: 0.94,
               keywords: ['incredible', 'mind-blowing', 'recommended'],
               analyzedAt: '2024-01-15T10:30:00Z',
-              processingTime: 245
+              processingTime: 245,
             },
             hashtags: ['#iPhone15', '#TechReview'],
             mentions: ['@Apple'],
@@ -536,8 +559,8 @@ const options: swaggerJsdoc.Options = {
             isReply: false,
             campaignId: '60d0fe4f5311236168a109ca',
             scrapedAt: '2024-01-15T10:25:00Z',
-            createdAt: '2024-01-15T09:45:00Z'
-          }
+            createdAt: '2024-01-15T09:45:00Z',
+          },
         },
 
         // Common Schemas
@@ -650,43 +673,42 @@ const options: swaggerJsdoc.Options = {
       },
     ],
   },
-  apis: [
-    './src/routes/*.ts',
-    './src/controllers/*.ts',
-    './src/middleware/*.ts',
-  ],
+  apis: ['./src/routes/*.ts', './src/controllers/*.ts', './src/middleware/*.ts'],
 };
 
 const specs = swaggerJsdoc(options);
 
 export const setupSwagger = (app: Express): void => {
   // Swagger UI
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-    explorer: true,
-    customCss: `
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(specs, {
+      explorer: true,
+      customCss: `
       .topbar-wrapper img { content: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMDdCRkYiLz4KPHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEwTDEwIDEwWiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cjwvc3ZnPgo='); }
       .swagger-ui .topbar { background-color: #1f2937; }
       .swagger-ui .topbar-wrapper .download-url-wrapper { display: none; }
     `,
-    customSiteTitle: 'SentimentalSocial API Documentation',
-    customfavIcon: '/favicon.ico',
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      defaultModelsExpandDepth: 2,
-      defaultModelExpandDepth: 2,
-      docExpansion: 'list',
-      filter: true,
-      showRequestHeaders: true,
-    },
-  }));
+      customSiteTitle: 'SentimentalSocial API Documentation',
+      customfavIcon: '/favicon.ico',
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        defaultModelsExpandDepth: 2,
+        defaultModelExpandDepth: 2,
+        docExpansion: 'list',
+        filter: true,
+        showRequestHeaders: true,
+      },
+    })
+  );
 
   // JSON endpoint
   app.get('/api-docs.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(specs);
   });
-
 };
 
 export default specs;

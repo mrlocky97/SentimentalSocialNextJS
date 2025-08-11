@@ -39,9 +39,8 @@ const router = Router();
  */
 router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-
     const authManager = TwitterAuthManager.getInstance();
-    
+
     // Force re-initialization if needed
     await authManager.initializeOnStartup();
     const sessionInfo = authManager.getSessionInfo();
@@ -51,19 +50,19 @@ router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: 
         success: true,
         message: 'Twitter authentication successful',
         authenticated: true,
-        cookieCount: sessionInfo.cookieCount
+        cookieCount: sessionInfo.cookieCount,
       });
     } else {
       res.status(401).json({
         success: false,
-        message: 'Twitter authentication failed - check credentials'
+        message: 'Twitter authentication failed - check credentials',
       });
     }
   } catch (error) {
     console.error('Twitter login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error during Twitter authentication'
+      message: 'Internal server error during Twitter authentication',
     });
   }
 });
@@ -133,12 +132,12 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
       authenticated: sessionInfo.authenticated,
       cookieCount: sessionInfo.cookieCount,
       sessionValid: sessionInfo.authenticated,
-      expiresAt: sessionInfo.expiresAt
+      expiresAt: sessionInfo.expiresAt,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to check authentication status'
+      message: 'Failed to check authentication status',
     });
   }
 });
@@ -158,19 +157,18 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
  */
 router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-
     const authManager = TwitterAuthManager.getInstance();
     authManager.clearSession();
 
     res.json({
       success: true,
-      message: 'Twitter logout successful'
+      message: 'Twitter logout successful',
     });
   } catch (error) {
     console.error('Twitter logout error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to logout from Twitter'
+      message: 'Failed to logout from Twitter',
     });
   }
 });
@@ -188,25 +186,28 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res:
  *       200:
  *         description: Cookie validation completed
  */
-router.get('/validate-cookies', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
+router.get(
+  '/validate-cookies',
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const authManager = TwitterAuthManager.getInstance();
+      const hasSession = authManager.hasValidSession();
 
-    const authManager = TwitterAuthManager.getInstance();
-    const hasSession = authManager.hasValidSession();
-
-    res.json({
-      success: true,
-      message: hasSession ? 'Cookies are valid' : 'No valid session found',
-      valid: hasSession
-    });
-  } catch (error) {
-    console.error('Twitter cookie validation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to validate Twitter cookies'
-    });
+      res.json({
+        success: true,
+        message: hasSession ? 'Cookies are valid' : 'No valid session found',
+        valid: hasSession,
+      });
+    } catch (error) {
+      console.error('Twitter cookie validation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to validate Twitter cookies',
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -243,14 +244,14 @@ router.get('/session-info', authenticateToken, async (req: AuthenticatedRequest,
         cookieCount: sessionInfo.cookieCount,
         hasManualCookies,
         expiresAt: sessionInfo.expiresAt,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
     console.error('Twitter session info error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve session information'
+      message: 'Failed to retrieve session information',
     });
   }
 });

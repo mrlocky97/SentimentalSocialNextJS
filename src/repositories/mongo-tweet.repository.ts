@@ -120,12 +120,8 @@ export class MongoTweetRepository {
     const skip = (page - 1) * limit;
 
     const [tweets, total] = await Promise.all([
-      TweetModel.find(query)
-        .sort({ tweetCreatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      TweetModel.countDocuments(query)
+      TweetModel.find(query).sort({ tweetCreatedAt: -1 }).skip(skip).limit(limit).exec(),
+      TweetModel.countDocuments(query),
     ]);
 
     return {
@@ -134,8 +130,8 @@ export class MongoTweetRepository {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -170,7 +166,7 @@ export class MongoTweetRepository {
   ): Promise<PaginatedResponse<ITweetDocument>> {
     const query = {
       ...this.buildQuery(filters),
-      $text: { $search: searchText }
+      $text: { $search: searchText },
     };
 
     const { page, limit } = pagination;
@@ -182,7 +178,7 @@ export class MongoTweetRepository {
         .skip(skip)
         .limit(limit)
         .exec(),
-      TweetModel.countDocuments(query)
+      TweetModel.countDocuments(query),
     ]);
 
     return {
@@ -191,8 +187,8 @@ export class MongoTweetRepository {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -226,7 +222,7 @@ export class MongoTweetRepository {
     const results = {
       created: [] as ITweetDocument[],
       duplicates: [] as string[],
-      errors: [] as Array<{ data: Partial<ITweetDocument>; error: string }>
+      errors: [] as Array<{ data: Partial<ITweetDocument>; error: string }>,
     };
 
     for (const tweetData of tweets) {
@@ -245,7 +241,7 @@ export class MongoTweetRepository {
       } catch (error) {
         results.errors.push({
           data: tweetData,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     }
@@ -267,7 +263,7 @@ export class MongoTweetRepository {
         this.getHashtagStats(query),
         this.getMentionStats(query),
         this.getLanguageStats(query),
-        this.getTimelineStats(query)
+        this.getTimelineStats(query),
       ]);
 
     // Get top influencers
@@ -282,34 +278,28 @@ export class MongoTweetRepository {
       topMentions: mentionStats,
       languageDistribution: languageStats,
       timeline: timelineStats,
-      topInfluencers
+      topInfluencers,
     };
   }
 
   /**
    * Get hashtag trends
    */
-  async getHashtagTrends(
-    hashtag: string,
-    days: number = 30
-  ): Promise<HashtagTrends> {
+  async getHashtagTrends(hashtag: string, days: number = 30): Promise<HashtagTrends> {
     const cleanHashtag = hashtag.replace('#', '').toLowerCase();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
     const query = {
       hashtags: cleanHashtag,
-      tweetCreatedAt: { $gte: startDate }
+      tweetCreatedAt: { $gte: startDate },
     };
 
     const [stats, sentiment, growth, topTweets] = await Promise.all([
       this.getBasicStats(query),
       this.getSentimentStats(query),
       this.getHashtagGrowth(cleanHashtag),
-      TweetModel.find(query)
-        .sort({ 'metrics.engagement': -1 })
-        .limit(10)
-        .exec()
+      TweetModel.find(query).sort({ 'metrics.engagement': -1 }).limit(10).exec(),
     ]);
 
     return {
@@ -321,9 +311,9 @@ export class MongoTweetRepository {
       growth: {
         last24h: growth.last24h || 0,
         last7d: growth.last7d || 0,
-        last30d: growth.last30d || 0
+        last30d: growth.last30d || 0,
       },
-      topTweets
+      topTweets,
     };
   }
 
@@ -338,7 +328,7 @@ export class MongoTweetRepository {
     }
 
     if (filters.hashtags && filters.hashtags.length > 0) {
-      query.hashtags = { $in: filters.hashtags.map(h => h.replace('#', '').toLowerCase()) };
+      query.hashtags = { $in: filters.hashtags.map((h) => h.replace('#', '').toLowerCase()) };
     }
 
     if (filters.sentimentLabel) {
@@ -392,10 +382,7 @@ export class MongoTweetRepository {
       if (filters.hasMedia) {
         query.mediaUrls = { $exists: true, $not: { $size: 0 } };
       } else {
-        query.$or = [
-          { mediaUrls: { $exists: false } },
-          { mediaUrls: { $size: 0 } }
-        ];
+        query.$or = [{ mediaUrls: { $exists: false } }, { mediaUrls: { $size: 0 } }];
       }
     }
 
@@ -403,10 +390,7 @@ export class MongoTweetRepository {
       if (filters.hasLocation) {
         query.geoLocation = { $exists: true, $ne: null };
       } else {
-        query.$or = [
-          { geoLocation: { $exists: false } },
-          { geoLocation: null }
-        ];
+        query.$or = [{ geoLocation: { $exists: false } }, { geoLocation: null }];
       }
     }
 
@@ -441,9 +425,9 @@ export class MongoTweetRepository {
           totalEngagement: { $sum: '$metrics.engagement' },
           totalLikes: { $sum: '$metrics.likes' },
           totalRetweets: { $sum: '$metrics.retweets' },
-          totalReplies: { $sum: '$metrics.replies' }
-        }
-      }
+          totalReplies: { $sum: '$metrics.replies' },
+        },
+      },
     ]);
 
     const stats = results[0] || { totalTweets: 0, totalEngagement: 0 };
@@ -451,7 +435,7 @@ export class MongoTweetRepository {
     return {
       totalTweets: stats.totalTweets,
       totalEngagement: stats.totalEngagement,
-      averageEngagement: stats.totalTweets > 0 ? stats.totalEngagement / stats.totalTweets : 0
+      averageEngagement: stats.totalTweets > 0 ? stats.totalEngagement / stats.totalTweets : 0,
     };
   }
 
@@ -465,13 +449,13 @@ export class MongoTweetRepository {
       {
         $group: {
           _id: '$sentiment.label',
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     const stats = { positive: 0, negative: 0, neutral: 0 };
-    results.forEach(result => {
+    results.forEach((result) => {
       stats[result._id as keyof typeof stats] = result.count;
     });
 
@@ -488,16 +472,16 @@ export class MongoTweetRepository {
       {
         $group: {
           _id: '$hashtags',
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { count: -1 } },
-      { $limit: 20 }
+      { $limit: 20 },
     ]);
 
-    return results.map(result => ({
+    return results.map((result) => ({
       hashtag: result._id,
-      count: result.count
+      count: result.count,
     }));
   }
 
@@ -511,16 +495,16 @@ export class MongoTweetRepository {
       {
         $group: {
           _id: '$mentions',
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { count: -1 } },
-      { $limit: 20 }
+      { $limit: 20 },
     ]);
 
-    return results.map(result => ({
+    return results.map((result) => ({
       mention: result._id,
-      count: result.count
+      count: result.count,
     }));
   }
 
@@ -533,16 +517,16 @@ export class MongoTweetRepository {
       {
         $group: {
           _id: '$language',
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { count: -1 } },
-      { $limit: 10 }
+      { $limit: 10 },
     ]);
 
-    return results.map(result => ({
+    return results.map((result) => ({
       language: result._id,
-      count: result.count
+      count: result.count,
     }));
   }
 
@@ -557,20 +541,20 @@ export class MongoTweetRepository {
           _id: {
             $dateToString: {
               format: '%Y-%m-%d',
-              date: '$tweetCreatedAt'
-            }
+              date: '$tweetCreatedAt',
+            },
           },
           count: { $sum: 1 },
-          engagement: { $sum: '$metrics.engagement' }
-        }
+          engagement: { $sum: '$metrics.engagement' },
+        },
       },
-      { $sort: { '_id': 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
-    return results.map(result => ({
+    return results.map((result) => ({
       date: result._id,
       count: result.count,
-      engagement: result.engagement
+      engagement: result.engagement,
     }));
   }
 
@@ -590,25 +574,25 @@ export class MongoTweetRepository {
             $avg: {
               likes: '$metrics.likes',
               retweets: '$metrics.retweets',
-              replies: '$metrics.replies'
-            }
-          }
-        }
+              replies: '$metrics.replies',
+            },
+          },
+        },
       },
       { $sort: { totalEngagement: -1 } },
-      { $limit: 10 }
+      { $limit: 10 },
     ]);
 
-    return results.map(result => ({
+    return results.map((result) => ({
       user: result.user,
       metrics: {
         retweets: Math.round(result.avgMetrics.retweets || 0),
         likes: Math.round(result.avgMetrics.likes || 0),
         replies: Math.round(result.avgMetrics.replies || 0),
         quotes: 0,
-        engagement: result.totalEngagement / result.tweetCount
+        engagement: result.totalEngagement / result.tweetCount,
       },
-      tweetCount: result.tweetCount
+      tweetCount: result.tweetCount,
     }));
   }
 
@@ -620,16 +604,16 @@ export class MongoTweetRepository {
     const periods = [
       { key: 'last24h', hours: 24 },
       { key: 'last7d', hours: 24 * 7 },
-      { key: 'last30d', hours: 24 * 30 }
+      { key: 'last30d', hours: 24 * 30 },
     ];
 
     const growth: Record<string, number> = {};
 
     for (const period of periods) {
-      const startDate = new Date(now.getTime() - (period.hours * 60 * 60 * 1000));
+      const startDate = new Date(now.getTime() - period.hours * 60 * 60 * 1000);
       const count = await TweetModel.countDocuments({
         hashtags: hashtag,
-        tweetCreatedAt: { $gte: startDate }
+        tweetCreatedAt: { $gte: startDate },
       });
       growth[period.key] = count;
     }

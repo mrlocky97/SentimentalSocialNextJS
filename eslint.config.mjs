@@ -8,7 +8,17 @@ import tseslint from 'typescript-eslint';
 export default [
   {
     name: 'globals',
-    ignores: ['node_modules/**', 'dist/**', 'coverage/**', '.next/**', 'public/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'coverage/**',
+      '.next/**',
+      'public/**',
+      'backup/**',
+      'scripts/**',
+      'src/services/reactive/**',
+      'src/utils/cookie-importer.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

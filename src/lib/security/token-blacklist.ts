@@ -18,9 +18,12 @@ class TokenBlacklistService {
 
   constructor() {
     // Clean up expired tokens every hour
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupExpiredTokens();
-    }, 60 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupExpiredTokens();
+      },
+      60 * 60 * 1000
+    );
 
     // Do not keep the event loop alive because of this interval (helps tests exit cleanly)
     if (typeof this.cleanupInterval.unref === 'function') {

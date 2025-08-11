@@ -20,7 +20,7 @@ async function runAllTests() {
     console.log('═'.repeat(50));
     console.log('✅ Module 1 completed\n');
 
-    // Module 2: Reactive Services  
+    // Module 2: Reactive Services
     console.log('📦 MODULE 2: Reactive Services');
     console.log('═'.repeat(50));
     await testReactiveServices();
@@ -47,20 +47,24 @@ async function runAllTests() {
     console.log('   • Module 2 (Reactive): ~3-5 seconds');
     console.log('   • Module 3 (Advanced): ~4-6 seconds');
     console.log(`   • Total time: ${executionTime.toFixed(2)} seconds`);
-    console.log(`\n🏆 Overall Performance: ${executionTime < 10 ? '⚡ ULTRA FAST' : executionTime < 15 ? '🚀 FAST' : '✅ GOOD'}!`);
+    console.log(
+      `\n🏆 Overall Performance: ${executionTime < 10 ? '⚡ ULTRA FAST' : executionTime < 15 ? '🚀 FAST' : '✅ GOOD'}!`
+    );
     console.log('🚀 Application is ready for production use!\n');
-
   } catch (error) {
     const endTime = Date.now();
     const executionTime = (endTime - startTime) / 1000;
-    console.error(`❌ Complete test suite failed after ${executionTime.toFixed(2)} seconds:`, error);
+    console.error(
+      `❌ Complete test suite failed after ${executionTime.toFixed(2)} seconds:`,
+      error
+    );
     process.exit(1);
   }
 }
 
 async function runSpecificModule(moduleName: string) {
   console.log(`🎯 Running specific module: ${moduleName}\n`);
-  
+
   switch (moduleName.toLowerCase()) {
     case 'basic':
       await testBasicServices();
@@ -78,7 +82,13 @@ async function runSpecificModule(moduleName: string) {
 }
 
 // Export for use in other modules
-export { runAllTests, runSpecificModule, testBasicServices, testReactiveServices, testAdvancedServices };
+export {
+  runAllTests,
+  runSpecificModule,
+  testBasicServices,
+  testReactiveServices,
+  testAdvancedServices,
+};
 
 // Run test if this file is executed directly
 if (require.main === module) {

@@ -6,7 +6,6 @@
 import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
 
 export class AICampaignAssistantService {
-
   /**
    * Generate personalized recommendations based on user behavior and campaign data
    */
@@ -25,10 +24,12 @@ export class AICampaignAssistantService {
         type: 'learning_tip',
         urgency: 'low',
         title: '💡 Pro Tip: Hashtag Strategy',
-        message: 'Use 3-5 relevant hashtags per campaign. Too many can dilute your focus, too few limit your reach.',
-        learnMore: 'Research shows campaigns with 3-5 targeted hashtags perform 40% better than those with 10+ hashtags.',
+        message:
+          'Use 3-5 relevant hashtags per campaign. Too many can dilute your focus, too few limit your reach.',
+        learnMore:
+          'Research shows campaigns with 3-5 targeted hashtags perform 40% better than those with 10+ hashtags.',
         dismissible: true,
-        showUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Show for 1 week
+        showUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Show for 1 week
       });
     }
 
@@ -39,13 +40,14 @@ export class AICampaignAssistantService {
         type: 'quick_action',
         urgency: 'high',
         title: '⚠️ Negative Sentiment Alert',
-        message: 'Your campaign sentiment is trending negative. Take immediate action to prevent crisis.',
+        message:
+          'Your campaign sentiment is trending negative. Take immediate action to prevent crisis.',
         actionButton: {
           text: 'View Negative Mentions',
           action: 'navigate_to_negative_tweets',
-          parameters: { campaignId: campaign.id, sentiment: 'negative' }
+          parameters: { campaignId: campaign.id, sentiment: 'negative' },
         },
-        dismissible: false
+        dismissible: false,
       });
     }
 
@@ -60,9 +62,9 @@ export class AICampaignAssistantService {
         actionButton: {
           text: 'Enable Sentiment Analysis',
           action: 'update_campaign_settings',
-          parameters: { campaignId: campaign.id, sentimentAnalysis: true }
+          parameters: { campaignId: campaign.id, sentimentAnalysis: true },
         },
-        dismissible: true
+        dismissible: true,
       });
     }
 
@@ -72,9 +74,10 @@ export class AICampaignAssistantService {
       type: 'best_practice',
       urgency: 'low',
       title: '🕐 Optimal Posting Times',
-      message: 'Your audience is most active on weekdays between 9-11 AM and 2-4 PM. Schedule important updates during these windows.',
+      message:
+        'Your audience is most active on weekdays between 9-11 AM and 2-4 PM. Schedule important updates during these windows.',
       learnMore: 'Based on analysis of similar campaigns in your industry.',
-      dismissible: true
+      dismissible: true,
     });
 
     return recommendations.sort((a, b) => {
@@ -86,16 +89,12 @@ export class AICampaignAssistantService {
   /**
    * Calculate comprehensive campaign health score
    */
-  static calculateCampaignHealth(
-    campaign: any,
-    metrics: any,
-    tweets: any[]
-  ): CampaignHealthScore {
+  static calculateCampaignHealth(campaign: any, metrics: any, tweets: any[]): CampaignHealthScore {
     let setupScore = 0;
     let performanceScore = 0;
     let optimizationScore = 0;
     let riskScore = 100; // Start high, deduct for risks
-    
+
     const improvements: string[] = [];
 
     // Setup Score (25 points max)
@@ -179,7 +178,7 @@ export class AICampaignAssistantService {
     riskScore = Math.max(0, Math.min(25, riskScore / 4)); // Scale to 25 points
 
     const overall = setupScore + performanceScore + optimizationScore + riskScore;
-    
+
     let grade: CampaignHealthScore['grade'];
     if (overall >= 90) grade = 'A+';
     else if (overall >= 85) grade = 'A';
@@ -196,25 +195,23 @@ export class AICampaignAssistantService {
         setup: setupScore,
         performance: performanceScore,
         optimization: optimizationScore,
-        risk: riskScore
+        risk: riskScore,
       },
       grade,
-      improvements: improvements.slice(0, 5) // Top 5 improvements
+      improvements: improvements.slice(0, 5), // Top 5 improvements
     };
   }
 
   /**
    * Smart campaign setup wizard
    */
-  static generateSmartCampaignSuggestions(
-    userInput: {
-      industry?: string;
-      goal?: string;
-      budget?: string;
-      duration?: number;
-      brandName?: string;
-    }
-  ): {
+  static generateSmartCampaignSuggestions(userInput: {
+    industry?: string;
+    goal?: string;
+    budget?: string;
+    duration?: number;
+    brandName?: string;
+  }): {
     suggestedName: string;
     suggestedHashtags: string[];
     suggestedKeywords: string[];
@@ -223,22 +220,22 @@ export class AICampaignAssistantService {
     reasoning: string[];
   } {
     const { industry, goal, brandName, duration } = userInput;
-    
+
     // Smart name generation
     const suggestedName = `${brandName || 'Brand'} ${goal || 'Monitoring'} - ${new Date().toLocaleDateString()}`;
-    
+
     // Industry-specific hashtag suggestions
     const industryHashtags: Record<string, string[]> = {
       technology: ['#innovation', '#tech', '#digital', '#AI', '#software'],
       fashion: ['#fashion', '#style', '#trend', '#outfit', '#designer'],
       food: ['#foodie', '#recipe', '#restaurant', '#cooking', '#delicious'],
       fitness: ['#fitness', '#workout', '#health', '#gym', '#motivation'],
-      travel: ['#travel', '#adventure', '#explore', '#vacation', '#wanderlust']
+      travel: ['#travel', '#adventure', '#explore', '#vacation', '#wanderlust'],
     };
 
     const suggestedHashtags = [
       `#${brandName?.toLowerCase().replace(/\s+/g, '')}`,
-      ...(industryHashtags[industry || 'technology'] || industryHashtags.technology).slice(0, 4)
+      ...(industryHashtags[industry || 'technology'] || industryHashtags.technology).slice(0, 4),
     ];
 
     // Goal-specific keywords
@@ -246,15 +243,16 @@ export class AICampaignAssistantService {
       'brand monitoring': ['brand perception', 'customer feedback', 'brand mentions'],
       'product launch': ['new product', 'launch event', 'innovation', 'available now'],
       'competitor analysis': ['competitor comparison', 'market analysis', 'alternative'],
-      'crisis management': ['issue resolution', 'customer service', 'brand protection']
+      'crisis management': ['issue resolution', 'customer service', 'brand protection'],
     };
 
     const suggestedKeywords = [
       brandName || 'brand',
-      ...(goalKeywords[goal || 'brand monitoring'] || goalKeywords['brand monitoring'])
+      ...(goalKeywords[goal || 'brand monitoring'] || goalKeywords['brand monitoring']),
     ];
 
-    const suggestedDuration = duration || (goal === 'crisis management' ? 7 : goal === 'product launch' ? 14 : 30);
+    const suggestedDuration =
+      duration || (goal === 'crisis management' ? 7 : goal === 'product launch' ? 14 : 30);
 
     const suggestedSettings = {
       sentimentAnalysis: true,
@@ -262,14 +260,14 @@ export class AICampaignAssistantService {
       influencerAnalysis: goal === 'product launch',
       maxTweets: goal === 'crisis management' ? 10000 : 50000,
       languages: ['en'],
-      dataSources: ['twitter', 'instagram']
+      dataSources: ['twitter', 'instagram'],
     };
 
     const reasoning = [
       `Campaign duration set to ${suggestedDuration} days based on ${goal} best practices`,
       `Hashtags selected for ${industry} industry relevance and searchability`,
       'Sentiment analysis enabled for brand perception monitoring',
-      `Settings optimized for ${goal} campaign objectives`
+      `Settings optimized for ${goal} campaign objectives`,
     ];
 
     return {
@@ -278,7 +276,7 @@ export class AICampaignAssistantService {
       suggestedKeywords,
       suggestedDuration,
       suggestedSettings,
-      reasoning
+      reasoning,
     };
   }
 
@@ -299,51 +297,49 @@ export class AICampaignAssistantService {
         tips: [
           'Use filters to focus on specific time periods or sentiment ranges',
           'Click on any chart element to drill down into detailed data',
-          'Set up alerts to be notified of significant changes'
+          'Set up alerts to be notified of significant changes',
         ],
         shortcuts: [
           { key: 'Ctrl+F', action: 'Quick search campaigns' },
           { key: 'N', action: 'Create new campaign' },
-          { key: 'R', action: 'Refresh data' }
-        ]
+          { key: 'R', action: 'Refresh data' },
+        ],
       },
       campaigns: {
         tips: [
           'Use campaign templates to get started quickly',
           'Monitor your campaign health score regularly',
-          'Set realistic goals and track progress daily'
+          'Set realistic goals and track progress daily',
         ],
         shortcuts: [
           { key: 'Ctrl+N', action: 'New campaign' },
           { key: 'Ctrl+E', action: 'Edit selected campaign' },
-          { key: 'Space', action: 'Play/pause campaign' }
-        ]
-      }
+          { key: 'Space', action: 'Play/pause campaign' },
+        ],
+      },
     };
 
     const pageHelp = helpContent[currentPage as keyof typeof helpContent] || helpContent.dashboard;
-    
+
     return {
       tips: pageHelp.tips,
       shortcuts: pageHelp.shortcuts,
       relatedHelp: [
         { title: 'Campaign Best Practices', url: '/help/campaigns' },
         { title: 'Understanding Sentiment Analysis', url: '/help/sentiment' },
-        { title: 'Crisis Management Guide', url: '/help/crisis' }
-      ]
+        { title: 'Crisis Management Guide', url: '/help/crisis' },
+      ],
     };
   }
 
   /**
    * Progressive onboarding system
    */
-  static getOnboardingSteps(
-    userProgress: {
-      campaignsCreated: number;
-      insightsViewed: number;
-      reportsGenerated: number;
-    }
-  ): Array<{
+  static getOnboardingSteps(userProgress: {
+    campaignsCreated: number;
+    insightsViewed: number;
+    reportsGenerated: number;
+  }): Array<{
     id: string;
     title: string;
     description: string;
@@ -358,7 +354,7 @@ export class AICampaignAssistantService {
         description: 'Set up monitoring for your brand or product',
         completed: userProgress.campaignsCreated > 0,
         action: 'create_campaign',
-        estimatedTime: '5 minutes'
+        estimatedTime: '5 minutes',
       },
       {
         id: 'explore-insights',
@@ -366,7 +362,7 @@ export class AICampaignAssistantService {
         description: 'Learn how to read sentiment analysis and engagement metrics',
         completed: userProgress.insightsViewed > 5,
         action: 'view_insights_tutorial',
-        estimatedTime: '3 minutes'
+        estimatedTime: '3 minutes',
       },
       {
         id: 'generate-report',
@@ -374,7 +370,7 @@ export class AICampaignAssistantService {
         description: 'Create a comprehensive campaign performance report',
         completed: userProgress.reportsGenerated > 0,
         action: 'generate_report',
-        estimatedTime: '2 minutes'
+        estimatedTime: '2 minutes',
       },
       {
         id: 'set-up-alerts',
@@ -382,8 +378,8 @@ export class AICampaignAssistantService {
         description: 'Get notified when important events happen',
         completed: false, // This would check if user has alerts configured
         action: 'configure_alerts',
-        estimatedTime: '3 minutes'
-      }
+        estimatedTime: '3 minutes',
+      },
     ];
   }
 }

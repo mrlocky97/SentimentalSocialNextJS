@@ -4,15 +4,7 @@
  */
 
 import { Observable, Subject, BehaviorSubject, timer } from 'rxjs';
-import { 
-  map, 
-  filter, 
-  mergeMap, 
-  catchError, 
-  retry, 
-  throttleTime,
-  tap
-} from 'rxjs/operators';
+import { map, filter, mergeMap, catchError, retry, throttleTime, tap } from 'rxjs/operators';
 
 export interface NotificationPayload {
   id: string;
@@ -48,7 +40,7 @@ class SimpleNotificationSystem {
     successful: 0,
     failed: 0,
     byChannel: {},
-    byType: {}
+    byType: {},
   });
 
   private channels: NotificationChannel[] = [
@@ -56,15 +48,15 @@ class SimpleNotificationSystem {
       id: 'console',
       type: 'console',
       name: 'Console Logger',
-      enabled: true
+      enabled: true,
     },
     {
       id: 'file',
       type: 'file',
       name: 'File Logger',
       enabled: true,
-      config: { logPath: './logs/notifications.log' }
-    }
+      config: { logPath: './logs/notifications.log' },
+    },
   ];
 
   constructor() {
@@ -75,17 +67,19 @@ class SimpleNotificationSystem {
    * Initialize notification processing
    */
   private initializeProcessing(): void {
-    this.notificationQueue$.pipe(
-      // Throttle to prevent spam
-      throttleTime(100),
-      // Process notifications
-      mergeMap(notification => this.processNotification(notification), 5),
-      // Handle errors gracefully
-      catchError(error => {
-        console.error('Notification processing error:', error);
-        return [];
-      })
-    ).subscribe();
+    this.notificationQueue$
+      .pipe(
+        // Throttle to prevent spam
+        throttleTime(100),
+        // Process notifications
+        mergeMap((notification) => this.processNotification(notification), 5),
+        // Handle errors gracefully
+        catchError((error) => {
+          console.error('Notification processing error:', error);
+          return [];
+        })
+      )
+      .subscribe();
   }
 
   /**
@@ -95,12 +89,12 @@ class SimpleNotificationSystem {
     const notification: NotificationPayload = {
       ...payload,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.notificationQueue$.next(notification);
-    
-    return new Observable<boolean>(subscriber => {
+
+    return new Observable<boolean>((subscriber) => {
       this.processNotification(notification).subscribe({
         next: (success) => {
           subscriber.next(success);
@@ -108,7 +102,7 @@ class SimpleNotificationSystem {
         },
         error: (error) => {
           subscriber.error(error);
-        }
+        },
       });
     });
   }
@@ -122,7 +116,7 @@ class SimpleNotificationSystem {
       title: `🚨 CRISIS ALERT: ${title}`,
       message,
       data,
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -135,7 +129,7 @@ class SimpleNotificationSystem {
       title: `✅ ${title}`,
       message,
       data,
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -148,7 +142,7 @@ class SimpleNotificationSystem {
       title: `⚠️ ${title}`,
       message,
       data,
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -161,7 +155,7 @@ class SimpleNotificationSystem {
       title: `❌ ${title}`,
       message,
       data,
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -183,19 +177,19 @@ class SimpleNotificationSystem {
    * Get active channels
    */
   getChannels(): NotificationChannel[] {
-    return this.channels.filter(channel => channel.enabled);
+    return this.channels.filter((channel) => channel.enabled);
   }
 
   /**
    * Process single notification
    */
   private processNotification(notification: NotificationPayload): Observable<boolean> {
-    const enabledChannels = this.channels.filter(ch => ch.enabled);
+    const enabledChannels = this.channels.filter((ch) => ch.enabled);
     let successCount = 0;
-    
-    const channelPromises = enabledChannels.map(channel => 
+
+    const channelPromises = enabledChannels.map((channel) =>
       this.sendToChannel(notification, channel)
-        .then(success => {
+        .then((success) => {
           if (success) successCount++;
           this.updateChannelStats(channel.id, success);
           return success;
@@ -206,37 +200,42 @@ class SimpleNotificationSystem {
         })
     );
 
-    return new Observable<boolean>(subscriber => {
-      Promise.all(channelPromises).then(results => {
-        const overallSuccess = results.some(r => r);
-        this.updateStats(notification, overallSuccess);
-        subscriber.next(overallSuccess);
-        subscriber.complete();
-      }).catch(error => {
-        this.updateStats(notification, false);
-        subscriber.error(error);
-      });
+    return new Observable<boolean>((subscriber) => {
+      Promise.all(channelPromises)
+        .then((results) => {
+          const overallSuccess = results.some((r) => r);
+          this.updateStats(notification, overallSuccess);
+          subscriber.next(overallSuccess);
+          subscriber.complete();
+        })
+        .catch((error) => {
+          this.updateStats(notification, false);
+          subscriber.error(error);
+        });
     });
   }
 
   /**
    * Send notification to specific channel
    */
-  private async sendToChannel(notification: NotificationPayload, channel: NotificationChannel): Promise<boolean> {
+  private async sendToChannel(
+    notification: NotificationPayload,
+    channel: NotificationChannel
+  ): Promise<boolean> {
     try {
       switch (channel.type) {
         case 'console':
           return this.sendToConsole(notification);
-        
+
         case 'file':
           return this.sendToFile(notification, channel.config?.logPath);
-        
+
         case 'webhook':
           return this.sendToWebhook(notification, channel.endpoint);
-        
+
         case 'email':
           return this.sendToEmail(notification, channel.config);
-        
+
         default:
           console.warn(`Unknown channel type: ${channel.type}`);
           return false;
@@ -253,21 +252,24 @@ class SimpleNotificationSystem {
   private sendToConsole(notification: NotificationPayload): Promise<boolean> {
     const timestamp = notification.timestamp.toISOString();
     const prefix = this.getLogPrefix(notification.type);
-    
+
     console.log(`[${timestamp}] ${prefix} ${notification.title}`);
     console.log(`  Message: ${notification.message}`);
-    
+
     if (notification.data) {
       console.log(`  Data:`, notification.data);
     }
-    
+
     return Promise.resolve(true);
   }
 
   /**
    * Send to file (simplified)
    */
-  private sendToFile(notification: NotificationPayload, logPath: string = './logs/notifications.log'): Promise<boolean> {
+  private sendToFile(
+    notification: NotificationPayload,
+    logPath: string = './logs/notifications.log'
+  ): Promise<boolean> {
     // In a real implementation, you would write to file using fs
     console.log(`[FILE LOG] Would write to ${logPath}:`, notification);
     return Promise.resolve(true);
@@ -278,7 +280,7 @@ class SimpleNotificationSystem {
    */
   private sendToWebhook(notification: NotificationPayload, endpoint?: string): Promise<boolean> {
     if (!endpoint) return Promise.resolve(false);
-    
+
     // In a real implementation, you would make HTTP request
     console.log(`[WEBHOOK] Would send to ${endpoint}:`, notification);
     return Promise.resolve(true);
@@ -302,7 +304,7 @@ class SimpleNotificationSystem {
       warning: '⚠️  WARNING',
       error: '❌ ERROR',
       success: '✅ SUCCESS',
-      crisis: '🚨 CRISIS'
+      crisis: '🚨 CRISIS',
     };
     return prefixes[type] || 'ℹ️  INFO';
   }
@@ -312,7 +314,7 @@ class SimpleNotificationSystem {
    */
   private updateStats(notification: NotificationPayload, success: boolean): void {
     const current = this.stats$.value;
-    
+
     this.stats$.next({
       totalSent: current.totalSent + 1,
       successful: current.successful + (success ? 1 : 0),
@@ -320,8 +322,8 @@ class SimpleNotificationSystem {
       byChannel: current.byChannel,
       byType: {
         ...current.byType,
-        [notification.type]: (current.byType[notification.type] || 0) + 1
-      }
+        [notification.type]: (current.byType[notification.type] || 0) + 1,
+      },
     });
   }
 
@@ -330,13 +332,13 @@ class SimpleNotificationSystem {
    */
   private updateChannelStats(channelId: string, success: boolean): void {
     const current = this.stats$.value;
-    
+
     this.stats$.next({
       ...current,
       byChannel: {
         ...current.byChannel,
-        [channelId]: (current.byChannel[channelId] || 0) + (success ? 1 : 0)
-      }
+        [channelId]: (current.byChannel[channelId] || 0) + (success ? 1 : 0),
+      },
     });
   }
 

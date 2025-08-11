@@ -3,15 +3,22 @@
  * Real implementation of UserRepository using Mongoose
  */
 
-import { UserRepository } from './user.repository';
-import { QueryOptions } from './base.repository';
-import { User, UserAuth, CreateUserRequest, UpdateUserRequest, UserRole, Permission } from '../types/user';
-import UserModel, { IUserDocument } from '../models/User.model';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import FollowModel from '../models/Follow.model';
+import UserModel, { IUserDocument } from '../models/User.model';
+import {
+  CreateUserRequest,
+  Permission,
+  UpdateUserRequest,
+  User,
+  UserAuth,
+  UserRole,
+} from '../types/user';
+import { QueryOptions } from './base.repository';
+import { UserRepository } from './user.repository';
 
 export class MongoUserRepository implements UserRepository {
-
   async create(data: CreateUserRequest): Promise<User> {
     try {
       // Hash password
@@ -56,7 +63,7 @@ export class MongoUserRepository implements UserRepository {
     }
 
     const users = await query.exec();
-    return users.map(user => this.documentToUser(user));
+    return users.map((user) => this.documentToUser(user));
   }
 
   async update(id: string, data: UpdateUserRequest): Promise<User | null> {
@@ -121,10 +128,7 @@ export class MongoUserRepository implements UserRepository {
   async findByEmailOrUsername(identifier: string): Promise<User | null> {
     try {
       const user = await UserModel.findOne({
-        $or: [
-          { email: identifier.toLowerCase() },
-          { username: identifier.toLowerCase() }
-        ]
+        $or: [{ email: identifier.toLowerCase() }, { username: identifier.toLowerCase() }],
       });
       return user ? this.documentToUser(user) : null;
     } catch {
@@ -162,36 +166,116 @@ export class MongoUserRepository implements UserRepository {
 
   // Social features (placeholder implementations)
   async followUser(followerId: string, followingId: string): Promise<boolean> {
-    // This would require a separate followers collection or embedded arrays
-    // For now, just return true (implement based on your social features design)
-    return true;
+    try {
+      // Validate IDs
+      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+        return false;
+      }
+      // Prevent self-follow
+      if (followerId === followingId) return false;
+
+      const follower = new mongoose.Types.ObjectId(followerId);
+      const following = new mongoose.Types.ObjectId(followingId);
+
+      // Ensure users exist (lightweight check)
+      const [existsFollower, existsFollowing] = await Promise.all([
+        UserModel.exists({ _id: follower, isActive: true }),
+        UserModel.exists({ _id: following, isActive: true }),
+      ]);
+      if (!existsFollower || !existsFollowing) return false;
+
+      // Create relationship (idempotent via unique index)
+      try {
+        await FollowModel.create({ followerId: follower, followingId: following });
+      } catch (err: unknown) {
+        // Duplicate key -> already following
+        if (err && typeof err === 'object' && 'code' in err && (err as any).code === 11000) {
+          return true;
+        }
+        throw err;
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
-    // Placeholder implementation
-    return true;
+    try {
+      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+        return false;
+      }
+      const follower = new mongoose.Types.ObjectId(followerId);
+      const following = new mongoose.Types.ObjectId(followingId);
+      await FollowModel.deleteOne({ followerId: follower, followingId: following });
+      // Idempotent success
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async getFollowers(userId: string, options?: QueryOptions): Promise<User[]> {
-    // Placeholder - would need followers collection
-    return [];
+    try {
+      if (!mongoose.isValidObjectId(userId)) return [];
+      const targetId = new mongoose.Types.ObjectId(userId);
+
+      const follows = await FollowModel.find({ followingId: targetId }).select('followerId').lean();
+      const followerIds = follows.map((f) => f.followerId);
+      if (followerIds.length === 0) return [];
+
+      const query = UserModel.find({ _id: { $in: followerIds }, isActive: true });
+      if (options?.limit) query.limit(options.limit);
+      if (options?.offset) query.skip(options.offset);
+
+      const users = await query.exec();
+      return users.map((u) => this.documentToUser(u));
+    } catch {
+      return [];
+    }
   }
 
   async getFollowing(userId: string, options?: QueryOptions): Promise<User[]> {
-    // Placeholder - would need following collection  
-    return [];
+    try {
+      if (!mongoose.isValidObjectId(userId)) return [];
+      const sourceId = new mongoose.Types.ObjectId(userId);
+
+      const follows = await FollowModel.find({ followerId: sourceId }).select('followingId').lean();
+      const followingIds = follows.map((f) => f.followingId);
+      if (followingIds.length === 0) return [];
+
+      const query = UserModel.find({ _id: { $in: followingIds }, isActive: true });
+      if (options?.limit) query.limit(options.limit);
+      if (options?.offset) query.skip(options.offset);
+
+      const users = await query.exec();
+      return users.map((u) => this.documentToUser(u));
+    } catch {
+      return [];
+    }
   }
 
+  // Check if a user is following another user
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    // Placeholder implementation
-    return false;
+    try {
+      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+        return false;
+      }
+      const follower = new mongoose.Types.ObjectId(followerId);
+      const following = new mongoose.Types.ObjectId(followingId);
+      const exists = await FollowModel.exists({ followerId: follower, followingId: following });
+      return !!exists;
+    } catch {
+      return false;
+    }
   }
 
   // Statistics
   async getFollowersCount(userId: string): Promise<number> {
     try {
-      const user = await UserModel.findById(userId).select('followersCount');
-      return user?.followersCount || 0;
+      if (!mongoose.isValidObjectId(userId)) return 0;
+      const targetId = new mongoose.Types.ObjectId(userId);
+      return await FollowModel.countDocuments({ followingId: targetId });
     } catch {
       return 0;
     }
@@ -199,8 +283,9 @@ export class MongoUserRepository implements UserRepository {
 
   async getFollowingCount(userId: string): Promise<number> {
     try {
-      const user = await UserModel.findById(userId).select('followingCount');
-      return user?.followingCount || 0;
+      if (!mongoose.isValidObjectId(userId)) return 0;
+      const sourceId = new mongoose.Types.ObjectId(userId);
+      return await FollowModel.countDocuments({ followerId: sourceId });
     } catch {
       return 0;
     }
@@ -220,18 +305,15 @@ export class MongoUserRepository implements UserRepository {
     try {
       const searchRegex = new RegExp(query, 'i');
       const mongoQuery = UserModel.find({
-        $or: [
-          { username: searchRegex },
-          { displayName: searchRegex }
-        ],
-        isActive: true
+        $or: [{ username: searchRegex }, { displayName: searchRegex }],
+        isActive: true,
       });
 
       if (options?.limit) mongoQuery.limit(options.limit);
       if (options?.offset) mongoQuery.skip(options.offset);
 
       const users = await mongoQuery.exec();
-      return users.map(user => this.documentToUser(user));
+      return users.map((user) => this.documentToUser(user));
     } catch {
       return [];
     }
@@ -241,7 +323,7 @@ export class MongoUserRepository implements UserRepository {
   async findManyByIds(ids: string[]): Promise<User[]> {
     try {
       const users = await UserModel.find({ _id: { $in: ids } });
-      return users.map(user => this.documentToUser(user));
+      return users.map((user) => this.documentToUser(user));
     } catch {
       return [];
     }

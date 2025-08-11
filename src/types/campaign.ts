@@ -4,24 +4,24 @@
  */
 
 export type CampaignStatus =
-  | 'draft'           // Campaign being created
-  | 'active'          // Currently collecting data
-  | 'paused'          // Temporarily stopped
-  | 'completed'       // Finished collecting
-  | 'archived';       // Completed and archived
+  | 'draft' // Campaign being created
+  | 'active' // Currently collecting data
+  | 'paused' // Temporarily stopped
+  | 'completed' // Finished collecting
+  | 'archived'; // Completed and archived
 
 export type CampaignType =
-  | 'hashtag'         // Hashtag-based campaign (#JustDoIt)
-  | 'keyword'         // Keyword-based campaign
-  | 'mention'         // Mention-based campaign (@brand)
-  | 'competitor';     // Competitor analysis
+  | 'hashtag' // Hashtag-based campaign (#JustDoIt)
+  | 'keyword' // Keyword-based campaign
+  | 'mention' // Mention-based campaign (@brand)
+  | 'competitor'; // Competitor analysis
 
 export type DataSource =
-  | 'twitter'         // Twitter/X platform
-  | 'instagram'       // Instagram platform
-  | 'facebook'        // Facebook platform
-  | 'tiktok'          // TikTok platform
-  | 'linkedin';       // LinkedIn platform
+  | 'twitter' // Twitter/X platform
+  | 'instagram' // Instagram platform
+  | 'facebook' // Facebook platform
+  | 'tiktok' // TikTok platform
+  | 'linkedin'; // LinkedIn platform
 
 export interface Campaign {
   id: string;
@@ -34,51 +34,52 @@ export interface Campaign {
   dataSources: DataSource[];
 
   // Tracking Parameters
-  hashtags: string[];           // ["JustDoIt", "Nike", "motivation"]
-  keywords: string[];           // ["running", "fitness", "sports"]
-  mentions: string[];           // ["@Nike", "@adidas"]
+  hashtags: string[]; // ["JustDoIt", "Nike", "motivation"]
+  keywords: string[]; // ["running", "fitness", "sports"]
+  mentions: string[]; // ["@Nike", "@adidas"]
 
   // Time Configuration
   startDate: Date;
   endDate: Date;
-  timezone: string;             // "America/New_York"
+  timezone: string; // "America/New_York"
 
   // Collection Settings
-  maxTweets: number;            // Maximum tweets to collect
-  collectImages: boolean;       // Collect image URLs
-  collectVideos: boolean;       // Collect video URLs
-  collectReplies: boolean;      // Include replies
-  collectRetweets: boolean;     // Include retweets
+  maxTweets: number; // Maximum tweets to collect
+  collectImages: boolean; // Collect image URLs
+  collectVideos: boolean; // Collect video URLs
+  collectReplies: boolean; // Include replies
+  collectRetweets: boolean; // Include retweets
 
   // Geographic Filters
   geoLocation?: {
-    country?: string;           // "US", "MX", "CA"
-    city?: string;              // "New York", "Mexico City"
-    radius?: number;            // Radius in kilometers
-    coordinates?: {             // Lat/Long coordinates
+    country?: string; // "US", "MX", "CA"
+    city?: string; // "New York", "Mexico City"
+    radius?: number; // Radius in kilometers
+    coordinates?: {
+      // Lat/Long coordinates
       lat: number;
       lng: number;
     };
   };
 
   // Language Filters
-  languages: string[];          // ["en", "es", "fr"]
+  languages: string[]; // ["en", "es", "fr"]
 
   // Analysis Configuration
-  sentimentAnalysis: boolean;   // Enable sentiment analysis
-  emotionAnalysis: boolean;     // Enable emotion detection
-  topicsAnalysis: boolean;      // Enable topic modeling
-  influencerAnalysis: boolean;  // Track influencer metrics
+  sentimentAnalysis: boolean; // Enable sentiment analysis
+  emotionAnalysis: boolean; // Enable emotion detection
+  topicsAnalysis: boolean; // Enable topic modeling
+  influencerAnalysis: boolean; // Track influencer metrics
 
   // Organization & Permissions
   organizationId: string;
-  createdBy: string;            // User ID who created
-  assignedTo: string[];         // Array of user IDs with access
+  createdBy: string; // User ID who created
+  assignedTo: string[]; // Array of user IDs with access
 
   // Metadata
   createdAt: Date;
   updatedAt: Date;
-  lastDataCollection?: Date;    // Last time data was collected
+  lastDataCollection?: Date; // Last time data was collected
 
   // Statistics (computed fields)
   stats?: {
@@ -103,8 +104,8 @@ export interface CreateCampaignRequest {
   mentions: string[];
 
   // Time Configuration
-  startDate: string;            // ISO string
-  endDate: string;              // ISO string
+  startDate: string; // ISO string
+  endDate: string; // ISO string
   timezone: string;
 
   // Collection Settings
@@ -199,7 +200,7 @@ export interface CampaignMetrics {
   estimatedReach: number;
 
   // Sentiment Metrics
-  sentimentScore: number;       // -1 to 1
+  sentimentScore: number; // -1 to 1
   positiveCount: number;
   neutralCount: number;
   negativeCount: number;
@@ -247,7 +248,7 @@ export interface CampaignTemplate {
   category: 'marketing' | 'brand-monitoring' | 'competitor-analysis' | 'crisis-management';
 
   // Default Configuration
-  defaultDuration: number;      // Days
+  defaultDuration: number; // Days
   defaultMaxTweets: number;
   defaultDataSources: DataSource[];
   defaultAnalysis: {
@@ -272,7 +273,7 @@ export interface CampaignAccess {
   campaignId: string;
   userId: string;
   role: CampaignRole;
-  grantedBy: string;           // User ID who granted access
+  grantedBy: string; // User ID who granted access
   grantedAt: Date;
   permissions: {
     canEdit: boolean;
@@ -303,10 +304,10 @@ export interface AssistantRecommendation {
 export interface CampaignHealthScore {
   overall: number; // 0-100
   breakdown: {
-    setup: number;        // Campaign configuration quality
-    performance: number;  // Current results
+    setup: number; // Campaign configuration quality
+    performance: number; // Current results
     optimization: number; // How well optimized
-    risk: number;        // Risk management
+    risk: number; // Risk management
   };
   grade: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'F';
   improvements: string[];

@@ -7,7 +7,13 @@ import { Router } from 'express';
 import { MongoCampaignRepository } from '../repositories/mongo-campaign.repository';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { authenticateToken, requireRole } from '../middleware/express-auth';
-import { CreateCampaignRequest, UpdateCampaignRequest, CampaignFilter, CampaignStatus, CampaignType } from '../types/campaign';
+import {
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
+  CampaignFilter,
+  CampaignStatus,
+  CampaignType,
+} from '../types/campaign';
 
 const router = Router();
 const campaignRepository = new MongoCampaignRepository();
@@ -92,57 +98,62 @@ const tweetDatabaseService = new TweetDatabaseService();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const { page = 1, limit = 20, status, type, organizationId } = req.query;
+router.get(
+  '/',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const { page = 1, limit = 20, status, type, organizationId } = req.query;
 
-    // Build filter object
-    const filter: CampaignFilter = {};
-    if (status) filter.status = status as string as CampaignStatus;
-    if (type) filter.type = type as string as CampaignType;
-    if (organizationId) filter.organizationId = organizationId as string;
+      // Build filter object
+      const filter: CampaignFilter = {};
+      if (status) filter.status = status as string as CampaignStatus;
+      if (type) filter.type = type as string as CampaignType;
+      if (organizationId) filter.organizationId = organizationId as string;
 
-    // Convert pagination params
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
+      // Convert pagination params
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
 
-    // Get campaigns with pagination
-    const campaigns = await campaignRepository.findMany(filter, {
-      offset,
-      limit: limitNum,
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
-    });
-
-    // Get total count for pagination
-    const total = await campaignRepository.count(filter);
-    const totalPages = Math.ceil(total / limitNum);
-
-    res.json({
-      success: true,
-      data: campaigns,
-      pagination: {
-        page: pageNum,
+      // Get campaigns with pagination
+      const campaigns = await campaignRepository.findMany(filter, {
+        offset,
         limit: limitNum,
-        total,
-        totalPages,
-        hasNext: pageNum < totalPages,
-        hasPrev: pageNum > 1
-      }
-    });
-  } catch (error: unknown) {
-    console.error('Error fetching campaigns:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch campaigns',
-        code: 'FETCH_CAMPAIGNS_ERROR',
-        timestamp: new Date().toISOString()
-      }
-    });
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+
+      // Get total count for pagination
+      const total = await campaignRepository.count(filter);
+      const totalPages = Math.ceil(total / limitNum);
+
+      res.json({
+        success: true,
+        data: campaigns,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
+        },
+      });
+    } catch (error: unknown) {
+      console.error('Error fetching campaigns:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to fetch campaigns',
+          code: 'FETCH_CAMPAIGNS_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -259,7 +270,13 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
     const user = (req as unknown as { user: { id: string } }).user;
 
     // Validate required fields
-    if (!campaignData.name || !campaignData.type || !campaignData.dataSources || !campaignData.startDate || !campaignData.endDate) {
+    if (
+      !campaignData.name ||
+      !campaignData.type ||
+      !campaignData.dataSources ||
+      !campaignData.startDate ||
+      !campaignData.endDate
+    ) {
       return res.status(400).json({
         success: false,
         error: {
@@ -267,24 +284,26 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
           code: 'MISSING_REQUIRED_FIELDS',
           details: {
             required: ['name', 'type', 'dataSources', 'startDate', 'endDate'],
-            provided: Object.keys(req.body)
+            provided: Object.keys(req.body),
           },
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
     // Validate that at least one tracking parameter is provided
-    if ((!campaignData.hashtags || campaignData.hashtags.length === 0) &&
+    if (
+      (!campaignData.hashtags || campaignData.hashtags.length === 0) &&
       (!campaignData.keywords || campaignData.keywords.length === 0) &&
-      (!campaignData.mentions || campaignData.mentions.length === 0)) {
+      (!campaignData.mentions || campaignData.mentions.length === 0)
+    ) {
       return res.status(400).json({
         success: false,
         error: {
           message: 'At least one hashtag, keyword, or mention must be provided',
           code: 'NO_TRACKING_PARAMETERS',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
@@ -295,7 +314,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
       hashtags: campaignData.hashtags || [],
       keywords: campaignData.keywords || [],
       mentions: campaignData.mentions || [],
-      languages: campaignData.languages || ['en']
+      languages: campaignData.languages || ['en'],
     };
 
     // Create campaign
@@ -304,7 +323,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
     res.status(201).json({
       success: true,
       data: newCampaign,
-      message: 'Campaign created successfully'
+      message: 'Campaign created successfully',
     });
   } catch (error: unknown) {
     console.error('Error creating campaign:', error);
@@ -316,8 +335,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
           error: {
             message: 'Invalid campaign data',
             code: 'VALIDATION_ERROR',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
       }
       if (error.message === 'CAMPAIGN_NAME_EXISTS') {
@@ -326,8 +345,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
           error: {
             message: 'Campaign name already exists',
             code: 'CAMPAIGN_NAME_EXISTS',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
       }
     }
@@ -337,8 +356,8 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
       error: {
         message: 'Failed to create campaign',
         code: 'CREATE_CAMPAIGN_ERROR',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 });
@@ -385,51 +404,56 @@ router.post('/', authenticateToken, requireRole(['admin', 'manager']), async (re
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', authenticateToken, requireRole(['admin', 'manager', 'analyst']), async (req, res) => {
-  try {
-    const { id } = req.params;
+router.get(
+  '/:id',
+  authenticateToken,
+  requireRole(['admin', 'manager', 'analyst']),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    // Validate MongoDB ObjectId format
-    if (!id || id.length !== 24) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Invalid campaign ID format',
-          code: 'INVALID_CAMPAIGN_ID',
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    const campaign = await campaignRepository.findById(id);
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'Campaign not found',
-          code: 'CAMPAIGN_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    res.json({
-      success: true,
-      data: campaign
-    });
-  } catch (error: unknown) {
-    console.error('Error fetching campaign:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch campaign',
-        code: 'FETCH_CAMPAIGN_ERROR',
-        timestamp: new Date().toISOString()
+      // Validate MongoDB ObjectId format
+      if (!id || id.length !== 24) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Invalid campaign ID format',
+            code: 'INVALID_CAMPAIGN_ID',
+            timestamp: new Date().toISOString(),
+          },
+        });
       }
-    });
+
+      const campaign = await campaignRepository.findById(id);
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'Campaign not found',
+            code: 'CAMPAIGN_NOT_FOUND',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        data: campaign,
+      });
+    } catch (error: unknown) {
+      console.error('Error fetching campaign:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to fetch campaign',
+          code: 'FETCH_CAMPAIGN_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -523,8 +547,8 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
         error: {
           message: 'Invalid campaign ID format',
           code: 'INVALID_CAMPAIGN_ID',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
@@ -537,15 +561,15 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
         error: {
           message: 'Campaign not found',
           code: 'CAMPAIGN_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
     res.json({
       success: true,
       data: updatedCampaign,
-      message: 'Campaign updated successfully'
+      message: 'Campaign updated successfully',
     });
   } catch (error: unknown) {
     console.error('Error updating campaign:', error);
@@ -557,8 +581,8 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
           error: {
             message: 'Invalid campaign data',
             code: 'VALIDATION_ERROR',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
       }
       if (error.message === 'CANNOT_MODIFY_ACTIVE_CAMPAIGN') {
@@ -567,8 +591,8 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
           error: {
             message: 'Cannot modify tracking parameters of active campaign',
             code: 'CANNOT_MODIFY_ACTIVE_CAMPAIGN',
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
       }
     }
@@ -578,8 +602,8 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
       error: {
         message: 'Failed to update campaign',
         code: 'UPDATE_CAMPAIGN_ERROR',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 });
@@ -638,8 +662,8 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         error: {
           message: 'Invalid campaign ID format',
           code: 'INVALID_CAMPAIGN_ID',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
@@ -651,8 +675,8 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         error: {
           message: 'Campaign not found',
           code: 'CAMPAIGN_NOT_FOUND',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
@@ -665,15 +689,15 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
         error: {
           message: 'Failed to archive campaign',
           code: 'ARCHIVE_CAMPAIGN_ERROR',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
 
     res.json({
       success: true,
       message: 'Campaign archived successfully',
-      data: { id, status: 'archived' }
+      data: { id, status: 'archived' },
     });
   } catch (error: unknown) {
     console.error('Error deleting campaign:', error);
@@ -682,8 +706,8 @@ router.delete('/:id', authenticateToken, requireRole(['admin', 'manager']), asyn
       error: {
         message: 'Failed to delete campaign',
         code: 'DELETE_CAMPAIGN_ERROR',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 });
@@ -749,7 +773,7 @@ router.get('/:campaignId/tweets', async (req, res) => {
     if (!campaignId) {
       return res.status(400).json({
         success: false,
-        error: 'Campaign ID is required'
+        error: 'Campaign ID is required',
       });
     }
 
@@ -757,10 +781,11 @@ router.get('/:campaignId/tweets', async (req, res) => {
 
     // Calculate basic stats
     const totalTweets = tweets.length;
-    const withSentiment = tweets.filter(t => t.sentiment?.score !== undefined).length;
-    const avgSentiment = withSentiment > 0 
-      ? tweets.reduce((sum, t) => sum + (t.sentiment?.score || 0), 0) / withSentiment 
-      : 0;
+    const withSentiment = tweets.filter((t) => t.sentiment?.score !== undefined).length;
+    const avgSentiment =
+      withSentiment > 0
+        ? tweets.reduce((sum, t) => sum + (t.sentiment?.score || 0), 0) / withSentiment
+        : 0;
 
     res.json({
       success: true,
@@ -772,23 +797,25 @@ router.get('/:campaignId/tweets', async (req, res) => {
         tweets: tweets,
         statistics: {
           sentiment_distribution: {
-            positive: tweets.filter(t => (t.sentiment?.score || 0) > 0.1).length,
-            neutral: tweets.filter(t => Math.abs(t.sentiment?.score || 0) <= 0.1).length,
-            negative: tweets.filter(t => (t.sentiment?.score || 0) < -0.1).length
+            positive: tweets.filter((t) => (t.sentiment?.score || 0) > 0.1).length,
+            neutral: tweets.filter((t) => Math.abs(t.sentiment?.score || 0) <= 0.1).length,
+            negative: tweets.filter((t) => (t.sentiment?.score || 0) < -0.1).length,
           },
-          total_engagement: tweets.reduce((sum, t) => sum + (t.metrics?.likes || 0) + (t.metrics?.retweets || 0), 0),
-          unique_authors: [...new Set(tweets.map(t => t.author?.username))].length
-        }
+          total_engagement: tweets.reduce(
+            (sum, t) => sum + (t.metrics?.likes || 0) + (t.metrics?.retweets || 0),
+            0
+          ),
+          unique_authors: [...new Set(tweets.map((t) => t.author?.username))].length,
+        },
       },
-      message: `Retrieved ${totalTweets} tweets for campaign: ${campaignId}`
+      message: `Retrieved ${totalTweets} tweets for campaign: ${campaignId}`,
     });
-
   } catch (error) {
     console.error('Error retrieving campaign tweets:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to retrieve campaign tweets'
+      message: 'Failed to retrieve campaign tweets',
     });
   }
 });
@@ -839,19 +866,19 @@ router.get('/overview', async (req, res) => {
           totalTweets: stats.totalTweets,
           tweetsToday: stats.tweetsToday,
           uniqueAuthors: stats.uniqueAuthors,
-          averageSentiment: stats.averageSentiment
+          averageSentiment: stats.averageSentiment,
         },
-        message: "Use specific campaign endpoints or database queries to get detailed campaign data"
+        message:
+          'Use specific campaign endpoints or database queries to get detailed campaign data',
       },
-      message: 'Campaign overview retrieved successfully'
+      message: 'Campaign overview retrieved successfully',
     });
-
   } catch (error) {
     console.error('Error retrieving campaign overview:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to retrieve campaign overview'
+      message: 'Failed to retrieve campaign overview',
     });
   }
 });

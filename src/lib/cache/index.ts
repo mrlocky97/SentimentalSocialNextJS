@@ -13,7 +13,8 @@ export class MemoryCache {
   private cache = new Map<string, CacheItem<any>>();
   private defaultTtl: number;
 
-  constructor(defaultTtl: number = 3600000) { // 1 hour default
+  constructor(defaultTtl: number = 3600000) {
+    // 1 hour default
     this.defaultTtl = defaultTtl;
   }
 
@@ -77,6 +78,7 @@ export class MemoryCache {
     for (const [key, item] of this.cache) {
       totalSize++;
       if (now - item.timestamp > item.ttl) {
+        console.log(key);
         expiredCount++;
       }
     }
@@ -95,9 +97,9 @@ export class MemoryCache {
     const now = Date.now();
     let cleaned = 0;
 
-    for (const [key, item] of this.cache) {
+    for (const [k, item] of this.cache) {
       if (now - item.timestamp > item.ttl) {
-        this.cache.delete(key);
+        this.cache.delete(k);
         cleaned++;
       }
     }
@@ -108,11 +110,7 @@ export class MemoryCache {
   /**
    * Get or set pattern (memoization)
    */
-  async getOrSet<T>(
-    key: string,
-    factory: () => Promise<T> | T,
-    ttl?: number
-  ): Promise<T> {
+  async getOrSet<T>(key: string, factory: () => Promise<T> | T, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
     if (cached !== null) {
       return cached;
@@ -134,7 +132,7 @@ export function Cacheable(ttl?: number) {
 
     descriptor.value = async function (...args: any[]) {
       const cacheKey = `${target.constructor.name}.${propertyName}.${JSON.stringify(args)}`;
-      
+
       return appCache.getOrSet(cacheKey, () => method.apply(this, args), ttl);
     };
 

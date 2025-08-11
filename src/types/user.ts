@@ -20,11 +20,11 @@ export interface User {
 }
 
 export type UserRole =
-  | 'admin'           // Full system access
-  | 'manager'         // Can create/manage campaigns
-  | 'analyst'         // Can view and analyze data
-  | 'onlyView'        // Read-only access
-  | 'client';         // Limited client access
+  | 'admin' // Full system access
+  | 'manager' // Can create/manage campaigns
+  | 'analyst' // Can view and analyze data
+  | 'onlyView' // Read-only access
+  | 'client'; // Limited client access
 
 export type Permission =
   // Campaign permissions
@@ -74,13 +74,28 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     description: 'Full system access and user management',
     level: 100,
     permissions: [
-      'campaigns:create', 'campaigns:edit', 'campaigns:delete', 'campaigns:view',
-      'campaigns:start_scraping', 'campaigns:export_data',
-      'analytics:view', 'analytics:export', 'analytics:advanced',
-      'users:create', 'users:edit', 'users:delete', 'users:view', 'users:assign_roles',
-      'system:settings', 'system:logs', 'system:backup', 'system:monitoring',
-      'data:export', 'data:delete', 'data:bulk_operations'
-    ]
+      'campaigns:create',
+      'campaigns:edit',
+      'campaigns:delete',
+      'campaigns:view',
+      'campaigns:start_scraping',
+      'campaigns:export_data',
+      'analytics:view',
+      'analytics:export',
+      'analytics:advanced',
+      'users:create',
+      'users:edit',
+      'users:delete',
+      'users:view',
+      'users:assign_roles',
+      'system:settings',
+      'system:logs',
+      'system:backup',
+      'system:monitoring',
+      'data:export',
+      'data:delete',
+      'data:bulk_operations',
+    ],
   },
   {
     role: 'manager',
@@ -88,12 +103,17 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     description: 'Can create and manage marketing campaigns',
     level: 75,
     permissions: [
-      'campaigns:create', 'campaigns:edit', 'campaigns:view',
-      'campaigns:start_scraping', 'campaigns:export_data',
-      'analytics:view', 'analytics:export', 'analytics:advanced',
+      'campaigns:create',
+      'campaigns:edit',
+      'campaigns:view',
+      'campaigns:start_scraping',
+      'campaigns:export_data',
+      'analytics:view',
+      'analytics:export',
+      'analytics:advanced',
       'users:view',
-      'data:export'
-    ]
+      'data:export',
+    ],
   },
   {
     role: 'analyst',
@@ -102,30 +122,26 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     level: 50,
     permissions: [
       'campaigns:view',
-      'analytics:view', 'analytics:export', 'analytics:advanced',
-      'data:export'
-    ]
+      'analytics:view',
+      'analytics:export',
+      'analytics:advanced',
+      'data:export',
+    ],
   },
   {
     role: 'onlyView',
     name: 'View Only',
     description: 'Read-only access to campaigns and basic analytics',
     level: 25,
-    permissions: [
-      'campaigns:view',
-      'analytics:view'
-    ]
+    permissions: ['campaigns:view', 'analytics:view'],
   },
   {
     role: 'client',
     name: 'Client',
     description: 'Limited access for external clients',
     level: 10,
-    permissions: [
-      'campaigns:view',
-      'analytics:view'
-    ]
-  }
+    permissions: ['campaigns:view', 'analytics:view'],
+  },
 ];
 
 // Authentication related interfaces

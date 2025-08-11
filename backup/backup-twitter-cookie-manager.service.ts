@@ -94,7 +94,7 @@ export class TwitterCookieManager {
       timestamp: now,
       userAgent,
       isValid: true,
-      expirationTime: now + this.SESSION_DURATION
+      expirationTime: now + this.SESSION_DURATION,
     };
 
     this.saveCookies();
@@ -170,7 +170,7 @@ export class TwitterCookieManager {
         isValid: false,
         age: 0,
         timeLeft: 0,
-        cookieCount: 0
+        cookieCount: 0,
       };
     }
 
@@ -183,7 +183,7 @@ export class TwitterCookieManager {
       isValid: this.sessionData.isValid && !this.isSessionExpired(),
       age,
       timeLeft,
-      cookieCount: this.sessionData.cookies.length
+      cookieCount: this.sessionData.cookies.length,
     };
   }
 
@@ -194,7 +194,7 @@ export class TwitterCookieManager {
     const cookies = this.getCookies();
     if (!cookies) return [];
 
-    return cookies.map(cookie => ({
+    return cookies.map((cookie) => ({
       name: cookie.name,
       value: cookie.value,
       domain: cookie.domain,
@@ -202,7 +202,7 @@ export class TwitterCookieManager {
       expires: cookie.expires,
       httpOnly: cookie.httpOnly,
       secure: cookie.secure,
-      sameSite: cookie.sameSite
+      sameSite: cookie.sameSite,
     }));
   }
 
@@ -214,7 +214,9 @@ export class TwitterCookieManager {
       // Get cookies from the scraper's internal browser/client
       if (scraper && scraper.getCookies) {
         const cookies = await scraper.getCookies();
-        const userAgent = scraper.getUserAgent ? scraper.getUserAgent() : 'Mozilla/5.0 (compatible)';
+        const userAgent = scraper.getUserAgent
+          ? scraper.getUserAgent()
+          : 'Mozilla/5.0 (compatible)';
 
         if (cookies && cookies.length > 0) {
           this.storeCookies(cookies, userAgent);
@@ -232,9 +234,7 @@ export class TwitterCookieManager {
     const cookies = this.getCookies();
     if (!cookies || cookies.length === 0) return '';
 
-    return cookies
-      .map(cookie => `${cookie.name}=${cookie.value}`)
-      .join('; ');
+    return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
   }
 
   /**

@@ -33,15 +33,6 @@ export type {
   UserSession,
 } from './user';
 
-export type {
-  Tweet,
-  TwitterUser,
-  TweetMetrics,
-  SentimentAnalysis,
-} from './twitter';
+export type { Tweet, TwitterUser, TweetMetrics, SentimentAnalysis } from './twitter';
 
-export type {
-  Campaign,
-  CreateCampaignRequest,
-  UpdateCampaignRequest,
-} from './campaign';
+export type { Campaign, CreateCampaignRequest, UpdateCampaignRequest } from './campaign';

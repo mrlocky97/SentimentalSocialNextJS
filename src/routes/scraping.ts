@@ -11,9 +11,15 @@ import { TwitterRealScraperService } from '../services/twitter-scraper.service';
 
 const router = Router();
 
-// Precompilar expresiones regulares para sanitización
-const SANITIZE_REGEX = /[^a-zA-Z0-9]/g;
-const ISO_DATE_REGEX = /^(\d{4}-\d{2}-\d{2})/;
+// Precompilar expresiones regulares para sanitización y validación
+const SANITIZE_HASHTAG = /[^a-zA-Z0-9_]/g; // permite letras, números y _
+const VALID_USERNAME = /^[A-Za-z0-9_]{1,15}$/; // Twitter username rules
+const SAFE_QUERY = /[^a-zA-Z0-9_#@\s-]/g; // whitelist básica para consultas
+
+// Anti-abuso: limita concurrencia por IP para scraping costoso
+const inFlightByIp = new Map<string, number>();
+const MAX_CONCURRENT_BY_IP = 1;
+const INFLIGHT_TTL_MS = 2 * 60 * 1000; // 2 minutos
 
 // Inicializar servicios
 const sentimentManager = new TweetSentimentAnalysisManager();
@@ -35,8 +41,8 @@ function processSentimentAnalysis(tweets: any[], analyses: any[]) {
     const label = ['very_positive', 'positive'].includes(sentiment.label)
       ? 'positive'
       : ['very_negative', 'negative'].includes(sentiment.label)
-      ? 'negative'
-      : 'neutral';
+        ? 'negative'
+        : 'neutral';
 
     return {
       ...tweet,
@@ -82,6 +88,14 @@ function validateRequestParams(
     return false;
   }
 
+  if (!Number.isFinite(params.tweetsToRetrieve)) {
+    res.status(400).json({
+      success: false,
+      error: `limit/maxTweets must be a number`,
+    });
+    return false;
+  }
+
   if (params.tweetsToRetrieve < minTweets || params.tweetsToRetrieve > maxTweets) {
     res.status(400).json({
       success: false,
@@ -100,6 +114,35 @@ function validateRequestParams(
     return false;
   }
 
+  return true;
+}
+
+// Sanitizadores
+function sanitizeHashtag(input: string): string {
+  const trimmed = (input || '').trim().replace(/^#/, '');
+  return trimmed.replace(SANITIZE_HASHTAG, '').slice(0, 50);
+}
+
+function sanitizeUsername(input: string): string {
+  const val = (input || '').trim().replace(/^@/, '').slice(0, 15);
+  return val;
+}
+
+function sanitizeQuery(input: string): string {
+  const trimmed = (input || '').trim().slice(0, 120);
+  // Elimina caracteres no permitidos y colapsa espacios
+  return trimmed.replace(SAFE_QUERY, '').replace(/\s+/g, ' ');
+}
+
+function ensureNotEmpty(res: Response, value: string, field: string, example: string): boolean {
+  if (!value) {
+    res.status(400).json({
+      success: false,
+      error: `${field} cannot be empty after sanitization`,
+      example: { [field]: example },
+    });
+    return false;
+  }
   return true;
 }
 
@@ -130,9 +173,26 @@ async function handleScrapingRequest(
   } = options;
 
   try {
+    // Concurrencia por IP
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    // Cleanup de entradas expiradas
+    for (const [key, ts] of inFlightByIp.entries()) {
+      if (now - ts > INFLIGHT_TTL_MS) inFlightByIp.delete(key);
+    }
+    const currentCount = [...inFlightByIp.keys()].filter((k) => k === ip).length;
+    if (currentCount >= MAX_CONCURRENT_BY_IP) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many concurrent scraping requests from this IP. Please wait.',
+        code: 'CONCURRENCY_LIMIT',
+      });
+    }
+    inFlightByIp.set(ip, now);
+
     const params = {
       identifier: req.body[context.type] || req.body.query || req.body.username,
-      tweetsToRetrieve: req.body.limit || req.body.maxTweets || defaultTweets,
+      tweetsToRetrieve: Number(req.body.limit || req.body.maxTweets || defaultTweets),
       analyzeSentiment: req.body.analyzeSentiment !== false,
       campaignId: req.body.campaignId,
       language: req.body.language || 'en',
@@ -142,6 +202,31 @@ async function handleScrapingRequest(
     };
 
     if (!validateRequestParams(res, params, { minTweets, maxTweets })) return;
+
+    // Sanitización específica por tipo
+    let safeIdentifier = '';
+    if (context.type === 'hashtag') {
+      safeIdentifier = sanitizeHashtag(params.identifier);
+      if (!ensureNotEmpty(res, safeIdentifier, 'hashtag', 'JustDoIt')) return;
+    } else if (context.type === 'user') {
+      const uname = sanitizeUsername(params.identifier);
+      if (!VALID_USERNAME.test(uname)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid username. Use 1-15 alphanumeric or underscore characters, without @',
+          example: { username: 'nike' },
+        });
+      }
+      safeIdentifier = uname;
+    } else if (context.type === 'search') {
+      const q = sanitizeQuery(params.identifier);
+      if (!ensureNotEmpty(res, q, 'query', 'nike shoes')) return;
+      // Para evitar inyección en query del scraper, reducimos a primera palabra o hashtag
+      const hashtagMatch = q.match(/#([A-Za-z0-9_]+)/);
+      const firstWord = q.split(/\s+/)[0];
+      safeIdentifier = sanitizeHashtag(hashtagMatch ? hashtagMatch[1] : firstWord);
+      if (!ensureNotEmpty(res, safeIdentifier, 'query', 'nike')) return;
+    }
 
     const startTime = Date.now();
     const scraper = await getScraperService();
@@ -153,7 +238,16 @@ async function handleScrapingRequest(
       ...(languageFilter && { language: params.language }),
     };
 
-    const scrapingResult = await scrapingFunction(scraper, scrapingOptions);
+    // Ejecutar scraping con identificador saneado y opciones controladas
+    let scrapingResult: any;
+    if (context.type === 'hashtag') {
+      scrapingResult = await scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
+    } else if (context.type === 'user') {
+      scrapingResult = await scraper.scrapeByUser(safeIdentifier, scrapingOptions);
+    } else {
+      // Búsqueda: usamos hashtag/primer término como proxy seguro
+      scrapingResult = await scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
+    }
 
     // Procesamiento de sentimiento
     let sentimentSummary = null;
@@ -200,8 +294,7 @@ async function handleScrapingRequest(
     res.json({
       success: true,
       data: {
-        [context.type]:
-          context.type === 'hashtag' ? `#${params.identifier}` : `@${params.identifier}`,
+        [context.type]: context.type === 'hashtag' ? `#${safeIdentifier}` : `@${safeIdentifier}`,
         requested: params.tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
         totalScraped: tweetsWithSentiment.length,
@@ -225,22 +318,14 @@ async function handleScrapingRequest(
     });
   } catch (error) {
     handleScrapingError(res, error, `${context.type} scraping`);
+  } finally {
+    // Libera la marca de concurrencia del IP
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    inFlightByIp.delete(ip);
   }
 }
 
-// Unified scraping function using real scraper
-async function performScraping<T>(
-  scrapingOperation: (scraper: TwitterRealScraperService) => Promise<T>,
-  operationName: string
-): Promise<T> {
-  try {
-    const realScraper = await getScraperService();
-    const result = await scrapingOperation(realScraper);
-    return result;
-  } catch (error) {
-    throw error;
-  }
-}
+// Nota: función auxiliar de scraping unificado eliminada por no uso.
 
 /**
  * @swagger
@@ -326,7 +411,7 @@ router.post('/hashtag', async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
-    async (scraper, options) => scraper.scrapeByHashtag(req.body.hashtag, req.body),
+    async () => ({}), // ignorado, usamos la ruta segura dentro de handle
     { type: 'hashtag', identifier: req.body.hashtag, exampleValue: 'JustDoIt' },
     { languageFilter: true }
   );
@@ -388,7 +473,7 @@ router.post('/user', async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
-    async (scraper, options) => scraper.scrapeByUser(req.body.username, options),
+    async () => ({}), // ignorado, usamos la ruta segura dentro de handle
     { type: 'user', identifier: req.body.username, exampleValue: 'nike' },
     { maxTweets: 500, defaultTweets: 30 }
   );
@@ -452,7 +537,7 @@ router.post('/search', async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
-    async (scraper, options) => scraper.scrapeByHashtag(req.body.query, options),
+    async () => ({}), // ignorado, usamos la ruta segura dentro de handle
     { type: 'search', identifier: req.body.query, exampleValue: 'nike shoes' },
     { languageFilter: true }
   );

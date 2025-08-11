@@ -52,15 +52,14 @@ router.post('/evaluate', async (req: Request, res: Response) => {
       success: true,
       data: results,
       execution_time: executionTime,
-      message: 'Experimental evaluation completed successfully'
+      message: 'Experimental evaluation completed successfully',
     });
-
   } catch (error) {
     console.error('❌ Error in experimental evaluation:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to complete experimental evaluation'
+      message: 'Failed to complete experimental evaluation',
     });
   }
 });
@@ -121,15 +120,14 @@ router.post('/visualize', async (req: Request, res: Response) => {
         success: true,
         data: visualizationReport,
         charts_count: visualizationReport.charts.length,
-        message: 'Visualization report generated successfully'
+        message: 'Visualization report generated successfully',
       });
     }
-
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to generate visualization report'
+      message: 'Failed to generate visualization report',
     });
   }
 });
@@ -166,7 +164,6 @@ router.post('/visualize', async (req: Request, res: Response) => {
  */
 router.get('/compare-models', async (req: Request, res: Response) => {
   try {
-
     // Simulate model comparisons (in real scenario, this would involve actual model training)
     const models = await evaluationService.simulateModelComparisons();
 
@@ -180,7 +177,7 @@ router.get('/compare-models', async (req: Request, res: Response) => {
       `Performance improvement: ${((bestModel.metrics.accuracy - models[0].metrics.accuracy) * 100).toFixed(1)}%`,
       'Consider hybrid approach for optimal balance',
       'Expand training data for better generalization',
-      'Implement A/B testing for production validation'
+      'Implement A/B testing for production validation',
     ];
 
     res.json({
@@ -190,19 +187,22 @@ router.get('/compare-models', async (req: Request, res: Response) => {
         recommendations,
         best_model: bestModel,
         comparison_criteria: [
-          'Accuracy', 'F1-Score', 'Processing Speed',
-          'Interpretability', 'Scalability', 'Maintenance Cost'
-        ]
+          'Accuracy',
+          'F1-Score',
+          'Processing Speed',
+          'Interpretability',
+          'Scalability',
+          'Maintenance Cost',
+        ],
       },
-      message: 'Model comparison analysis completed'
+      message: 'Model comparison analysis completed',
     });
-
   } catch (error) {
     console.error('❌ Error in model comparison:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to generate model comparison'
+      message: 'Failed to generate model comparison',
     });
   }
 });
@@ -239,7 +239,6 @@ router.get('/compare-models', async (req: Request, res: Response) => {
  */
 router.get('/metrics', async (req: Request, res: Response) => {
   try {
-
     const currentModel = await evaluationService.evaluateCurrentModel();
 
     // Industry benchmarks for comparison
@@ -247,23 +246,43 @@ router.get('/metrics', async (req: Request, res: Response) => {
       basic_rule_based: { accuracy: 0.65, f1_macro: 0.62 },
       commercial_apis: { accuracy: 0.78, f1_macro: 0.75 },
       academic_research: { accuracy: 0.85, f1_macro: 0.83 },
-      state_of_the_art: { accuracy: 0.92, f1_macro: 0.90 }
+      state_of_the_art: { accuracy: 0.92, f1_macro: 0.9 },
     };
 
     // Performance relative to benchmarks
     const performance_comparison = {
       vs_basic_rule_based: {
-        accuracy_improvement: ((currentModel.metrics.accuracy - benchmarks.basic_rule_based.accuracy) * 100).toFixed(1) + '%',
-        f1_improvement: ((currentModel.metrics.f1_score.macro_avg - benchmarks.basic_rule_based.f1_macro) * 100).toFixed(1) + '%'
+        accuracy_improvement:
+          ((currentModel.metrics.accuracy - benchmarks.basic_rule_based.accuracy) * 100).toFixed(
+            1
+          ) + '%',
+        f1_improvement:
+          (
+            (currentModel.metrics.f1_score.macro_avg - benchmarks.basic_rule_based.f1_macro) *
+            100
+          ).toFixed(1) + '%',
       },
       vs_commercial_apis: {
-        accuracy_improvement: ((currentModel.metrics.accuracy - benchmarks.commercial_apis.accuracy) * 100).toFixed(1) + '%',
-        f1_improvement: ((currentModel.metrics.f1_score.macro_avg - benchmarks.commercial_apis.f1_macro) * 100).toFixed(1) + '%'
+        accuracy_improvement:
+          ((currentModel.metrics.accuracy - benchmarks.commercial_apis.accuracy) * 100).toFixed(1) +
+          '%',
+        f1_improvement:
+          (
+            (currentModel.metrics.f1_score.macro_avg - benchmarks.commercial_apis.f1_macro) *
+            100
+          ).toFixed(1) + '%',
       },
       vs_academic_research: {
-        accuracy_improvement: ((currentModel.metrics.accuracy - benchmarks.academic_research.accuracy) * 100).toFixed(1) + '%',
-        f1_improvement: ((currentModel.metrics.f1_score.macro_avg - benchmarks.academic_research.f1_macro) * 100).toFixed(1) + '%'
-      }
+        accuracy_improvement:
+          ((currentModel.metrics.accuracy - benchmarks.academic_research.accuracy) * 100).toFixed(
+            1
+          ) + '%',
+        f1_improvement:
+          (
+            (currentModel.metrics.f1_score.macro_avg - benchmarks.academic_research.f1_macro) *
+            100
+          ).toFixed(1) + '%',
+      },
     };
 
     res.json({
@@ -275,24 +294,34 @@ router.get('/metrics', async (req: Request, res: Response) => {
         statistical_tests: {
           confidence_level: '95%',
           sample_size: currentModel.metrics.samples_count,
-          cohen_kappa_interpretation: currentModel.metrics.cohen_kappa > 0.8 ? 'Almost Perfect Agreement' :
-            currentModel.metrics.cohen_kappa > 0.6 ? 'Substantial Agreement' :
-              currentModel.metrics.cohen_kappa > 0.4 ? 'Moderate Agreement' : 'Fair Agreement'
+          cohen_kappa_interpretation:
+            currentModel.metrics.cohen_kappa > 0.8
+              ? 'Almost Perfect Agreement'
+              : currentModel.metrics.cohen_kappa > 0.6
+                ? 'Substantial Agreement'
+                : currentModel.metrics.cohen_kappa > 0.4
+                  ? 'Moderate Agreement'
+                  : 'Fair Agreement',
         },
         recommendations: [
-          currentModel.metrics.accuracy > 0.85 ? 'Model performs above academic standards' : 'Consider model improvements',
-          currentModel.metrics.processing_time_ms < 100 ? 'Excellent real-time performance' : 'Optimize for better speed',
-          currentModel.metrics.cohen_kappa > 0.7 ? 'Reliable inter-rater agreement' : 'Improve consistency'
-        ]
+          currentModel.metrics.accuracy > 0.85
+            ? 'Model performs above academic standards'
+            : 'Consider model improvements',
+          currentModel.metrics.processing_time_ms < 100
+            ? 'Excellent real-time performance'
+            : 'Optimize for better speed',
+          currentModel.metrics.cohen_kappa > 0.7
+            ? 'Reliable inter-rater agreement'
+            : 'Improve consistency',
+        ],
       },
-      message: 'Detailed metrics analysis completed'
+      message: 'Detailed metrics analysis completed',
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to calculate detailed metrics'
+      message: 'Failed to calculate detailed metrics',
     });
   }
 });
@@ -333,24 +362,33 @@ router.get('/export/:format', async (req: Request, res: Response) => {
       case 'html':
         const htmlContent = visualizationService.exportChartsToHTML(visualizationReport);
         res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename="sentiment_analysis_report_${results.experiment_id}.html"`);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="sentiment_analysis_report_${results.experiment_id}.html"`
+        );
         res.send(htmlContent);
         break;
 
       case 'json':
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename="experimental_results_${results.experiment_id}.json"`);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="experimental_results_${results.experiment_id}.json"`
+        );
         res.json({
           experimental_results: results,
           visualization_report: visualizationReport,
-          export_timestamp: new Date().toISOString()
+          export_timestamp: new Date().toISOString(),
         });
         break;
 
       case 'csv':
         const csvContent = generateCSVReport(results);
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="model_metrics_${results.experiment_id}.csv"`);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="model_metrics_${results.experiment_id}.csv"`
+        );
         res.send(csvContent);
         break;
 
@@ -358,16 +396,15 @@ router.get('/export/:format', async (req: Request, res: Response) => {
         res.status(400).json({
           success: false,
           error: `Unsupported export format: ${format}`,
-          supported_formats: ['html', 'json', 'csv']
+          supported_formats: ['html', 'json', 'csv'],
         });
     }
-
   } catch (error) {
     console.error('❌ Error exporting results:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-      message: 'Failed to export results'
+      message: 'Failed to export results',
     });
   }
 });
@@ -376,10 +413,12 @@ router.get('/export/:format', async (req: Request, res: Response) => {
  * Generate CSV report from experimental results
  */
 function generateCSVReport(results: any): string {
-  let csv = 'Model,Type,Accuracy,Precision_Macro,Recall_Macro,F1_Macro,Cohen_Kappa,Processing_Time_ms\n';
+  let csv =
+    'Model,Type,Accuracy,Precision_Macro,Recall_Macro,F1_Macro,Cohen_Kappa,Processing_Time_ms\n';
 
   results.models_compared.forEach((model: any) => {
-    csv += `"${model.model_name}",` +
+    csv +=
+      `"${model.model_name}",` +
       `"${model.model_type}",` +
       `${model.metrics.accuracy.toFixed(4)},` +
       `${model.metrics.precision.macro_avg.toFixed(4)},` +

@@ -66,7 +66,7 @@ export function isValidMention(mention: string): boolean {
 export function isValidDateRange(startDate: Date | string, endDate: Date | string): boolean {
   const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
   const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
-  
+
   return start < end;
 }
 
@@ -124,8 +124,8 @@ export function isValidUsername(username: string): boolean {
  */
 export function isValidStringArray(arr: string[], validator?: (item: string) => boolean): boolean {
   if (!Array.isArray(arr) || arr.length === 0) return false;
-  
-  return arr.every(item => {
+
+  return arr.every((item) => {
     if (typeof item !== 'string' || item.trim().length === 0) return false;
     return validator ? validator(item) : true;
   });
@@ -150,11 +150,11 @@ export function sanitizeString(input: string): string {
  */
 export function validateAndSanitizeHashtags(hashtags: string[]): string[] {
   return hashtags
-    .map(tag => {
+    .map((tag) => {
       const sanitized = sanitizeString(tag);
       return sanitized.startsWith('#') ? sanitized : `#${sanitized}`;
     })
-    .filter(tag => isValidHashtag(tag));
+    .filter((tag) => isValidHashtag(tag));
 }
 
 /**
@@ -162,11 +162,11 @@ export function validateAndSanitizeHashtags(hashtags: string[]): string[] {
  */
 export function validateAndSanitizeMentions(mentions: string[]): string[] {
   return mentions
-    .map(mention => {
+    .map((mention) => {
       const sanitized = sanitizeString(mention);
       return sanitized.startsWith('@') ? sanitized : `@${sanitized}`;
     })
-    .filter(mention => isValidMention(mention));
+    .filter((mention) => isValidMention(mention));
 }
 
 /**
@@ -177,15 +177,15 @@ export function validateRequiredFields<T extends Record<string, any>>(
   requiredFields: (keyof T)[]
 ): { isValid: boolean; missingFields: string[] } {
   const missingFields: string[] = [];
-  
-  requiredFields.forEach(field => {
+
+  requiredFields.forEach((field) => {
     if (!(field in body) || body[field] === undefined || body[field] === null) {
       missingFields.push(field.toString());
     }
   });
-  
+
   return {
     isValid: missingFields.length === 0,
-    missingFields
+    missingFields,
   };
 }

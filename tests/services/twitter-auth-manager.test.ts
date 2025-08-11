@@ -20,13 +20,13 @@ describe('TwitterAuthManager - CRÍTICO', () => {
   describe('Validación de Sesión', () => {
     it('debe devolver false para sesiones no válidas por defecto', () => {
       const hasValidSession = authManager.hasValidSession();
-      
+
       expect(hasValidSession).toBe(false);
     });
 
     it('debe proporcionar información de sesión', () => {
       const sessionInfo = authManager.getSessionInfo();
-      
+
       expect(sessionInfo).toBeDefined();
       expect(sessionInfo).toHaveProperty('authenticated');
       expect(sessionInfo).toHaveProperty('cookieCount');
@@ -40,14 +40,14 @@ describe('TwitterAuthManager - CRÍTICO', () => {
       expect(() => {
         authManager.clearSession();
       }).not.toThrow();
-      
+
       expect(authManager.hasValidSession()).toBe(false);
     });
 
     it('debe manejar múltiples llamadas getInstance', () => {
       const instance1 = TwitterAuthManager.getInstance();
       const instance2 = TwitterAuthManager.getInstance();
-      
+
       expect(instance1).toBe(instance2);
       expect(instance1).toBeInstanceOf(TwitterAuthManager);
     });
@@ -57,7 +57,7 @@ describe('TwitterAuthManager - CRÍTICO', () => {
     it('debe proporcionar información consistente de sesión', () => {
       const sessionInfo1 = authManager.getSessionInfo();
       const sessionInfo2 = authManager.getSessionInfo();
-      
+
       expect(sessionInfo1.authenticated).toBe(sessionInfo2.authenticated);
       expect(sessionInfo1.cookieCount).toBe(sessionInfo2.cookieCount);
     });
@@ -65,7 +65,7 @@ describe('TwitterAuthManager - CRÍTICO', () => {
     it('debe mantener estado después de clearSession', () => {
       authManager.clearSession();
       const sessionInfo = authManager.getSessionInfo();
-      
+
       expect(sessionInfo.authenticated).toBe(false);
       expect(sessionInfo.cookieCount).toBe(0);
     });

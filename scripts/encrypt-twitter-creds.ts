@@ -12,7 +12,7 @@ import readline from 'readline';
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 function askQuestion(question: string): Promise<string> {
@@ -27,12 +27,12 @@ function askPassword(question: string): Promise<string> {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    
+
     let password = '';
-    
+
     process.stdin.on('data', (key) => {
       const char = key.toString();
-      
+
       if (char === '\n' || char === '\r' || char === '\u0004') {
         // Enter or Ctrl+D
         process.stdin.setRawMode(false);
@@ -77,9 +77,9 @@ async function main() {
     console.log('\nMaster password options:');
     console.log('1. Generate a secure master password');
     console.log('2. Enter your own master password');
-    
+
     const choice = await askQuestion('Choose option (1 or 2): ');
-    
+
     let masterPassword: string;
 
     if (choice === '1') {
@@ -88,7 +88,7 @@ async function main() {
       console.log('📋 SAVE THIS SECURELY - YOU WILL NEED IT TO DECRYPT:');
       console.log(`   ${masterPassword}`);
       console.log('\n⚠️  Store this password in your password manager or secure location!');
-      
+
       const confirm = await askQuestion('\nHave you saved the master password? (yes/no): ');
       if (confirm.toLowerCase() !== 'yes') {
         console.log('❌ Please save the master password before continuing');
@@ -96,11 +96,11 @@ async function main() {
       }
     } else if (choice === '2') {
       masterPassword = await askPassword('Enter master password: ');
-      
+
       const validation = credentialsEncryption.validateMasterPassword(masterPassword);
       if (!validation.valid) {
         console.log('\n❌ Master password validation failed:');
-        validation.errors.forEach(error => console.log(`   - ${error}`));
+        validation.errors.forEach((error) => console.log(`   - ${error}`));
         process.exit(1);
       }
     } else {
@@ -122,12 +122,12 @@ async function main() {
     fs.writeFileSync(outputPath, JSON.stringify(encrypted, null, 2));
 
     console.log(`✅ Credentials encrypted and saved to: ${outputPath}`);
-    
+
     // Update .env.example
     const envExamplePath = path.join(process.cwd(), '.env.example');
     if (fs.existsSync(envExamplePath)) {
       let envContent = fs.readFileSync(envExamplePath, 'utf8');
-      
+
       if (!envContent.includes('TWITTER_MASTER_PASSWORD')) {
         envContent += '\n# Twitter Credentials Encryption (Secure Method)\n';
         envContent += 'TWITTER_MASTER_PASSWORD=your-master-password-here\n';
@@ -141,7 +141,6 @@ async function main() {
     console.log('2. Remove TWITTER_EMAIL, TWITTER_USERNAME, TWITTER_PASSWORD from .env');
     console.log('3. Add encrypted-twitter-creds.json to .gitignore if not already there');
     console.log('\n🔒 Your Twitter credentials are now encrypted and secure!');
-
   } catch (error) {
     console.error('❌ Error:', error);
     process.exit(1);

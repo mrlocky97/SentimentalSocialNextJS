@@ -19,8 +19,7 @@ export * from './metrics.utils';
  * Generate unique ID (you might want to use UUID library)
  */
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15);
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 /**
@@ -54,7 +53,7 @@ export function generateSlug(text: string): string {
 export function extractHashtags(text: string): string[] {
   const hashtagRegex = /#[a-zA-Z0-9_]+/g;
   const matches = text.match(hashtagRegex);
-  return matches ? matches.map(tag => tag.substring(1)) : [];
+  return matches ? matches.map((tag) => tag.substring(1)) : [];
 }
 
 /**
@@ -63,7 +62,7 @@ export function extractHashtags(text: string): string[] {
 export function extractMentions(text: string): string[] {
   const mentionRegex = /@[a-zA-Z0-9_]+/g;
   const matches = text.match(mentionRegex);
-  return matches ? matches.map(mention => mention.substring(1)) : [];
+  return matches ? matches.map((mention) => mention.substring(1)) : [];
 }
 
 /**
@@ -82,7 +81,7 @@ export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
 /**
@@ -113,7 +112,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 }
@@ -124,7 +123,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
 export function deepClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') return obj;
   if (obj instanceof Date) return new Date(obj.getTime()) as unknown as T;
-  if (obj instanceof Array) return obj.map(item => deepClone(item)) as unknown as T;
+  if (obj instanceof Array) return obj.map((item) => deepClone(item)) as unknown as T;
   if (typeof obj === 'object') {
     const clonedObj = {} as T;
     for (const key in obj) {

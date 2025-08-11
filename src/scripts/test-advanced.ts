@@ -3,12 +3,12 @@
  * Tests optimization and predictive analytics
  */
 
-import { 
+import {
   initializeReactiveServices,
   autoOptimizationSystem,
   predictiveAnalyticsSystem,
   reactiveOrchestrator,
-  defaultReactiveConfig
+  defaultReactiveConfig,
 } from '../services/reactive';
 
 import { firstValueFrom, timeout } from 'rxjs';
@@ -24,21 +24,25 @@ async function testAdvancedServices() {
       enableCaching: false, // Disable for speed
       enableMetrics: false,
       maxConcurrentRequests: 1,
-      retryAttempts: 1
+      retryAttempts: 1,
     });
 
     // Test 1: Auto-Optimization System
     console.log('⚡ Testing Auto-Optimization System...');
     try {
       const optimizationResult = await firstValueFrom(
-        autoOptimizationSystem.scheduleOptimization(
-          'hashtag_optimization',
-          'advanced-test-123',
-          { hashtags: ['#test'], content: 'Test content' },
-          'low'
-        ).pipe(timeout(2000))
+        autoOptimizationSystem
+          .scheduleOptimization(
+            'hashtag_optimization',
+            'advanced-test-123',
+            { hashtags: ['#test'], content: 'Test content' },
+            'low'
+          )
+          .pipe(timeout(2000))
       );
-      console.log(`   ✅ Auto-optimization: ${optimizationResult.metrics.improvement.toFixed(1)}% improvement`);
+      console.log(
+        `   ✅ Auto-optimization: ${optimizationResult.metrics.improvement.toFixed(1)}% improvement`
+      );
     } catch (error) {
       console.log('   ✅ Auto-optimization: Simulation completed');
     }
@@ -47,14 +51,18 @@ async function testAdvancedServices() {
     console.log('🔮 Testing Predictive Analytics...');
     try {
       const prediction = await firstValueFrom(
-        predictiveAnalyticsSystem.predict(
-          'engagement',
-          'advanced-test-456',
-          { content: 'Advanced test content', hashtags: ['#AI'] },
-          '1h'
-        ).pipe(timeout(2000))
+        predictiveAnalyticsSystem
+          .predict(
+            'engagement',
+            'advanced-test-456',
+            { content: 'Advanced test content', hashtags: ['#AI'] },
+            '1h'
+          )
+          .pipe(timeout(2000))
       );
-      console.log(`   ✅ Predictive Analytics: ${(prediction.confidence * 100).toFixed(1)}% confidence`);
+      console.log(
+        `   ✅ Predictive Analytics: ${(prediction.confidence * 100).toFixed(1)}% confidence`
+      );
     } catch (error) {
       console.log('   ✅ Predictive Analytics: Simulation completed');
     }
@@ -65,7 +73,9 @@ async function testAdvancedServices() {
       const orchestratorStats = await firstValueFrom(
         reactiveOrchestrator.getStats().pipe(timeout(1000))
       );
-      console.log(`   ✅ Orchestrator: ${orchestratorStats.servicesOnline}/${orchestratorStats.totalServices} services online`);
+      console.log(
+        `   ✅ Orchestrator: ${orchestratorStats.servicesOnline}/${orchestratorStats.totalServices} services online`
+      );
     } catch (error) {
       console.log('   ✅ Orchestrator: Status retrieved');
     }
@@ -74,18 +84,16 @@ async function testAdvancedServices() {
     console.log('🎯 Testing Integration Workflow...');
     try {
       const workflow = await firstValueFrom(
-        reactiveOrchestrator.createWorkflow(
-          'Advanced Test Workflow',
-          'Testing advanced integration',
-          [
+        reactiveOrchestrator
+          .createWorkflow('Advanced Test Workflow', 'Testing advanced integration', [
             {
               name: 'Advanced Test Step',
               service: 'optimization',
               action: 'analyze',
-              inputs: { type: 'performance_test' }
-            }
-          ]
-        ).pipe(timeout(1500))
+              inputs: { type: 'performance_test' },
+            },
+          ])
+          .pipe(timeout(1500))
       );
       console.log(`   ✅ Integration Workflow: ${workflow.id.substring(0, 8)}... created`);
     } catch (error) {
@@ -98,8 +106,9 @@ async function testAdvancedServices() {
     console.log('\n🎉 Advanced Services Test Completed!');
     console.log('🔮 AI/ML services operational');
     console.log(`⏱️  Execution time: ${executionTime.toFixed(2)} seconds`);
-    console.log(`🏆 ${executionTime < 4 ? '⚡ ULTRA FAST' : executionTime < 6 ? '🚀 FAST' : '✅ GOOD'} performance!`);
-
+    console.log(
+      `🏆 ${executionTime < 4 ? '⚡ ULTRA FAST' : executionTime < 6 ? '🚀 FAST' : '✅ GOOD'} performance!`
+    );
   } catch (error) {
     const endTime = Date.now();
     const executionTime = (endTime - startTime) / 1000;

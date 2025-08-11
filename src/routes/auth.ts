@@ -158,99 +158,99 @@ const authService = new AuthService();
  *                     code: "USER_ALREADY_EXISTS"
  */
 router.post('/register', async (req, res) => {
-    try {
-        // Validate request body
-        const { email, password, displayName, username, role }: RegisterRequest = req.body;
+  try {
+    // Validate request body
+    const { email, password, displayName, username, role }: RegisterRequest = req.body;
 
-        if (!email || !password || !displayName || !username) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Missing required fields',
-                    code: 'MISSING_REQUIRED_FIELDS',
-                    details: {
-                        required: ['email', 'password', 'displayName', 'username'],
-                        provided: Object.keys(req.body),
-                    },
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        // Validate email format
-        if (!authService.validateEmail(email)) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Invalid email format',
-                    code: 'INVALID_EMAIL_FORMAT',
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        // Validate password strength
-        const passwordValidation = authService.validatePassword(password);
-        if (!passwordValidation.isValid) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Password does not meet requirements',
-                    code: 'WEAK_PASSWORD',
-                    details: passwordValidation.errors,
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        // Register user
-        const result = await authService.register({
-            email,
-            password,
-            displayName,
-            username,
-            role,
-        });
-
-        res.status(201).json({
-            success: true,
-            data: result,
-            message: 'User registered successfully',
-        });
-    } catch (error) {
-        if (error instanceof Error) {
-            if (error.message === 'User with this email already exists') {
-                return res.status(409).json({
-                    success: false,
-                    error: {
-                        message: error.message,
-                        code: 'USER_ALREADY_EXISTS',
-                        timestamp: new Date().toISOString(),
-                    },
-                });
-            }
-
-            if (error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-                return res.status(409).json({
-                    success: false,
-                    error: {
-                        message: 'Email or username already exists',
-                        code: 'EMAIL_OR_USERNAME_EXISTS',
-                        timestamp: new Date().toISOString(),
-                    },
-                });
-            }
-        }
-
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Internal server error during registration',
-                code: 'REGISTRATION_ERROR',
-                timestamp: new Date().toISOString(),
-            },
-        });
+    if (!email || !password || !displayName || !username) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Missing required fields',
+          code: 'MISSING_REQUIRED_FIELDS',
+          details: {
+            required: ['email', 'password', 'displayName', 'username'],
+            provided: Object.keys(req.body),
+          },
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    // Validate email format
+    if (!authService.validateEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid email format',
+          code: 'INVALID_EMAIL_FORMAT',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = authService.validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Password does not meet requirements',
+          code: 'WEAK_PASSWORD',
+          details: passwordValidation.errors,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Register user
+    const result = await authService.register({
+      email,
+      password,
+      displayName,
+      username,
+      role,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: 'User registered successfully',
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'User with this email already exists') {
+        return res.status(409).json({
+          success: false,
+          error: {
+            message: error.message,
+            code: 'USER_ALREADY_EXISTS',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      if (error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+        return res.status(409).json({
+          success: false,
+          error: {
+            message: 'Email or username already exists',
+            code: 'EMAIL_OR_USERNAME_EXISTS',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Internal server error during registration',
+        code: 'REGISTRATION_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -368,67 +368,67 @@ router.post('/register', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/login', async (req, res) => {
-    try {
-        // Validate request body
-        const { email, password, rememberMe }: LoginRequest = req.body;
+  try {
+    // Validate request body
+    const { email, password, rememberMe }: LoginRequest = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Email and password are required',
-                    code: 'MISSING_CREDENTIALS',
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        // Attempt login
-        const result = await authService.login({
-            email,
-            password,
-            rememberMe,
-        });
-
-        res.json({
-            success: true,
-            data: result,
-            message: 'Login successful',
-        });
-    } catch (error) {
-        if (error instanceof Error) {
-            if (error.message === 'Invalid email or password') {
-                return res.status(401).json({
-                    success: false,
-                    error: {
-                        message: error.message,
-                        code: 'INVALID_CREDENTIALS',
-                        timestamp: new Date().toISOString(),
-                    },
-                });
-            }
-
-            if (error.message === 'Account is deactivated. Please contact support.') {
-                return res.status(401).json({
-                    success: false,
-                    error: {
-                        message: error.message,
-                        code: 'ACCOUNT_DEACTIVATED',
-                        timestamp: new Date().toISOString(),
-                    },
-                });
-            }
-        }
-
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Internal server error during login',
-                code: 'LOGIN_ERROR',
-                timestamp: new Date().toISOString(),
-            },
-        });
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Email and password are required',
+          code: 'MISSING_CREDENTIALS',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    // Attempt login
+    const result = await authService.login({
+      email,
+      password,
+      rememberMe,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Login successful',
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Invalid email or password') {
+        return res.status(401).json({
+          success: false,
+          error: {
+            message: error.message,
+            code: 'INVALID_CREDENTIALS',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      if (error.message === 'Account is deactivated. Please contact support.') {
+        return res.status(401).json({
+          success: false,
+          error: {
+            message: error.message,
+            code: 'ACCOUNT_DEACTIVATED',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Internal server error during login',
+        code: 'LOGIN_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -496,39 +496,39 @@ router.post('/login', async (req, res) => {
  *                     code: "INVALID_REFRESH_TOKEN"
  */
 router.post('/refresh', async (req, res) => {
-    try {
-        const { refreshToken } = req.body;
+  try {
+    const { refreshToken } = req.body;
 
-        if (!refreshToken) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Refresh token is required',
-                    code: 'MISSING_REFRESH_TOKEN',
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        const result = await authService.refreshToken(refreshToken);
-
-        res.json({
-            success: true,
-            data: result,
-            message: 'Token refreshed successfully',
-        });
-    } catch (error) {
-        console.error('Token refresh error:', error);
-
-        res.status(401).json({
-            success: false,
-            error: {
-                message: 'Invalid or expired refresh token',
-                code: 'INVALID_REFRESH_TOKEN',
-                timestamp: new Date().toISOString(),
-            },
-        });
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Refresh token is required',
+          code: 'MISSING_REFRESH_TOKEN',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    const result = await authService.refreshToken(refreshToken);
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Token refreshed successfully',
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+
+    res.status(401).json({
+      success: false,
+      error: {
+        message: 'Invalid or expired refresh token',
+        code: 'INVALID_REFRESH_TOKEN',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -588,54 +588,58 @@ router.post('/refresh', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
-    try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        const { refreshToken, logoutAllDevices } = req.body;
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    const { refreshToken, logoutAllDevices } = req.body;
 
-        if (token) {
-            // Decode token to get expiration
-            const decoded = jwt.decode(token) as any;
-            const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 60 * 60 * 1000);
-            
-            // Add current token to blacklist
-            tokenBlacklistService.blacklistToken(token, req.user!.id, expiresAt);
-        }
+    if (token) {
+      // Decode token to get expiration
+      const decoded = jwt.decode(token) as any;
+      const expiresAt = decoded?.exp
+        ? new Date(decoded.exp * 1000)
+        : new Date(Date.now() + 60 * 60 * 1000);
 
-        if (refreshToken) {
-            // Decode refresh token to get expiration
-            const decodedRefresh = jwt.decode(refreshToken) as any;
-            const refreshExpiresAt = decodedRefresh?.exp ? new Date(decodedRefresh.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            
-            // Add refresh token to blacklist
-            tokenBlacklistService.blacklistToken(refreshToken, req.user!.id, refreshExpiresAt);
-        }
-
-        if (logoutAllDevices) {
-            // In a complete implementation, you'd blacklist all user tokens
-            tokenBlacklistService.blacklistAllUserTokens(req.user!.id);
-        }
-
-        res.json({
-            success: true,
-            data: {
-                loggedOutAt: new Date().toISOString(),
-                tokensInvalidated: logoutAllDevices ? 'all' : (refreshToken ? 2 : 1),
-            },
-            message: 'Logout successful',
-        });
-    } catch (error) {
-        console.error('Logout error:', error);
-
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Error during logout',
-                code: 'LOGOUT_ERROR',
-                timestamp: new Date().toISOString(),
-            },
-        });
+      // Add current token to blacklist
+      tokenBlacklistService.blacklistToken(token, req.user!.id, expiresAt);
     }
+
+    if (refreshToken) {
+      // Decode refresh token to get expiration
+      const decodedRefresh = jwt.decode(refreshToken) as any;
+      const refreshExpiresAt = decodedRefresh?.exp
+        ? new Date(decodedRefresh.exp * 1000)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      // Add refresh token to blacklist
+      tokenBlacklistService.blacklistToken(refreshToken, req.user!.id, refreshExpiresAt);
+    }
+
+    if (logoutAllDevices) {
+      // In a complete implementation, you'd blacklist all user tokens
+      tokenBlacklistService.blacklistAllUserTokens(req.user!.id);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        loggedOutAt: new Date().toISOString(),
+        tokensInvalidated: logoutAllDevices ? 'all' : refreshToken ? 2 : 1,
+      },
+      message: 'Logout successful',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Error during logout',
+        code: 'LOGOUT_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -704,7 +708,7 @@ router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
  *                       retryAfter: 300
  */
 router.post('/forgot-password', (req, res) => {
-    res.json({ message: 'Forgot password endpoint - not implemented yet' });
+  res.json({ message: 'Forgot password endpoint - not implemented yet' });
 });
 
 /**
@@ -784,7 +788,7 @@ router.post('/forgot-password', (req, res) => {
  *                     code: "PASSWORD_MISMATCH"
  */
 router.post('/reset-password', (req, res) => {
-    res.json({ message: 'Reset password endpoint - not implemented yet' });
+  res.json({ message: 'Reset password endpoint - not implemented yet' });
 });
 
 /**
@@ -866,7 +870,7 @@ router.post('/reset-password', (req, res) => {
  *                     code: "INVALID_CURRENT_PASSWORD"
  */
 router.post('/change-password', (req, res) => {
-    res.json({ message: 'Change password endpoint - not implemented yet' });
+  res.json({ message: 'Change password endpoint - not implemented yet' });
 });
 
 /**
@@ -936,44 +940,44 @@ router.post('/change-password', (req, res) => {
  *                     code: "INVALID_ACCESS_TOKEN"
  */
 router.post('/verify-token', authenticateToken, (req: AuthenticatedRequest, res) => {
-    try {
-        if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                error: {
-                    message: 'Invalid access token',
-                    code: 'INVALID_ACCESS_TOKEN',
-                    timestamp: new Date().toISOString(),
-                },
-            });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                valid: true,
-                user: req.user,
-                tokenInfo: {
-                    issuedAt: new Date().toISOString(),
-                    // In a real implementation, you would get this from the JWT payload
-                    expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-                    remainingTime: 3600, // 1 hour in seconds
-                },
-            },
-            message: 'Token is valid',
-        });
-    } catch (error) {
-        console.error('Token verification error:', error);
-
-        res.status(401).json({
-            success: false,
-            error: {
-                message: 'Invalid or expired access token',
-                code: 'INVALID_ACCESS_TOKEN',
-                timestamp: new Date().toISOString(),
-            },
-        });
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          message: 'Invalid access token',
+          code: 'INVALID_ACCESS_TOKEN',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    res.json({
+      success: true,
+      data: {
+        valid: true,
+        user: req.user,
+        tokenInfo: {
+          issuedAt: new Date().toISOString(),
+          // In a real implementation, you would get this from the JWT payload
+          expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+          remainingTime: 3600, // 1 hour in seconds
+        },
+      },
+      message: 'Token is valid',
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+
+    res.status(401).json({
+      success: false,
+      error: {
+        message: 'Invalid or expired access token',
+        code: 'INVALID_ACCESS_TOKEN',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 export default router;

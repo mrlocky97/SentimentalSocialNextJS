@@ -3,8 +3,8 @@
  * Provides performance metrics and system monitoring
  */
 
-import { appCache } from '../cache';
 import os from 'os';
+import { appCache } from '../cache';
 
 export interface SystemMetrics {
   uptime: number;
@@ -61,7 +61,7 @@ export class MetricsService {
   recordRequest(duration: number, success: boolean): void {
     this.requestCounter++;
     this.totalResponseTime += duration;
-    
+
     if (success) {
       this.successCounter++;
     } else {
@@ -73,7 +73,6 @@ export class MetricsService {
    * Get current system metrics
    */
   getSystemMetrics(): SystemMetrics {
-    const memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
@@ -94,7 +93,8 @@ export class MetricsService {
         total: this.requestCounter,
         successful: this.successCounter,
         failed: this.failureCounter,
-        averageResponseTime: this.requestCounter > 0 ? this.totalResponseTime / this.requestCounter : 0,
+        averageResponseTime:
+          this.requestCounter > 0 ? this.totalResponseTime / this.requestCounter : 0,
       },
     };
   }
@@ -104,7 +104,7 @@ export class MetricsService {
    */
   getEndpointMetrics(): EndpointMetrics[] {
     const metrics: EndpointMetrics[] = [];
-    
+
     // This would normally iterate through stored metrics
     // For now, we'll return a placeholder
     return metrics;
@@ -116,7 +116,7 @@ export class MetricsService {
   getCacheHitRatio(): number {
     const stats = appCache.getStats();
     const totalRequests = stats.totalItems + stats.expiredItems;
-    
+
     return totalRequests > 0 ? (stats.activeItems / totalRequests) * 100 : 0;
   }
 
@@ -153,10 +153,9 @@ export class MetricsService {
     }
 
     // Check error rate
-    const errorRate = metrics.requests.total > 0 
-      ? (metrics.requests.failed / metrics.requests.total) * 100 
-      : 0;
-    
+    const errorRate =
+      metrics.requests.total > 0 ? (metrics.requests.failed / metrics.requests.total) * 100 : 0;
+
     if (errorRate > 10) {
       issues.push('High error rate (>10%)');
       score -= 20;
@@ -215,9 +214,8 @@ export class MetricsService {
       recommendations.push('Run cache cleanup to free memory');
     }
 
-    const status: 'healthy' | 'warning' | 'critical' = 
-      health.score >= 80 ? 'healthy' : 
-      health.score >= 60 ? 'warning' : 'critical';
+    const status: 'healthy' | 'warning' | 'critical' =
+      health.score >= 80 ? 'healthy' : health.score >= 60 ? 'warning' : 'critical';
 
     return {
       status,
@@ -236,7 +234,7 @@ export class MetricsService {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
+
     if (days > 0) {
       return `${days}d ${hours}h ${minutes}m`;
     } else if (hours > 0) {

@@ -93,61 +93,61 @@ const userRepository = new MongoUserRepository();
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
-    try {
-        const { page = 1, limit = 20, role, organizationId, isActive } = req.query;
+  try {
+    const { page = 1, limit = 20, role, organizationId, isActive } = req.query;
 
-        // Build filter object with proper typing
-        interface UserFilter {
-            role?: UserRole;
-            organizationId?: string;
-            isActive?: boolean;
-        }
-
-        const filter: UserFilter = {};
-        if (role) filter.role = role as UserRole;
-        if (organizationId) filter.organizationId = organizationId as string;
-        if (isActive !== undefined) filter.isActive = isActive === 'true';
-
-        // Convert pagination params
-        const pageNum = parseInt(page as string);
-        const limitNum = parseInt(limit as string);
-        const offset = (pageNum - 1) * limitNum;
-
-        // Get users with pagination
-        const users = await userRepository.findMany(filter, {
-            offset,
-            limit: limitNum,
-            sortBy: 'createdAt',
-            sortOrder: 'desc'
-        });
-
-        // Get total count for pagination
-        const total = await userRepository.count(filter);
-        const totalPages = Math.ceil(total / limitNum);
-
-        res.json({
-            success: true,
-            data: users,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                totalPages,
-                hasNext: pageNum < totalPages,
-                hasPrev: pageNum > 1
-            }
-        });
-    } catch (error: unknown) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Failed to fetch users',
-                code: 'FETCH_USERS_ERROR',
-                timestamp: new Date().toISOString()
-            }
-        });
+    // Build filter object with proper typing
+    interface UserFilter {
+      role?: UserRole;
+      organizationId?: string;
+      isActive?: boolean;
     }
+
+    const filter: UserFilter = {};
+    if (role) filter.role = role as UserRole;
+    if (organizationId) filter.organizationId = organizationId as string;
+    if (isActive !== undefined) filter.isActive = isActive === 'true';
+
+    // Convert pagination params
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Get users with pagination
+    const users = await userRepository.findMany(filter, {
+      offset,
+      limit: limitNum,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+
+    // Get total count for pagination
+    const total = await userRepository.count(filter);
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      success: true,
+      data: users,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+    });
+  } catch (error: unknown) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to fetch users',
+        code: 'FETCH_USERS_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -247,56 +247,56 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const userData: CreateUserRequest = req.body;
+  try {
+    const userData: CreateUserRequest = req.body;
 
-        // Validate required fields
-        if (!userData.email || !userData.password || !userData.displayName || !userData.username) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Missing required fields',
-                    code: 'MISSING_REQUIRED_FIELDS',
-                    details: {
-                        required: ['email', 'password', 'displayName', 'username'],
-                        provided: Object.keys(req.body)
-                    },
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        // Create user
-        const newUser = await userRepository.create(userData);
-
-        res.status(201).json({
-            success: true,
-            data: newUser,
-            message: 'User created successfully'
-        });
-    } catch (error: unknown) {
-        console.error('Error creating user:', error);
-
-        if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-            return res.status(409).json({
-                success: false,
-                error: {
-                    message: 'Email or username already exists',
-                    code: 'EMAIL_OR_USERNAME_EXISTS',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Failed to create user',
-                code: 'CREATE_USER_ERROR',
-                timestamp: new Date().toISOString()
-            }
-        });
+    // Validate required fields
+    if (!userData.email || !userData.password || !userData.displayName || !userData.username) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Missing required fields',
+          code: 'MISSING_REQUIRED_FIELDS',
+          details: {
+            required: ['email', 'password', 'displayName', 'username'],
+            provided: Object.keys(req.body),
+          },
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    // Create user
+    const newUser = await userRepository.create(userData);
+
+    res.status(201).json({
+      success: true,
+      data: newUser,
+      message: 'User created successfully',
+    });
+  } catch (error: unknown) {
+    console.error('Error creating user:', error);
+
+    if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+      return res.status(409).json({
+        success: false,
+        error: {
+          message: 'Email or username already exists',
+          code: 'EMAIL_OR_USERNAME_EXISTS',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to create user',
+        code: 'CREATE_USER_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -343,49 +343,49 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        // Validate MongoDB ObjectId format (basic validation)
-        if (!id || id.length !== 24) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Invalid user ID format',
-                    code: 'INVALID_USER_ID',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        const user = await userRepository.findById(id);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: 'User not found',
-                    code: 'USER_NOT_FOUND',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        res.json({
-            success: true,
-            data: user
-        });
-    } catch (error: unknown) {
-        console.error('Error fetching user:', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Failed to fetch user',
-                code: 'FETCH_USER_ERROR',
-                timestamp: new Date().toISOString()
-            }
-        });
+    // Validate MongoDB ObjectId format (basic validation)
+    if (!id || id.length !== 24) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid user ID format',
+          code: 'INVALID_USER_ID',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    const user = await userRepository.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error: unknown) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to fetch user',
+        code: 'FETCH_USER_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -468,69 +468,69 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updateData: UpdateUserRequest = req.body;
+  try {
+    const { id } = req.params;
+    const updateData: UpdateUserRequest = req.body;
 
-        // Validate MongoDB ObjectId format
-        if (!id || id.length !== 24) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Invalid user ID format',
-                    code: 'INVALID_USER_ID',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        // Remove password from update data (should use separate endpoint for password changes)
-        if ('password' in updateData) {
-            delete updateData.password;
-        }
-
-        // Update user
-        const updatedUser = await userRepository.update(id, updateData);
-
-        if (!updatedUser) {
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: 'User not found',
-                    code: 'USER_NOT_FOUND',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        res.json({
-            success: true,
-            data: updatedUser,
-            message: 'User updated successfully'
-        });
-    } catch (error: unknown) {
-        console.error('Error updating user:', error);
-
-        if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-            return res.status(409).json({
-                success: false,
-                error: {
-                    message: 'Email or username already exists',
-                    code: 'EMAIL_OR_USERNAME_EXISTS',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Failed to update user',
-                code: 'UPDATE_USER_ERROR',
-                timestamp: new Date().toISOString()
-            }
-        });
+    // Validate MongoDB ObjectId format
+    if (!id || id.length !== 24) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid user ID format',
+          code: 'INVALID_USER_ID',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    // Remove password from update data (should use separate endpoint for password changes)
+    if ('password' in updateData) {
+      delete updateData.password;
+    }
+
+    // Update user
+    const updatedUser = await userRepository.update(id, updateData);
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updatedUser,
+      message: 'User updated successfully',
+    });
+  } catch (error: unknown) {
+    console.error('Error updating user:', error);
+
+    if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+      return res.status(409).json({
+        success: false,
+        error: {
+          message: 'Email or username already exists',
+          code: 'EMAIL_OR_USERNAME_EXISTS',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to update user',
+        code: 'UPDATE_USER_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 /**
@@ -583,66 +583,66 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
  *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        // Validate MongoDB ObjectId format
-        if (!id || id.length !== 24) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    message: 'Invalid user ID format',
-                    code: 'INVALID_USER_ID',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        // Check if user exists before deletion
-        const existingUser = await userRepository.findById(id);
-        if (!existingUser) {
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: 'User not found',
-                    code: 'USER_NOT_FOUND',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        // Perform soft delete (deactivate user) instead of hard delete
-        const deactivatedUser = await userRepository.update(id, {
-            isActive: false
-        });
-
-        if (!deactivatedUser) {
-            return res.status(500).json({
-                success: false,
-                error: {
-                    message: 'Failed to deactivate user',
-                    code: 'DEACTIVATE_USER_ERROR',
-                    timestamp: new Date().toISOString()
-                }
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'User deactivated successfully',
-            data: { id, isActive: false }
-        });
-    } catch (error: unknown) {
-        console.error('Error deleting user:', error);
-        res.status(500).json({
-            success: false,
-            error: {
-                message: 'Failed to delete user',
-                code: 'DELETE_USER_ERROR',
-                timestamp: new Date().toISOString()
-            }
-        });
+    // Validate MongoDB ObjectId format
+    if (!id || id.length !== 24) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid user ID format',
+          code: 'INVALID_USER_ID',
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
+
+    // Check if user exists before deletion
+    const existingUser = await userRepository.findById(id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Perform soft delete (deactivate user) instead of hard delete
+    const deactivatedUser = await userRepository.update(id, {
+      isActive: false,
+    });
+
+    if (!deactivatedUser) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          message: 'Failed to deactivate user',
+          code: 'DEACTIVATE_USER_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User deactivated successfully',
+      data: { id, isActive: false },
+    });
+  } catch (error: unknown) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to delete user',
+        code: 'DELETE_USER_ERROR',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 });
 
 export default router;

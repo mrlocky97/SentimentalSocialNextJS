@@ -10,7 +10,6 @@ import { resolve } from 'path';
 const envPath = resolve(process.cwd(), '.env.local');
 config({ path: envPath });
 
-
 export const env = {
   // Database
   MONGODB_URI: process.env.MONGODB_URI,

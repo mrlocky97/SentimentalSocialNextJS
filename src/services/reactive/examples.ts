@@ -3,7 +3,7 @@
 //  * Demostración práctica de todas las funcionalidades implementadas
 //  */
 
-// import { 
+// import {
 //   initializeReactiveServices,
 //   reactiveTwitterScraper,
 //   reactiveSentimentAnalyzer,
@@ -22,7 +22,7 @@
 //  */
 // export function ejemploInicializacion() {
 //   console.log('🚀 === EJEMPLO 1: INICIALIZACIÓN ===');
-  
+
 //   // Configuración personalizada
 //   const config = {
 //     ...defaultReactiveConfig,
@@ -30,10 +30,10 @@
 //     cacheTimeout: 600000, // 10 minutos
 //     retryAttempts: 5
 //   };
-  
+
 //   // Inicializar servicios
 //   initializeReactiveServices(config);
-  
+
 //   // Mostrar estado del sistema
 //   getSystemStatus().then(status => {
 //     console.log('📊 Estado del Sistema:', status);
@@ -45,14 +45,14 @@
 //  */
 // export function ejemploTwitterScraping() {
 //   console.log('🐦 === EJEMPLO 2: TWITTER SCRAPING REACTIVO ===');
-  
+
 //   // Scraping con prioridad alta
 //   const hashtags = ['#AI', '#MachineLearning', '#Tech'];
-  
+
 //   reactiveTwitterScraper.batchScrape(hashtags, {}, 'high').subscribe({
 //     next: (tweets) => {
 //       console.log(`✅ Scraped ${tweets.length} tweets para hashtags: ${hashtags.join(', ')}`);
-      
+
 //       // Mostrar estadísticas del scraper
 //       reactiveTwitterScraper.getStats().subscribe(stats => {
 //         console.log('📈 Estadísticas del Scraper:');
@@ -73,7 +73,7 @@
 //  */
 // export function ejemploAnalisisSentimientos() {
 //   console.log('💭 === EJEMPLO 3: ANÁLISIS DE SENTIMIENTOS REACTIVO ===');
-  
+
 //   // Tweets de ejemplo para análisis
 //   const tweetsMuestra = [
 //     { id: '1', text: '¡Excelente producto! Muy recomendado 👍', user: 'user1', created_at: new Date().toISOString(), retweet_count: 5, favorite_count: 10 },
@@ -82,11 +82,11 @@
 //     { id: '4', text: '¡Increíble innovación! El futuro es ahora 🚀', user: 'user4', created_at: new Date().toISOString(), retweet_count: 15, favorite_count: 30 },
 //     { id: '5', text: 'Muy malo, no lo recomiendo a nadie', user: 'user5', created_at: new Date().toISOString(), retweet_count: 0, favorite_count: 0 }
 //   ];
-  
+
 //   reactiveSentimentAnalyzer.analyzeTweetsBatch(tweetsMuestra).subscribe({
 //     next: (resultados) => {
 //       console.log(`✅ Analizados ${resultados.length} tweets:`);
-      
+
 //       resultados.forEach((resultado, index) => {
 //         const tweet = tweetsMuestra[index];
 //         console.log(`   Tweet "${tweet.text.substring(0, 30)}..."`);
@@ -94,7 +94,7 @@
 //         console.log(`   Score: ${resultado.score || 0}`);
 //         console.log('   ---');
 //       });
-      
+
 //       // Mostrar estadísticas del analizador
 //       reactiveSentimentAnalyzer.getStats().subscribe(stats => {
 //         console.log('📈 Estadísticas del Analizador:');
@@ -115,7 +115,7 @@
 //  */
 // export function ejemploNotificaciones() {
 //   console.log('🔔 === EJEMPLO 4: SISTEMA DE NOTIFICACIONES ===');
-  
+
 //   // Configurar canales de notificación
 //   notificationSystem.configureChannels({
 //     console: { enabled: true, level: 'info' },
@@ -123,7 +123,7 @@
 //     webhook: { enabled: false }, // Deshabilitado para demo
 //     email: { enabled: false }    // Deshabilitado para demo
 //   });
-  
+
 //   // Enviar diferentes tipos de notificaciones
 //   notificationSystem.notify({
 //     type: 'info',
@@ -131,19 +131,19 @@
 //     message: 'El sistema de servicios reactivos está funcionando correctamente',
 //     priority: 'medium'
 //   });
-  
+
 //   notificationSystem.sendSuccess(
 //     'Análisis Completado',
 //     'El análisis de sentimientos se completó exitosamente',
 //     { processed: 100, positive: 60, negative: 25, neutral: 15 }
 //   );
-  
+
 //   notificationSystem.sendWarning(
 //     'Alto Volumen Detectado',
 //     'Se detectó un incremento del 300% en menciones negativas',
 //     { increase: '300%', timeframe: '1h' }
 //   );
-  
+
 //   // Mostrar estadísticas de notificaciones
 //   setTimeout(() => {
 //     notificationSystem.getStats().subscribe(stats => {
@@ -161,7 +161,7 @@
 //  */
 // export function ejemploAutoOptimizacion() {
 //   console.log('⚡ === EJEMPLO 5: AUTO-OPTIMIZACIÓN DE CAMPAÑAS ===');
-  
+
 //   const campaignId = 'campaign-demo-2024';
 //   const campaignData = {
 //     hashtags: ['#AI', '#Innovation', '#TechTrends'],
@@ -169,7 +169,7 @@
 //     targetAudience: 'tech-enthusiasts',
 //     budget: 5000
 //   };
-  
+
 //   // Programar optimización de hashtags
 //   autoOptimizationSystem.scheduleOptimization(
 //     'hashtag_optimization',
@@ -187,7 +187,7 @@
 //       console.error('❌ Error en optimización:', error);
 //     }
 //   });
-  
+
 //   // Programar optimización de timing
 //   setTimeout(() => {
 //     autoOptimizationSystem.scheduleOptimization(
@@ -203,7 +203,7 @@
 //       }
 //     });
 //   }, 3000);
-  
+
 //   // Mostrar estadísticas del sistema
 //   setTimeout(() => {
 //     autoOptimizationSystem.getStats().subscribe(stats => {
@@ -221,14 +221,14 @@
 //  */
 // export function ejemploAnalisisPredictivo() {
 //   console.log('🔮 === EJEMPLO 6: ANÁLISIS PREDICTIVO AVANZADO ===');
-  
+
 //   const campaignId = 'predictive-demo-2024';
 //   const campaignData = {
 //     content: 'Lanzamiento revolucionario de IA conversacional',
 //     hashtags: ['#AI', '#ChatBot', '#Innovation'],
 //     targetDemographic: 'millennials-tech'
 //   };
-  
+
 //   // Predicción de engagement
 //   predictiveAnalyticsSystem.predict('engagement', campaignId, campaignData, '24h').subscribe({
 //     next: (prediccion) => {
@@ -240,7 +240,7 @@
 //       console.log(`   - Factores clave:`, prediccion.factors);
 //     }
 //   });
-  
+
 //   // Predicción de viralidad
 //   setTimeout(() => {
 //     predictiveAnalyticsSystem.predict('virality', campaignId, campaignData, '7d').subscribe({
@@ -253,7 +253,7 @@
 //       }
 //     });
 //   }, 2000);
-  
+
 //   // Análisis de tendencias
 //   setTimeout(() => {
 //     predictiveAnalyticsSystem.getTrends().subscribe(tendencias => {
@@ -264,7 +264,7 @@
 //       console.log(`   - Confianza del análisis: ${(tendencias.confidence * 100).toFixed(1)}%`);
 //     });
 //   }, 4000);
-  
+
 //   // Estadísticas del sistema predictivo
 //   setTimeout(() => {
 //     predictiveAnalyticsSystem.getStats().subscribe(stats => {
@@ -282,11 +282,11 @@
 //  */
 // export function ejemploWorkflowCompleto() {
 //   console.log('🎯 === EJEMPLO 7: WORKFLOW COMPLETO DE OPTIMIZACIÓN ===');
-  
+
 //   const campaignId = 'workflow-demo-2024';
 //   const hashtags = ['#AI', '#MachineLearning', '#Innovation'];
 //   const content = 'Revolucionando el futuro con IA avanzada';
-  
+
 //   // Crear workflow de optimización completo
 //   createSocialMediaWorkflow(campaignId, hashtags, content).subscribe({
 //     next: (workflow) => {
@@ -295,13 +295,13 @@
 //       console.log(`   - Estado: ${workflow.status}`);
 //       console.log(`   - Progreso: ${workflow.progress}%`);
 //       console.log(`   - Pasos: ${workflow.steps.length}`);
-      
+
 //       // Monitorear progreso del workflow
 //       const monitoreo = setInterval(() => {
 //         reactiveOrchestrator.getWorkflow(workflow.id).subscribe(updatedWorkflow => {
 //           if (updatedWorkflow) {
 //             console.log(`   📊 Progreso: ${updatedWorkflow.progress}% - Estado: ${updatedWorkflow.status}`);
-            
+
 //             if (updatedWorkflow.status === 'completed') {
 //               console.log('🎉 ¡Workflow completado exitosamente!');
 //               console.log('   Pasos ejecutados:');
@@ -328,28 +328,28 @@
 //  */
 // export function ejemploMonitoreoTiempoReal() {
 //   console.log('📡 === EJEMPLO 8: MONITOREO EN TIEMPO REAL ===');
-  
+
 //   // Monitoreo de sentimientos para palabras clave
 //   const keywords = ['marca', 'producto', 'servicio'];
-  
+
 //   console.log(`🔍 Iniciando monitoreo de sentimientos para: ${keywords.join(', ')}`);
-  
+
 //   const monitoreo$ = startSentimentMonitoring(keywords);
-  
+
 //   // Suscribirse al monitoreo (simula resultados)
 //   const subscription = monitoreo$.subscribe({
 //     next: (resultados) => {
 //       console.log('📊 Resultados del monitoreo:');
 //       console.log(`   - Total analizados: ${resultados.length}`);
-      
+
 //       const positivos = resultados.filter((r: any) => r.sentiment?.score > 0.2).length;
 //       const negativos = resultados.filter((r: any) => r.sentiment?.score < -0.2).length;
 //       const neutros = resultados.length - positivos - negativos;
-      
+
 //       console.log(`   - Positivos: ${positivos} (${((positivos/resultados.length)*100).toFixed(1)}%)`);
 //       console.log(`   - Negativos: ${negativos} (${((negativos/resultados.length)*100).toFixed(1)}%)`);
 //       console.log(`   - Neutros: ${neutros} (${((neutros/resultados.length)*100).toFixed(1)}%)`);
-      
+
 //       if (negativos > resultados.length * 0.3) {
 //         console.log('⚠️  ALERTA: Alto nivel de sentimientos negativos detectado!');
 //       }
@@ -358,7 +358,7 @@
 //       console.error('❌ Error en monitoreo:', error);
 //     }
 //   });
-  
+
 //   // Detener monitoreo después de 30 segundos
 //   setTimeout(() => {
 //     subscription.unsubscribe();
@@ -371,7 +371,7 @@
 //  */
 // export function ejemploEstadisticasCentralizadas() {
 //   console.log('📈 === EJEMPLO 9: ESTADÍSTICAS CENTRALIZADAS ===');
-  
+
 //   // Estadísticas del orquestador
 //   reactiveOrchestrator.getStats().subscribe(stats => {
 //     console.log('🎛️  Estadísticas del Orquestador:');
@@ -382,14 +382,14 @@
 //     console.log(`   - Servicios online: ${stats.servicesOnline}/${stats.totalServices}`);
 //     console.log(`   - Uptime del sistema: ${(stats.systemUptime / 1000).toFixed(0)}s`);
 //   });
-  
+
 //   // Estado de salud del sistema
 //   setTimeout(() => {
 //     reactiveOrchestrator.getSystemHealth().subscribe(health => {
 //       console.log('🏥 Estado de Salud del Sistema:');
 //       console.log(`   - Estado general: ${health.overall}`);
 //       console.log(`   - Servicios monitoreados: ${health.services.length}`);
-      
+
 //       health.services.forEach(service => {
 //         console.log(`   - ${service.name}: ${service.status}`);
 //         console.log(`     * Uptime: ${(service.uptime / 1000).toFixed(0)}s`);
@@ -397,7 +397,7 @@
 //         console.log(`     * Success Rate: ${(service.performance.successRate * 100).toFixed(1)}%`);
 //         console.log(`     * Throughput: ${service.performance.throughput.toFixed(1)} ops/min`);
 //       });
-      
+
 //       if (health.alerts.length > 0) {
 //         console.log('🚨 Alertas del sistema:');
 //         health.alerts.forEach(alert => {
@@ -406,11 +406,11 @@
 //       }
 //     });
 //   }, 1000);
-  
+
 //   // Monitoreo en tiempo real
 //   setTimeout(() => {
 //     console.log('📡 Iniciando stream de monitoreo en tiempo real...');
-    
+
 //     const monitoringStream = reactiveOrchestrator.getMonitoringStream();
 //     const subscription = monitoringStream.subscribe(data => {
 //       console.log('📊 Datos en tiempo real:');
@@ -420,7 +420,7 @@
 //       console.log(`   - Memoria del sistema: ${data.metrics.memoryUsage.toFixed(1)}%`);
 //       console.log(`   - Conexiones activas: ${data.metrics.activeConnections}`);
 //     });
-    
+
 //     // Detener después de 15 segundos
 //     setTimeout(() => {
 //       subscription.unsubscribe();
@@ -434,10 +434,10 @@
 //  */
 // export function ejecutarTodosLosEjemplos() {
 //   console.log('🎉 === DEMOSTRACIÓN COMPLETA DEL SISTEMA REACTIVO ===\n');
-  
+
 //   // Ejecutar ejemplos en secuencia con delays
 //   ejemploInicializacion();
-  
+
 //   setTimeout(() => ejemploTwitterScraping(), 2000);
 //   setTimeout(() => ejemploAnalisisSentimientos(), 5000);
 //   setTimeout(() => ejemploNotificaciones(), 8000);
@@ -446,7 +446,7 @@
 //   setTimeout(() => ejemploWorkflowCompleto(), 25000);
 //   setTimeout(() => ejemploMonitoreoTiempoReal(), 32000);
 //   setTimeout(() => ejemploEstadisticasCentralizadas(), 45000);
-  
+
 //   // Resumen final
 //   setTimeout(() => {
 //     console.log('\n🎊 === DEMOSTRACIÓN COMPLETADA ===');

@@ -77,7 +77,7 @@ export class SecureSessionStore {
       }
 
       return { session, rotate: this.needsRotation(session) };
-    } catch (err) {
+    } catch {
       // On any error, don’t leak partial data
       this.clear();
       return { session: null, rotate: false };
@@ -106,17 +106,19 @@ export class SecureSessionStore {
       };
 
       fs.writeFileSync(this.filePath, JSON.stringify(payload, null, 2), { encoding: 'utf8' });
-    } catch (err) {
+    } catch {
       // If save fails, ensure nothing partial remains
       this.clear();
-      throw err;
+      throw new Error('Failed to save encrypted session');
     }
   }
 
   clear(): void {
     try {
       if (fs.existsSync(this.filePath)) fs.unlinkSync(this.filePath);
-    } catch {}
+    } catch {
+      // ignore cleanup errors
+    }
   }
 }
 

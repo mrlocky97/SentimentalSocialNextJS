@@ -76,7 +76,6 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
     };
 
     next();
-
   } catch (error) {
     console.error('Authentication error:', error);
 
@@ -112,7 +111,6 @@ export function optionalAuth(req: AuthenticatedRequest, res: Response, next: Nex
     }
 
     next();
-
   } catch (error) {
     console.error('Optional authentication error:', error);
     // Continue without authentication on error
@@ -133,8 +131,9 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 export function rateLimit(options: RateLimitOptions) {
   return function (req: Request, res: Response, next: NextFunction): void {
     try {
-      const clientIP = req.headers['x-forwarded-for'] as string ||
-        req.headers['x-real-ip'] as string ||
+      const clientIP =
+        (req.headers['x-forwarded-for'] as string) ||
+        (req.headers['x-real-ip'] as string) ||
         req.socket.remoteAddress ||
         'unknown';
       const now = Date.now();
@@ -165,7 +164,8 @@ export function rateLimit(options: RateLimitOptions) {
       rateLimitStore.set(key, current);
 
       // Clean up old entries
-      if (Math.random() < 0.01) { // 1% chance to clean up
+      if (Math.random() < 0.01) {
+        // 1% chance to clean up
         for (const [key, value] of rateLimitStore.entries()) {
           if (value.resetTime < now) {
             rateLimitStore.delete(key);
@@ -181,7 +181,6 @@ export function rateLimit(options: RateLimitOptions) {
       });
 
       next();
-
     } catch (error) {
       console.error('Rate limiting error:', error);
       next();

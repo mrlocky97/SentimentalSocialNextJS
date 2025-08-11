@@ -111,18 +111,15 @@ Expected response:
 1. **Create Account**: Sign up at [MongoDB Atlas](https://www.mongodb.com/atlas)
 
 2. **Create Cluster**:
-
    - Choose "Build a Database"
    - Select "M0 Sandbox" (Free tier)
    - Choose your preferred cloud provider and region
 
 3. **Configure Security**:
-
    - Create a database user with username/password
    - Add your IP address to the IP whitelist (or use 0.0.0.0/0 for development)
 
 4. **Get Connection String**:
-
    - Click "Connect" on your cluster
    - Choose "Connect your application"
    - Copy the connection string
@@ -138,18 +135,15 @@ Expected response:
 ### Common Issues:
 
 1. **Connection Refused**
-
    - Make sure MongoDB is running (local)
    - Check if the port 27017 is available
    - Verify the connection string
 
 2. **Authentication Failed**
-
    - Check username/password in connection string
    - Ensure database user exists in Atlas
 
 3. **Network Timeout**
-
    - Add your IP to Atlas whitelist
    - Check firewall settings
 

@@ -8,7 +8,7 @@ import {
   isValidPassword,
   isValidUsername,
   isValidObjectId,
-  validateRequiredFields
+  validateRequiredFields,
 } from '../utils/validation.utils';
 
 // Simple validation functions (you can replace with Zod, Joi, etc.)
@@ -33,7 +33,9 @@ export class Validator {
     const errors: string[] = [];
 
     if (!isValid) {
-      errors.push('Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens');
+      errors.push(
+        'Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens'
+      );
     }
 
     return {
@@ -47,7 +49,9 @@ export class Validator {
     const errors: string[] = [];
 
     if (!isValid) {
-      errors.push('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number');
+      errors.push(
+        'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number'
+      );
     }
 
     return {
@@ -138,7 +142,7 @@ export class Validator {
       this.password(data.password),
     ];
 
-    const allErrors = validations.flatMap(v => v.errors);
+    const allErrors = validations.flatMap((v) => v.errors);
 
     return {
       isValid: allErrors.length === 0,

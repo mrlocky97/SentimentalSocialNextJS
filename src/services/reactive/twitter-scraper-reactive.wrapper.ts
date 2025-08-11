@@ -4,13 +4,7 @@
  */
 
 import { Observable, BehaviorSubject, from } from 'rxjs';
-import { 
-  map, 
-  catchError, 
-  shareReplay, 
-  retry,
-  timeout
-} from 'rxjs/operators';
+import { map, catchError, shareReplay, retry, timeout } from 'rxjs/operators';
 import { TwitterRealScraperService } from '../twitter-scraper.service';
 import { Tweet } from '../../types/twitter';
 
@@ -40,10 +34,10 @@ class ReactiveTwitterScraperWrapper {
     failedRequests: 0,
     cacheHitRate: 0,
     averageResponseTime: 0,
-    tweetsPerSecond: 0
+    tweetsPerSecond: 0,
   });
-  
-  private cache = new Map<string, { data: Tweet[], timestamp: Date }>();
+
+  private cache = new Map<string, { data: Tweet[]; timestamp: Date }>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
@@ -51,11 +45,15 @@ class ReactiveTwitterScraperWrapper {
   }
 
   // Submit scraping request with priority
-  submitRequest(query: string, options: any = {}, priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'): Observable<Tweet[]> {
+  submitRequest(
+    query: string,
+    options: any = {},
+    priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'
+  ): Observable<Tweet[]> {
     return from(this.processSingleRequest(query, options)).pipe(
       timeout(30000), // 30 second timeout
       retry(2),
-      catchError(error => {
+      catchError((error) => {
         return from([]);
       }),
       shareReplay(1)
@@ -68,17 +66,17 @@ class ReactiveTwitterScraperWrapper {
     // Check cache first
     const cacheKey = `${query}_${JSON.stringify(options)}`;
     const cached = this.cache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp.getTime()) < this.CACHE_TTL) {
+    if (cached && Date.now() - cached.timestamp.getTime() < this.CACHE_TTL) {
       this.updateCacheHit();
       return cached.data;
     }
 
     // Process with core service
     const result = await this.coreService.scrapeByHashtag(query, options);
-    
+
     // Cache result
     this.cache.set(cacheKey, { data: result.tweets, timestamp: new Date() });
-    
+
     // Update stats
     const processingTime = Date.now() - startTime;
     this.updateSuccessStats(processingTime, result.tweets.length);
@@ -87,12 +85,16 @@ class ReactiveTwitterScraperWrapper {
   }
 
   // Batch scraping
-  batchScrape(queries: string[], options: any = {}, priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'): Observable<Tweet[]> {
-    return from(Promise.all(
-      queries.map(query => this.processSingleRequest(query, options))
-    )).pipe(
-      map(results => results.flat()),
-      catchError(error => {
+  batchScrape(
+    queries: string[],
+    options: any = {},
+    priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'
+  ): Observable<Tweet[]> {
+    return from(
+      Promise.all(queries.map((query) => this.processSingleRequest(query, options)))
+    ).pipe(
+      map((results) => results.flat()),
+      catchError((error) => {
         return from([]);
       }),
       shareReplay(1)
@@ -112,11 +114,11 @@ class ReactiveTwitterScraperWrapper {
     stats: ScrapingStats;
   }> {
     return this.stats$.pipe(
-      map(stats => ({
+      map((stats) => ({
         activeRequests: 0,
         queueLength: 0,
         cacheSize: this.cache.size,
-        stats
+        stats,
       }))
     );
   }
@@ -125,20 +127,20 @@ class ReactiveTwitterScraperWrapper {
     const current = this.stats$.value;
     this.stats$.next({
       ...current,
-      cacheHitRate: current.cacheHitRate + 1
+      cacheHitRate: current.cacheHitRate + 1,
     });
   }
 
   private updateSuccessStats(processingTime: number, tweetCount: number): void {
     const current = this.stats$.value;
     const newTotal = current.totalRequests + 1;
-    
+
     this.stats$.next({
       ...current,
       totalRequests: newTotal,
       successfulRequests: current.successfulRequests + 1,
       averageResponseTime: (current.averageResponseTime + processingTime) / 2,
-      tweetsPerSecond: tweetCount / (processingTime / 1000)
+      tweetsPerSecond: tweetCount / (processingTime / 1000),
     });
   }
 
@@ -147,7 +149,7 @@ class ReactiveTwitterScraperWrapper {
     this.stats$.next({
       ...current,
       totalRequests: current.totalRequests + 1,
-      failedRequests: current.failedRequests + 1
+      failedRequests: current.failedRequests + 1,
     });
   }
 

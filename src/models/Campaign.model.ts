@@ -78,167 +78,193 @@ export interface ICampaignDocument extends Document {
   isActive(): boolean;
 }
 
-const geoLocationSchema = new Schema({
-  country: { type: String, maxlength: 2 },
-  city: { type: String, maxlength: 100 },
-  radius: { type: Number, min: 1, max: 1000 },
-  coordinates: {
-    lat: { type: Number, min: -90, max: 90 },
-    lng: { type: Number, min: -180, max: 180 }
+const geoLocationSchema = new Schema(
+  {
+    country: { type: String, maxlength: 2 },
+    city: { type: String, maxlength: 100 },
+    radius: { type: Number, min: 1, max: 1000 },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 },
+    },
+  },
+  { _id: false }
+);
+
+const statsSchema = new Schema(
+  {
+    totalTweets: { type: Number, default: 0, min: 0 },
+    totalEngagement: { type: Number, default: 0, min: 0 },
+    avgSentiment: { type: Number, default: 0, min: -1, max: 1 },
+    topHashtags: [
+      {
+        tag: { type: String, required: true },
+        count: { type: Number, required: true, min: 0 },
+      },
+    ],
+    topMentions: [
+      {
+        mention: { type: String, required: true },
+        count: { type: Number, required: true, min: 0 },
+      },
+    ],
+    dailyVolume: [
+      {
+        date: { type: String, required: true },
+        count: { type: Number, required: true, min: 0 },
+      },
+    ],
+  },
+  { _id: false }
+);
+
+const campaignSchema = new Schema<ICampaignDocument>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Campaign name is required'],
+      trim: true,
+      minlength: [3, 'Campaign name must be at least 3 characters'],
+      maxlength: [100, 'Campaign name cannot exceed 100 characters'],
+      index: true,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
+
+    type: {
+      type: String,
+      required: [true, 'Campaign type is required'],
+      enum: {
+        values: ['hashtag', 'keyword', 'mention', 'competitor'],
+        message: 'Type must be one of: hashtag, keyword, mention, competitor',
+      },
+      index: true,
+    },
+
+    status: {
+      type: String,
+      required: [true, 'Campaign status is required'],
+      enum: {
+        values: ['draft', 'active', 'paused', 'completed', 'archived'],
+        message: 'Status must be one of: draft, active, paused, completed, archived',
+      },
+      default: 'draft',
+      index: true,
+    },
+
+    dataSources: [
+      {
+        type: String,
+        enum: {
+          values: ['twitter', 'instagram', 'facebook', 'tiktok', 'linkedin'],
+          message: 'Data source must be one of: twitter, instagram, facebook, tiktok, linkedin',
+        },
+      },
+    ],
+
+    hashtags: [
+      {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Hashtag cannot exceed 50 characters'],
+      },
+    ],
+
+    keywords: [
+      {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Keyword cannot exceed 100 characters'],
+      },
+    ],
+
+    mentions: [
+      {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Mention cannot exceed 50 characters'],
+      },
+    ],
+
+    startDate: {
+      type: Date,
+      required: [true, 'Start date is required'],
+      index: true,
+    },
+
+    endDate: {
+      type: Date,
+      required: [true, 'End date is required'],
+      index: true,
+    },
+
+    timezone: {
+      type: String,
+      required: [true, 'Timezone is required'],
+      default: 'UTC',
+    },
+
+    maxTweets: {
+      type: Number,
+      required: [true, 'Max tweets limit is required'],
+      min: [100, 'Minimum tweets collection is 100'],
+      max: [1000000, 'Maximum tweets collection is 1,000,000'],
+      default: 10000,
+    },
+
+    collectImages: { type: Boolean, default: true },
+    collectVideos: { type: Boolean, default: true },
+    collectReplies: { type: Boolean, default: false },
+    collectRetweets: { type: Boolean, default: true },
+
+    geoLocation: geoLocationSchema,
+
+    languages: [
+      {
+        type: String,
+        length: 2,
+      },
+    ],
+
+    sentimentAnalysis: { type: Boolean, default: true },
+    emotionAnalysis: { type: Boolean, default: false },
+    topicsAnalysis: { type: Boolean, default: false },
+    influencerAnalysis: { type: Boolean, default: false },
+
+    organizationId: {
+      type: String,
+      required: [true, 'Organization ID is required'],
+      index: true,
+    },
+
+    createdBy: {
+      type: String,
+      required: [true, 'Creator user ID is required'],
+      index: true,
+    },
+
+    assignedTo: [
+      {
+        type: String,
+      },
+    ],
+
+    lastDataCollection: {
+      type: Date,
+      index: true,
+    },
+
+    stats: statsSchema,
+  },
+  {
+    timestamps: true,
+    versionKey: false,
   }
-}, { _id: false });
-
-const statsSchema = new Schema({
-  totalTweets: { type: Number, default: 0, min: 0 },
-  totalEngagement: { type: Number, default: 0, min: 0 },
-  avgSentiment: { type: Number, default: 0, min: -1, max: 1 },
-  topHashtags: [{
-    tag: { type: String, required: true },
-    count: { type: Number, required: true, min: 0 }
-  }],
-  topMentions: [{
-    mention: { type: String, required: true },
-    count: { type: Number, required: true, min: 0 }
-  }],
-  dailyVolume: [{
-    date: { type: String, required: true },
-    count: { type: Number, required: true, min: 0 }
-  }]
-}, { _id: false });
-
-const campaignSchema = new Schema<ICampaignDocument>({
-  name: {
-    type: String,
-    required: [true, 'Campaign name is required'],
-    trim: true,
-    minlength: [3, 'Campaign name must be at least 3 characters'],
-    maxlength: [100, 'Campaign name cannot exceed 100 characters'],
-    index: true
-  },
-
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Description cannot exceed 500 characters']
-  },
-
-  type: {
-    type: String,
-    required: [true, 'Campaign type is required'],
-    enum: {
-      values: ['hashtag', 'keyword', 'mention', 'competitor'],
-      message: 'Type must be one of: hashtag, keyword, mention, competitor'
-    },
-    index: true
-  },
-
-  status: {
-    type: String,
-    required: [true, 'Campaign status is required'],
-    enum: {
-      values: ['draft', 'active', 'paused', 'completed', 'archived'],
-      message: 'Status must be one of: draft, active, paused, completed, archived'
-    },
-    default: 'draft',
-    index: true
-  },
-
-  dataSources: [{
-    type: String,
-    enum: {
-      values: ['twitter', 'instagram', 'facebook', 'tiktok', 'linkedin'],
-      message: 'Data source must be one of: twitter, instagram, facebook, tiktok, linkedin'
-    }
-  }],
-
-  hashtags: [{
-    type: String,
-    trim: true,
-    maxlength: [50, 'Hashtag cannot exceed 50 characters']
-  }],
-
-  keywords: [{
-    type: String,
-    trim: true,
-    maxlength: [100, 'Keyword cannot exceed 100 characters']
-  }],
-
-  mentions: [{
-    type: String,
-    trim: true,
-    maxlength: [50, 'Mention cannot exceed 50 characters']
-  }],
-
-  startDate: {
-    type: Date,
-    required: [true, 'Start date is required'],
-    index: true
-  },
-
-  endDate: {
-    type: Date,
-    required: [true, 'End date is required'],
-    index: true
-  },
-
-  timezone: {
-    type: String,
-    required: [true, 'Timezone is required'],
-    default: 'UTC'
-  },
-
-  maxTweets: {
-    type: Number,
-    required: [true, 'Max tweets limit is required'],
-    min: [100, 'Minimum tweets collection is 100'],
-    max: [1000000, 'Maximum tweets collection is 1,000,000'],
-    default: 10000
-  },
-
-  collectImages: { type: Boolean, default: true },
-  collectVideos: { type: Boolean, default: true },
-  collectReplies: { type: Boolean, default: false },
-  collectRetweets: { type: Boolean, default: true },
-
-  geoLocation: geoLocationSchema,
-
-  languages: [{
-    type: String,
-    length: 2
-  }],
-
-  sentimentAnalysis: { type: Boolean, default: true },
-  emotionAnalysis: { type: Boolean, default: false },
-  topicsAnalysis: { type: Boolean, default: false },
-  influencerAnalysis: { type: Boolean, default: false },
-
-  organizationId: {
-    type: String,
-    required: [true, 'Organization ID is required'],
-    index: true
-  },
-
-  createdBy: {
-    type: String,
-    required: [true, 'Creator user ID is required'],
-    index: true
-  },
-
-  assignedTo: [{
-    type: String
-  }],
-
-  lastDataCollection: {
-    type: Date,
-    index: true
-  },
-
-  stats: statsSchema
-
-}, {
-  timestamps: true,
-  versionKey: false
-});
+);
 
 // Pre-save middleware
 campaignSchema.pre('save', function (next) {
@@ -252,7 +278,9 @@ campaignSchema.pre('save', function (next) {
     return;
   }
 
-  const daysDiff = Math.ceil((this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.ceil(
+    (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
   if (daysDiff > 365) {
     next(new Error('Campaign duration cannot exceed 365 days'));
     return;
@@ -282,10 +310,7 @@ campaignSchema.statics.findByOrganization = function (organizationId: string) {
 
 campaignSchema.statics.findActiveByUser = function (userId: string) {
   return this.find({
-    $and: [
-      { status: 'active' },
-      { $or: [{ createdBy: userId }, { assignedTo: userId }] }
-    ]
+    $and: [{ status: 'active' }, { $or: [{ createdBy: userId }, { assignedTo: userId }] }],
   }).sort({ startDate: 1 });
 };
 

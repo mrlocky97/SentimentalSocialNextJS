@@ -8,7 +8,6 @@ import { CreateCampaignRequest, UpdateCampaignRequest, CampaignFilter } from '..
 import { PaginationOptions } from '../types/common';
 
 export class MongoCampaignRepository {
-
   /**
    * Create a new campaign
    */
@@ -28,7 +27,7 @@ export class MongoCampaignRepository {
         emotionAnalysis: campaignData.emotionAnalysis ?? false,
         topicsAnalysis: campaignData.topicsAnalysis ?? false,
         influencerAnalysis: campaignData.influencerAnalysis ?? false,
-        assignedTo: campaignData.assignedTo ?? []
+        assignedTo: campaignData.assignedTo ?? [],
       };
 
       const campaign = new CampaignModel(campaignToCreate);
@@ -70,12 +69,7 @@ export class MongoCampaignRepository {
     options: PaginationOptions = {}
   ): Promise<ICampaignDocument[]> {
     try {
-      const {
-        offset = 0,
-        limit = 20,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-      } = options;
+      const { offset = 0, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
 
       // Build MongoDB filter
       const mongoFilter: Record<string, unknown> = {};
@@ -114,8 +108,7 @@ export class MongoCampaignRepository {
       const sortDirection = sortOrder === 'desc' ? -1 : 1;
       const sort: Record<string, 1 | -1> = { [sortBy]: sortDirection };
 
-      const campaigns = await CampaignModel
-        .find(mongoFilter)
+      const campaigns = await CampaignModel.find(mongoFilter)
         .sort(sort)
         .skip(offset)
         .limit(limit)
@@ -235,10 +228,7 @@ export class MongoCampaignRepository {
   async findActiveByUser(userId: string): Promise<ICampaignDocument[]> {
     try {
       const campaigns = await CampaignModel.find({
-        $and: [
-          { status: 'active' },
-          { $or: [{ createdBy: userId }, { assignedTo: userId }] }
-        ]
+        $and: [{ status: 'active' }, { $or: [{ createdBy: userId }, { assignedTo: userId }] }],
       }).sort({ startDate: 1 });
       return campaigns;
     } catch (error) {
@@ -253,7 +243,7 @@ export class MongoCampaignRepository {
   async findByHashtag(hashtag: string): Promise<ICampaignDocument[]> {
     try {
       const campaigns = await CampaignModel.find({
-        hashtags: { $in: [hashtag.toLowerCase().replace('#', '')] }
+        hashtags: { $in: [hashtag.toLowerCase().replace('#', '')] },
       }).sort({ createdAt: -1 });
 
       return campaigns;
@@ -272,7 +262,7 @@ export class MongoCampaignRepository {
       const campaigns = await CampaignModel.find({
         status: 'active',
         startDate: { $lte: now },
-        endDate: { $gte: now }
+        endDate: { $gte: now },
       }).sort({ lastDataCollection: 1 }); // Prioritize campaigns that haven't been collected recently
 
       return campaigns;
@@ -302,7 +292,7 @@ export class MongoCampaignRepository {
         {
           stats,
           lastDataCollection: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
@@ -324,15 +314,14 @@ export class MongoCampaignRepository {
   ): Promise<ICampaignDocument[]> {
     try {
       const filter: Record<string, unknown> = {
-        $text: { $search: searchTerm }
+        $text: { $search: searchTerm },
       };
 
       if (organizationId) {
         filter.organizationId = organizationId;
       }
 
-      const campaigns = await CampaignModel
-        .find(filter, { score: { $meta: 'textScore' } })
+      const campaigns = await CampaignModel.find(filter, { score: { $meta: 'textScore' } })
         .sort({ score: { $meta: 'textScore' } })
         .limit(limit);
 

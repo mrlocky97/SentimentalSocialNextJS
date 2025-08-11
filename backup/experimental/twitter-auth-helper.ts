@@ -27,7 +27,6 @@ export class TwitterAuthHelper {
    * Attempt manual Twitter authentication with improved error handling
    */
   async authenticateManually(): Promise<AuthResult> {
-
     try {
       // Import twitter scraper
       const { Scraper } = await import('@the-convocation/twitter-scraper');
@@ -36,7 +35,7 @@ export class TwitterAuthHelper {
       if (this.cookieManager.hasValidSession()) {
         return {
           success: true,
-          message: 'Valid session already exists'
+          message: 'Valid session already exists',
         };
       }
 
@@ -48,10 +47,9 @@ export class TwitterAuthHelper {
       if (!username || !password || !email) {
         return {
           success: false,
-          message: 'Missing Twitter credentials in environment variables'
+          message: 'Missing Twitter credentials in environment variables',
         };
       }
-
 
       // Create scraper with specific configuration for authentication
       const scraper = new Scraper({
@@ -60,11 +58,13 @@ export class TwitterAuthHelper {
             if (init) {
               init.headers = {
                 ...init.headers,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                Accept:
+                  'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
                 'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
+                Connection: 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
               };
             }
@@ -73,13 +73,11 @@ export class TwitterAuthHelper {
         },
       });
 
-
       // Add delay before login attempt
       await this.delay(2000);
 
       // Attempt login
       await scraper.login(username, password, email);
-
 
       // Extract and save cookies
       await this.cookieManager.extractCookiesFromScraper(scraper);
@@ -91,16 +89,15 @@ export class TwitterAuthHelper {
         return {
           success: true,
           message: 'Authentication successful and cookies saved',
-          cookiesSaved: true
+          cookiesSaved: true,
         };
       } else {
         console.log('⚠️ Login completed but verification failed');
         return {
           success: false,
-          message: 'Login completed but verification failed'
+          message: 'Login completed but verification failed',
         };
       }
-
     } catch (error) {
       console.error('❌ Authentication error:', error);
 
@@ -108,24 +105,25 @@ export class TwitterAuthHelper {
         if (error.message.includes('Forbidden')) {
           return {
             success: false,
-            message: 'Twitter blocked the login attempt. Try again later or use different credentials.'
+            message:
+              'Twitter blocked the login attempt. Try again later or use different credentials.',
           };
         } else if (error.message.includes('rate limit')) {
           return {
             success: false,
-            message: 'Rate limited. Please wait before trying again.'
+            message: 'Rate limited. Please wait before trying again.',
           };
         } else if (error.message.includes('credentials')) {
           return {
             success: false,
-            message: 'Invalid credentials. Please check username, password, and email.'
+            message: 'Invalid credentials. Please check username, password, and email.',
           };
         }
       }
 
       return {
         success: false,
-        message: `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -134,12 +132,11 @@ export class TwitterAuthHelper {
    * Test existing cookies
    */
   async testExistingCookies(): Promise<AuthResult> {
-
     try {
       if (!this.cookieManager.hasValidSession()) {
         return {
           success: false,
-          message: 'No valid session cookies found'
+          message: 'No valid session cookies found',
         };
       }
 
@@ -153,7 +150,7 @@ export class TwitterAuthHelper {
               const cookieHeader = this.cookieManager.getCookiesAsString();
               init.headers = {
                 ...init.headers,
-                'Cookie': cookieHeader,
+                Cookie: cookieHeader,
               };
             }
             return [input, init];
@@ -166,20 +163,19 @@ export class TwitterAuthHelper {
       if (isLoggedIn) {
         return {
           success: true,
-          message: 'Existing cookies are valid and working'
+          message: 'Existing cookies are valid and working',
         };
       } else {
         this.cookieManager.clearCookies();
         return {
           success: false,
-          message: 'Existing cookies are invalid, cleared them'
+          message: 'Existing cookies are invalid, cleared them',
         };
       }
-
     } catch (error) {
       return {
         success: false,
-        message: `Cookie test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Cookie test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -194,11 +190,13 @@ export class TwitterAuthHelper {
     return {
       hasValidSession: hasSession,
       cookieCount: cookies ? cookies.length : 0,
-      sessionInfo: hasSession ? {
-        timestamp: this.cookieManager.getSessionTimestamp(),
-        userAgent: this.cookieManager.getUserAgent(),
-        ageMinutes: this.cookieManager.getSessionAgeMinutes()
-      } : null
+      sessionInfo: hasSession
+        ? {
+            timestamp: this.cookieManager.getSessionTimestamp(),
+            userAgent: this.cookieManager.getUserAgent(),
+            ageMinutes: this.cookieManager.getSessionAgeMinutes(),
+          }
+        : null,
     };
   }
 
@@ -210,12 +208,12 @@ export class TwitterAuthHelper {
       this.cookieManager.clearCookies();
       return {
         success: true,
-        message: 'Session cleared successfully'
+        message: 'Session cleared successfully',
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to clear session: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Failed to clear session: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -228,7 +226,7 @@ export class TwitterAuthHelper {
       if (!require('fs').existsSync(cookiesFilePath)) {
         return {
           success: false,
-          message: `Cookies file not found: ${cookiesFilePath}`
+          message: `Cookies file not found: ${cookiesFilePath}`,
         };
       }
 
@@ -239,36 +237,31 @@ export class TwitterAuthHelper {
       if (!parsedData.cookies || !Array.isArray(parsedData.cookies)) {
         return {
           success: false,
-          message: 'Invalid cookies file format'
+          message: 'Invalid cookies file format',
         };
       }
 
       // Copy the file to our project
-      require('fs').writeFileSync(
-        require('path').join(process.cwd(), 'cookies.json'),
-        cookiesData
-      );
+      require('fs').writeFileSync(require('path').join(process.cwd(), 'cookies.json'), cookiesData);
 
       // Reload cookies in our manager
       this.cookieManager = new TwitterCookieManager();
 
-
       return {
         success: true,
         message: `Successfully imported ${parsedData.cookies.length} cookies`,
-        cookiesSaved: true
+        cookiesSaved: true,
       };
-
     } catch (error) {
       return {
         success: false,
-        message: `Failed to import cookies: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Failed to import cookies: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
 
   private async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -280,13 +273,13 @@ if (require.main === module) {
 
   switch (command) {
     case 'login':
-      helper.authenticateManually().then(result => {
+      helper.authenticateManually().then((result) => {
         process.exit(result.success ? 0 : 1);
       });
       break;
 
     case 'test':
-      helper.testExistingCookies().then(result => {
+      helper.testExistingCookies().then((result) => {
         process.exit(result.success ? 0 : 1);
       });
       break;

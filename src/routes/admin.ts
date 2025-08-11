@@ -37,15 +37,15 @@ router.get('/users', async (req, res) => {
     res.json({
       success: true,
       data: users,
-      count: users.length
+      count: users.length,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: {
         message: 'Failed to fetch users',
-        code: 'FETCH_USERS_ERROR'
-      }
+        code: 'FETCH_USERS_ERROR',
+      },
     });
   }
 });
@@ -76,22 +76,22 @@ router.delete('/users/:id', async (req, res) => {
         success: false,
         error: {
           message: 'User not found',
-          code: 'USER_NOT_FOUND'
-        }
+          code: 'USER_NOT_FOUND',
+        },
       });
     }
 
     res.json({
       success: true,
-      message: 'User deleted successfully'
+      message: 'User deleted successfully',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: {
         message: 'Failed to delete user',
-        code: 'DELETE_USER_ERROR'
-      }
+        code: 'DELETE_USER_ERROR',
+      },
     });
   }
 });
@@ -112,15 +112,15 @@ router.post('/clear-users', async (req, res) => {
     // This would need to be implemented in the repository
     res.json({
       success: true,
-      message: 'Clear users endpoint - implement if needed'
+      message: 'Clear users endpoint - implement if needed',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: {
         message: 'Failed to clear users',
-        code: 'CLEAR_USERS_ERROR'
-      }
+        code: 'CLEAR_USERS_ERROR',
+      },
     });
   }
 });

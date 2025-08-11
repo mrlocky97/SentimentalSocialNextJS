@@ -7,7 +7,6 @@ import fs from 'fs';
 import path from 'path';
 
 export class CookieImporter {
-
   /**
    * Create a template cookies.json file for manual editing
    */
@@ -15,51 +14,51 @@ export class CookieImporter {
     const template = {
       cookies: [
         {
-          name: "auth_token",
-          value: "REPLACE_WITH_YOUR_AUTH_TOKEN",
-          domain: ".twitter.com",
-          path: "/",
+          name: 'auth_token',
+          value: 'REPLACE_WITH_YOUR_AUTH_TOKEN',
+          domain: '.twitter.com',
+          path: '/',
           httpOnly: true,
           secure: true,
-          sameSite: "None"
+          sameSite: 'None',
         },
         {
-          name: "ct0",
-          value: "REPLACE_WITH_YOUR_CT0_TOKEN",
-          domain: ".twitter.com",
-          path: "/",
+          name: 'ct0',
+          value: 'REPLACE_WITH_YOUR_CT0_TOKEN',
+          domain: '.twitter.com',
+          path: '/',
           httpOnly: false,
           secure: true,
-          sameSite: "Lax"
+          sameSite: 'Lax',
         },
         {
-          name: "twid",
-          value: "REPLACE_WITH_YOUR_TWID",
-          domain: ".twitter.com",
-          path: "/",
+          name: 'twid',
+          value: 'REPLACE_WITH_YOUR_TWID',
+          domain: '.twitter.com',
+          path: '/',
           httpOnly: true,
           secure: true,
-          sameSite: "None"
+          sameSite: 'None',
         },
         {
-          name: "_twitter_sess",
-          value: "REPLACE_WITH_YOUR_TWITTER_SESS",
-          domain: ".twitter.com",
-          path: "/",
+          name: '_twitter_sess',
+          value: 'REPLACE_WITH_YOUR_TWITTER_SESS',
+          domain: '.twitter.com',
+          path: '/',
           httpOnly: true,
           secure: true,
-          sameSite: "None"
-        }
+          sameSite: 'None',
+        },
       ],
       timestamp: Date.now(),
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       isValid: true,
-      expirationTime: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      expirationTime: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     };
 
     const templatePath = path.join(process.cwd(), 'cookies-template.json');
     fs.writeFileSync(templatePath, JSON.stringify(template, null, 2));
-
   }
 
   /**
@@ -86,26 +85,27 @@ export class CookieImporter {
       // Check for essential cookies
       const cookieNames = data.cookies.map((c: any) => c.name);
       const requiredCookies = ['auth_token', 'ct0'];
-      const missingRequired = requiredCookies.filter(name => !cookieNames.includes(name));
+      const missingRequired = requiredCookies.filter((name) => !cookieNames.includes(name));
 
       if (missingRequired.length > 0) {
         return {
           valid: false,
           message: `Missing required cookies: ${missingRequired.join(', ')}`,
-          details: { found: cookieNames, missing: missingRequired }
+          details: { found: cookieNames, missing: missingRequired },
         };
       }
 
       // Check for placeholder values
-      const placeholderCookies = data.cookies.filter((c: any) =>
-        c.value.includes('REPLACE_WITH') || c.value.includes('YOUR_') || c.value.length < 10
+      const placeholderCookies = data.cookies.filter(
+        (c: any) =>
+          c.value.includes('REPLACE_WITH') || c.value.includes('YOUR_') || c.value.length < 10
       );
 
       if (placeholderCookies.length > 0) {
         return {
           valid: false,
           message: `Found placeholder values in: ${placeholderCookies.map((c: any) => c.name).join(', ')}`,
-          details: { placeholders: placeholderCookies.map((c: any) => c.name) }
+          details: { placeholders: placeholderCookies.map((c: any) => c.name) },
         };
       }
 
@@ -115,7 +115,7 @@ export class CookieImporter {
         return {
           valid: false,
           message: 'Cookies have expired',
-          details: { expired: new Date(data.expirationTime).toLocaleString() }
+          details: { expired: new Date(data.expirationTime).toLocaleString() },
         };
       }
 
@@ -126,14 +126,15 @@ export class CookieImporter {
           cookieCount: data.cookies.length,
           cookieNames: cookieNames,
           timestamp: new Date(data.timestamp).toLocaleString(),
-          expiration: data.expirationTime ? new Date(data.expirationTime).toLocaleString() : 'No expiration'
-        }
+          expiration: data.expirationTime
+            ? new Date(data.expirationTime).toLocaleString()
+            : 'No expiration',
+        },
       };
-
     } catch (error) {
       return {
         valid: false,
-        message: `Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -141,7 +142,10 @@ export class CookieImporter {
   /**
    * Convert browser exported cookies to our format
    */
-  static convertBrowserCookies(browserCookiesPath: string, outputPath?: string): { success: boolean; message: string } {
+  static convertBrowserCookies(
+    browserCookiesPath: string,
+    outputPath?: string
+  ): { success: boolean; message: string } {
     try {
       const content = fs.readFileSync(browserCookiesPath, 'utf8');
       let browserData;
@@ -158,17 +162,16 @@ export class CookieImporter {
 
       // Chrome Cookie Editor format
       if (Array.isArray(browserData)) {
-        cookies = browserData.filter((cookie: any) =>
-          cookie.domain && cookie.domain.includes('twitter.com')
+        cookies = browserData.filter(
+          (cookie: any) => cookie.domain && cookie.domain.includes('twitter.com')
         );
       }
       // Other formats
       else if (browserData.cookies && Array.isArray(browserData.cookies)) {
-        cookies = browserData.cookies.filter((cookie: any) =>
-          cookie.domain && cookie.domain.includes('twitter.com')
+        cookies = browserData.cookies.filter(
+          (cookie: any) => cookie.domain && cookie.domain.includes('twitter.com')
         );
-      }
-      else {
+      } else {
         return { success: false, message: 'Unrecognized cookie format' };
       }
 
@@ -178,19 +181,20 @@ export class CookieImporter {
 
       // Convert to our format
       const convertedData = {
-        cookies: cookies.map(cookie => ({
+        cookies: cookies.map((cookie) => ({
           name: cookie.name,
           value: cookie.value,
           domain: cookie.domain,
           path: cookie.path || '/',
           httpOnly: cookie.httpOnly || false,
           secure: cookie.secure || false,
-          sameSite: cookie.sameSite || 'Lax'
+          sameSite: cookie.sameSite || 'Lax',
         })),
         timestamp: Date.now(),
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         isValid: true,
-        expirationTime: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+        expirationTime: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       };
 
       const finalPath = outputPath || path.join(process.cwd(), 'cookies.json');
@@ -198,13 +202,12 @@ export class CookieImporter {
 
       return {
         success: true,
-        message: `Successfully converted ${cookies.length} cookies to ${finalPath}`
+        message: `Successfully converted ${cookies.length} cookies to ${finalPath}`,
       };
-
     } catch (error) {
       return {
         success: false,
-        message: `Error converting cookies: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Error converting cookies: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -213,9 +216,7 @@ export class CookieImporter {
    * Quick setup wizard
    */
   static setupWizard(): void {
-
     console.log('4. ❌ Exit\n');
-
   }
 }
 

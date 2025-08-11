@@ -6,7 +6,6 @@
 import { CampaignTemplate, CampaignType, DataSource } from '../types/campaign';
 
 export class CampaignTemplatesService {
-  
   /**
    * Get all available campaign templates
    */
@@ -25,13 +24,13 @@ export class CampaignTemplatesService {
           sentiment: true,
           emotion: true,
           topics: false,
-          influencer: true
+          influencer: true,
         },
         suggestedHashtags: ['#yourbrand'],
         suggestedKeywords: ['your brand name', 'product name', 'company'],
         suggestedLanguages: ['en', 'es'],
         createdAt: new Date(),
-        isActive: true
+        isActive: true,
       },
       {
         id: 'product-launch',
@@ -46,13 +45,13 @@ export class CampaignTemplatesService {
           sentiment: true,
           emotion: true,
           topics: true,
-          influencer: true
+          influencer: true,
         },
         suggestedHashtags: ['#newproduct', '#launch', '#innovation'],
         suggestedKeywords: ['product name', 'launch event', 'available now'],
         suggestedLanguages: ['en'],
         createdAt: new Date(),
-        isActive: true
+        isActive: true,
       },
       {
         id: 'competitor-analysis',
@@ -67,13 +66,13 @@ export class CampaignTemplatesService {
           sentiment: true,
           emotion: false,
           topics: true,
-          influencer: true
+          influencer: true,
         },
         suggestedHashtags: ['#competitor1', '#competitor2'],
         suggestedKeywords: ['competitor name', 'vs competitor', 'alternative'],
         suggestedLanguages: ['en', 'es'],
         createdAt: new Date(),
-        isActive: true
+        isActive: true,
       },
       {
         id: 'crisis-management',
@@ -88,13 +87,13 @@ export class CampaignTemplatesService {
           sentiment: true,
           emotion: true,
           topics: true,
-          influencer: true
+          influencer: true,
         },
         suggestedHashtags: ['#crisis', '#issue'],
         suggestedKeywords: ['brand issue', 'controversy', 'problem'],
         suggestedLanguages: ['en', 'es'],
         createdAt: new Date(),
-        isActive: true
+        isActive: true,
       },
       {
         id: 'campaign-performance',
@@ -109,14 +108,14 @@ export class CampaignTemplatesService {
           sentiment: true,
           emotion: true,
           topics: true,
-          influencer: true
+          influencer: true,
         },
         suggestedHashtags: ['#campaignname', '#promotion', '#sale'],
         suggestedKeywords: ['campaign slogan', 'promotion code', 'limited time'],
         suggestedLanguages: ['en', 'es'],
         createdAt: new Date(),
-        isActive: true
-      }
+        isActive: true,
+      },
     ];
   }
 
@@ -124,21 +123,21 @@ export class CampaignTemplatesService {
    * Get template by ID
    */
   static getTemplate(id: string): CampaignTemplate | null {
-    return this.getTemplates().find(template => template.id === id) || null;
+    return this.getTemplates().find((template) => template.id === id) || null;
   }
 
   /**
    * Get templates by category
    */
   static getTemplatesByCategory(category: string): CampaignTemplate[] {
-    return this.getTemplates().filter(template => template.category === category);
+    return this.getTemplates().filter((template) => template.category === category);
   }
 
   /**
    * Generate campaign config from template
    */
   static generateCampaignFromTemplate(
-    templateId: string, 
+    templateId: string,
     customization: {
       name: string;
       hashtags?: string[];
@@ -173,7 +172,7 @@ export class CampaignTemplatesService {
       emotionAnalysis: template.defaultAnalysis.emotion,
       topicsAnalysis: template.defaultAnalysis.topics,
       influencerAnalysis: template.defaultAnalysis.influencer,
-      organizationId: customization.organizationId
+      organizationId: customization.organizationId,
     };
   }
 }

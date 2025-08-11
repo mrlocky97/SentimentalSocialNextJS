@@ -294,10 +294,10 @@ async function testEssentialFunctionality() {
         executionTime < 10
           ? '⚡ ULTRA FAST'
           : executionTime < 20
-          ? '🚀 FAST'
-          : executionTime < 30
-          ? '✅ GOOD'
-          : '⏰ SLOW'
+            ? '🚀 FAST'
+            : executionTime < 30
+              ? '✅ GOOD'
+              : '⏰ SLOW'
       } time!`
     );
     console.log(

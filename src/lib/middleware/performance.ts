@@ -88,37 +88,37 @@ export const analyticsRateLimit = createRateLimit({
  */
 export const performanceMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  
+
   // Track request size
   const requestSize = parseInt(req.headers['content-length'] || '0', 10);
-  
+
   // Set request size header early
   if (!res.headersSent) {
     res.setHeader('X-Request-Size', `${requestSize}b`);
   }
-  
+
   // Store original send method
   const originalSend = res.send;
-  res.send = function(body: any) {
+  res.send = function (body: any) {
     const duration = Date.now() - start;
     const status = res.statusCode;
     const method = req.method;
     const url = req.originalUrl;
     const isSuccess = status < 400;
-    
+
     // Set response time header before sending
     if (!res.headersSent) {
       res.setHeader('X-Response-Time', `${duration}ms`);
     }
-    
+
     // Record metrics
     metricsService.recordRequest(duration, isSuccess);
-    
+
     // Log slow requests (> 1 second)
     if (duration > 1000) {
       console.warn(`Slow request: ${method} ${url} - ${duration}ms - ${status}`);
     }
-    
+
     // Cache performance metrics asynchronously
     setImmediate(() => {
       const metricsKey = `perf_${method}_${url.split('?')[0]}`;
@@ -129,24 +129,24 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
         maxDuration: 0,
         errors: 0,
       };
-      
+
       existingMetrics.count++;
       existingMetrics.totalDuration += duration;
       existingMetrics.averageDuration = existingMetrics.totalDuration / existingMetrics.count;
       existingMetrics.maxDuration = Math.max(existingMetrics.maxDuration, duration);
-      
+
       if (status >= 400) {
         existingMetrics.errors++;
       }
-      
+
       // Cache metrics for 1 hour
       appCache.set(metricsKey, existingMetrics, 3600000);
     });
-    
+
     // Call original send method
     return originalSend.call(this, body);
   };
-  
+
   next();
 };
 
@@ -181,7 +181,7 @@ export const sanitizeMiddleware = (req: Request, res: Response, next: NextFuncti
       }
     }
   }
-  
+
   next();
 };
 
