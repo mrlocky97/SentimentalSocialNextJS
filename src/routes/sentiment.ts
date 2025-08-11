@@ -367,7 +367,7 @@ router.post(
  *         name: dataset
  *         schema:
  *           type: string
- *           enum: [general, marketing, tech]
+ *           enum: [general, marketing, tech, sarcasm, multilingual]
  *           default: general
  *         description: Which test dataset to use
  *     responses:
@@ -377,11 +377,16 @@ router.post(
 router.get(
   '/quick-eval',
   asyncHandler(async (req: Request, res: Response) => {
-    const { dataset = 'general' } = req.query;
+    const { dataset = 'general', advanced } = req.query as { dataset?: string; advanced?: string };
 
     // Import test datasets
-    const { sentimentTestDataset, marketingSpecificTestDataset, techSpecificTestDataset } =
-      await import('../data/test-datasets');
+    const {
+      sentimentTestDataset,
+      marketingSpecificTestDataset,
+      techSpecificTestDataset,
+      sarcasmTestDataset,
+      multilingualTestDataset,
+    } = await import('../data/test-datasets');
 
     let testCases;
     switch (dataset) {
@@ -391,13 +396,23 @@ router.get(
       case 'tech':
         testCases = techSpecificTestDataset;
         break;
+      case 'sarcasm':
+        testCases = sarcasmTestDataset;
+        break;
+      case 'multilingual':
+        testCases = multilingualTestDataset;
+        break;
       default:
         testCases = sentimentTestDataset;
     }
 
+    const useAdvancedHybrid =
+      advanced === 'true' || dataset === 'sarcasm' || dataset === 'multilingual';
+
     const results = await sentimentService.evaluateAccuracy({
       testCases,
       includeComparison: true,
+      useAdvancedHybrid,
     });
 
     return successResponse(
@@ -405,7 +420,7 @@ router.get(
       results,
       `Quick evaluation completed: ${results.overall.accuracy.toFixed(
         2
-      )}% accuracy on ${dataset} dataset`
+      )}% accuracy on ${dataset} dataset${useAdvancedHybrid ? ' (advanced-hybrid)' : ''}`
     );
   })
 );
@@ -462,6 +477,46 @@ router.post(
       `Evaluated ${testCases.length} test cases with ${results.overall.accuracy.toFixed(
         2
       )}% accuracy`
+    );
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/sentiment/advanced-compare:
+ *   post:
+ *     summary: Advanced sentiment comparison with auto-weight adjustment and sarcasm detection
+ *     tags: [Sentiment Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Text to analyze
+ *     responses:
+ *       200:
+ *         description: Advanced comparison completed successfully
+ */
+router.post(
+  '/advanced-compare',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      throw SentimentAnalysisError.invalidText();
+    }
+
+    const result = await sentimentService.advancedCompareSentimentMethods({ text });
+    return successResponse(
+      res,
+      result,
+      'Advanced sentiment analysis comparison completed successfully'
     );
   })
 );

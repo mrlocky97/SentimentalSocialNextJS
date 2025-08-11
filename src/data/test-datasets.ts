@@ -93,6 +93,116 @@ export const sentimentTestDataset = [
   },
 ];
 
+export const sarcasmTestDataset = [
+  // ENGLISH SARCASM
+  {
+    text: 'Oh great, another system update that breaks everything. Just what I needed today...',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Perfect! Another bug in the software. They really know how to test things properly 🙄',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Wonderful! My computer crashed right before the deadline. How lovely!',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Oh fantastic, another meeting that could have been an email',
+    expectedSentiment: 'negative',
+  },
+
+  // SPANISH SARCASM
+  {
+    text: 'Qué maravilloso, otra actualización que rompe todo. Justo lo que necesitaba hoy...',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Perfecto! Otro error en el software. Realmente saben cómo hacer las cosas 🙄',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Genial, mi ordenador se colgó justo antes de la fecha límite. ¡Qué hermoso!',
+    expectedSentiment: 'negative',
+  },
+
+  // FRENCH SARCASM
+  {
+    text: "Oh génial, une autre mise à jour qui casse tout. Exactement ce qu'il me fallait...",
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Parfait! Encore un bug dans le logiciel. Ils savent vraiment comment tester 🙄',
+    expectedSentiment: 'negative',
+  },
+
+  // GERMAN SARCASM
+  {
+    text: 'Oh toll, noch ein Update das alles kaputt macht. Genau was ich heute brauchte...',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Perfekt! Noch ein Fehler in der Software. Sie wissen wirklich wie man testet 🙄',
+    expectedSentiment: 'negative',
+  },
+];
+
+export const multilingualTestDataset = [
+  // POSITIVE - Multiple languages
+  {
+    text: 'I absolutely love this product! Amazing quality and great service 😍',
+    expectedSentiment: 'positive',
+  },
+  {
+    text: 'Me encanta absolutamente este producto! Calidad increíble y gran servicio 😍',
+    expectedSentiment: 'positive',
+  },
+  {
+    text: "J'adore absolument ce produit! Qualité incroyable et excellent service 😍",
+    expectedSentiment: 'positive',
+  },
+  {
+    text: 'Ich liebe dieses Produkt absolut! Erstaunliche Qualität und großartiger Service 😍',
+    expectedSentiment: 'positive',
+  },
+
+  // NEGATIVE - Multiple languages
+  {
+    text: 'This is terrible! Worst experience ever. Complete waste of money 😠',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: '¡Esto es terrible! La peor experiencia de mi vida. Completa pérdida de dinero 😠',
+    expectedSentiment: 'negative',
+  },
+  {
+    text: "C'est terrible! Pire expérience de ma vie. Perte d'argent complète 😠",
+    expectedSentiment: 'negative',
+  },
+  {
+    text: 'Das ist schrecklich! Schlimmste Erfahrung aller Zeiten. Komplette Geldverschwendung 😠',
+    expectedSentiment: 'negative',
+  },
+
+  // NEUTRAL - Multiple languages
+  {
+    text: 'The product arrived on time. Standard packaging and delivery.',
+    expectedSentiment: 'neutral',
+  },
+  {
+    text: 'El producto llegó a tiempo. Embalaje y entrega estándar.',
+    expectedSentiment: 'neutral',
+  },
+  {
+    text: 'Le produit est arrivé à temps. Emballage et livraison standard.',
+    expectedSentiment: 'neutral',
+  },
+  {
+    text: 'Das Produkt kam pünktlich an. Standard Verpackung und Lieferung.',
+    expectedSentiment: 'neutral',
+  },
+];
+
 export const marketingSpecificTestDataset = [
   // Marketing-specific positive
   {

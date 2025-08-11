@@ -12,6 +12,7 @@ import {
 } from '@/types';
 import { sentimentManager } from '../server';
 import { Tweet } from '../types/twitter';
+import { advancedHybridAnalyzer } from './advanced-hybrid-analyzer.service';
 
 export class SentimentService {
   /**
@@ -992,9 +993,11 @@ export class SentimentService {
   async evaluateAccuracy({
     testCases,
     includeComparison = true,
+    useAdvancedHybrid = false,
   }: {
     testCases: Array<{ text: string; expectedSentiment: string }>;
     includeComparison?: boolean;
+    useAdvancedHybrid?: boolean;
   }) {
     const results = {
       overall: {
@@ -1028,24 +1031,44 @@ export class SentimentService {
         let hybridResult, naiveResult, ruleResult;
 
         if (includeComparison) {
-          // Get comparison results (includes all methods)
-          const comparison = await this.compareSentimentMethods({ text: testCase.text });
-          hybridResult = {
-            label: comparison.unified.label,
-            confidence: comparison.unified.confidence,
-          };
-          naiveResult = comparison.naive;
-          ruleResult = comparison.rule;
+          if (useAdvancedHybrid) {
+            // Use advanced hybrid analyzer
+            const comparison = await this.advancedCompareSentimentMethods({ text: testCase.text });
+            hybridResult = {
+              label: comparison.advanced.label,
+              confidence: comparison.advanced.confidence,
+            };
+            naiveResult = comparison.naive;
+            ruleResult = comparison.rule;
+          } else {
+            // Use standard compare method
+            const comparison = await this.compareSentimentMethods({ text: testCase.text });
+            hybridResult = {
+              label: comparison.unified.label,
+              confidence: comparison.unified.confidence,
+            };
+            naiveResult = comparison.naive;
+            ruleResult = comparison.rule;
+          }
         } else {
-          // Just get hybrid result using test method
-          const analysis = await this.testSentimentAnalysis({
-            text: testCase.text,
-            method: 'rule',
-          });
-          hybridResult = {
-            label: analysis.analysis.sentiment.label,
-            confidence: analysis.analysis.sentiment.confidence,
-          };
+          if (useAdvancedHybrid) {
+            // Use advanced hybrid without method comparison
+            const comparison = await this.advancedCompareSentimentMethods({ text: testCase.text });
+            hybridResult = {
+              label: comparison.advanced.label,
+              confidence: comparison.advanced.confidence,
+            };
+          } else {
+            // Just get hybrid result using test method (rule-based)
+            const analysis = await this.testSentimentAnalysis({
+              text: testCase.text,
+              method: 'rule',
+            });
+            hybridResult = {
+              label: analysis.analysis.sentiment.label,
+              confidence: analysis.analysis.sentiment.confidence,
+            };
+          }
         }
 
         // Normalize expected sentiment
@@ -1128,6 +1151,135 @@ export class SentimentService {
     results.insights.strongestMethod = strongest.method;
 
     return results;
+  }
+
+  /**
+   * Advanced comparison with automatic weight adjustment and sarcasm detection
+   */
+  async advancedCompareSentimentMethods({ text }: SentimentCompareRequest) {
+    if (!text || typeof text !== 'string') {
+      throw new Error('Text string is required');
+    }
+
+    // Create mock tweet for analysis
+    const mockTweet: Tweet = {
+      id: 'test',
+      tweetId: 'test',
+      content: text,
+      author: {
+        id: 'test_user',
+        username: 'test_user',
+        displayName: 'Test User',
+        verified: false,
+        followersCount: 100,
+        followingCount: 50,
+        tweetsCount: 10,
+        avatar: '',
+      },
+      metrics: {
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        quotes: 0,
+        views: 0,
+        engagement: 0,
+      },
+      hashtags: [],
+      mentions: [],
+      urls: [],
+      mediaUrls: [],
+      isRetweet: false,
+      isReply: false,
+      isQuote: false,
+      language: 'en',
+      createdAt: new Date(),
+      scrapedAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Get results from both methods
+    const start1 = Date.now();
+    const naiveResult = sentimentManager.predictNaiveBayes(text);
+    const naiveTime = Date.now() - start1;
+
+    const start2 = Date.now();
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+    const ruleTime = Date.now() - start2;
+
+    // Detect language
+    const langInfo = this.detectLanguageImproved(text);
+
+    // Use advanced hybrid analyzer
+    const advancedResult = advancedHybridAnalyzer.predictWithAutoWeights(
+      text,
+      naiveResult,
+      {
+        label: ruleResult.analysis.sentiment.label,
+        confidence: ruleResult.analysis.sentiment.confidence,
+        score: ruleResult.analysis.sentiment.score,
+      },
+      langInfo.language
+    );
+
+    return {
+      text,
+      detectedLanguage: langInfo.language,
+      naive: {
+        label: naiveResult.label,
+        confidence: naiveResult.confidence,
+        processingTime: `${naiveTime}ms`,
+      },
+      rule: {
+        label: ruleResult.analysis.sentiment.label,
+        score: ruleResult.analysis.sentiment.score,
+        confidence: ruleResult.analysis.sentiment.confidence,
+        processingTime: `${ruleTime}ms`,
+        emotions: ruleResult.analysis.sentiment.emotions,
+      },
+      advanced: {
+        label: advancedResult.label,
+        confidence: advancedResult.confidence,
+        score: advancedResult.score,
+        weights: advancedResult.weights,
+        explanation: advancedResult.explanation,
+        features: {
+          sarcasmDetected: advancedResult.features.sarcasmIndicators > 1,
+          emotionalIntensity: advancedResult.features.emotionalWords,
+          hasEmojis: advancedResult.features.hasEmojis,
+          textComplexity: advancedResult.features.complexity.toFixed(2),
+          textLength: advancedResult.features.textLength,
+        },
+      },
+      comparison: {
+        originalVsAdvanced: {
+          originalLabel:
+            naiveResult.confidence > ruleResult.analysis.sentiment.confidence
+              ? naiveResult.label
+              : ruleResult.analysis.sentiment.label,
+          advancedLabel: advancedResult.label,
+          improvement:
+            advancedResult.features.sarcasmIndicators > 1
+              ? 'Sarcasm detected and handled'
+              : 'Weights auto-adjusted',
+        },
+        processingTime: `${Date.now() - start1}ms total`,
+      },
+      unified: {
+        label: advancedResult.label,
+        confidence: advancedResult.confidence,
+        score: advancedResult.score,
+        method: 'advanced-hybrid',
+        explanation: advancedResult.explanation,
+        languageAnalysis: {
+          detectedLanguage: langInfo.language,
+          emotionalIntensity: langInfo.emotionalIntensity,
+          textStats: {
+            length: text.length,
+            complexity: langInfo.textComplexity,
+          },
+        },
+      },
+    };
   }
 }
 

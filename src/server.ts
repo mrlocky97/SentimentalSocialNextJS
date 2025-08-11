@@ -45,9 +45,7 @@ import userRoutes from './routes/users';
 import { metricsService } from './lib/monitoring/metrics';
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
 // Import sentiment analysis manager and training data
-import fs from 'fs';
 import path from 'path';
-import { trainingData } from './data/training-data';
 import { TweetSentimentAnalysisManager } from './services/tweet-sentiment-analysis.manager.service';
 
 // Create a singleton instance of the sentiment manager to be used throughout the app
@@ -200,7 +198,9 @@ async function startServer() {
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.initializeOnStartup();
 
-    // Initialize and train sentiment analysis model
+    // Initialize and train sentiment analysis model (temporarily disabled for testing)
+    console.log('⚠️ Skipping model initialization for testing purposes');
+    /*
     try {
       // Check if model file exists
       if (fs.existsSync(modelPath)) {
@@ -213,9 +213,13 @@ async function startServer() {
       console.error('❌ Error initializing sentiment model:', modelError);
       await sentimentManager.trainNaiveBayes(trainingData);
     }
+    */
 
     // Start Express server
-    app.listen(PORT, () => {});
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+    });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
