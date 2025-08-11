@@ -107,25 +107,41 @@ app.get('/api/v1/metrics', (req, res) => {
   });
 });
 
-// Swagger UI setup
-app.use(
-  '/api-docs',
-  swaggerUi.serve,
-  swaggerUi.setup(specs, {
-    explorer: true,
-    customCss: `
-    .swagger-ui .topbar { display: none }
-    .swagger-ui .info .title { color: #1976d2 }
-  `,
-    customSiteTitle: 'SentimentalSocial API Documentation',
-    swaggerOptions: {
-      docExpansion: 'none',
-      filter: true,
-      showRequestDuration: true,
-      tryItOutEnabled: true,
-    },
-  })
-);
+// Swagger UI setup (disabled by default in production)
+if (appConfig.docs.enableSwaggerUI) {
+  // Optional basic auth for Swagger
+  const swaggerAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const user = appConfig.docs.basicAuthUser;
+    const pass = appConfig.docs.basicAuthPass;
+    if (!user || !pass) return next();
+    const hdr = req.headers.authorization || '';
+    const m = hdr.match(/^Basic (.+)$/);
+    if (!m) return res.status(401).set('WWW-Authenticate', 'Basic realm="API Docs"').end();
+    const [u, p] = Buffer.from(m[1], 'base64').toString('utf8').split(':');
+    if (u === user && p === pass) return next();
+    return res.status(401).set('WWW-Authenticate', 'Basic realm="API Docs"').end();
+  };
+
+  app.use(
+    '/api-docs',
+    swaggerAuth,
+    swaggerUi.serve,
+    swaggerUi.setup(specs, {
+      explorer: true,
+      customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { color: #1976d2 }
+    `,
+      customSiteTitle: 'SentimentalSocial API Documentation',
+      swaggerOptions: {
+        docExpansion: 'none',
+        filter: true,
+        showRequestDuration: true,
+        tryItOutEnabled: true,
+      },
+    })
+  );
+}
 
 // API Routes with specific rate limiting
 app.use('/api/v1/auth', authRateLimit, authRoutes);

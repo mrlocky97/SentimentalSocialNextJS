@@ -26,6 +26,14 @@ export const appConfig = {
     port: getEnvNumber('PORT', 3001), // Fixed default port
     url: getEnvVar('APP_URL', 'http://localhost:3001'),
   },
+  docs: {
+    enableSwaggerUI: getEnvBoolean(
+      'ENABLE_SWAGGER_UI',
+      (process.env.NODE_ENV || 'development') !== 'production'
+    ),
+    basicAuthUser: getEnvVar('SWAGGER_BASIC_AUTH_USER', ''),
+    basicAuthPass: getEnvVar('SWAGGER_BASIC_AUTH_PASS', ''),
+  },
 
   auth: {
     jwtSecret: getEnvVar('JWT_SECRET', 'your-secret-key-change-in-production'),
@@ -39,26 +47,37 @@ export const appConfig = {
       max: getEnvNumber('RATE_LIMIT_MAX', 100),
     },
     cors: {
-      origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      origin: (
+        origin: string | undefined,
+        callback: (error: Error | null, allow?: boolean) => void
+      ) => {
         const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
-        
-        // Allow requests with no origin (mobile apps, curl, etc.)
-        if (!origin) return callback(null, true);
-        
-        // If CORS_ORIGIN is '*', allow all origins
-        if (corsOrigin === '*') return callback(null, true);
-        
-        // If origin matches localhost with any port, allow it
-        if (origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+        const isProd = (process.env.NODE_ENV || 'development') === 'production';
+
+        // In production, require an Origin and validate strictly
+        if (!origin) {
+          return callback(null, !isProd);
+        }
+
+        // Wildcard allowed only outside production
+        if (corsOrigin === '*') {
+          return callback(null, !isProd);
+        }
+
+        // Allow localhost origins only outside production
+        if (
+          !isProd &&
+          (origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/))
+        ) {
           return callback(null, true);
         }
-        
-        // Check against specific origins
-        const allowedOrigins = corsOrigin.split(',');
+
+        // Check against specific allowed origins (comma-separated)
+        const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
         if (allowedOrigins.includes(origin)) {
           return callback(null, true);
         }
-        
+
         // Deny all other origins
         callback(new Error('Not allowed by CORS'));
       },
