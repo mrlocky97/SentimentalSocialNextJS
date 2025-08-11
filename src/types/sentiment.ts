@@ -4,14 +4,19 @@
  */
 
 export interface SentimentResult {
-  score: number;           // -1 (very negative) to 1 (very positive)
-  magnitude: number;       // 0 to infinity (strength of emotion)
-  label: SentimentLabel;   // Human-readable sentiment
-  confidence: number;      // 0 to 1 (confidence in the analysis)
+  score: number; // -1 (very negative) to 1 (very positive)
+  magnitude: number; // 0 to infinity (strength of emotion)
+  label: SentimentLabel; // Human-readable sentiment
+  confidence: number; // 0 to 1 (confidence in the analysis)
   emotions?: EmotionAnalysis;
 }
 
-export type SentimentLabel = 'very_positive' | 'positive' | 'neutral' | 'negative' | 'very_negative';
+export type SentimentLabel =
+  | 'very_positive'
+  | 'positive'
+  | 'neutral'
+  | 'negative'
+  | 'very_negative';
 
 export interface EmotionAnalysis {
   joy: number;
@@ -33,11 +38,18 @@ export interface TextAnalysis {
 export interface EntityAnalysis {
   name: string;
   type: EntityType;
-  salience: number;        // 0 to 1 (importance in text)
+  salience: number; // 0 to 1 (importance in text)
   sentiment?: SentimentResult;
 }
 
-export type EntityType = 'PERSON' | 'LOCATION' | 'ORGANIZATION' | 'EVENT' | 'WORK_OF_ART' | 'CONSUMER_GOOD' | 'OTHER';
+export type EntityType =
+  | 'PERSON'
+  | 'LOCATION'
+  | 'ORGANIZATION'
+  | 'EVENT'
+  | 'WORK_OF_ART'
+  | 'CONSUMER_GOOD'
+  | 'OTHER';
 
 export interface TweetSentimentAnalysis {
   tweetId: string;
@@ -45,7 +57,7 @@ export interface TweetSentimentAnalysis {
   analysis: TextAnalysis;
   brandMentions: BrandMention[];
   hashtagSentiments: HashtagSentiment[];
-  influenceScore: number;  // Based on engagement and author metrics
+  influenceScore: number; // Based on engagement and author metrics
   marketingInsights: MarketingInsight[];
   analyzedAt: Date;
 }
@@ -53,7 +65,7 @@ export interface TweetSentimentAnalysis {
 export interface BrandMention {
   brand: string;
   sentiment: SentimentResult;
-  context: string;         // Surrounding text
+  context: string; // Surrounding text
   confidence: number;
 }
 
@@ -131,4 +143,44 @@ export interface SentimentAnalysisProvider {
   analyzeBatch(texts: string[], config?: SentimentAnalysisConfig): Promise<TextAnalysis[]>;
   isAvailable(): Promise<boolean>;
   getCost(textCount: number): number;
+}
+export interface SentimentTestRequest {
+  text: string;
+  method?: 'rule' | 'naive';
+}
+
+export interface SentimentCompareRequest {
+  text: string;
+}
+
+export interface ModelUpdateRequest {
+  examples: Array<{
+    text: string;
+    label: 'positive' | 'negative' | 'neutral';
+  }>;
+  saveModel?: boolean;
+}
+
+export interface LanguageInfo {
+  language: string;
+  negativeScore: number;
+  positiveScore: number;
+  textComplexity: number;
+  emotionalIntensity: number;
+}
+
+export interface UnifiedSentimentResult {
+  label: string;
+  confidence: number;
+  score: number;
+  method: string;
+  explanation: string;
+  languageAnalysis: {
+    detectedLanguage: string;
+    emotionalIntensity: number;
+    textStats: {
+      length: number;
+      complexity: number;
+    };
+  };
 }

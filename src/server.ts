@@ -32,15 +32,11 @@ import DatabaseConnection from './lib/database/connection';
 
 // Import route modules - consolidated imports
 import adminRoutes from './routes/admin';
-import campaignRoutes from './routes/campaigns';
-import sentimentRoutes from './routes/sentiment';
-// REMOVED: experimental routes (moved to backup for academic research)
-// import experimentalRoutes from './routes/experimental.routes';
-// TEMPORARILY DISABLED during consolidation
-// import hybridSentimentRoutes from './routes/hybrid-sentiment.routes';
 import authRoutes from './routes/auth';
+import campaignRoutes from './routes/campaigns';
 import { scrapingRoutes } from './routes/scraping';
 import securityRoutes from './routes/security';
+import sentimentRoutes from './routes/sentiment';
 import templateRoutes from './routes/templates';
 import twitterAuthRoutes from './routes/twitter-auth';
 import userRoutes from './routes/users';
@@ -142,10 +138,6 @@ app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
 app.use('/api/v1/security', authRateLimit, securityRoutes);
-// REMOVED: experimental routes (moved to backup for academic research)
-// app.use('/api/v1/experimental', analyticsRateLimit, experimentalRoutes);
-// TEMPORARILY DISABLED during consolidation
-// app.use('/api/v1/hybrid', analyticsRateLimit, cacheControlMiddleware(300), hybridSentimentRoutes);
 app.use('/api/v1/admin', authRateLimit, adminRoutes);
 
 // API info endpoint
@@ -163,7 +155,6 @@ app.get('/api/v1', (req, res) => {
       scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
       security: '/api/v1/security',
-      // experimental: '/api/v1/experimental', // Removed - moved to backup
       admin: '/api/v1/admin',
     },
     features: [
@@ -172,8 +163,6 @@ app.get('/api/v1', (req, res) => {
       'Twitter Data Scraping with Twikit (Unlimited)',
       'Real-time Sentiment Analysis',
       'Advanced Analytics & Reporting',
-      // 'Experimental Model Evaluation', // Removed - moved to backup
-      // 'Performance Benchmarking & Visualization', // Removed - moved to backup
       'Data Export Capabilities',
     ],
   });
@@ -192,28 +181,14 @@ app.use('/api/*', (req, res) => {
   });
 });
 
+// Import and use our improved error handler
+import { errorHandler, notFoundHandler } from './utils/error-handler';
+
+// 404 handler for unmatched routes
+app.use('*', notFoundHandler);
+
 // Global error handler
-interface AppError extends Error {
-  status?: number;
-  code?: string;
-}
-
-app.use(
-  (err: AppError, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // Don't leak error details in production
-    const isDevelopment = process.env.NODE_ENV === 'development';
-
-    res.status(err.status || 500).json({
-      success: false,
-      error: {
-        message: err.message || 'Internal server error',
-        code: err.code || 'INTERNAL_ERROR',
-        ...(isDevelopment && { stack: err.stack }),
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-);
+app.use(errorHandler);
 
 // Start server
 async function startServer() {
@@ -226,33 +201,21 @@ async function startServer() {
     await twitterAuth.initializeOnStartup();
 
     // Initialize and train sentiment analysis model
-    console.log('🧠 Initializing sentiment analysis model...');
     try {
       // Check if model file exists
       if (fs.existsSync(modelPath)) {
-        console.log('📂 Loading pre-trained model from disk...');
         await sentimentManager.loadNaiveBayesFromFile(modelPath);
-        console.log('✅ Model loaded successfully.');
       } else {
-        console.log('🔄 No pre-trained model found. Training new model...');
-        console.log(`💾 Training with ${trainingData.length} examples...`);
         await sentimentManager.trainNaiveBayes(trainingData);
-        console.log('✅ Model trained successfully. Saving to disk...');
         await sentimentManager.saveNaiveBayesToFile(modelPath);
-        console.log('💾 Model saved for future use.');
       }
     } catch (modelError) {
       console.error('❌ Error initializing sentiment model:', modelError);
-      console.log('🔄 Falling back to training a new model without persistence...');
       await sentimentManager.trainNaiveBayes(trainingData);
     }
 
     // Start Express server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📚 Swagger UI available at http://localhost:${PORT}/api-docs`);
-      console.log(`🏥 Health check at http://localhost:${PORT}/health`);
-    });
+    app.listen(PORT, () => {});
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

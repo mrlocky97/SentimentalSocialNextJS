@@ -1,0 +1,990 @@
+/**
+ * Sentiment Analysis Service
+ * Business logic for sentiment analysis operations
+ */
+
+import {
+  LanguageInfo,
+  ModelUpdateRequest,
+  SentimentCompareRequest,
+  SentimentTestRequest,
+  UnifiedSentimentResult,
+} from '@/types/sentiment';
+import { sentimentManager } from '../server';
+import { Tweet } from '../types/twitter';
+
+export class SentimentService {
+  /**
+   * Analyze sentiment of a single tweet
+   */
+  async analyzeTweet(tweet: Tweet, config?: any) {
+    if (!tweet || !tweet.content) {
+      throw new Error('Tweet object with content is required');
+    }
+
+    return await sentimentManager.analyzeTweet(tweet, config);
+  }
+
+  /**
+   * Analyze sentiment of multiple tweets in batch
+   */
+  async analyzeTweetsBatch(tweets: Tweet[], config?: any, includeStats = true) {
+    if (!tweets || !Array.isArray(tweets) || tweets.length === 0) {
+      throw new Error('Array of tweets is required');
+    }
+
+    if (tweets.length > 100) {
+      throw new Error(`Maximum 100 tweets allowed per batch request. Received: ${tweets.length}`);
+    }
+
+    const startTime = Date.now();
+    const analyses = await sentimentManager.analyzeTweetsBatch(tweets, config);
+    const processingTime = Date.now() - startTime;
+
+    // Generate statistics if requested
+    let statistics = null;
+    if (includeStats) {
+      statistics = sentimentManager.generateStatistics(analyses);
+    }
+
+    // Create summary
+    const averageSentiment =
+      analyses.length > 0
+        ? analyses.reduce((sum, analysis) => sum + analysis.analysis.sentiment.score, 0) /
+          analyses.length
+        : 0;
+
+    return {
+      analyses,
+      statistics,
+      summary: {
+        totalProcessed: analyses.length,
+        averageSentiment: Number(averageSentiment.toFixed(3)),
+        processingTime: `${processingTime}ms`,
+        sentimentDistribution: statistics?.sentimentDistribution,
+      },
+    };
+  }
+
+  /**
+   * Generate comprehensive statistics from analyzed tweets
+   */
+  generateStatistics(analyses: any[]) {
+    if (!analyses || !Array.isArray(analyses)) {
+      throw new Error('Array of sentiment analyses is required');
+    }
+
+    return sentimentManager.generateStatistics(analyses);
+  }
+
+  /**
+   * Generate sentiment trends over time
+   */
+  generateSentimentTrends(analyses: any[], intervalHours = 1) {
+    if (!analyses || !Array.isArray(analyses)) {
+      throw new Error('Array of sentiment analyses is required');
+    }
+
+    const trends = sentimentManager.generateSentimentTrends(analyses, intervalHours);
+
+    return {
+      trends,
+      intervalHours,
+      totalDataPoints: trends.length,
+      timeRange:
+        trends.length > 0
+          ? {
+              start: trends[0].timestamp,
+              end: trends[trends.length - 1].timestamp,
+            }
+          : null,
+    };
+  }
+
+  /**
+   * Get demo tweets with analysis
+   */
+  async getDemoAnalysis() {
+    const demoTweets: Tweet[] = [
+      {
+        id: 'demo_1',
+        tweetId: 'demo_1',
+        content:
+          'I absolutely love my new Nike Air Max! Best running shoes ever! 😍 #Nike #Running #JustDoIt',
+        author: {
+          id: 'demo_user_1',
+          username: 'runner_pro',
+          displayName: 'Pro Runner',
+          verified: true,
+          followersCount: 15000,
+          followingCount: 500,
+          tweetsCount: 2500,
+          avatar: 'https://example.com/avatar1.jpg',
+        },
+        metrics: {
+          likes: 245,
+          retweets: 89,
+          replies: 34,
+          quotes: 12,
+          views: 5600,
+          engagement: 380,
+        },
+        hashtags: ['#Nike', '#Running', '#JustDoIt'],
+        mentions: [],
+        urls: [],
+        mediaUrls: [],
+        isRetweet: false,
+        isReply: false,
+        isQuote: false,
+        language: 'en',
+        createdAt: new Date('2025-07-15T10:30:00Z'),
+        scrapedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'demo_2',
+        tweetId: 'demo_2',
+        content:
+          'Terrible customer service from @nike. My order was delayed for 3 weeks and no one responds to my emails. Very disappointed! 😠',
+        author: {
+          id: 'demo_user_2',
+          username: 'customer_123',
+          displayName: 'Disappointed Customer',
+          verified: false,
+          followersCount: 350,
+          followingCount: 800,
+          tweetsCount: 1200,
+          avatar: 'https://example.com/avatar2.jpg',
+        },
+        metrics: {
+          likes: 23,
+          retweets: 67,
+          replies: 145,
+          quotes: 8,
+          views: 2300,
+          engagement: 243,
+        },
+        hashtags: [],
+        mentions: ['@nike'],
+        urls: [],
+        mediaUrls: [],
+        isRetweet: false,
+        isReply: false,
+        isQuote: false,
+        language: 'en',
+        createdAt: new Date('2025-07-15T14:45:00Z'),
+        scrapedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'demo_3',
+        tweetId: 'demo_3',
+        content:
+          'Nike vs Adidas - the eternal debate! Both have their strengths. Nike for innovation, Adidas for comfort. What do you think? 🤔',
+        author: {
+          id: 'demo_user_3',
+          username: 'sneaker_expert',
+          displayName: 'Sneaker Expert',
+          verified: true,
+          followersCount: 45000,
+          followingCount: 1200,
+          tweetsCount: 8900,
+          avatar: 'https://example.com/avatar3.jpg',
+        },
+        metrics: {
+          likes: 412,
+          retweets: 189,
+          replies: 267,
+          quotes: 45,
+          views: 12400,
+          engagement: 913,
+        },
+        hashtags: [],
+        mentions: [],
+        urls: [],
+        mediaUrls: [],
+        isRetweet: false,
+        isReply: false,
+        isQuote: false,
+        language: 'en',
+        createdAt: new Date('2025-07-15T16:20:00Z'),
+        scrapedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    // Analyze demo tweets
+    const analyses = await sentimentManager.analyzeTweetsBatch(demoTweets);
+    const statistics = sentimentManager.generateStatistics(analyses);
+    const trends = sentimentManager.generateSentimentTrends(analyses, 1);
+
+    return {
+      demoTweets,
+      analyses,
+      statistics,
+      trends,
+      insights: {
+        summary: `Analyzed ${
+          analyses.length
+        } demo tweets with average sentiment of ${statistics.averageSentiment.toFixed(3)}`,
+        keyFindings: [
+          'Mix of positive and negative brand sentiment detected',
+          'High-influence users engaged with brand content',
+          'Customer service issues identified requiring attention',
+          'Brand comparison discussions present in conversations',
+        ],
+        recommendations: [
+          'Monitor and respond to customer service complaints',
+          'Engage with positive brand advocates',
+          'Track competitor comparison discussions',
+          'Leverage high-engagement content for amplification',
+        ],
+      },
+    };
+  }
+
+  /**
+   * Test sentiment analysis with custom text
+   */
+  async testSentimentAnalysis({ text, method = 'rule' }: SentimentTestRequest) {
+    if (!text || typeof text !== 'string') {
+      throw new Error('Text string is required');
+    }
+
+    // Create a mock tweet for testing
+    const mockTweet: Tweet = {
+      id: 'test_tweet',
+      tweetId: 'test_tweet',
+      content: text,
+      author: {
+        id: 'test_user',
+        username: 'test_user',
+        displayName: 'Test User',
+        verified: false,
+        followersCount: 100,
+        followingCount: 50,
+        tweetsCount: 10,
+        avatar: 'https://example.com/avatar.jpg',
+      },
+      metrics: {
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        quotes: 0,
+        views: 0,
+        engagement: 0,
+      },
+      hashtags: [],
+      mentions: [],
+      urls: [],
+      mediaUrls: [],
+      isRetweet: false,
+      isReply: false,
+      isQuote: false,
+      language: 'en',
+      createdAt: new Date(),
+      scrapedAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Analyze the tweet using the specified method
+    const analysis = await sentimentManager.analyzeTweet(mockTweet, undefined, method);
+
+    // If naive method was used, also show direct classifier result
+    let naiveBayesResult = null;
+    if (method === 'naive') {
+      naiveBayesResult = sentimentManager.predictNaiveBayes(text);
+    }
+
+    return {
+      originalText: text,
+      method,
+      analysis: analysis.analysis,
+      naiveBayes: naiveBayesResult,
+      brandMentions: analysis.brandMentions,
+      marketingInsights: analysis.marketingInsights,
+      summary: {
+        sentiment: analysis.analysis.sentiment.label,
+        score: analysis.analysis.sentiment.score,
+        confidence: analysis.analysis.sentiment.confidence,
+        keywords: analysis.analysis.keywords.slice(0, 5),
+      },
+    };
+  }
+
+  /**
+   * Update the sentiment analysis model with new training data
+   */
+  async updateModel({ examples, saveModel = true }: ModelUpdateRequest) {
+    if (!examples || !Array.isArray(examples) || examples.length === 0) {
+      throw new Error('Array of training examples is required');
+    }
+
+    // Validate examples
+    const validExamples = examples.filter(
+      (ex) =>
+        ex.text &&
+        typeof ex.text === 'string' &&
+        ex.label &&
+        ['positive', 'negative', 'neutral'].includes(ex.label)
+    );
+
+    if (validExamples.length === 0) {
+      throw new Error('No valid training examples provided');
+    }
+
+    // Import existing training data
+    const fs = require('fs');
+    const path = require('path');
+    const { trainingData } = require('../data/training-data');
+
+    // Train the model with new examples
+    console.log(`🔄 Training model with ${validExamples.length} new examples...`);
+    const startTime = Date.now();
+
+    await sentimentManager.trainNaiveBayes([...trainingData, ...validExamples]);
+
+    const trainingTime = Date.now() - startTime;
+    console.log(`✅ Model trained in ${trainingTime}ms`);
+
+    // Save the model if requested
+    if (saveModel) {
+      const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
+      console.log('💾 Saving updated model...');
+      await sentimentManager.saveNaiveBayesToFile(modelPath);
+      console.log('💾 Model saved successfully.');
+    }
+
+    // Evaluate the updated model with test examples
+    const testExamples = [
+      { text: 'I love this product!', expected: 'positive' },
+      { text: 'This is terrible', expected: 'negative' },
+      { text: 'The box was delivered', expected: 'neutral' },
+      { text: 'Me encanta este servicio', expected: 'positive' },
+      { text: 'No me gusta para nada', expected: 'negative' },
+    ];
+
+    const testResults = testExamples.map((ex) => {
+      const result = sentimentManager.predictNaiveBayes(ex.text);
+      return {
+        text: ex.text,
+        expected: ex.expected,
+        predicted: result.label,
+        confidence: result.confidence,
+        correct: result.label === ex.expected,
+      };
+    });
+
+    const accuracy = (testResults.filter((r) => r.correct).length / testResults.length) * 100;
+
+    return {
+      trainingStats: {
+        newExamples: validExamples.length,
+        totalExamplesUsed: trainingData.length + validExamples.length,
+        trainingTime: `${trainingTime}ms`,
+        modelSaved: saveModel,
+      },
+      testResults: {
+        examples: testResults,
+        accuracy: accuracy,
+      },
+    };
+  }
+
+  /**
+   * Get model status and information
+   */
+  async getModelStatus() {
+    // Create multilingual test examples to verify the model
+    const testExamples = [
+      // English examples
+      { text: "I love this product! It's amazing and works perfectly.", expectedLabel: 'positive' },
+      {
+        text: "This is the worst experience I've ever had. Terrible service.",
+        expectedLabel: 'negative',
+      },
+      { text: 'The package was delivered yesterday.', expectedLabel: 'neutral' },
+
+      // Spanish examples
+      { text: 'Me encanta este producto, es de excelente calidad.', expectedLabel: 'positive' },
+      { text: 'Qué servicio tan horrible, no lo recomiendo para nada.', expectedLabel: 'negative' },
+      { text: 'El informe debe entregarse antes del viernes.', expectedLabel: 'neutral' },
+    ];
+
+    // Run examples with both methods
+    const results = await Promise.all(
+      testExamples.map(async (example) => {
+        const naiveResult = sentimentManager.predictNaiveBayes(example.text);
+
+        // Create mock tweet for rule-based method
+        const mockTweet: Tweet = {
+          id: 'test',
+          tweetId: 'test',
+          content: example.text,
+          author: {
+            id: 'test_user',
+            username: 'test_user',
+            displayName: 'Test User',
+            verified: false,
+            followersCount: 100,
+            followingCount: 50,
+            tweetsCount: 10,
+            avatar: '',
+          },
+          metrics: {
+            likes: 0,
+            retweets: 0,
+            replies: 0,
+            quotes: 0,
+            views: 0,
+            engagement: 0,
+          },
+          hashtags: [],
+          mentions: [],
+          urls: [],
+          mediaUrls: [],
+          isRetweet: false,
+          isReply: false,
+          isQuote: false,
+          language: example.text.includes('encanta') ? 'es' : 'en',
+          createdAt: new Date(),
+          scrapedAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+
+        return {
+          text: example.text,
+          expectedLabel: example.expectedLabel,
+          naive: {
+            label: naiveResult.label,
+            confidence: naiveResult.confidence,
+            correct: naiveResult.label === example.expectedLabel,
+          },
+          rule: {
+            label: ruleResult.analysis.sentiment.label,
+            score: ruleResult.analysis.sentiment.score,
+            confidence: ruleResult.analysis.sentiment.confidence,
+            correct: ruleResult.analysis.sentiment.label === example.expectedLabel,
+          },
+        };
+      })
+    );
+
+    // Calculate accuracy for each method
+    const naiveCorrect = results.filter((r) => r.naive.correct).length;
+    const ruleCorrect = results.filter((r) => r.rule.correct).length;
+
+    // Get model information
+    const fs = require('fs');
+    const path = require('path');
+    const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
+
+    let modelInfo = {
+      exists: fs.existsSync(modelPath),
+      size: 0,
+      lastModified: null,
+    };
+
+    if (modelInfo.exists) {
+      const stats = fs.statSync(modelPath);
+      modelInfo.size = stats.size;
+      modelInfo.lastModified = stats.mtime;
+    }
+
+    return {
+      model: modelInfo,
+      accuracy: {
+        naive: {
+          correct: naiveCorrect,
+          total: testExamples.length,
+          accuracy: (naiveCorrect / testExamples.length) * 100,
+        },
+        rule: {
+          correct: ruleCorrect,
+          total: testExamples.length,
+          accuracy: (ruleCorrect / testExamples.length) * 100,
+        },
+      },
+      testResults: results,
+    };
+  }
+
+  /**
+   * Improved language detection with emotional indicators
+   */
+  private detectLanguageImproved(text: string): LanguageInfo {
+    // Broader patterns for better detection
+    const spanishPatterns = [
+      'el',
+      'la',
+      'los',
+      'las',
+      'es',
+      'son',
+      'está',
+      'están',
+      'que',
+      'porque',
+      'cuando',
+      'como',
+      'con',
+      'sin',
+      'para',
+      'por',
+      'pero',
+      'muy',
+      'más',
+      'menos',
+      'bien',
+      'mal',
+      'bueno',
+      'malo',
+    ];
+    const englishPatterns = [
+      'the',
+      'is',
+      'are',
+      'was',
+      'were',
+      'that',
+      'this',
+      'these',
+      'those',
+      'and',
+      'but',
+      'with',
+      'without',
+      'for',
+      'to',
+      'from',
+      'very',
+      'more',
+      'less',
+      'good',
+      'bad',
+      'well',
+      'not',
+    ];
+
+    // Common Spanish words in negative phrases
+    const spanishNegativeWords = [
+      'malo',
+      'mala',
+      'malos',
+      'malas',
+      'pésimo',
+      'pésima',
+      'horrible',
+      'terribles',
+      'peor',
+      'dañado',
+      'roto',
+      'defectuoso',
+      'decepcionante',
+      'decepción',
+    ];
+
+    // Common Spanish words in positive phrases
+    const spanishPositiveWords = [
+      'bueno',
+      'buena',
+      'buenos',
+      'buenas',
+      'excelente',
+      'increíble',
+      'genial',
+      'fantástico',
+      'encanta',
+      'perfecto',
+      'maravilloso',
+    ];
+
+    // Common English words in negative phrases
+    const englishNegativeWords = [
+      'bad',
+      'worst',
+      'terrible',
+      'horrible',
+      'awful',
+      'broken',
+      'defective',
+      'disappointing',
+      'poor',
+      'issues',
+      'bugs',
+      'problem',
+    ];
+
+    // Common English words in positive phrases
+    const englishPositiveWords = [
+      'good',
+      'great',
+      'excellent',
+      'amazing',
+      'impressive',
+      'fantastic',
+      'wonderful',
+      'perfect',
+      'love',
+      'best',
+    ];
+
+    // Check matches (normalized by text length)
+    const lowerText = text.toLowerCase();
+    const words = lowerText.split(/\s+/);
+    const textLength = words.length;
+
+    // Count matches by language
+    let spanishCount = spanishPatterns.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+    let englishCount = englishPatterns.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+
+    // Normalization factor
+    const normFactor = Math.max(1, textLength / 10);
+
+    // Count emotional words
+    const spanishNegativeCount = spanishNegativeWords.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+    const spanishPositiveCount = spanishPositiveWords.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+    const englishNegativeCount = englishNegativeWords.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+    const englishPositiveCount = englishPositiveWords.filter((word) =>
+      new RegExp(`\\b${word}\\b`, 'i').test(lowerText)
+    ).length;
+
+    // Determine language and emotional profile
+    let langInfo: LanguageInfo = {
+      language: 'unknown',
+      negativeScore: 0,
+      positiveScore: 0,
+      textComplexity: textLength / 5, // Approximate complexity
+      emotionalIntensity: 0,
+    };
+
+    if (spanishCount / normFactor > englishCount / normFactor) {
+      langInfo.language = 'es';
+      langInfo.negativeScore = spanishNegativeCount / normFactor;
+      langInfo.positiveScore = spanishPositiveCount / normFactor;
+    } else if (englishCount / normFactor > spanishCount / normFactor) {
+      langInfo.language = 'en';
+      langInfo.negativeScore = englishNegativeCount / normFactor;
+      langInfo.positiveScore = englishPositiveCount / normFactor;
+    } else if (
+      spanishNegativeCount + spanishPositiveCount >
+      englishNegativeCount + englishPositiveCount
+    ) {
+      langInfo.language = 'es';
+      langInfo.negativeScore = spanishNegativeCount / normFactor;
+      langInfo.positiveScore = spanishPositiveCount / normFactor;
+    } else {
+      langInfo.language = 'en';
+      langInfo.negativeScore = englishNegativeCount / normFactor;
+      langInfo.positiveScore = englishPositiveCount / normFactor;
+    }
+
+    // Calculate global emotional intensity
+    langInfo.emotionalIntensity = langInfo.negativeScore + langInfo.positiveScore;
+
+    return langInfo;
+  }
+
+  /**
+   * Compare different sentiment analysis methods on the same text
+   */
+  async compareSentimentMethods({ text }: SentimentCompareRequest) {
+    if (!text || typeof text !== 'string') {
+      throw new Error('Text string is required');
+    }
+
+    // Create mock tweet for analysis
+    const mockTweet: Tweet = {
+      id: 'test',
+      tweetId: 'test',
+      content: text,
+      author: {
+        id: 'test_user',
+        username: 'test_user',
+        displayName: 'Test User',
+        verified: false,
+        followersCount: 100,
+        followingCount: 50,
+        tweetsCount: 10,
+        avatar: '',
+      },
+      metrics: {
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        quotes: 0,
+        views: 0,
+        engagement: 0,
+      },
+      hashtags: [],
+      mentions: [],
+      urls: [],
+      mediaUrls: [],
+      isRetweet: false,
+      isReply: false,
+      isQuote: false,
+      language: 'en',
+      createdAt: new Date(),
+      scrapedAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // Get results from both methods
+    const start1 = Date.now();
+    const naiveResult = sentimentManager.predictNaiveBayes(text);
+    const naiveTime = Date.now() - start1;
+
+    const start2 = Date.now();
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+    const ruleTime = Date.now() - start2;
+
+    // Execute improved detection
+    const langInfo = this.detectLanguageImproved(text);
+    const detectedLanguage = langInfo.language;
+    mockTweet.language = langInfo.language;
+
+    // Improved hybrid system: Advanced implementation with contextual analysis
+    const bothAgree = naiveResult.label === ruleResult.analysis.sentiment.label;
+
+    // Improved confidence adjustment system
+    let naiveConfidenceAdjusted = Math.max(0.25, naiveResult.confidence);
+    let ruleConfidenceAdjusted = ruleResult.analysis.sentiment.confidence;
+
+    // Calculate confidence adjustments based on text characteristics
+    const adjustedConfidences = this.calculateConfidenceAdjustments(
+      naiveResult,
+      ruleResult,
+      langInfo,
+      text
+    );
+
+    naiveConfidenceAdjusted = adjustedConfidences.naiveAdjusted;
+    ruleConfidenceAdjusted = adjustedConfidences.ruleAdjusted;
+
+    // Weighted decision system
+    let naiveWeight = naiveConfidenceAdjusted;
+    let ruleWeight = ruleConfidenceAdjusted;
+
+    // Increase weight if there's agreement
+    if (bothAgree) {
+      naiveWeight *= 1.2;
+      ruleWeight *= 1.2;
+    }
+
+    // Calculate weighted sentiment score
+    const totalWeight = naiveWeight + ruleWeight;
+    let weightedScore = 0;
+
+    if (naiveResult.label === 'positive') {
+      weightedScore += 0.7 * naiveWeight;
+    } else if (naiveResult.label === 'negative') {
+      weightedScore -= 0.7 * naiveWeight;
+    }
+
+    weightedScore += ruleResult.analysis.sentiment.score * ruleWeight;
+
+    // Normalize weighted score
+    weightedScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
+
+    // Determine final label based on weighted score
+    let finalLabel = 'neutral';
+    if (weightedScore > 0.15) {
+      finalLabel = 'positive';
+    } else if (weightedScore < -0.15) {
+      finalLabel = 'negative';
+    }
+
+    // Calculate unified confidence
+    let unifiedConfidence;
+    if (bothAgree) {
+      // If both methods agree, higher confidence
+      unifiedConfidence = Math.min(1.0, (naiveConfidenceAdjusted + ruleConfidenceAdjusted) / 1.8);
+    } else {
+      // Weighted confidence if they don't agree
+      unifiedConfidence = Math.max(naiveConfidenceAdjusted, ruleConfidenceAdjusted) * 0.9;
+    }
+
+    // Generate contextual explanation
+    let explanation = '';
+    if (bothAgree) {
+      explanation = 'Ambos métodos coinciden, alta confianza.';
+
+      if (langInfo.emotionalIntensity > 0.5) {
+        explanation += ' Texto con alta intensidad emocional.';
+      }
+    } else {
+      // Method with higher weight
+      const dominantMethod = naiveWeight >= ruleWeight ? 'naive' : 'rule';
+      const methodConfidence =
+        naiveWeight >= ruleWeight ? naiveConfidenceAdjusted : ruleConfidenceAdjusted;
+
+      explanation = `Se priorizó el método ${dominantMethod} (confianza ajustada: ${methodConfidence.toFixed(
+        2
+      )})`;
+
+      if (
+        finalLabel !==
+        (dominantMethod === 'naive' ? naiveResult.label : ruleResult.analysis.sentiment.label)
+      ) {
+        explanation += '. La etiqueta final fue ajustada considerando la puntuación ponderada.';
+      }
+
+      if (langInfo.language === 'es') {
+        explanation += ' Se detectó texto en español.';
+      }
+    }
+
+    // Create final unified result
+    const unifiedResult: UnifiedSentimentResult = {
+      label: finalLabel,
+      confidence: unifiedConfidence,
+      score: weightedScore,
+      method: bothAgree ? 'unified' : naiveWeight > ruleWeight ? 'naive' : 'rule',
+      explanation,
+      languageAnalysis: {
+        detectedLanguage,
+        emotionalIntensity: langInfo.emotionalIntensity,
+        textStats: {
+          length: text.length,
+          complexity: langInfo.textComplexity,
+        },
+      },
+    };
+
+    return {
+      text,
+      detectedLanguage,
+      naive: {
+        label: naiveResult.label,
+        confidence: naiveResult.confidence,
+        adjustedConfidence: naiveConfidenceAdjusted.toFixed(2),
+        processingTime: `${naiveTime}ms`,
+      },
+      rule: {
+        label: ruleResult.analysis.sentiment.label,
+        score: ruleResult.analysis.sentiment.score,
+        confidence: ruleResult.analysis.sentiment.confidence,
+        adjustedConfidence: ruleConfidenceAdjusted.toFixed(2),
+        processingTime: `${ruleTime}ms`,
+        emotions: ruleResult.analysis.sentiment.emotions,
+      },
+      comparison: {
+        agreement: bothAgree,
+        confidenceDiff: Math.abs(naiveResult.confidence - ruleResult.analysis.sentiment.confidence),
+        speedDiff: `${Math.abs(naiveTime - ruleTime)}ms`,
+        fasterMethod: naiveTime < ruleTime ? 'naive' : 'rule',
+      },
+      unified: unifiedResult,
+      textAnalysis: {
+        emotionalIntensity: langInfo.emotionalIntensity.toFixed(2),
+        positiveScore: langInfo.positiveScore.toFixed(2),
+        negativeScore: langInfo.negativeScore.toFixed(2),
+        textComplexity: langInfo.textComplexity.toFixed(1),
+        lengthCategory: text.length < 30 ? 'corto' : text.length < 100 ? 'medio' : 'largo',
+      },
+    };
+  }
+
+  /**
+   * Calculate confidence adjustments based on text characteristics
+   */
+  private calculateConfidenceAdjustments(
+    naiveResult: any,
+    ruleResult: any,
+    langInfo: LanguageInfo,
+    text: string
+  ) {
+    let naiveConfidenceAdjusted = Math.max(0.25, naiveResult.confidence);
+    let ruleConfidenceAdjusted = ruleResult.analysis.sentiment.confidence;
+
+    // Adjust Naive Bayes confidence
+    if (naiveConfidenceAdjusted < 0.0001) {
+      // Minimum confidence base for Naive Bayes
+      naiveConfidenceAdjusted = 0.3;
+
+      // Bonus for emotional coincidence
+      if (naiveResult.label === 'positive' && langInfo.positiveScore > 0) {
+        naiveConfidenceAdjusted += 0.1 * Math.min(2, langInfo.positiveScore);
+      } else if (naiveResult.label === 'negative' && langInfo.negativeScore > 0) {
+        naiveConfidenceAdjusted += 0.1 * Math.min(2, langInfo.negativeScore);
+      }
+    }
+
+    // Adjust rule-based model confidence
+    if (ruleResult.analysis.sentiment.emotions) {
+      const emotions = ruleResult.analysis.sentiment.emotions;
+      const totalEmotionIntensity =
+        (emotions.joy || 0) +
+        (emotions.sadness || 0) +
+        (emotions.anger || 0) +
+        (emotions.fear || 0) +
+        (emotions.disgust || 0) +
+        (emotions.surprise || 0);
+
+      // If strong emotions are detected, increase rule method confidence
+      if (totalEmotionIntensity > 0.5) {
+        ruleConfidenceAdjusted += 0.1;
+      } else if (totalEmotionIntensity < 0.2) {
+        // If few emotions detected, slightly reduce confidence
+        ruleConfidenceAdjusted -= 0.05;
+      }
+    }
+
+    // Language-specific adjustments
+    if (langInfo.language === 'es') {
+      // Rule method might have less coverage in Spanish
+      ruleConfidenceAdjusted -= 0.05;
+
+      // If there are clear negative words in Spanish and rule method didn't detect it
+      if (langInfo.negativeScore > 0.4 && ruleResult.analysis.sentiment.label !== 'negative') {
+        ruleConfidenceAdjusted -= 0.15;
+      }
+
+      // If there are clear positive words in Spanish and rule method didn't detect it
+      if (langInfo.positiveScore > 0.4 && ruleResult.analysis.sentiment.label !== 'positive') {
+        ruleConfidenceAdjusted -= 0.15;
+      }
+    }
+
+    // Adjustments by length and complexity
+    if (text.length < 15) {
+      // Very short texts can be harder for Naive Bayes
+      naiveConfidenceAdjusted -= 0.1;
+    } else if (text.length > 100) {
+      // Longer texts usually have more context for Naive Bayes
+      naiveConfidenceAdjusted += 0.05;
+      // But can complicate the rule system
+      ruleConfidenceAdjusted -= 0.05;
+    }
+
+    // Adjustments by detected emotional intensity
+    if (langInfo.emotionalIntensity > 0.5) {
+      // Texts with high emotional intensity are usually easier to classify
+      naiveConfidenceAdjusted += 0.05;
+      ruleConfidenceAdjusted += 0.05;
+    }
+
+    // Ensure confidences are within reasonable ranges
+    naiveConfidenceAdjusted = Math.min(0.95, Math.max(0.2, naiveConfidenceAdjusted));
+    ruleConfidenceAdjusted = Math.min(0.95, Math.max(0.2, ruleConfidenceAdjusted));
+
+    return {
+      naiveAdjusted: naiveConfidenceAdjusted,
+      ruleAdjusted: ruleConfidenceAdjusted,
+    };
+  }
+}
+
+export const sentimentService = new SentimentService();
