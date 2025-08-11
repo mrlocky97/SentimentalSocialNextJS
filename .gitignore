@@ -58,6 +58,7 @@ manual-cookies.json
 twitter-session.json
 twitter-auth.json
 cookies-*.json
+twitter-session.encrypted.json
 
 # SECURITY: Encrypted credentials (NEVER COMMIT)
 encrypted-twitter-creds.json

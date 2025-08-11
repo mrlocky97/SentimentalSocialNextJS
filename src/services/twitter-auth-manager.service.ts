@@ -3,20 +3,21 @@
  * Handles authentication during server startup with integrated cookie management
  */
 
-import { TwitterRealScraperService } from './twitter-scraper.service';
-import { SessionData } from '../types/twitter';
-import { credentialsEncryption } from '../lib/security/credentials-encryption';
 import fs from 'fs';
 import path from 'path';
+import { credentialsEncryption } from '../lib/security/credentials-encryption';
+import { secureSessionStore } from '../lib/security/session-store';
+import { SessionData } from '../types/twitter';
+import { TwitterRealScraperService } from './twitter-scraper.service';
 
 export class TwitterAuthManager {
   private static instance: TwitterAuthManager;
   private scraperService: TwitterRealScraperService | null = null;
   private isInitialized: boolean = false;
   private initializationError: Error | null = null;
-  
+
   // Integrated cookie management
-  private cookiesPath: string;
+  private cookiesPath: string; // legacy path (kept for cleanup only)
   private sessionData: SessionData | null = null;
   private readonly SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -39,15 +40,15 @@ export class TwitterAuthManager {
     try {
       // Create scraper instance
       this.scraperService = new TwitterRealScraperService();
-      
+
       // Attempt early authentication
       await this.attemptEarlyAuth();
-      
+
       this.isInitialized = true;
-      
     } catch (error) {
-      this.initializationError = error instanceof Error ? error : new Error('Unknown initialization error');
-      
+      this.initializationError =
+        error instanceof Error ? error : new Error('Unknown initialization error');
+
       // Don't throw error - let server start anyway
       this.isInitialized = true; // Mark as initialized even with error
     }
@@ -55,18 +56,19 @@ export class TwitterAuthManager {
 
   // Integrated cookie management methods
   private loadCookies(): void {
-    try {
-      if (fs.existsSync(this.cookiesPath)) {
-        const data = fs.readFileSync(this.cookiesPath, 'utf8');
-        this.sessionData = JSON.parse(data);
-
-        // Check if session is still valid
-        if (this.sessionData && this.isSessionExpired()) {
-          this.clearCookies();
+    // Prefer encrypted store
+    const { session, rotate } = secureSessionStore.load();
+    if (session) {
+      this.sessionData = session;
+      // Rotation flag can be used by caller to refresh session on next successful auth
+    } else {
+      // Fallback: if legacy cookies.json exists, purge it for safety
+      try {
+        if (fs.existsSync(this.cookiesPath)) {
+          fs.unlinkSync(this.cookiesPath);
         }
-      }
-    } catch (error) {
-      this.clearCookies();
+      } catch {}
+      this.sessionData = null;
     }
   }
 
@@ -77,9 +79,11 @@ export class TwitterAuthManager {
 
   private clearCookies(): void {
     this.sessionData = null;
-    if (fs.existsSync(this.cookiesPath)) {
-      fs.unlinkSync(this.cookiesPath);
-    }
+    // Remove legacy file and encrypted store
+    try {
+      if (fs.existsSync(this.cookiesPath)) fs.unlinkSync(this.cookiesPath);
+    } catch {}
+    secureSessionStore.clear();
   }
 
   /**
@@ -107,7 +111,7 @@ export class TwitterAuthManager {
     return {
       authenticated: !this.isSessionExpired(),
       expiresAt: this.sessionData.expirationTime,
-      cookieCount: this.sessionData.cookies?.length || 0
+      cookieCount: this.sessionData.cookies?.length || 0,
     };
   }
 
@@ -124,11 +128,10 @@ export class TwitterAuthManager {
     try {
       // Try to initialize the scraper (this will attempt login)
       await this.scraperService!.scrapeByHashtag('test', { maxTweets: 1 });
-      
     } catch (error) {
       // Enhanced error analysis
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes('Forbidden') || errorMessage.includes('401')) {
         throw new Error('Invalid Twitter credentials - check username/password/email');
       } else if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
@@ -156,7 +159,10 @@ export class TwitterAuthManager {
       if (masterPassword && fs.existsSync(encryptedCredsPath)) {
         try {
           const encryptedData = JSON.parse(fs.readFileSync(encryptedCredsPath, 'utf8'));
-          const decrypted = credentialsEncryption.decryptTwitterCredentials(encryptedData, masterPassword);
+          const decrypted = credentialsEncryption.decryptTwitterCredentials(
+            encryptedData,
+            masterPassword
+          );
           return decrypted;
         } catch (error) {
           // Fall back to environment variables
@@ -212,7 +218,7 @@ export class TwitterAuthManager {
       initialized: this.isInitialized,
       ready: this.isReady(),
       error: this.initializationError?.message || null,
-      hasCredentials: !!this.getTwitterCredentials()
+      hasCredentials: !!this.getTwitterCredentials(),
     };
   }
 
@@ -223,7 +229,7 @@ export class TwitterAuthManager {
     this.scraperService = null;
     this.initializationError = null;
     this.isInitialized = false;
-    
+
     await this.initializeOnStartup();
   }
 }
