@@ -3,8 +3,8 @@
  * Optional middleware to check Twitter authentication status
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { TwitterCookieManager } from '../services/twitter-cookie-manager.service';
+import { NextFunction, Request, Response } from 'express';
+import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
 
 // Extend Request interface to include Twitter auth info
 export interface TwitterAuthenticatedRequest extends Request {
@@ -25,15 +25,14 @@ export const checkTwitterAuth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const cookieManager = new TwitterCookieManager();
-    const hasValidSession = cookieManager.hasValidSession();
-    const cookies = cookieManager.getCookies();
+    const authManager = TwitterAuthManager.getInstance();
+    const sessionInfo = authManager.getSessionInfo();
 
     // Add Twitter auth info to request
     req.twitterAuth = {
-      authenticated: hasValidSession,
-      hasValidSession,
-      cookieCount: cookies ? cookies.length : 0
+      authenticated: !!sessionInfo.authenticated,
+      hasValidSession: !!sessionInfo.authenticated,
+      cookieCount: sessionInfo.cookieCount || 0,
     };
 
     // Always continue to next middleware
@@ -45,7 +44,7 @@ export const checkTwitterAuth = async (
     req.twitterAuth = {
       authenticated: false,
       hasValidSession: false,
-      cookieCount: 0
+      cookieCount: 0,
     };
 
     next();
@@ -62,25 +61,25 @@ export const requireTwitterAuth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const cookieManager = new TwitterCookieManager();
-    const hasValidSession = cookieManager.hasValidSession();
+    const authManager = TwitterAuthManager.getInstance();
+    const sessionInfo = authManager.getSessionInfo();
 
-    if (!hasValidSession) {
+    if (!sessionInfo.authenticated) {
       res.status(401).json({
         success: false,
         message: 'Twitter authentication required',
         error: 'NO_TWITTER_AUTH',
-        suggestion: 'Please authenticate with Twitter first using /api/v1/twitter-auth/login or /api/v1/twitter-auth/import-cookies'
+        suggestion:
+          'Authenticate via /api/v1/twitter-auth/login (and ensure credentials or encrypted creds are configured)',
       });
       return;
     }
 
     // Add Twitter auth info to request
-    const cookies = cookieManager.getCookies();
     req.twitterAuth = {
       authenticated: true,
       hasValidSession: true,
-      cookieCount: cookies ? cookies.length : 0
+      cookieCount: sessionInfo.cookieCount || 0,
     };
 
     next();
@@ -88,7 +87,7 @@ export const requireTwitterAuth = async (
     console.error('Error requiring Twitter auth:', error);
     res.status(500).json({
       success: false,
-      message: 'Error checking Twitter authentication'
+      message: 'Error checking Twitter authentication',
     });
   }
 };
@@ -104,17 +103,16 @@ export class TwitterAuthStatus {
     suggestion?: string;
   }> {
     try {
-      const cookieManager = new TwitterCookieManager();
-      const hasValidSession = cookieManager.hasValidSession();
-      const cookies = cookieManager.getCookies();
+      const authManager = TwitterAuthManager.getInstance();
+      const sessionInfo = authManager.getSessionInfo();
 
       return {
-        authenticated: hasValidSession,
-        hasValidSession,
-        cookieCount: cookies ? cookies.length : 0,
-        suggestion: hasValidSession
+        authenticated: !!sessionInfo.authenticated,
+        hasValidSession: !!sessionInfo.authenticated,
+        cookieCount: sessionInfo.cookieCount || 0,
+        suggestion: sessionInfo.authenticated
           ? undefined
-          : 'Please authenticate with Twitter using /api/v1/twitter-auth/login or /api/v1/twitter-auth/import-cookies'
+          : 'Authenticate via /api/v1/twitter-auth/login (configure TWITTER_* envs or encrypted creds)',
       };
     } catch (error) {
       console.error('Error getting Twitter auth status:', error);
@@ -122,7 +120,7 @@ export class TwitterAuthStatus {
         authenticated: false,
         hasValidSession: false,
         cookieCount: 0,
-        suggestion: 'Error checking authentication status'
+        suggestion: 'Error checking authentication status',
       };
     }
   }

@@ -46,10 +46,6 @@ import { metricsService } from './lib/monitoring/metrics';
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
 // Import sentiment analysis manager and training data
 import path from 'path';
-import { TweetSentimentAnalysisManager } from './services/tweet-sentiment-analysis.manager.service';
-
-// Create a singleton instance of the sentiment manager to be used throughout the app
-export const sentimentManager = new TweetSentimentAnalysisManager();
 const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
 
 const app = express();

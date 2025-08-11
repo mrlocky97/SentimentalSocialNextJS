@@ -7,12 +7,14 @@ A complete platform that combines unlimited tweet collection via web scraping, i
 ## 🌟 Key Features
 
 ### 🕷️ **Unlimited Tweet Collection**
+
 - **Real Twitter Scraper**: Cookie-based authentication with @the-convocation/twitter-scraper
 - **Smart Fallback System**: Automatic fallback to mock data for development/testing
 - **Rate Limiting**: Intelligent controls to avoid blocks
 - **Persistent Sessions**: Cookie management for seamless authentication
 
 ### 🧠 **Advanced Sentiment Analysis**
+
 - **Sentiment Scoring**: Scale from -1 (very negative) to +1 (very positive)
 - **Emotion Analysis**: Detection of 6 emotions (joy, sadness, anger, fear, surprise, disgust)
 - **Brand Mention Detection**: Automatic brand mention identification
@@ -20,6 +22,7 @@ A complete platform that combines unlimited tweet collection via web scraping, i
 - **Language Detection**: Support for English and Spanish
 
 ### 💡 **Automatic Marketing Insights**
+
 - **Brand Perception Analysis**: Real-time brand perception analysis
 - **Customer Feedback Detection**: Automatic complaint and feedback identification
 - **Influencer Impact Scoring**: Influence scoring based on engagement
@@ -27,6 +30,7 @@ A complete platform that combines unlimited tweet collection via web scraping, i
 - **Actionable Recommendations**: Specific recommendations for each insight
 
 ### 📊 **Analytics and Reporting**
+
 - **Real-time Statistics**: Live statistics
 - **Sentiment Trends**: Temporal trend analysis
 - **Batch Processing**: Batch processing up to 100 tweets
@@ -58,11 +62,13 @@ A complete platform that combines unlimited tweet collection via web scraping, i
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - MongoDB
 - Twitter/X account (for real scraping)
 
 ### 1. Setup Project
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -76,12 +82,14 @@ node setup.js
 ```
 
 ### 2. Configure Environment
+
 ```bash
 # Edit .env.local with your configuration
 cp .env.example .env.local
 ```
 
 ### 3. Twitter Authentication (Optional)
+
 For real Twitter scraping, follow the [Twitter Authentication Guide](./TWITTER_AUTHENTICATION.md):
 
 ```bash
@@ -92,6 +100,7 @@ node import-cookies.js
 ```
 
 ### 4. Start Development Server
+
 ```bash
 npm run dev
 ```
@@ -101,6 +110,7 @@ The API will be available at `http://localhost:3001`
 ## 📋 API Endpoints
 
 ### Core Scraping
+
 ```bash
 # Scrape tweets by hashtag
 POST /api/v1/scraping/hashtag
@@ -111,7 +121,7 @@ POST /api/v1/scraping/hashtag
 }
 
 # Scrape tweets by user
-POST /api/v1/scraping/user  
+POST /api/v1/scraping/user
 {
   "username": "elonmusk",
   "maxTweets": 30,
@@ -130,14 +140,16 @@ GET /api/v1/scraping/status
 ```
 
 ### Documentation
+
 - **Swagger UI**: `http://localhost:3001/api-docs`
 - **API Info**: `http://localhost:3001/api/v1`
 - **Health Check**: `http://localhost:3001/health`
-└── 🗄️ Data Layer
-    ├── MongoDB Integration
-    ├── Tweet Repository
-    └── User Management
-```
+  └── 🗄️ Data Layer
+  ├── MongoDB Integration
+  ├── Tweet Repository
+  └── User Management
+
+````
 
 ## 🚀 Quick Start
 
@@ -165,7 +177,7 @@ npm run build
 
 # Iniciar el servidor
 npm start
-```
+````
 
 ### Variables de Entorno Requeridas
 
@@ -192,6 +204,7 @@ CORS_ORIGIN=http://localhost:3000
 ### 🔗 Endpoints Principales
 
 #### **Recolección Híbrida**
+
 ```bash
 # Estado del sistema
 GET /api/v1/hybrid-collection/status
@@ -209,6 +222,7 @@ POST /api/v1/hybrid-collection/collect
 ```
 
 #### **Análisis de Sentimientos**
+
 ```bash
 # Demo con ejemplos
 GET /api/v1/sentiment/demo
@@ -238,7 +252,9 @@ POST /api/v1/sentiment/batch
 ```
 
 ### 📚 Documentación Completa
+
 Una vez iniciado el servidor, accede a la documentación interactiva:
+
 - **Swagger UI**: http://localhost:3001/api-docs
 - **API Info**: http://localhost:3001/api/v1
 
@@ -258,6 +274,32 @@ npm run test:hybrid
 npm run test:sentiment
 ```
 
+### Unit/Integration tests (Jest)
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report (lcov + html in coverage/)
+npm run test:coverage
+```
+
+Notes:
+
+- Tests stub critical env vars via tests/setup-env.ts and tests/setup.ts.
+- Heavy browsers are not needed for tests; CI skips Playwright/Puppeteer downloads.
+
+## 🤖 CI
+
+GitHub Actions runs build and tests on every push/PR to main. It uploads coverage artifacts.
+
+Badge (replace owner/repo if you fork):
+
+![CI](https://github.com/mrlocky97/SentimentalSocialNextJS/actions/workflows/ci.yml/badge.svg)
+
 ## 📊 Ejemplos de Uso
 
 ### Análisis de Campaña de Marketing
@@ -269,17 +311,17 @@ const campaignTweets = await fetch('/api/v1/hybrid-collection/collect', {
   body: JSON.stringify({
     hashtag: 'JustDoIt',
     maxTweets: 500,
-    scrapingRatio: 0.8
-  })
+    scrapingRatio: 0.8,
+  }),
 });
 
 // 2. Analizar sentimientos
 const sentimentAnalysis = await fetch('/api/v1/sentiment/batch', {
-  method: 'POST', 
+  method: 'POST',
   body: JSON.stringify({
     tweets: campaignTweets.data.tweets,
-    includeStats: true
-  })
+    includeStats: true,
+  }),
 });
 
 // 3. Obtener insights
@@ -295,7 +337,7 @@ console.log(`Menciones de marca: ${insights.brandMentionStats.length}`);
 setInterval(async () => {
   const tweets = await collectTweets('Nike', 50);
   const analysis = await analyzeSentiment(tweets);
-  
+
   // Alertar si sentiment negativo > 70%
   if (analysis.sentimentDistribution.negative > 70) {
     await sendAlert('Negative sentiment spike detected!');
@@ -306,18 +348,21 @@ setInterval(async () => {
 ## 🎯 Casos de Uso
 
 ### Para Marketing Teams
+
 - **Campaign Performance**: Análisis en tiempo real de campañas
 - **Brand Monitoring**: Monitoreo 24/7 de menciones de marca
 - **Competitor Analysis**: Comparación con competidores
 - **Crisis Detection**: Detección temprana de crisis de reputación
 
 ### Para Data Analysts
+
 - **Sentiment Trends**: Análisis de tendencias temporales
 - **Customer Insights**: Comprensión profunda del feedback de clientes
 - **Market Research**: Investigación de mercado basada en datos reales
 - **ROI Measurement**: Medición del retorno de inversión en marketing
 
 ### Para Product Teams
+
 - **User Feedback**: Análisis automático de feedback de usuarios
 - **Feature Reception**: Análisis de recepción de nuevas características
 - **Pain Point Identification**: Identificación de puntos de dolor de usuarios
@@ -326,22 +371,26 @@ setInterval(async () => {
 ## 🛠️ Stack Tecnológico
 
 ### Backend
+
 - **Express.js**: Framework web
 - **TypeScript**: Tipado estático
 - **MongoDB**: Base de datos NoSQL
 - **Mongoose**: ODM para MongoDB
 
 ### Web Scraping
+
 - **Playwright**: Automatización de navegador
 - **Twikit**: Librería especializada para Twitter
 - **Crawlee**: Framework de web scraping
 
 ### Sentiment Analysis
+
 - **Custom Rule-based Engine**: Motor propio de análisis
 - **NLP Techniques**: Técnicas de procesamiento de lenguaje natural
 - **Emotion Detection**: Detección de emociones avanzada
 
 ### DevOps & Tools
+
 - **Swagger**: Documentación de API
 - **JWT**: Autenticación
 - **bcryptjs**: Hashing de passwords
@@ -350,12 +399,14 @@ setInterval(async () => {
 ## 📈 Performance
 
 ### Benchmarks
+
 - **Sentiment Analysis**: 0.04ms promedio por texto
 - **Batch Processing**: 100 tweets en <100ms
 - **Web Scraping**: 1000+ tweets/hora
 - **API Throughput**: 1000+ requests/minuto
 
 ### Escalabilidad
+
 - **Horizontal Scaling**: Soporte para múltiples instancias
 - **Database Optimization**: Índices optimizados para consultas rápidas
 - **Caching**: Sistema de caché para respuestas frecuentes

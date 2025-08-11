@@ -10,7 +10,7 @@ import {
   SentimentTestRequest,
   UnifiedSentimentResult,
 } from '@/types';
-import { sentimentManager } from '../server';
+import { sentimentManager } from '../lib/sentiment-manager';
 import { Tweet } from '../types/twitter';
 import { advancedHybridAnalyzer } from './advanced-hybrid-analyzer.service';
 

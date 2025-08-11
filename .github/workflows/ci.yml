@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ['main', 'master']
+  pull_request:
+    branches: ['main', 'master']
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript build
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+      - name: Security audit (non-blocking)
+        run: npm audit --audit-level=critical || echo "audit issues found"
