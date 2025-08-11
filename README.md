@@ -453,3 +453,67 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 [🚀 Demo Live](https://your-demo-url.com) | [📖 Docs](https://your-docs-url.com) | [🐛 Report Bug](https://github.com/mrlocky97/SentimentalSocialNextJS/issues) | [💡 Request Feature](https://github.com/mrlocky97/SentimentalSocialNextJS/issues)
 
 </div>
+
+## 🧭 Operativa y Despliegue
+
+### Entornos (dev/staging/prod)
+
+- development: ENABLE_SWAGGER_UI=true, CORS_ORIGIN=http://localhost:3000, logs verbosos.
+- staging: Swagger opcional con auth básica; CORS restringido a dominios QA; mismas versiones que producción.
+- production: ENABLE_SWAGGER_UI=false (o protegido con usuario/contraseña), CORS_ORIGIN con lista blanca, LOG_LEVEL=info o warn.
+
+Variables gestionadas por entorno en ficheros `.env.local` (dev) y variables de entorno en staging/prod. Usa `.env.example` como plantilla.
+
+### Requisitos de MongoDB
+
+- Versión recomendada: MongoDB 7.x
+- URI ejemplo local: `mongodb://localhost:27017/sentimentalsocial`
+- URI ejemplo en Docker: `mongodb://mongo:27017/sentimentalsocial`
+- Índices y migraciones: actualmente no se requieren pasos manuales; Mongoose crea índices al arrancar si se configuran en los modelos.
+
+### Docker (local y producción)
+
+Arranque local con Docker Compose (API + MongoDB):
+
+```bash
+docker compose up --build
+```
+
+Archivos incluidos:
+
+- Dockerfile: multi-stage (deps, build, runner) con Node 20 alpine y healthcheck.
+- .dockerignore: excluye node_modules, tests, etc.
+- docker-compose.yml: servicios `mongo` (7.0) y `api` con mapeo de puertos 27017 y 3001.
+
+Producción (ejemplo):
+
+```bash
+# construir imagen
+docker build -t registry.example.com/sentimentalsocial:latest .
+
+# ejecutar contenedor (requiere MONGODB_URI y JWT_SECRET)
+docker run -d --name sentimental-api -p 3001:3001 \
+  -e NODE_ENV=production \
+  -e PORT=3001 \
+  -e MONGODB_URI="mongodb://mongo:27017/sentimentalsocial" \
+  -e JWT_SECRET="<secure>" \
+  -e CORS_ORIGIN="https://app.example.com" \
+  registry.example.com/sentimentalsocial:latest
+```
+
+### Estrategia de Configuración por Entorno
+
+- Variables sensibles en el entorno (no en repositorio). `.env.local` solo para desarrollo.
+- JWT_SECRET mínimo 32 bytes aleatorios (base64). Generador en `.env.example`.
+- TWITTER_MASTER_PASSWORD requerido para producción si usas cifrado de credenciales.
+- CORS endurecido en prod (lista blanca exacta, sin comodines).
+- Swagger deshabilitado o protegido (ver variables SWAGGER*BASIC_AUTH*\* en `.env.example`).
+
+### Autenticación de Twitter (Verificada)
+
+Consulta la guía actualizada en `docs/twitter-auth.md`, con:
+
+- Flujo de credenciales cifradas (recomendado)
+- Importación manual de cookies para desarrollo
+- Variables de entorno (deprecadas)
+- Notas operativas: rotación y TTL de sesiones, CORS, Swagger

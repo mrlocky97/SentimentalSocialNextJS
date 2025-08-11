@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: sentimentalsocial-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: sentimentalsocial
+
+  api:
+    build: .
+    container_name: sentimentalsocial-api
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/sentimentalsocial
+      CORS_ORIGIN: http://localhost:3000
+    env_file:
+      - .env.local
+    # Uncomment to mount source in dev (if you enable ts-node or watch scripts)
+    # volumes:
+    #   - ./:/app
+
+volumes:
+  mongo-data:
