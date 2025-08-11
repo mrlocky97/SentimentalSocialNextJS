@@ -3,13 +3,7 @@
  * Input validation following Single Responsibility Principle
  */
 
-import {
-  isValidEmail,
-  isValidPassword,
-  isValidUsername,
-  isValidObjectId,
-  validateRequiredFields,
-} from '../utils/validation.utils';
+import { isValidEmail, isValidPassword, isValidUsername } from '../utils/validation.utils';
 
 // Simple validation functions (you can replace with Zod, Joi, etc.)
 

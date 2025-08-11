@@ -10,13 +10,13 @@ const sentimentManager = new TweetSentimentAnalysisManager();
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tweet, method } = body;
+    const { tweet } = body;
 
     if (!tweet || !tweet.content) {
       return NextResponse.json({ error: 'Tweet content is required' }, { status: 400 });
     }
 
-    const analysis = await sentimentManager.analyzeTweet(tweet as Tweet, {}, method);
+    const analysis = await sentimentManager.analyzeTweet(tweet as Tweet, {});
     return NextResponse.json(analysis);
   } catch (error) {
     console.error('Error in sentiment analysis route:', error);

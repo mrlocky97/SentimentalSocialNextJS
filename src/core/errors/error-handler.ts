@@ -201,7 +201,7 @@ export class CentralizedErrorHandler {
   /**
    * Handler para promises no manejadas
    */
-  handleUnhandledRejection = (reason: any, promise: Promise<any>): void => {
+  handleUnhandledRejection = (reason: any): void => {
     const error = new InternalServerError('Unhandled Promise Rejection', undefined, {
       operation: 'unhandled_rejection',
       additionalData: { reason: reason?.message || reason },

@@ -3,8 +3,7 @@
  * Following Single Responsibility Principle - only handles authentication
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '../types/api';
+import { NextFunction, Request, Response } from 'express';
 
 export interface AuthenticatedRequest extends Request {
   user?: {

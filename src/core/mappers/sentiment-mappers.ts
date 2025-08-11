@@ -220,7 +220,6 @@ export class TweetSentimentAnalysisMapper extends BaseSentimentMapper {
    */
   private static generateMarketingInsights(tweet: Tweet, analysis: AnalysisResult) {
     const text = (tweet.content || tweet.text || '').toLowerCase();
-    const metrics = tweet.metrics;
 
     // Calcular potencial de engagement
     const engagementPotential = this.calculateEngagementPotential(tweet, analysis);
@@ -229,7 +228,7 @@ export class TweetSentimentAnalysisMapper extends BaseSentimentMapper {
     const viralityIndicators = this.detectViralityIndicators(tweet, analysis);
 
     // Determinar demografía objetivo
-    const targetDemographics = this.inferTargetDemographics(tweet, analysis);
+    const targetDemographics = this.inferTargetDemographics(tweet);
 
     // Detectar menciones de competidores
     const competitorMentions = this.detectCompetitorMentions(text);
@@ -320,7 +319,7 @@ export class TweetSentimentAnalysisMapper extends BaseSentimentMapper {
   /**
    * Infiere demografía objetivo
    */
-  private static inferTargetDemographics(tweet: Tweet, analysis: AnalysisResult): string[] {
+  private static inferTargetDemographics(tweet: Tweet): string[] {
     const demographics = [];
     const text = (tweet.content || tweet.text || '').toLowerCase();
 

@@ -16,9 +16,9 @@ export class TweetSentimentAnalysisManager {
   }
 
   /**
-   * Analiza el sentimiento de un tweet individual con validación centralizada
+   * Analiza el sentimiento de un tweet individual
    */
-  async analyzeTweet(tweet: Tweet, config?: any, method?: string): Promise<TweetSentimentAnalysis> {
+  async analyzeTweet(tweet: Tweet, config?: any): Promise<TweetSentimentAnalysis> {
     // Validar entrada
     const validation = Core.Validators.Tweet.validate(tweet);
     Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');

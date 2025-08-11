@@ -463,6 +463,7 @@ export class APIMapperUtils {
   static sanitizeText(text: string, maxLength: number = 500): string {
     if (!text) return '';
 
+    // eslint-disable-next-line no-control-regex
     const cleaned = text.replace(/[\x00-\x1F\x7F]/g, ''); // Remover caracteres de control
     return cleaned.length > maxLength ? cleaned.substring(0, maxLength) + '...' : cleaned;
   }

@@ -297,8 +297,8 @@ export class SentimentService {
       updatedAt: new Date(),
     };
 
-    // Analyze the tweet using the specified method
-    const analysis = await sentimentManager.analyzeTweet(mockTweet, undefined, method);
+    // Analyze the tweet using the manager
+    const analysis = await sentimentManager.analyzeTweet(mockTweet, undefined);
 
     // If naive method was used, also show direct classifier result
     let naiveBayesResult = null;
@@ -465,7 +465,7 @@ export class SentimentService {
           updatedAt: new Date(),
         };
 
-        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
 
         return {
           text: example.text,
@@ -759,7 +759,7 @@ export class SentimentService {
     const naiveTime = Date.now() - start1;
 
     const start2 = Date.now();
-    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
     const ruleTime = Date.now() - start2;
 
     // Execute improved detection
@@ -1217,7 +1217,7 @@ export class SentimentService {
     const naiveTime = Date.now() - start1;
 
     const start2 = Date.now();
-    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined, 'rule');
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
     const ruleTime = Date.now() - start2;
 
     // Detect language
