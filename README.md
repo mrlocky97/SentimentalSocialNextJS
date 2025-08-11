@@ -84,8 +84,8 @@ node setup.js
 ### 2. Configure Environment
 
 ```bash
-# Edit .env.local with your configuration
-cp .env.example .env.local
+# Edit .env with your configuration  
+cp .env.example .env
 ```
 
 ### 3. Twitter Authentication (Optional)
@@ -169,8 +169,8 @@ cd SentimentalSocialNextJS
 npm install
 
 # Configurar variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tus configuraciones
+cp .env.example .env
+# Editar .env con tus configuraciones
 
 # Construir el proyecto
 npm run build
@@ -456,13 +456,15 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 🧭 Operativa y Despliegue
 
+### Operativa y Despliegue
+
 ### Entornos (dev/staging/prod)
 
-- development: ENABLE_SWAGGER_UI=true, CORS_ORIGIN=http://localhost:3000, logs verbosos.
-- staging: Swagger opcional con auth básica; CORS restringido a dominios QA; mismas versiones que producción.
-- production: ENABLE_SWAGGER_UI=false (o protegido con usuario/contraseña), CORS_ORIGIN con lista blanca, LOG_LEVEL=info o warn.
+- **development**: `NODE_ENV=development`, ENABLE_SWAGGER_UI=true, CORS_ORIGIN=http://localhost:3000, logs verbosos.
+- **staging**: Swagger opcional con auth básica; CORS restringido a dominios QA; mismas versiones que producción.
+- **production**: `NODE_ENV=production`, ENABLE_SWAGGER_UI=false (o protegido con usuario/contraseña), CORS_ORIGIN con lista blanca, LOG_LEVEL=info o warn.
 
-Variables gestionadas por entorno en ficheros `.env.local` (dev) y variables de entorno en staging/prod. Usa `.env.example` como plantilla.
+Variables gestionadas por entorno en fichero `.env` con valores específicos por `NODE_ENV`. Usa `.env.example` como plantilla.
 
 ### Requisitos de MongoDB
 
@@ -503,7 +505,7 @@ docker run -d --name sentimental-api -p 3001:3001 \
 
 ### Estrategia de Configuración por Entorno
 
-- Variables sensibles en el entorno (no en repositorio). `.env.local` solo para desarrollo.
+- Variables sensibles en el entorno (no en repositorio). `.env` solo para desarrollo local.
 - JWT_SECRET mínimo 32 bytes aleatorios (base64). Generador en `.env.example`.
 - TWITTER_MASTER_PASSWORD requerido para producción si usas cifrado de credenciales.
 - CORS endurecido en prod (lista blanca exacta, sin comodines).

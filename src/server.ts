@@ -4,8 +4,8 @@
  */
 
 import dotenv from 'dotenv';
-// Load environment variables first
-dotenv.config();
+// Load environment variables first - prioritize .env over .env.local
+dotenv.config({ path: ['.env.local', '.env'] });
 
 import cors from 'cors';
 import express from 'express';

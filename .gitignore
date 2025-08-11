@@ -29,13 +29,16 @@ out/
 # Environment variables (SECURITY SENSITIVE)
 .env
 .env.local
-.env.development.local
+.env.development.local  
 .env.test.local
 .env.production.local
 .env.*.local
 
 # Only allow .env.example (template)
 !.env.example
+
+# Note: .env is the standard for Node.js/Express apps
+# .env.local is Next.js convention (not used in this Express API)
 
 # ==================== LOGS & DEBUG ====================
 # Application logs
