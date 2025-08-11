@@ -4,7 +4,7 @@
  * Using @the-convocation/twitter-scraper for reliable Twitter scraping
  */
 
-import { Tweet } from '../types/twitter';
+import { Tweet } from '../src/types/twitter';
 
 // Twitter Scraper Interface Definition
 interface TwitterScraperInterface {

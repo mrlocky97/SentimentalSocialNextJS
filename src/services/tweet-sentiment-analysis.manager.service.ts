@@ -1,8 +1,9 @@
 /**
- * Tweet Sentiment Analysis Manager Service
- * Motor unificado para análisis de sentimiento usando la nueva arquitectura
+ * Tweet Sentiment Analysis Manager Service - Optimized
+ * Motor unificado para análisis de sentimiento con manejo centralizado de errores
  */
 
+import { Core } from '../core';
 import { SentimentAnalysisOrchestrator } from '../lib/sentiment/orchestrator';
 import { TweetSentimentAnalysis } from '../lib/sentiment/types';
 import { Tweet } from '../types/twitter';
@@ -15,46 +16,55 @@ export class TweetSentimentAnalysisManager {
   }
 
   /**
-   * Analiza el sentimiento de un tweet individual
+   * Analiza el sentimiento de un tweet individual con validación centralizada
    */
   async analyzeTweet(tweet: Tweet, config?: any, method?: string): Promise<TweetSentimentAnalysis> {
-    // Adaptamos la interfaz del orquestador a nuestro formato
-    const tweetDTO = {
-      id: tweet.id,
-      text: tweet.content,
-      language: (tweet.language as 'en' | 'es') || 'unknown',
-    };
+    // Validar entrada
+    const validation = Core.Validators.Tweet.validate(tweet);
+    Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');
 
-    const result = await this.orchestrator.analyzeText(tweetDTO);
+    // Adaptamos la interfaz del orquestador a nuestro formato usando el mapper
+    const tweetDTO = Core.Mappers.Tweet.map(tweet);
 
-    // Convertimos el resultado a TweetSentimentAnalysis
-    return {
-      tweetId: tweet.id,
-      analysis: result,
-      brandMentions: [],
-      marketingInsights: {
-        engagementPotential: 0.5,
-        viralityIndicators: [],
-        targetDemographics: [],
-        competitorMentions: [],
-        trendAlignment: 0.5,
-        brandRisk: 'low',
-        opportunityScore: 0.5,
-      },
-      analyzedAt: new Date(),
-    };
+    try {
+      const result = await this.orchestrator.analyzeText(tweetDTO);
+
+      // Convertimos el resultado a TweetSentimentAnalysis usando el mapper
+      return Core.Mappers.SentimentAnalysis.map(tweet, result, {
+        includeMarketingInsights: true,
+        includeBrandMentions: true,
+        brandKeywords: config?.brandKeywords || [],
+      });
+    } catch (error) {
+      throw Core.Errors.analysisFailed(
+        tweet.content || tweet.text || '',
+        error instanceof Error ? error : new Error('Unknown analysis error')
+      );
+    }
   }
 
   /**
-   * Analiza el sentimiento de múltiples tweets en lote
+   * Analiza el sentimiento de múltiples tweets en lote con validación centralizada
    */
   async analyzeTweetsBatch(tweets: Tweet[], config?: any): Promise<TweetSentimentAnalysis[]> {
+    // Validar entrada del lote
+    const validation = Core.Validators.Tweet.validateBatch(tweets);
+    Core.Validators.Utils.validateOrThrow(validation, 'batch analysis');
+
     const results: TweetSentimentAnalysis[] = [];
-    for (const tweet of tweets) {
-      const analysis = await this.analyzeTweet(tweet, config);
-      results.push(analysis);
+
+    try {
+      for (const tweet of tweets) {
+        const analysis = await this.analyzeTweet(tweet, config);
+        results.push(analysis);
+      }
+      return results;
+    } catch (error) {
+      throw Core.Errors.modelProcessingError(
+        'batch analysis',
+        error instanceof Error ? error : new Error('Unknown batch processing error')
+      );
     }
-    return results;
   }
 
   /**

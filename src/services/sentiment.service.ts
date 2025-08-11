@@ -1,7 +1,6 @@
 /**
- * Sentiment Analysis Service
- * Business logic for sentiment analysis operations
- * Versión unificada - usa el nuevo motor de análisis de sentimiento
+ * Sentiment Analysis Service - Optimized
+ * Business logic for sentiment analysis operations with centralized error handling and validation
  */
 
 import {
@@ -11,9 +10,9 @@ import {
   SentimentTestRequest,
   UnifiedSentimentResult,
 } from '@/types';
+import { Core } from '../core';
 import { sentimentManager } from '../lib/sentiment-manager';
 import { Tweet } from '../types/twitter';
-import { normalizeTweet, normalizeTweetBatch } from '../utils/normalization';
 import { advancedHybridAnalyzer } from './advanced-hybrid-analyzer.service';
 
 export class SentimentService {
@@ -24,15 +23,15 @@ export class SentimentService {
    * @returns Análisis de sentimiento completo
    */
   async analyzeTweet(tweet: Tweet, config?: any) {
-    if (!tweet) {
-      throw new Error('Tweet object is required');
-    }
+    // Validar entrada
+    const validation = Core.Validators.Tweet.validate(tweet);
+    Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');
 
     // Normalizar el tweet para garantizar compatibilidad
-    const normalizedTweet = normalizeTweet(tweet);
+    const normalizedTweet = Core.Mappers.TweetNormalizer.map(tweet);
 
     // Prepara el tweet para análisis usando el motor unificado
-    return await sentimentManager.analyzeTweet(tweet, config);
+    return await sentimentManager.analyzeTweet(normalizedTweet, config);
   }
 
   /**
@@ -43,19 +42,15 @@ export class SentimentService {
    * @returns Análisis del lote con estadísticas y resumen
    */
   async analyzeTweetsBatch(tweets: Tweet[], config?: any, includeStats = true) {
-    if (!tweets || !Array.isArray(tweets) || tweets.length === 0) {
-      throw new Error('Array of tweets is required');
-    }
-
-    if (tweets.length > 100) {
-      throw new Error(`Maximum 100 tweets allowed per batch request. Received: ${tweets.length}`);
-    }
+    // Validar entrada del lote
+    const validation = Core.Validators.Tweet.validateBatch(tweets);
+    Core.Validators.Utils.validateOrThrow(validation, 'batch analysis');
 
     // Normalizar y preparar los tweets para el análisis
-    const normalizedTweets = normalizeTweetBatch(tweets);
+    const normalizedTweets = Core.Mappers.TweetNormalizer.mapBatch(tweets);
 
     const startTime = Date.now();
-    const analyses = await sentimentManager.analyzeTweetsBatch(tweets, config);
+    const analyses = await sentimentManager.analyzeTweetsBatch(normalizedTweets, config);
     const processingTime = Date.now() - startTime;
 
     let statistics = null;
@@ -87,8 +82,10 @@ export class SentimentService {
    * Generate comprehensive statistics from analyzed tweets
    */
   generateStatistics(analyses: any[]) {
-    if (!analyses || !Array.isArray(analyses)) {
-      throw new Error('Array of sentiment analyses is required');
+    // Validar entrada
+    const validation = Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
+    if (!validation.isValid) {
+      throw Core.Errors.invalidAnalysisArray();
     }
 
     return sentimentManager.generateStatistics(analyses);
@@ -98,8 +95,10 @@ export class SentimentService {
    * Generate sentiment trends over time
    */
   generateSentimentTrends(analyses: any[], intervalHours = 1) {
-    if (!analyses || !Array.isArray(analyses)) {
-      throw new Error('Array of sentiment analyses is required');
+    // Validar entrada
+    const validation = Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
+    if (!validation.isValid) {
+      throw Core.Errors.invalidAnalysisArray();
     }
 
     const trends = sentimentManager.generateSentimentTrends(analyses, intervalHours);
