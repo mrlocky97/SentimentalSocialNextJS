@@ -64,12 +64,9 @@ export interface SentimentOrchestrator {
 // Análisis de sentimiento específico para tweets
 export interface TweetSentimentAnalysis {
   tweetId: string;
-  userId: string;
-  text: string;
   analysis: AnalysisResult;
   brandMentions: BrandMention[];
   marketingInsights: MarketingInsights;
-  influenceScore: InfluenceScore;
   analyzedAt: Date;
 }
 

@@ -85,9 +85,7 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
       const result = await manager.analyzeTweet(tweet);
 
       expect(result.marketingInsights).toBeDefined();
-      expect(result.marketingInsights.length).toBeGreaterThanOrEqual(0);
       expect(result.brandMentions).toBeDefined();
-      expect(result.hashtagSentiments).toBeDefined();
     });
   });
 

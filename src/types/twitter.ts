@@ -8,6 +8,7 @@ export interface Tweet {
   id: string;
   tweetId: string; // Twitter's original tweet ID
   content: string;
+  text?: string; // Alias de content para compatibilidad
   author: TwitterUser;
   metrics: TweetMetrics;
   sentiment?: SentimentAnalysis;
