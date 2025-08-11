@@ -22,7 +22,10 @@
     "test:reactive": "tsx src/scripts/test-reactive.ts",
     "test:advanced": "tsx src/scripts/test-advanced.ts",
     "test:complete": "tsx src/scripts/test-complete.ts",
-    "test:module": "tsx src/scripts/test-complete.ts"
+    "test:module": "tsx src/scripts/test-complete.ts",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@crawlee/core": "^3.13.10",
@@ -64,11 +67,20 @@
     "@types/next": "^8.0.7",
     "@types/node": "^20",
     "@types/supertest": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.3.0",
     "jest": "^30.0.5",
     "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
     "supertest": "^7.1.4",
-    "ts-jest": "^30.0.0",
+    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.39.0"
   }
 }

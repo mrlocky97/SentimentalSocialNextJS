@@ -19,10 +19,11 @@ jspm_packages/
 dist/
 build/
 out/
+.next/
+.turbo/
 
 # TypeScript cache
 *.tsbuildinfo
-next-env.d.ts
 
 # ==================== ENVIRONMENT & CONFIG ====================
 # Environment variables (SECURITY SENSITIVE)

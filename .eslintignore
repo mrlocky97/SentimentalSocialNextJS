@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+.next/
+public/
+**/*.d.ts
+**/*.min.js

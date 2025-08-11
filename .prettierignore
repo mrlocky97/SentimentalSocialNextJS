@@ -1,0 +1,11 @@
+node_modules
+coverage
+dist
+.next
+public
+**/*.svg
+**/*.ico
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
