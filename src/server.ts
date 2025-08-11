@@ -46,6 +46,7 @@ import { metricsService } from './lib/monitoring/metrics';
 import { TwitterAuthManager } from './services/twitter-auth-manager.service';
 // Import sentiment analysis manager and training data
 import path from 'path';
+import { TweetSentimentAnalysisManager } from './services/tweet-sentiment-analysis.manager.service';
 const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
 
 const app = express();
@@ -210,22 +211,23 @@ async function startServer() {
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.initializeOnStartup();
 
-    // Initialize and train sentiment analysis model (temporarily disabled for testing)
-    console.log('⚠️ Skipping model initialization for testing purposes');
-    /*
+    // Initialize and train sentiment analysis model with enhanced dataset
+    console.log('🧠 Initializing sentiment analysis model...');
+    const { enhancedTrainingData } = await import('./data/enhanced-training-data');
+    const sentimentManager = new TweetSentimentAnalysisManager();
+
     try {
-      // Check if model file exists
-      if (fs.existsSync(modelPath)) {
-        await sentimentManager.loadNaiveBayesFromFile(modelPath);
-      } else {
-        await sentimentManager.trainNaiveBayes(trainingData);
-        await sentimentManager.saveNaiveBayesToFile(modelPath);
-      }
+      // For now, we'll always train with the enhanced dataset since save/load is not implemented
+      console.log(`🔄 Training new model with ${enhancedTrainingData.length} enhanced examples...`);
+      await sentimentManager.trainNaiveBayes(enhancedTrainingData);
+      console.log('💾 Saving trained model...');
+      await sentimentManager.saveNaiveBayesToFile(modelPath);
+      console.log('✅ Sentiment analysis model ready!');
     } catch (modelError) {
       console.error('❌ Error initializing sentiment model:', modelError);
-      await sentimentManager.trainNaiveBayes(trainingData);
+      console.log('🔄 Falling back to basic training...');
+      await sentimentManager.trainNaiveBayes(enhancedTrainingData.slice(0, 100)); // Use subset if error
     }
-    */
 
     // Start Express server
     app.listen(PORT, () => {

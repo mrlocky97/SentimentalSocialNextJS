@@ -19,6 +19,8 @@
     "ml:update-hybrid": "tsx src/scripts/update-hybrid-system.ts",
     "test:essential": "tsx src/scripts/essential-test.ts",
     "test:basic": "tsx src/scripts/test-basic.ts",
+    "sentiment:train": "tsx src/scripts/train-sentiment-model.ts",
+    "sentiment:save": "tsx src/scripts/save-model.ts",
     "test:reactive": "tsx src/scripts/test-reactive.ts",
     "test:advanced": "tsx src/scripts/test-advanced.ts",
     "test:complete": "tsx src/scripts/test-complete.ts",

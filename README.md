@@ -84,7 +84,7 @@ node setup.js
 ### 2. Configure Environment
 
 ```bash
-# Edit .env with your configuration  
+# Edit .env with your configuration
 cp .env.example .env
 ```
 

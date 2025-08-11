@@ -343,13 +343,9 @@ export class SentimentService {
       throw new Error('No valid training examples provided');
     }
 
-    // Import existing training data
-    const trainingData: Array<{ text: string; label: string }> = [
-      // Datos de ejemplo - en una implementación real se cargarían desde archivo
-      { text: 'I love this product', label: 'positive' },
-      { text: 'This is terrible', label: 'negative' },
-      { text: 'The package was delivered', label: 'neutral' },
-    ];
+    // Import enhanced training data
+    const { enhancedTrainingData } = await import('../data/enhanced-training-data');
+    const trainingData: Array<{ text: string; label: string }> = enhancedTrainingData;
 
     // Train the model with new examples
     console.log(`🔄 Training model with ${validExamples.length} new examples...`);
