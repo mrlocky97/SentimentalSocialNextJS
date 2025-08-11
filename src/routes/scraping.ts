@@ -168,10 +168,31 @@ async function handleScrapingRequest(
     // Guardar en base de datos
     if (tweetsWithSentiment.length > 0) {
       try {
-        await tweetDatabaseService.saveTweetsBulk(tweetsWithSentiment, params.campaignId);
+        console.log(`💾 Attempting to save ${tweetsWithSentiment.length} tweets to database...`);
+        console.log(`📋 Campaign ID: ${params.campaignId}`);
+
+        const saveResult = await tweetDatabaseService.saveTweetsBulk(
+          tweetsWithSentiment,
+          params.campaignId
+        );
+
+        console.log(`✅ Database save result:`, {
+          success: saveResult.success,
+          saved: saveResult.saved,
+          updated: saveResult.updated,
+          duplicates: saveResult.duplicates,
+          errors: saveResult.errors,
+          totalProcessed: saveResult.totalProcessed,
+        });
+
+        if (saveResult.errorMessages.length > 0) {
+          console.log(`❌ Save errors:`, saveResult.errorMessages);
+        }
       } catch (dbError) {
-        console.error('Database save error:', dbError);
+        console.error('❌ Database save error:', dbError);
       }
+    } else {
+      console.log('⚠️ No tweets to save to database');
     }
 
     const executionTime = Date.now() - startTime;
@@ -535,6 +556,73 @@ router.post('/reauth', async (req: Request, res: Response) => {
     });
   } catch (error) {
     handleScrapingError(res, error, 're-authentication');
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/scraping/tweets:
+ *   get:
+ *     summary: Verify tweets in database
+ *     description: Check tweets stored in database with optional campaign filter
+ *     tags: [Database Verification]
+ *     parameters:
+ *       - in: query
+ *         name: campaignId
+ *         schema:
+ *           type: string
+ *         description: Filter by campaign ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *           default: 10
+ *         description: Limit number of results
+ *     responses:
+ *       200:
+ *         description: Tweets retrieved successfully
+ */
+router.get('/tweets', async (req: Request, res: Response) => {
+  try {
+    const { campaignId, limit = 10 } = req.query;
+
+    let tweets;
+    if (campaignId) {
+      tweets = await tweetDatabaseService.getTweetsByCampaign(
+        campaignId as string,
+        parseInt(limit as string)
+      );
+    } else {
+      // Get recent tweets from any campaign
+      tweets = await tweetDatabaseService.getTweetsByHashtag(
+        '', // Empty hashtag to get all
+        parseInt(limit as string)
+      );
+    }
+
+    res.json({
+      success: true,
+      data: {
+        total: tweets.length,
+        campaignId: campaignId || 'all',
+        tweets: tweets.map((tweet) => ({
+          tweetId: tweet.tweetId,
+          content: tweet.content.substring(0, 100) + '...',
+          campaignId: tweet.campaignId,
+          sentiment: tweet.sentiment,
+          createdAt: tweet.createdAt,
+          scrapedAt: tweet.scrapedAt,
+        })),
+      },
+      message: `Found ${tweets.length} tweets in database`,
+    });
+  } catch (error) {
+    console.error('Error retrieving tweets:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve tweets from database',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

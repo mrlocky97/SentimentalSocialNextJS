@@ -9,7 +9,7 @@ import {
   SentimentCompareRequest,
   SentimentTestRequest,
   UnifiedSentimentResult,
-} from '@/types/sentiment';
+} from '@/types';
 import { sentimentManager } from '../server';
 import { Tweet } from '../types/twitter';
 
@@ -984,6 +984,150 @@ export class SentimentService {
       naiveAdjusted: naiveConfidenceAdjusted,
       ruleAdjusted: ruleConfidenceAdjusted,
     };
+  }
+
+  /**
+   * Evaluate accuracy of sentiment prediction methods
+   */
+  async evaluateAccuracy({
+    testCases,
+    includeComparison = true,
+  }: {
+    testCases: Array<{ text: string; expectedSentiment: string }>;
+    includeComparison?: boolean;
+  }) {
+    const results = {
+      overall: {
+        total: testCases.length,
+        correct: 0,
+        accuracy: 0,
+      },
+      byMethod: {
+        hybrid: { correct: 0, total: testCases.length, accuracy: 0 },
+        naive: { correct: 0, total: testCases.length, accuracy: 0 },
+        rule: { correct: 0, total: testCases.length, accuracy: 0 },
+      },
+      detailedResults: [] as any[],
+      confusionMatrix: {
+        positive: { positive: 0, negative: 0, neutral: 0 },
+        negative: { positive: 0, negative: 0, neutral: 0 },
+        neutral: { positive: 0, negative: 0, neutral: 0 },
+      },
+      insights: {
+        strongestMethod: '',
+        averageConfidence: 0,
+        disagreementRate: 0,
+      },
+    };
+
+    let totalConfidence = 0;
+    let disagreements = 0;
+
+    for (const testCase of testCases) {
+      try {
+        let hybridResult, naiveResult, ruleResult;
+
+        if (includeComparison) {
+          // Get comparison results (includes all methods)
+          const comparison = await this.compareSentimentMethods({ text: testCase.text });
+          hybridResult = {
+            label: comparison.unified.label,
+            confidence: comparison.unified.confidence,
+          };
+          naiveResult = comparison.naive;
+          ruleResult = comparison.rule;
+        } else {
+          // Just get hybrid result using test method
+          const analysis = await this.testSentimentAnalysis({
+            text: testCase.text,
+            method: 'rule',
+          });
+          hybridResult = {
+            label: analysis.analysis.sentiment.label,
+            confidence: analysis.analysis.sentiment.confidence,
+          };
+        }
+
+        // Normalize expected sentiment
+        const expected = testCase.expectedSentiment.toLowerCase();
+
+        // Check hybrid accuracy
+        const hybridCorrect = hybridResult.label === expected;
+        if (hybridCorrect) results.byMethod.hybrid.correct++;
+
+        if (includeComparison && naiveResult && ruleResult) {
+          // Check individual method accuracy
+          const naiveCorrect = naiveResult.label === expected;
+          const ruleCorrect = ruleResult.label === expected;
+
+          if (naiveCorrect) results.byMethod.naive.correct++;
+          if (ruleCorrect) results.byMethod.rule.correct++;
+
+          // Check for disagreements
+          if (naiveResult.label !== ruleResult.label) disagreements++;
+        }
+
+        // Update confusion matrix
+        const predicted = hybridResult.label;
+        if (results.confusionMatrix[expected as keyof typeof results.confusionMatrix]) {
+          results.confusionMatrix[expected as keyof typeof results.confusionMatrix][
+            predicted as keyof typeof results.confusionMatrix.positive
+          ]++;
+        }
+
+        totalConfidence += hybridResult.confidence;
+
+        // Store detailed result
+        results.detailedResults.push({
+          text: testCase.text.substring(0, 100) + '...',
+          expected,
+          predicted: hybridResult.label,
+          confidence: hybridResult.confidence,
+          correct: hybridCorrect,
+          ...(includeComparison &&
+            naiveResult &&
+            ruleResult && {
+              methods: {
+                naive: { label: naiveResult.label, correct: naiveResult.label === expected },
+                rule: { label: ruleResult.label, correct: ruleResult.label === expected },
+              },
+            }),
+        });
+      } catch (error) {
+        console.error(`Error evaluating test case: ${testCase.text}`, error);
+        results.detailedResults.push({
+          text: testCase.text,
+          expected: testCase.expectedSentiment,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Calculate final metrics
+    results.overall.correct = results.byMethod.hybrid.correct;
+    results.overall.accuracy = (results.overall.correct / results.overall.total) * 100;
+
+    results.byMethod.hybrid.accuracy =
+      (results.byMethod.hybrid.correct / results.byMethod.hybrid.total) * 100;
+    results.byMethod.naive.accuracy =
+      (results.byMethod.naive.correct / results.byMethod.naive.total) * 100;
+    results.byMethod.rule.accuracy =
+      (results.byMethod.rule.correct / results.byMethod.rule.total) * 100;
+
+    results.insights.averageConfidence = totalConfidence / testCases.length;
+    results.insights.disagreementRate = (disagreements / testCases.length) * 100;
+
+    // Determine strongest method
+    const accuracies = results.byMethod;
+    const strongest = Object.entries(accuracies).reduce(
+      (best, [method, stats]) =>
+        stats.accuracy > best.accuracy ? { method, accuracy: stats.accuracy } : best,
+      { method: 'hybrid', accuracy: accuracies.hybrid.accuracy }
+    );
+
+    results.insights.strongestMethod = strongest.method;
+
+    return results;
   }
 }
 

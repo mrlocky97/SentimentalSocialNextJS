@@ -356,4 +356,114 @@ router.post(
   })
 );
 
+/**
+ * @swagger
+ * /api/v1/sentiment/quick-eval:
+ *   get:
+ *     summary: Quick evaluation with predefined test dataset
+ *     tags: [Sentiment Analysis]
+ *     parameters:
+ *       - in: query
+ *         name: dataset
+ *         schema:
+ *           type: string
+ *           enum: [general, marketing, tech]
+ *           default: general
+ *         description: Which test dataset to use
+ *     responses:
+ *       200:
+ *         description: Quick evaluation results
+ */
+router.get(
+  '/quick-eval',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { dataset = 'general' } = req.query;
+
+    // Import test datasets
+    const { sentimentTestDataset, marketingSpecificTestDataset, techSpecificTestDataset } =
+      await import('../data/test-datasets');
+
+    let testCases;
+    switch (dataset) {
+      case 'marketing':
+        testCases = marketingSpecificTestDataset;
+        break;
+      case 'tech':
+        testCases = techSpecificTestDataset;
+        break;
+      default:
+        testCases = sentimentTestDataset;
+    }
+
+    const results = await sentimentService.evaluateAccuracy({
+      testCases,
+      includeComparison: true,
+    });
+
+    return successResponse(
+      res,
+      results,
+      `Quick evaluation completed: ${results.overall.accuracy.toFixed(
+        2
+      )}% accuracy on ${dataset} dataset`
+    );
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/sentiment/evaluate:
+ *   post:
+ *     summary: Evaluate sentiment prediction accuracy
+ *     tags: [Sentiment Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - testCases
+ *             properties:
+ *               testCases:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     text:
+ *                       type: string
+ *                     expectedSentiment:
+ *                       type: string
+ *                       enum: [positive, negative, neutral]
+ *               includeComparison:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       200:
+ *         description: Evaluation results with accuracy metrics
+ */
+router.post(
+  '/evaluate',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { testCases, includeComparison = true } = req.body;
+
+    if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+      throw SentimentAnalysisError.invalidAnalysisArray();
+    }
+
+    const results = await sentimentService.evaluateAccuracy({
+      testCases,
+      includeComparison,
+    });
+
+    return successResponse(
+      res,
+      results,
+      `Evaluated ${testCases.length} test cases with ${results.overall.accuracy.toFixed(
+        2
+      )}% accuracy`
+    );
+  })
+);
+
 export default router;

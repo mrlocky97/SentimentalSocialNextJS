@@ -15,7 +15,10 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "ts-node": {
     "compilerOptions": {
@@ -23,6 +26,13 @@
       "target": "ES2020"
     }
   },
-  "include": ["src/server.ts", "src/lib/**/*", "src/routes/**/*", "src/models/**/*", "src/repositories/**/*", "src/services/**/*"],
+  "include": [
+    "src/server.ts",
+    "src/lib/**/*",
+    "src/routes/**/*",
+    "src/models/**/*",
+    "src/repositories/**/*",
+    "src/services/**/*"
+  ],
   "exclude": ["node_modules", "dist", ".next", "src/app/**/*"]
 }
