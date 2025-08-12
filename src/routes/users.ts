@@ -354,6 +354,138 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+
+/**
+ * @swagger
+ * /api/v1/users/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     description: Get the profile information of the currently authenticated user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get(
+  '/profile',
+  authenticateToken,
+  errorHandler.expressAsyncWrapper(async (req, res) => {
+    const userId = (req as any).user.id;
+    
+    const user = await userRepository.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+        operation: 'get_user_profile',
+        additionalData: { userId },
+      });
+    }
+
+    ResponseHelper.success(res, { user }, 'User profile retrieved successfully');
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/users/profile:
+ *   put:
+ *     summary: Update current user profile
+ *     description: Update the profile information of the currently authenticated user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               displayName:
+ *                 type: string
+ *                 description: User's display name
+ *                 example: "John Doe"
+ *               bio:
+ *                 type: string
+ *                 description: User's biography
+ *                 example: "Software engineer passionate about AI"
+ *               organizationId:
+ *                 type: string
+ *                 description: Organization ID
+ *     responses:
+ *       200:
+ *         description: User profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.put(
+  '/profile',
+  authenticateToken,
+  errorHandler.expressAsyncWrapper(async (req, res) => {
+    const userId = (req as any).user.id;
+    const updateData: Partial<UpdateUserRequest> = req.body;
+
+    // Remove sensitive fields that shouldn't be updated via profile endpoint
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { role, permissions, isActive, ...profileData } = updateData as any;
+
+    const updatedUser = await userRepository.update(userId, profileData);
+
+    if (!updatedUser) {
+      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+        operation: 'update_user_profile',
+        additionalData: { userId },
+      });
+    }
+
+    ResponseHelper.success(res, { user: updatedUser }, 'User profile updated successfully');
+  })
+);
+
 router.get(
   '/:id',
   authenticateToken,
