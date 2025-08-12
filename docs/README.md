@@ -16,12 +16,12 @@ graph TB
     B --> E[Sentiment Analysis Engine]
     B --> F[Campaign Manager]
     B --> G[Performance Monitor]
-    
+
     D --> H[Twitter API]
     E --> I[ML Models]
     F --> J[MongoDB]
     G --> K[Cache Layer]
-    
+
     J --> L[(MongoDB Database)]
     K --> M[(Redis Cache)]
 ```
@@ -39,7 +39,7 @@ graph TB
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - MongoDB 6+
 - TypeScript 5+
 - Redis (optional, for caching)
@@ -92,6 +92,7 @@ MAX_CONCURRENT_QUERIES=5
 ### Authentication
 
 #### POST /api/auth/login
+
 Login with credentials
 
 ```typescript
@@ -112,6 +113,7 @@ interface LoginResponse {
 ```
 
 #### POST /api/auth/register
+
 Register new user
 
 ```typescript
@@ -125,6 +127,7 @@ interface RegisterRequest {
 ### Sentiment Analysis
 
 #### POST /api/sentiment/analyze
+
 Analyze text sentiment
 
 ```typescript
@@ -153,6 +156,7 @@ interface SentimentResponse {
 ### Campaign Management
 
 #### POST /api/campaigns
+
 Create new campaign
 
 ```typescript
@@ -170,6 +174,7 @@ interface CreateCampaignRequest {
 ```
 
 #### GET /api/campaigns/:id/metrics
+
 Get campaign metrics
 
 ```typescript
@@ -193,6 +198,7 @@ interface CampaignMetrics {
 The sentiment analysis engine supports multiple methods:
 
 #### 1. Naive Bayes Classifier
+
 - Fast, lightweight
 - Good for basic sentiment detection
 - Trained on social media data
@@ -201,10 +207,11 @@ The sentiment analysis engine supports multiple methods:
 import { NaiveBayesSentimentAnalyzer } from '@/services/naive-bayes-sentiment.service';
 
 const analyzer = new NaiveBayesSentimentAnalyzer();
-const result = await analyzer.analyze("I love this product!");
+const result = await analyzer.analyze('I love this product!');
 ```
 
 #### 2. Rule-Based Analysis
+
 - Pattern matching
 - Domain-specific rules
 - Multilingual support
@@ -213,10 +220,11 @@ const result = await analyzer.analyze("I love this product!");
 import { InternalSentimentAnalyzer } from '@/services/internal-sentiment-analyzer.service';
 
 const analyzer = new InternalSentimentAnalyzer();
-const result = await analyzer.analyze("This is amazing!");
+const result = await analyzer.analyze('This is amazing!');
 ```
 
 #### 3. Hybrid System
+
 - Combines multiple approaches
 - Confidence weighting
 - Best accuracy
@@ -225,12 +233,13 @@ const result = await analyzer.analyze("This is amazing!");
 import { HybridSentimentAnalyzer } from '@/services/hybrid-sentiment.service';
 
 const analyzer = new HybridSentimentAnalyzer();
-const result = await analyzer.analyze("Complex sentiment text...");
+const result = await analyzer.analyze('Complex sentiment text...');
 ```
 
 ### Performance Optimization
 
 #### Caching System
+
 ```typescript
 import { performanceCache } from '@/services/performance-cache.service';
 
@@ -245,6 +254,7 @@ const key = performanceCache.generateKey('sentiment', userId, text);
 ```
 
 #### Query Optimization
+
 ```typescript
 import { queryOptimizer } from '@/services/query-optimization.service';
 
@@ -271,9 +281,8 @@ import { performanceMonitor } from '@/services/performance-monitoring.service';
 performanceMonitor.trackEndpoint('GET', '/api/campaigns', 200, 150);
 
 // Measure function execution
-const result = await performanceMonitor.measureExecutionTime(
-  'sentiment_analysis',
-  () => analyzeSentiment(text)
+const result = await performanceMonitor.measureExecutionTime('sentiment_analysis', () =>
+  analyzeSentiment(text)
 );
 
 // Generate performance report
@@ -318,7 +327,7 @@ npm run test:watch
 describe('SentimentAnalysisService', () => {
   it('should analyze positive sentiment correctly', async () => {
     const result = await sentimentService.analyze('I love this!');
-    
+
     expect(result.label).toBe('positive');
     expect(result.confidence).toBeGreaterThan(0.8);
   });
@@ -327,10 +336,8 @@ describe('SentimentAnalysisService', () => {
 // API test example
 describe('GET /api/sentiment/test', () => {
   it('should return sentiment analysis result', async () => {
-    const response = await request(app)
-      .get('/api/sentiment/test')
-      .expect(200);
-      
+    const response = await request(app).get('/api/sentiment/test').expect(200);
+
     expect(response.body).toHaveProperty('label');
     expect(response.body).toHaveProperty('confidence');
   });
@@ -376,11 +383,13 @@ docker run -p 3000:3000 sentimentalsocial
 ### Environment Setup
 
 #### Development
+
 ```bash
 npm run dev
 ```
 
 #### Production
+
 ```bash
 npm run build
 npm start
@@ -415,16 +424,19 @@ npm start
 ## 🔒 Security
 
 ### Authentication
+
 - JWT tokens with secure secrets
 - Password hashing with bcrypt
 - Rate limiting on sensitive endpoints
 
 ### Data Protection
+
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection headers
 
 ### API Security
+
 ```typescript
 // Rate limiting example
 import rateLimit from 'express-rate-limit';
@@ -432,7 +444,7 @@ import rateLimit from 'express-rate-limit';
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
+  message: 'Too many requests from this IP',
 });
 
 app.use('/api/', limiter);
@@ -443,6 +455,7 @@ app.use('/api/', limiter);
 ### Common Issues
 
 #### High Memory Usage
+
 ```bash
 # Check memory usage
 npm run monitor:memory
@@ -452,6 +465,7 @@ node --inspect dist/server.js
 ```
 
 #### Slow Query Performance
+
 ```bash
 # Check query metrics
 npm run analyze:queries
@@ -461,6 +475,7 @@ ENABLE_QUERY_PROFILING=true npm start
 ```
 
 #### Cache Issues
+
 ```bash
 # Clear cache
 npm run cache:clear
@@ -488,12 +503,7 @@ npm run debug:prod
 
 ```typescript
 // Custom metrics
-performanceMonitor.recordMetric(
-  'custom_operation',
-  executionTime,
-  'ms',
-  'response_time'
-);
+performanceMonitor.recordMetric('custom_operation', executionTime, 'ms', 'response_time');
 
 // Automatic endpoint tracking
 app.use(performanceMiddleware);
@@ -534,20 +544,24 @@ curl http://localhost:3000/health/cache
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] Manual testing completed
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
@@ -564,6 +578,7 @@ Brief description of changes
 ## 📞 Support
 
 For technical support or questions:
+
 - Create an issue in GitHub
 - Check existing documentation
 - Review test examples
@@ -571,5 +586,5 @@ For technical support or questions:
 
 ---
 
-*Last updated: $(date)*
-*Version: 1.0.0*
+_Last updated: $(date)_
+_Version: 1.0.0_

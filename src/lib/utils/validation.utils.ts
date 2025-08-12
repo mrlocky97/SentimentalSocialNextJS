@@ -3,11 +3,11 @@
  * Centralized validation functions to eliminate duplicate validation logic
  */
 
-import { CampaignType, DataSource } from '../../types/campaign';
 import {
   CampaignType as CampaignTypeEnum,
   DataSource as DataSourceEnum,
 } from '../../enums/campaign.enum';
+import { CampaignType, DataSource } from '../../types/campaign';
 
 /**
  * Validate email format

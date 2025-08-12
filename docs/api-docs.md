@@ -1,6 +1,7 @@
 # 🔌 API Documentation
 
 ## Base URL
+
 ```
 http://localhost:3000/api
 ```
@@ -8,6 +9,7 @@ http://localhost:3000/api
 ## Authentication
 
 All protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <token>
 ```
@@ -15,9 +17,11 @@ Authorization: Bearer <token>
 ### Authentication Endpoints
 
 #### POST /auth/login
+
 Login with email and password.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -26,6 +30,7 @@ Login with email and password.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -41,9 +46,11 @@ Login with email and password.
 ```
 
 #### POST /auth/register
+
 Register a new user account.
 
 **Request:**
+
 ```json
 {
   "name": "John Doe",
@@ -53,6 +60,7 @@ Register a new user account.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -66,9 +74,11 @@ Register a new user account.
 ```
 
 #### POST /auth/logout
+
 Logout current user (protected).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -79,9 +89,11 @@ Logout current user (protected).
 ## Sentiment Analysis
 
 ### POST /sentiment/analyze
+
 Analyze sentiment of provided text.
 
 **Request:**
+
 ```json
 {
   "text": "I love this new product! It's amazing.",
@@ -90,10 +102,12 @@ Analyze sentiment of provided text.
 ```
 
 **Parameters:**
+
 - `text` (string, required): Text to analyze
 - `method` (string, optional): Analysis method (`naive`, `rule`, `ml`, `advanced`, `hybrid`)
 
 **Response:**
+
 ```json
 {
   "label": "positive",
@@ -113,9 +127,11 @@ Analyze sentiment of provided text.
 ```
 
 ### GET /sentiment/test
+
 Quick sentiment analysis test endpoint.
 
 **Response:**
+
 ```json
 {
   "label": "positive",
@@ -128,9 +144,11 @@ Quick sentiment analysis test endpoint.
 ```
 
 ### POST /sentiment/compare
+
 Compare different sentiment analysis methods.
 
 **Request:**
+
 ```json
 {
   "text": "This product is okay, nothing special."
@@ -138,6 +156,7 @@ Compare different sentiment analysis methods.
 ```
 
 **Response:**
+
 ```json
 {
   "text": "This product is okay, nothing special.",
@@ -166,14 +185,17 @@ Compare different sentiment analysis methods.
 ## Campaign Management
 
 ### GET /campaigns
+
 Get all campaigns for authenticated user (protected).
 
 **Query Parameters:**
+
 - `page` (number, optional): Page number (default: 1)
 - `limit` (number, optional): Items per page (default: 10)
 - `status` (string, optional): Filter by status (`active`, `paused`, `completed`)
 
 **Response:**
+
 ```json
 {
   "campaigns": [
@@ -203,9 +225,11 @@ Get all campaigns for authenticated user (protected).
 ```
 
 ### POST /campaigns
+
 Create a new campaign (protected).
 
 **Request:**
+
 ```json
 {
   "name": "Summer Campaign 2024",
@@ -223,6 +247,7 @@ Create a new campaign (protected).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -246,9 +271,11 @@ Create a new campaign (protected).
 ```
 
 ### GET /campaigns/:id
+
 Get specific campaign details (protected).
 
 **Response:**
+
 ```json
 {
   "id": "64f1b2c3d4e5f6789abc",
@@ -274,9 +301,11 @@ Get specific campaign details (protected).
 ```
 
 ### PUT /campaigns/:id
+
 Update campaign (protected).
 
 **Request:**
+
 ```json
 {
   "name": "Updated Campaign Name",
@@ -291,6 +320,7 @@ Update campaign (protected).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -305,9 +335,11 @@ Update campaign (protected).
 ```
 
 ### DELETE /campaigns/:id
+
 Delete campaign (protected).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -316,13 +348,16 @@ Delete campaign (protected).
 ```
 
 ### GET /campaigns/:id/metrics
+
 Get detailed campaign metrics (protected).
 
 **Query Parameters:**
+
 - `timeRange` (string, optional): Time range (`1h`, `24h`, `7d`, `30d`)
 - `granularity` (string, optional): Data granularity (`hour`, `day`, `week`)
 
 **Response:**
+
 ```json
 {
   "campaignId": "64f1b2c3d4e5f6789abc",
@@ -365,9 +400,11 @@ Get detailed campaign metrics (protected).
 ## Twitter Integration
 
 ### GET /twitter-auth/status
+
 Check Twitter authentication status.
 
 **Response:**
+
 ```json
 {
   "authenticated": true,
@@ -384,9 +421,11 @@ Check Twitter authentication status.
 ```
 
 ### POST /twitter-auth/validate
+
 Validate Twitter credentials (protected).
 
 **Request:**
+
 ```json
 {
   "email": "twitter@example.com",
@@ -396,6 +435,7 @@ Validate Twitter credentials (protected).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -407,9 +447,11 @@ Validate Twitter credentials (protected).
 ## Data Collection
 
 ### POST /data/collect
+
 Start data collection for campaign (protected).
 
 **Request:**
+
 ```json
 {
   "campaignId": "64f1b2c3d4e5f6789abc",
@@ -423,6 +465,7 @@ Start data collection for campaign (protected).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -434,9 +477,11 @@ Start data collection for campaign (protected).
 ```
 
 ### GET /data/status/:jobId
+
 Check data collection status (protected).
 
 **Response:**
+
 ```json
 {
   "jobId": "collection_64f1b2c3d4e5f6789abc_001",
@@ -454,9 +499,11 @@ Check data collection status (protected).
 ## Performance & Monitoring
 
 ### GET /performance/metrics
+
 Get system performance metrics (admin only).
 
 **Response:**
+
 ```json
 {
   "timestamp": "2024-01-15T15:30:00Z",
@@ -487,9 +534,11 @@ Get system performance metrics (admin only).
 ```
 
 ### GET /performance/health
+
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -556,20 +605,20 @@ const SentimentalSocialAPI = require('sentimentalsocial-sdk');
 
 const client = new SentimentalSocialAPI({
   baseURL: 'http://localhost:3000/api',
-  token: 'your-jwt-token'
+  token: 'your-jwt-token',
 });
 
 // Analyze sentiment
 const result = await client.sentiment.analyze({
   text: 'I love this product!',
-  method: 'hybrid'
+  method: 'hybrid',
 });
 
 // Create campaign
 const campaign = await client.campaigns.create({
   name: 'My Campaign',
   hashtags: ['#brand'],
-  keywords: ['product']
+  keywords: ['product'],
 });
 ```
 
@@ -582,7 +631,7 @@ class SentimentalSocialAPI:
     def __init__(self, base_url, token):
         self.base_url = base_url
         self.headers = {'Authorization': f'Bearer {token}'}
-    
+
     def analyze_sentiment(self, text, method='hybrid'):
         response = requests.post(
             f'{self.base_url}/sentiment/analyze',
@@ -622,6 +671,7 @@ curl -X GET http://localhost:3000/api/campaigns \
 Register webhook URLs to receive real-time notifications:
 
 #### Campaign Completed
+
 ```json
 {
   "event": "campaign.completed",
@@ -638,6 +688,7 @@ Register webhook URLs to receive real-time notifications:
 ```
 
 #### Alert Triggered
+
 ```json
 {
   "event": "alert.triggered",
@@ -657,4 +708,4 @@ Register webhook URLs to receive real-time notifications:
 
 ---
 
-*For more information, see the [Technical Documentation](./README.md)*
+_For more information, see the [Technical Documentation](./README.md)_

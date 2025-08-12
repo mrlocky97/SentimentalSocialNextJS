@@ -3,8 +3,8 @@
  * Pre-configured campaign templates for different use cases
  */
 
-import { CampaignTemplate, CampaignType, DataSource } from '../types/campaign';
 import { CampaignCategory } from '../enums/campaign.enum';
+import { CampaignTemplate, CampaignType, DataSource } from '../types/campaign';
 
 export class CampaignTemplatesService {
   /**

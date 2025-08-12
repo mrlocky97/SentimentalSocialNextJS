@@ -1,7 +1,7 @@
 // sentiment-service.ts
 
-import { ModelUpdateRequest, SentimentTestRequest } from '@/types';
 import { Method } from '@/enums/sentiment.enum';
+import { ModelUpdateRequest, SentimentTestRequest } from '@/types';
 import { Core, SentimentUtils } from '../core';
 import { sentimentManager } from '../lib/sentiment-manager';
 import { Tweet } from '../types/twitter';
