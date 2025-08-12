@@ -4,8 +4,8 @@
  * Phase 5: Advanced Cache System Implementation
  */
 
-import { AdvancedCacheSystem } from "./advanced-cache";
-import { container, TOKENS } from "../dependency-injection/container";
+import { container, TOKENS } from '../dependency-injection/container';
+import { AdvancedCacheSystem } from './advanced-cache';
 
 /**
  * Compatibility wrapper for MemoryCacheService interface
@@ -14,9 +14,7 @@ export class CacheServiceCompat {
   private advancedCache: AdvancedCacheSystem;
 
   constructor() {
-    this.advancedCache = container.resolve<AdvancedCacheSystem>(
-      TOKENS.CACHE_SERVICE,
-    );
+    this.advancedCache = container.resolve<AdvancedCacheSystem>(TOKENS.CACHE_SERVICE);
   }
 
   /**
@@ -25,7 +23,7 @@ export class CacheServiceCompat {
   async set(key: string, value: any, ttl?: number): Promise<void> {
     await this.advancedCache.set(key, value, {
       ttl: ttl ? ttl * 1000 : undefined, // Convert seconds to milliseconds
-      tags: ["legacy-cache"],
+      tags: ['legacy-cache'],
     });
   }
 
@@ -55,7 +53,7 @@ export class CacheServiceCompat {
    * Clear all cache
    */
   async clear(): Promise<void> {
-    await this.advancedCache.invalidateByTags(["legacy-cache"]);
+    await this.advancedCache.invalidateByTags(['legacy-cache']);
   }
 
   /**
@@ -85,7 +83,7 @@ export class CacheServiceCompat {
    * Generate cache key (compatibility method)
    */
   generateKey(prefix: string, ...parts: string[]): string {
-    return `${prefix}:${parts.join(":")}`;
+    return `${prefix}:${parts.join(':')}`;
   }
 }
 
@@ -96,9 +94,7 @@ export class PerformanceCacheCompat {
   private advancedCache: AdvancedCacheSystem;
 
   constructor() {
-    this.advancedCache = container.resolve<AdvancedCacheSystem>(
-      TOKENS.CACHE_SERVICE,
-    );
+    this.advancedCache = container.resolve<AdvancedCacheSystem>(TOKENS.CACHE_SERVICE);
   }
 
   /**
@@ -107,7 +103,7 @@ export class PerformanceCacheCompat {
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     await this.advancedCache.set(key, value, {
       ttl: ttl,
-      tags: ["performance-cache"],
+      tags: ['performance-cache'],
     });
   }
 
@@ -129,7 +125,7 @@ export class PerformanceCacheCompat {
    * Clear all cache
    */
   async clear(): Promise<void> {
-    await this.advancedCache.invalidateByTags(["performance-cache"]);
+    await this.advancedCache.invalidateByTags(['performance-cache']);
   }
 
   /**

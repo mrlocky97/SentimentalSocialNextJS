@@ -77,33 +77,35 @@ export const container = new DIContainer();
 // Service tokens
 export const TOKENS = {
   // Core Services
-  SENTIMENT_ENGINE: Symbol("SentimentEngine"),
-  SENTIMENT_ORCHESTRATOR: Symbol("SentimentOrchestrator"),
-  SENTIMENT_MAPPERS: Symbol("SentimentMappers"),
+  SENTIMENT_ENGINE: Symbol('SentimentEngine'),
+  SENTIMENT_ORCHESTRATOR: Symbol('SentimentOrchestrator'),
+  SENTIMENT_MAPPERS: Symbol('SentimentMappers'),
 
   // Cache Services
-  CACHE_SERVICE: Symbol("CacheService"),
-  PERFORMANCE_CACHE: Symbol("PerformanceCache"),
+  CACHE_SERVICE: Symbol('CacheService'),
+  PERFORMANCE_CACHE: Symbol('PerformanceCache'),
+
+  // Observability Services
+  CORRELATION_SERVICE: Symbol('CorrelationService'),
+  LOGGER_FACTORY: Symbol('LoggerFactory'),
 
   // Analysis Services
-  NAIVE_BAYES_SERVICE: Symbol("NaiveBayesService"),
-  HYBRID_ANALYZER: Symbol("HybridAnalyzer"),
+  NAIVE_BAYES_SERVICE: Symbol('NaiveBayesService'),
+  HYBRID_ANALYZER: Symbol('HybridAnalyzer'),
 
   // Managers
-  TWEET_SENTIMENT_MANAGER: Symbol("TweetSentimentManager"),
-  MODEL_PERSISTENCE: Symbol("ModelPersistence"),
+  TWEET_SENTIMENT_MANAGER: Symbol('TweetSentimentManager'),
+  MODEL_PERSISTENCE: Symbol('ModelPersistence'),
 
   // External Services
-  TWITTER_AUTH_MANAGER: Symbol("TwitterAuthManager"),
-  TWITTER_SCRAPER: Symbol("TwitterScraper"),
+  TWITTER_AUTH_MANAGER: Symbol('TwitterAuthManager'),
+  TWITTER_SCRAPER: Symbol('TwitterScraper'),
 } as const;
 
 /**
  * Decorator for dependency injection
  */
-export function injectable<T extends new (...args: any[]) => any>(
-  constructor: T,
-) {
+export function injectable<T extends new (...args: any[]) => any>(constructor: T) {
   return class extends constructor {
     constructor(...args: any[]) {
       super(...args);

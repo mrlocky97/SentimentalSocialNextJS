@@ -110,11 +110,7 @@ export class MemoryCache {
   /**
    * Get or set pattern (memoization)
    */
-  async getOrSet<T>(
-    key: string,
-    factory: () => Promise<T> | T,
-    ttl?: number,
-  ): Promise<T> {
+  async getOrSet<T>(key: string, factory: () => Promise<T> | T, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
     if (cached !== null) {
       return cached;
@@ -131,11 +127,7 @@ export const appCache = new MemoryCache();
 
 // Cache decorators for methods
 export function Cacheable(ttl?: number) {
-  return function (
-    target: any,
-    propertyName: string,
-    descriptor: PropertyDescriptor,
-  ) {
+  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {

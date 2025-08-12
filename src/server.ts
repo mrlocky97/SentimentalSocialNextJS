@@ -1,5 +1,5 @@
 /**
- * Express Server with Swaimport { cacheService } from './lib/cache/cache-migration';ger Documentation
+ * Express Server with Swagger Documentation
  * Main server file that sets up Express with all routes and Swagger UI
  */
 
@@ -38,6 +38,7 @@ import DatabaseConnection from "./lib/database/connection";
 import adminRoutes from "./routes/admin";
 import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
+import configureHealthRoutes from "./routes/health.routes";
 import { scrapingRoutes } from "./routes/scraping";
 import securityRoutes from "./routes/security";
 import sentimentRoutes from "./routes/sentiment";
@@ -54,9 +55,16 @@ import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 // Import IoC Configuration
 import {
-  configureServices,
   checkContainerHealth,
+  configureServices,
 } from "./lib/dependency-injection/config";
+// Import observability middleware
+import { systemLogger } from "./lib/observability/logger";
+import {
+  errorLoggingMiddleware,
+  performanceLoggingMiddleware,
+  requestLoggingMiddleware,
+} from "./middleware/request-logging";
 const modelPath = path.join(
   process.cwd(),
   "src",
@@ -69,6 +77,12 @@ const PORT = appConfig.app.port || 3001;
 
 // Security middleware
 app.use(helmet());
+
+// Request correlation and logging (before other middleware)
+app.use(requestLoggingMiddleware);
+
+// Performance monitoring for slow requests
+app.use(performanceLoggingMiddleware(1000)); // 1 second threshold
 
 // Compression middleware
 app.use(compressionMiddleware);
@@ -97,22 +111,8 @@ app.use(
   express.urlencoded({ extended: true, limit: appConfig.uploads.maxFileSize }),
 );
 
-// Health check endpoint - enhanced with new monitoring
-app.get("/health", (req, res) => {
-  const healthStatus = performanceMonitor.getHealthStatus();
-  res.status(200).json({
-    status:
-      healthStatus.status === "healthy"
-        ? "OK"
-        : healthStatus.status.toUpperCase(),
-    timestamp: new Date().toISOString(),
-    uptime: healthStatus.uptime,
-    environment: appConfig.app.environment,
-    version: appConfig.app.version,
-    metrics: healthStatus.metrics,
-    issues: healthStatus.issues,
-  });
-});
+// Health check routes - comprehensive health monitoring
+app.use("/health", configureHealthRoutes());
 
 // Enhanced metrics endpoint with cache and performance data
 app.get("/metrics", (req, res) => {
@@ -353,8 +353,16 @@ async function startServer() {
       }
     }
 
+    // Error logging middleware (must be last)
+    app.use(errorLoggingMiddleware);
+
     // Start Express server
     app.listen(PORT, () => {
+      systemLogger.info("Server started successfully", {
+        port: PORT,
+        environment: process.env.NODE_ENV || "development",
+        apiDocs: `http://localhost:${PORT}/api-docs`,
+      });
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
     });
