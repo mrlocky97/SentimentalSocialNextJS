@@ -127,23 +127,25 @@ export class HealthChecks {
         const startTime = performance.now();
 
         try {
-          const cacheService = container.resolve<AdvancedCacheSystem>(TOKENS.CACHE_SERVICE);
-          
+          const cacheService = container.resolve<AdvancedCacheSystem>(
+            TOKENS.CACHE_SERVICE,
+          );
+
           // Test cache operations
           const testKey = `health-check-${Date.now()}`;
           const testValue = { test: true, timestamp: Date.now() };
-          
+
           // Test set operation
           await cacheService.set(testKey, testValue, {
             ttl: 5000,
-            tags: ['health-check'],
+            tags: ["health-check"],
           });
-          
+
           // Test get operation
           const retrieved = await cacheService.get<typeof testValue>(testKey);
-          
+
           // Test delete operation
-          await cacheService.invalidateByTags(['health-check']);
+          await cacheService.invalidateByTags(["health-check"]);
 
           const duration = performance.now() - startTime;
 
@@ -209,7 +211,9 @@ export class HealthChecks {
         const startTime = performance.now();
 
         try {
-          const sentimentEngine = container.resolve<SentimentAnalysisEngine>(TOKENS.SENTIMENT_ENGINE);
+          const sentimentEngine = container.resolve<SentimentAnalysisEngine>(
+            TOKENS.SENTIMENT_ENGINE,
+          );
 
           // Test sentiment analysis with simple text
           const testResult = await sentimentEngine.analyze({
