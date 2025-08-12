@@ -3,10 +3,10 @@
  * Mappers especializados para transformaciones de datos de tweets
  */
 
-import { Label } from '../../enums/sentiment.enum';
-import { TweetDTO } from '../../lib/sentiment/types';
-import { Tweet } from '../../types/twitter';
-import { SentimentErrors } from '../errors';
+import { Label } from "../../enums/sentiment.enum";
+import { TweetDTO } from "../../lib/sentiment/types";
+import { Tweet } from "../../types/twitter";
+import { SentimentErrors } from "../errors";
 
 /**
  * Mapper base para tweets
@@ -17,19 +17,24 @@ export abstract class BaseTweetMapper {
    */
   protected static validateTweet(tweet: any): void {
     if (!tweet) {
-      throw SentimentErrors.invalidTweet({ reason: 'Tweet is null or undefined' });
+      throw SentimentErrors.invalidTweet({
+        reason: "Tweet is null or undefined",
+      });
     }
 
     if (!tweet.content && !tweet.text) {
       throw SentimentErrors.invalidTweet({
-        reason: 'Tweet must have content or text field',
+        reason: "Tweet must have content or text field",
         provided: Object.keys(tweet),
       });
     }
 
-    if ((!tweet.id && !tweet.tweetId) || (tweet.id === '' && tweet.tweetId === '')) {
+    if (
+      (!tweet.id && !tweet.tweetId) ||
+      (tweet.id === "" && tweet.tweetId === "")
+    ) {
       throw SentimentErrors.invalidTweet({
-        reason: 'Tweet must have a valid ID',
+        reason: "Tweet must have a valid ID",
         provided: { id: tweet.id, tweetId: tweet.tweetId },
       });
     }
@@ -58,7 +63,8 @@ export abstract class BaseTweetMapper {
       } catch (error) {
         throw SentimentErrors.invalidTweet({
           batchIndex: index,
-          originalError: error instanceof Error ? error.message : 'Unknown error',
+          originalError:
+            error instanceof Error ? error.message : "Unknown error",
         });
       }
     });
@@ -76,8 +82,8 @@ export class TweetToTweetDTOMapper extends BaseTweetMapper {
     this.validateTweet(tweet);
 
     return {
-      id: tweet.id || tweet.tweetId || '',
-      text: tweet.content || (tweet.text as string) || '',
+      id: tweet.id || tweet.tweetId || "",
+      text: tweet.content || (tweet.text as string) || "",
       language: this.detectLanguage(tweet),
     };
   }
@@ -93,7 +99,10 @@ export class TweetToTweetDTOMapper extends BaseTweetMapper {
   /**
    * Crea un tweet mock para testing
    */
-  static createMockTweet(text: string, language: 'en' | 'es' | 'fr' | 'de' = 'en'): Tweet {
+  static createMockTweet(
+    text: string,
+    language: "en" | "es" | "fr" | "de" = "en",
+  ): Tweet {
     const timestamp = new Date();
     const mockId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -103,14 +112,14 @@ export class TweetToTweetDTOMapper extends BaseTweetMapper {
       content: text,
       text: text,
       author: {
-        id: 'mock_user',
-        username: 'mockuser',
-        displayName: 'Mock User',
+        id: "mock_user",
+        username: "mockuser",
+        displayName: "Mock User",
         verified: false,
         followersCount: 100,
         followingCount: 50,
         tweetsCount: 10,
-        avatar: '',
+        avatar: "",
       },
       metrics: {
         likes: 0,
@@ -137,80 +146,86 @@ export class TweetToTweetDTOMapper extends BaseTweetMapper {
   /**
    * Detecta el idioma del tweet
    */
-  private static detectLanguage(tweet: Tweet): 'en' | 'es' | 'fr' | 'de' | 'unknown' {
+  private static detectLanguage(
+    tweet: Tweet,
+  ): "en" | "es" | "fr" | "de" | "unknown" {
     // Si ya tiene idioma especificado
     if (tweet.language) {
       const lang = tweet.language.toLowerCase();
-      if (['en', 'es', 'fr', 'de'].includes(lang)) {
-        return lang as 'en' | 'es' | 'fr' | 'de';
+      if (["en", "es", "fr", "de"].includes(lang)) {
+        return lang as "en" | "es" | "fr" | "de";
       }
     }
 
     // Detección básica por contenido
-    const text = (tweet.content || tweet.text || '').toLowerCase();
+    const text = (tweet.content || tweet.text || "").toLowerCase();
 
     // Palabras comunes en español
     const spanishWords = [
-      'el',
-      'la',
-      'de',
-      'que',
-      'y',
-      'en',
-      'un',
-      'es',
-      'se',
-      'no',
-      'te',
-      'lo',
-      'le',
-      'da',
-      'su',
-      'por',
-      'son',
-      'con',
-      'para',
-      'está',
+      "el",
+      "la",
+      "de",
+      "que",
+      "y",
+      "en",
+      "un",
+      "es",
+      "se",
+      "no",
+      "te",
+      "lo",
+      "le",
+      "da",
+      "su",
+      "por",
+      "son",
+      "con",
+      "para",
+      "está",
     ];
     const spanishCount = spanishWords.filter(
       (word) =>
-        text.includes(` ${word} `) || text.startsWith(`${word} `) || text.endsWith(` ${word}`)
+        text.includes(` ${word} `) ||
+        text.startsWith(`${word} `) ||
+        text.endsWith(` ${word}`),
     ).length;
 
     // Palabras comunes en inglés
     const englishWords = [
-      'the',
-      'of',
-      'and',
-      'to',
-      'in',
-      'is',
-      'you',
-      'that',
-      'it',
-      'he',
-      'was',
-      'for',
-      'on',
-      'are',
-      'as',
-      'with',
-      'his',
-      'they',
-      'i',
+      "the",
+      "of",
+      "and",
+      "to",
+      "in",
+      "is",
+      "you",
+      "that",
+      "it",
+      "he",
+      "was",
+      "for",
+      "on",
+      "are",
+      "as",
+      "with",
+      "his",
+      "they",
+      "i",
     ];
     const englishCount = englishWords.filter(
       (word) =>
-        text.includes(` ${word} `) || text.startsWith(`${word} `) || text.endsWith(` ${word}`)
+        text.includes(` ${word} `) ||
+        text.startsWith(`${word} `) ||
+        text.endsWith(` ${word}`),
     ).length;
 
     if (spanishCount > englishCount && spanishCount > 0) {
-      return 'es';
+      return "es";
     } else if (englishCount > 0) {
-      return 'en';
+      return "en";
     }
 
-    return 'unknown';
+    return "unknown";
   }
 }
 
@@ -224,14 +239,16 @@ export class TweetNormalizationMapper extends BaseTweetMapper {
   static map(tweet: any): Tweet {
     // Validación menos estricta para normalización
     if (!tweet) {
-      throw SentimentErrors.invalidTweet({ reason: 'Tweet is null or undefined' });
+      throw SentimentErrors.invalidTweet({
+        reason: "Tweet is null or undefined",
+      });
     }
 
     return {
       id: tweet.id || tweet.tweetId || this.generateId(),
       tweetId: tweet.tweetId || tweet.id || this.generateId(),
-      content: tweet.content || tweet.text || '',
-      text: tweet.text || tweet.content || '',
+      content: tweet.content || tweet.text || "",
+      text: tweet.text || tweet.content || "",
       author: this.normalizeAuthor(tweet.author),
       metrics: this.normalizeMetrics(tweet.metrics),
       hashtags: Array.isArray(tweet.hashtags) ? tweet.hashtags : [],
@@ -241,7 +258,7 @@ export class TweetNormalizationMapper extends BaseTweetMapper {
       isRetweet: Boolean(tweet.isRetweet),
       isReply: Boolean(tweet.isReply),
       isQuote: Boolean(tweet.isQuote),
-      language: tweet.language || 'unknown',
+      language: tweet.language || "unknown",
       scrapedAt: tweet.scrapedAt ? new Date(tweet.scrapedAt) : new Date(),
       createdAt: tweet.createdAt ? new Date(tweet.createdAt) : new Date(),
       updatedAt: tweet.updatedAt ? new Date(tweet.updatedAt) : new Date(),
@@ -264,14 +281,14 @@ export class TweetNormalizationMapper extends BaseTweetMapper {
    */
   private static normalizeAuthor(author: any) {
     return {
-      id: author?.id || '',
-      username: author?.username || '',
-      displayName: author?.displayName || author?.name || '',
+      id: author?.id || "",
+      username: author?.username || "",
+      displayName: author?.displayName || author?.name || "",
       verified: Boolean(author?.verified),
       followersCount: Number(author?.followersCount) || 0,
       followingCount: Number(author?.followingCount) || 0,
       tweetsCount: Number(author?.tweetsCount) || 0,
-      avatar: author?.avatar || author?.profileImageUrl || '',
+      avatar: author?.avatar || author?.profileImageUrl || "",
       ...author,
     };
   }
@@ -334,10 +351,15 @@ export class TweetSentimentMapper extends BaseTweetMapper {
     this.validateTweet(tweet);
 
     if (!analysis || !analysis.analysis) {
-      throw SentimentErrors.analysisFailed(tweet.content, new Error('Invalid analysis result'));
+      throw SentimentErrors.analysisFailed(
+        tweet.content,
+        new Error("Invalid analysis result"),
+      );
     }
 
-    const sentimentLabel = this.normalizeSentimentLabel(analysis.analysis.sentiment.label);
+    const sentimentLabel = this.normalizeSentimentLabel(
+      analysis.analysis.sentiment.label,
+    );
 
     return {
       ...tweet,
@@ -349,7 +371,9 @@ export class TweetSentimentMapper extends BaseTweetMapper {
         emotions: analysis.analysis.sentiment.emotions || undefined,
         keywords: analysis.analysis.keywords || [],
         analyzedAt: analysis.analyzedAt || new Date(),
-        processingTime: analysis.analyzedAt ? Date.now() - analysis.analyzedAt.getTime() : 0,
+        processingTime: analysis.analyzedAt
+          ? Date.now() - analysis.analyzedAt.getTime()
+          : 0,
       },
     };
   }
@@ -362,7 +386,9 @@ export class TweetSentimentMapper extends BaseTweetMapper {
       throw SentimentErrors.invalidBatch(analyses.length);
     }
 
-    return tweets.map((tweet, index) => this.enrichWithSentiment(tweet, analyses[index]));
+    return tweets.map((tweet, index) =>
+      this.enrichWithSentiment(tweet, analyses[index]),
+    );
   }
 
   /**
@@ -371,9 +397,9 @@ export class TweetSentimentMapper extends BaseTweetMapper {
   private static normalizeSentimentLabel(label: string): Label {
     const lowerLabel = label.toLowerCase();
 
-    if (lowerLabel.includes('positive')) {
+    if (lowerLabel.includes("positive")) {
       return Label.POSITIVE;
-    } else if (lowerLabel.includes('negative')) {
+    } else if (lowerLabel.includes("negative")) {
       return Label.NEGATIVE;
     } else {
       return Label.NEUTRAL;
@@ -389,16 +415,16 @@ export class TweetMapperUtils {
    * Extrae texto limpio de un tweet
    */
   static extractCleanText(tweet: Tweet): string {
-    const text = tweet.content || tweet.text || '';
+    const text = tweet.content || tweet.text || "";
 
     // Remover URLs
-    let cleanText = text.replace(/https?:\/\/[^\s]+/gi, '');
+    let cleanText = text.replace(/https?:\/\/[^\s]+/gi, "");
 
     // Remover menciones excesivas (mantener solo las primeras 3)
     const mentions = text.match(/@\w+/g) || [];
     if (mentions.length > 3) {
       mentions.slice(3).forEach((mention) => {
-        cleanText = cleanText.replace(mention, '');
+        cleanText = cleanText.replace(mention, "");
       });
     }
 
@@ -406,12 +432,12 @@ export class TweetMapperUtils {
     const hashtags = text.match(/#\w+/g) || [];
     if (hashtags.length > 5) {
       hashtags.slice(5).forEach((hashtag) => {
-        cleanText = cleanText.replace(hashtag, '');
+        cleanText = cleanText.replace(hashtag, "");
       });
     }
 
     // Limpiar espacios extra
-    return cleanText.replace(/\s+/g, ' ').trim();
+    return cleanText.replace(/\s+/g, " ").trim();
   }
 
   /**
@@ -429,7 +455,7 @@ export class TweetMapperUtils {
    * Determina si un tweet es spam
    */
   static isSpam(tweet: Tweet): boolean {
-    const text = tweet.content || tweet.text || '';
+    const text = tweet.content || tweet.text || "";
 
     // Demasiados hashtags
     const hashtagCount = (text.match(/#/g) || []).length;

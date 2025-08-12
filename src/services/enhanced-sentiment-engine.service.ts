@@ -220,7 +220,6 @@ class VADERSentimentAnalyzer {
 
     // Punctuation emphasis
     const exclamations = (text.match(/!/g) || []).length;
-    const questions = (text.match(/\?/g) || []).length;
 
     if (exclamations > 0) {
       sentimentScore *= 1 + exclamations * 0.1;

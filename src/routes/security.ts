@@ -3,11 +3,15 @@
  * Endpoints for monitoring security status and token blacklist
  */
 
-import { Router } from 'express';
-import { existsSync } from 'fs';
-import { errorHandler, ResponseHelper } from '../core/errors';
-import { tokenBlacklistService } from '../lib/security/token-blacklist';
-import { AuthenticatedRequest, authenticateToken, requireRole } from '../middleware/express-auth';
+import { Router } from "express";
+import { existsSync } from "fs";
+import { errorHandler, ResponseHelper } from "../core/errors";
+import { tokenBlacklistService } from "../lib/security/token-blacklist";
+import {
+  AuthenticatedRequest,
+  authenticateToken,
+  requireRole,
+} from "../middleware/express-auth";
 
 const router = Router();
 
@@ -57,9 +61,9 @@ const router = Router();
  *         description: Forbidden - admin access required
  */
 router.get(
-  '/status',
+  "/status",
   authenticateToken,
-  requireRole(['admin']),
+  requireRole(["admin"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const blacklistStats = tokenBlacklistService.getStats();
 
@@ -71,17 +75,21 @@ router.get(
       },
       jwtSecurity: {
         secretConfigured: !!process.env.JWT_SECRET,
-        tokenExpiry: process.env.JWT_EXPIRES_IN || '1h',
+        tokenExpiry: process.env.JWT_EXPIRES_IN || "1h",
       },
       credentialsEncryption: {
         masterPasswordConfigured: !!process.env.TWITTER_MASTER_PASSWORD,
-        encryptedCredsAvailable: existsSync('encrypted-twitter-creds.json'),
+        encryptedCredsAvailable: existsSync("encrypted-twitter-creds.json"),
       },
       timestamp: new Date().toISOString(),
     };
 
-    ResponseHelper.success(res, securityStatus, 'Security status retrieved successfully');
-  })
+    ResponseHelper.success(
+      res,
+      securityStatus,
+      "Security status retrieved successfully",
+    );
+  }),
 );
 
 /**
@@ -122,9 +130,9 @@ router.get(
  *         description: Forbidden - admin access required
  */
 router.post(
-  '/blacklist-token',
+  "/blacklist-token",
   authenticateToken,
-  requireRole(['admin']),
+  requireRole(["admin"]),
   (req: AuthenticatedRequest, res) => {
     try {
       const { token, userId, expiresAt } = req.body;
@@ -133,8 +141,8 @@ router.post(
         return res.status(400).json({
           success: false,
           error: {
-            message: 'Token and userId are required',
-            code: 'MISSING_REQUIRED_FIELDS',
+            message: "Token and userId are required",
+            code: "MISSING_REQUIRED_FIELDS",
             timestamp: new Date().toISOString(),
           },
         });
@@ -147,7 +155,7 @@ router.post(
 
       res.json({
         success: true,
-        message: 'Token blacklisted successfully',
+        message: "Token blacklisted successfully",
         data: {
           tokenBlacklisted: true,
           expiresAt: tokenExpiresAt.toISOString(),
@@ -155,17 +163,17 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Manual token blacklist error:', error);
+      console.error("Manual token blacklist error:", error);
       res.status(500).json({
         success: false,
         error: {
-          message: 'Failed to blacklist token',
-          code: 'BLACKLIST_TOKEN_ERROR',
+          message: "Failed to blacklist token",
+          code: "BLACKLIST_TOKEN_ERROR",
           timestamp: new Date().toISOString(),
         },
       });
     }
-  }
+  },
 );
 
 export default router;

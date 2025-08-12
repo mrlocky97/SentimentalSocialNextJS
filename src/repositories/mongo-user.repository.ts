@@ -3,20 +3,20 @@
  * Real implementation of UserRepository using Mongoose
  */
 
-import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
-import { Permission, UserRole } from '../enums/user.enum';
-import FollowModel from '../models/Follow.model';
-import UserModel, { IUserDocument } from '../models/User.model';
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import { Permission, UserRole } from "../enums/user.enum";
+import FollowModel from "../models/Follow.model";
+import UserModel, { IUserDocument } from "../models/User.model";
 import {
   CreateUserRequest,
   UpdateUserRequest,
   User,
   UserAuth,
   getPermissionsForRole,
-} from '../types/user';
-import { QueryOptions } from './base.repository';
-import { UserRepository } from './user.repository';
+} from "../types/user";
+import { QueryOptions } from "./base.repository";
+import { UserRepository } from "./user.repository";
 
 export class MongoUserRepository implements UserRepository {
   async create(data: CreateUserRequest): Promise<User> {
@@ -42,9 +42,14 @@ export class MongoUserRepository implements UserRepository {
 
       return this.documentToUser(savedUser);
     } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === 11000
+      ) {
         // Duplicate key error - MongoDB duplicate key error
-        throw new Error('EMAIL_OR_USERNAME_EXISTS');
+        throw new Error("EMAIL_OR_USERNAME_EXISTS");
       }
       throw error;
     }
@@ -59,13 +64,16 @@ export class MongoUserRepository implements UserRepository {
     }
   }
 
-  async findMany(filter?: Partial<User>, options?: QueryOptions): Promise<User[]> {
+  async findMany(
+    filter?: Partial<User>,
+    options?: QueryOptions,
+  ): Promise<User[]> {
     const query = UserModel.find(filter || {});
 
     if (options?.limit) query.limit(options.limit);
     if (options?.offset) query.skip(options.offset);
     if (options?.sortBy && options?.sortOrder) {
-      query.sort({ [options.sortBy]: options.sortOrder === 'asc' ? 1 : -1 });
+      query.sort({ [options.sortBy]: options.sortOrder === "asc" ? 1 : -1 });
     }
 
     const users = await query.exec();
@@ -77,7 +85,7 @@ export class MongoUserRepository implements UserRepository {
       const user = await UserModel.findByIdAndUpdate(
         id,
         { $set: data },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       return user ? this.documentToUser(user) : null;
@@ -97,7 +105,7 @@ export class MongoUserRepository implements UserRepository {
 
   async exists(id: string): Promise<boolean> {
     try {
-      const user = await UserModel.findById(id).select('_id');
+      const user = await UserModel.findById(id).select("_id");
       return !!user;
     } catch {
       return false;
@@ -124,7 +132,9 @@ export class MongoUserRepository implements UserRepository {
 
   async findByUsername(username: string): Promise<User | null> {
     try {
-      const user = await UserModel.findOne({ username: username.toLowerCase() });
+      const user = await UserModel.findOne({
+        username: username.toLowerCase(),
+      });
       return user ? this.documentToUser(user) : null;
     } catch {
       return null;
@@ -134,7 +144,10 @@ export class MongoUserRepository implements UserRepository {
   async findByEmailOrUsername(identifier: string): Promise<User | null> {
     try {
       const user = await UserModel.findOne({
-        $or: [{ email: identifier.toLowerCase() }, { username: identifier.toLowerCase() }],
+        $or: [
+          { email: identifier.toLowerCase() },
+          { username: identifier.toLowerCase() },
+        ],
       });
       return user ? this.documentToUser(user) : null;
     } catch {
@@ -145,7 +158,7 @@ export class MongoUserRepository implements UserRepository {
   // Authentication related
   async findAuthById(id: string): Promise<UserAuth | null> {
     try {
-      const user = await UserModel.findById(id).select('+passwordHash');
+      const user = await UserModel.findById(id).select("+passwordHash");
       return user ? this.documentToUserAuth(user) : null;
     } catch {
       return null;
@@ -154,7 +167,9 @@ export class MongoUserRepository implements UserRepository {
 
   async findAuthByEmail(email: string): Promise<UserAuth | null> {
     try {
-      const user = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+      const user = await UserModel.findOne({
+        email: email.toLowerCase(),
+      }).select("+passwordHash");
       return user ? this.documentToUserAuth(user) : null;
     } catch {
       return null;
@@ -174,7 +189,10 @@ export class MongoUserRepository implements UserRepository {
   async followUser(followerId: string, followingId: string): Promise<boolean> {
     try {
       // Validate IDs
-      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+      if (
+        !mongoose.isValidObjectId(followerId) ||
+        !mongoose.isValidObjectId(followingId)
+      ) {
         return false;
       }
       // Prevent self-follow
@@ -192,10 +210,18 @@ export class MongoUserRepository implements UserRepository {
 
       // Create relationship (idempotent via unique index)
       try {
-        await FollowModel.create({ followerId: follower, followingId: following });
+        await FollowModel.create({
+          followerId: follower,
+          followingId: following,
+        });
       } catch (err: unknown) {
         // Duplicate key -> already following
-        if (err && typeof err === 'object' && 'code' in err && (err as any).code === 11000) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "code" in err &&
+          (err as any).code === 11000
+        ) {
           return true;
         }
         throw err;
@@ -206,14 +232,23 @@ export class MongoUserRepository implements UserRepository {
     }
   }
 
-  async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
+  async unfollowUser(
+    followerId: string,
+    followingId: string,
+  ): Promise<boolean> {
     try {
-      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+      if (
+        !mongoose.isValidObjectId(followerId) ||
+        !mongoose.isValidObjectId(followingId)
+      ) {
         return false;
       }
       const follower = new mongoose.Types.ObjectId(followerId);
       const following = new mongoose.Types.ObjectId(followingId);
-      await FollowModel.deleteOne({ followerId: follower, followingId: following });
+      await FollowModel.deleteOne({
+        followerId: follower,
+        followingId: following,
+      });
       // Idempotent success
       return true;
     } catch {
@@ -226,11 +261,16 @@ export class MongoUserRepository implements UserRepository {
       if (!mongoose.isValidObjectId(userId)) return [];
       const targetId = new mongoose.Types.ObjectId(userId);
 
-      const follows = await FollowModel.find({ followingId: targetId }).select('followerId').lean();
+      const follows = await FollowModel.find({ followingId: targetId })
+        .select("followerId")
+        .lean();
       const followerIds = follows.map((f) => f.followerId);
       if (followerIds.length === 0) return [];
 
-      const query = UserModel.find({ _id: { $in: followerIds }, isActive: true });
+      const query = UserModel.find({
+        _id: { $in: followerIds },
+        isActive: true,
+      });
       if (options?.limit) query.limit(options.limit);
       if (options?.offset) query.skip(options.offset);
 
@@ -246,11 +286,16 @@ export class MongoUserRepository implements UserRepository {
       if (!mongoose.isValidObjectId(userId)) return [];
       const sourceId = new mongoose.Types.ObjectId(userId);
 
-      const follows = await FollowModel.find({ followerId: sourceId }).select('followingId').lean();
+      const follows = await FollowModel.find({ followerId: sourceId })
+        .select("followingId")
+        .lean();
       const followingIds = follows.map((f) => f.followingId);
       if (followingIds.length === 0) return [];
 
-      const query = UserModel.find({ _id: { $in: followingIds }, isActive: true });
+      const query = UserModel.find({
+        _id: { $in: followingIds },
+        isActive: true,
+      });
       if (options?.limit) query.limit(options.limit);
       if (options?.offset) query.skip(options.offset);
 
@@ -264,12 +309,18 @@ export class MongoUserRepository implements UserRepository {
   // Check if a user is following another user
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
     try {
-      if (!mongoose.isValidObjectId(followerId) || !mongoose.isValidObjectId(followingId)) {
+      if (
+        !mongoose.isValidObjectId(followerId) ||
+        !mongoose.isValidObjectId(followingId)
+      ) {
         return false;
       }
       const follower = new mongoose.Types.ObjectId(followerId);
       const following = new mongoose.Types.ObjectId(followingId);
-      const exists = await FollowModel.exists({ followerId: follower, followingId: following });
+      const exists = await FollowModel.exists({
+        followerId: follower,
+        followingId: following,
+      });
       return !!exists;
     } catch {
       return false;
@@ -299,7 +350,7 @@ export class MongoUserRepository implements UserRepository {
 
   async getPostsCount(userId: string): Promise<number> {
     try {
-      const user = await UserModel.findById(userId).select('postsCount');
+      const user = await UserModel.findById(userId).select("postsCount");
       return user?.postsCount || 0;
     } catch {
       return 0;
@@ -309,7 +360,7 @@ export class MongoUserRepository implements UserRepository {
   // Search
   async searchUsers(query: string, options?: QueryOptions): Promise<User[]> {
     try {
-      const searchRegex = new RegExp(query, 'i');
+      const searchRegex = new RegExp(query, "i");
       const mongoQuery = UserModel.find({
         $or: [{ username: searchRegex }, { displayName: searchRegex }],
         isActive: true,
@@ -338,7 +389,9 @@ export class MongoUserRepository implements UserRepository {
   // Admin functions
   async verifyUser(userId: string): Promise<boolean> {
     try {
-      const result = await UserModel.findByIdAndUpdate(userId, { isVerified: true });
+      const result = await UserModel.findByIdAndUpdate(userId, {
+        isVerified: true,
+      });
       return !!result;
     } catch {
       return false;
@@ -347,7 +400,9 @@ export class MongoUserRepository implements UserRepository {
 
   async deactivateUser(userId: string): Promise<boolean> {
     try {
-      const result = await UserModel.findByIdAndUpdate(userId, { isActive: false });
+      const result = await UserModel.findByIdAndUpdate(userId, {
+        isActive: false,
+      });
       return !!result;
     } catch {
       return false;
@@ -356,7 +411,9 @@ export class MongoUserRepository implements UserRepository {
 
   async activateUser(userId: string): Promise<boolean> {
     try {
-      const result = await UserModel.findByIdAndUpdate(userId, { isActive: true });
+      const result = await UserModel.findByIdAndUpdate(userId, {
+        isActive: true,
+      });
       return !!result;
     } catch {
       return false;

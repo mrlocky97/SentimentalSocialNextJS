@@ -1,16 +1,24 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import { SessionData, TwitterCookie } from '../../types/twitter';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from "crypto";
+import fs from "fs";
+import path from "path";
+import { SessionData, TwitterCookie } from "../../types/twitter";
 
 /**
  * Secure session store for Twitter cookies (AES-256-GCM at rest)
  */
 export class SecureSessionStore {
   private static instance: SecureSessionStore;
-  private readonly filePath = path.join(process.cwd(), 'twitter-session.encrypted.json');
-  private readonly algo = 'aes-256-gcm';
-  private readonly salt = 'sentimentalsocial-tw-session-2025';
+  private readonly filePath = path.join(
+    process.cwd(),
+    "twitter-session.encrypted.json",
+  );
+  private readonly algo = "aes-256-gcm";
+  private readonly salt = "sentimentalsocial-tw-session-2025";
 
   static getInstance(): SecureSessionStore {
     if (!SecureSessionStore.instance) {
@@ -32,7 +40,7 @@ export class SecureSessionStore {
     // If cookies have explicit expiry, ensure none are expired
     const now = Date.now();
     const cookiesExpired = (session.cookies || []).some((c: TwitterCookie) =>
-      typeof c.expires === 'number' ? now > c.expires * 1000 : false
+      typeof c.expires === "number" ? now > c.expires * 1000 : false,
     );
 
     return now > hardExpireAt || cookiesExpired || now > session.expirationTime;
@@ -45,7 +53,8 @@ export class SecureSessionStore {
 
   load(): { session: SessionData | null; rotate: boolean } {
     try {
-      if (!fs.existsSync(this.filePath)) return { session: null, rotate: false };
+      if (!fs.existsSync(this.filePath))
+        return { session: null, rotate: false };
 
       const key = this.getKey();
       if (!key) {
@@ -53,21 +62,21 @@ export class SecureSessionStore {
         return { session: null, rotate: false };
       }
 
-      const payload = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as {
+      const payload = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as {
         iv: string;
         tag: string;
         ciphertext: string;
         createdAt: number;
       };
 
-      const iv = Buffer.from(payload.iv, 'hex');
-      const tag = Buffer.from(payload.tag, 'hex');
+      const iv = Buffer.from(payload.iv, "hex");
+      const tag = Buffer.from(payload.tag, "hex");
       const decipher = createDecipheriv(this.algo, key, iv);
       decipher.setAuthTag(tag);
       const decrypted = Buffer.concat([
-        decipher.update(Buffer.from(payload.ciphertext, 'hex')),
+        decipher.update(Buffer.from(payload.ciphertext, "hex")),
         decipher.final(),
-      ]).toString('utf8');
+      ]).toString("utf8");
 
       const session: SessionData = JSON.parse(decrypted);
 
@@ -94,22 +103,27 @@ export class SecureSessionStore {
 
       const iv = randomBytes(12);
       const cipher = createCipheriv(this.algo, key, iv);
-      const plaintext = Buffer.from(JSON.stringify(session), 'utf8');
-      const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+      const plaintext = Buffer.from(JSON.stringify(session), "utf8");
+      const ciphertext = Buffer.concat([
+        cipher.update(plaintext),
+        cipher.final(),
+      ]);
       const tag = cipher.getAuthTag();
 
       const payload = {
-        iv: iv.toString('hex'),
-        tag: tag.toString('hex'),
-        ciphertext: ciphertext.toString('hex'),
+        iv: iv.toString("hex"),
+        tag: tag.toString("hex"),
+        ciphertext: ciphertext.toString("hex"),
         createdAt: Date.now(),
       };
 
-      fs.writeFileSync(this.filePath, JSON.stringify(payload, null, 2), { encoding: 'utf8' });
+      fs.writeFileSync(this.filePath, JSON.stringify(payload, null, 2), {
+        encoding: "utf8",
+      });
     } catch {
       // If save fails, ensure nothing partial remains
       this.clear();
-      throw new Error('Failed to save encrypted session');
+      throw new Error("Failed to save encrypted session");
     }
   }
 

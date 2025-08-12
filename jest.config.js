@@ -23,6 +23,14 @@ module.exports = {
   // Module resolution
   modulePaths: ['<rootDir>/src'],
   moduleDirectories: ['node_modules', '<rootDir>/src'],
+  // Mock external dependencies that might cause issues
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  // Handle timers and intervals
+  fakeTimers: {
+    enableGlobally: false,
+  },
   // Ensure env vars are set before any modules are loaded in tests
   setupFiles: ['<rootDir>/tests/setup-env.js'],
   collectCoverageFrom: [

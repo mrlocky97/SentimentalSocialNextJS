@@ -1,11 +1,15 @@
 /**
  * User Service
- * Business logic for user operations following Single Responsibility Principle
- */
+ * Business logic for user operations following Single Responsibility Princip  async unfollowUser(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followerId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followingId: string
+  ): Promise<boolean> {*/
 
 import { UserRepository } from '../repositories/user.repository';
-import { User, CreateUserRequest, UpdateUserRequest, UserProfile } from '../types/user';
 import { PaginatedResponse, PaginationParams } from '../types/api';
+import { CreateUserRequest, UpdateUserRequest, User, UserProfile } from '../types/user';
 
 export class UserService {
   constructor(private userRepository: UserRepository) {}
@@ -69,8 +73,13 @@ export class UserService {
   /**
    * Follow a user - TODO: Remove or adapt for marketing platform
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async followUser(_followerId: string, _followingId: string): Promise<boolean> {
+
+  async followUser(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followerId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followingId: string
+  ): Promise<boolean> {
     // This functionality might not be needed for marketing analytics platform
     throw new ApiError(
       'NOT_IMPLEMENTED',
@@ -81,8 +90,12 @@ export class UserService {
   /**
    * Unfollow a user - TODO: Remove or adapt for marketing platform
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async unfollowUser(_followerId: string, _followingId: string): Promise<boolean> {
+  async unfollowUser(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followerId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _followingId: string
+  ): Promise<boolean> {
     // This functionality might not be needed for marketing analytics platform
     throw new ApiError(
       'NOT_IMPLEMENTED',

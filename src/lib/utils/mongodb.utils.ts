@@ -3,10 +3,10 @@
  * Centralized utilities for converting between MongoDB documents and domain objects
  */
 
-import mongoose from 'mongoose';
-import { User, UserAuth, UserRole, Permission } from '../../types/user';
-import { Tweet } from '../../types/twitter';
-import { Campaign } from '../../types/campaign';
+import mongoose from "mongoose";
+import { User, UserAuth, UserRole, Permission } from "../../types/user";
+import { Tweet } from "../../types/twitter";
+import { Campaign } from "../../types/campaign";
 
 /**
  * Convert MongoDB User document to domain User object
@@ -77,7 +77,7 @@ export function documentToTweet(doc: any): Tweet {
     isReply: doc.isReply || false,
     isQuote: doc.isQuote || doc.isQuoteStatus || false,
     parentTweetId: doc.parentTweetId,
-    language: doc.language || 'unknown',
+    language: doc.language || "unknown",
     scrapedAt: doc.scrapedAt || doc.createdAt,
     sentiment: doc.sentiment
       ? {
@@ -173,22 +173,27 @@ export function documentsToCampaigns(docs: any[]): Campaign[] {
  * Handle MongoDB duplicate key errors
  */
 export function handleMongoError(error: any): string {
-  if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === 11000
+  ) {
     // Duplicate key error
     if (error.keyPattern?.email) {
-      return 'EMAIL_ALREADY_EXISTS';
+      return "EMAIL_ALREADY_EXISTS";
     }
     if (error.keyPattern?.username) {
-      return 'USERNAME_ALREADY_EXISTS';
+      return "USERNAME_ALREADY_EXISTS";
     }
-    return 'DUPLICATE_KEY_ERROR';
+    return "DUPLICATE_KEY_ERROR";
   }
 
-  if (error && error.name === 'ValidationError') {
-    return 'VALIDATION_ERROR';
+  if (error && error.name === "ValidationError") {
+    return "VALIDATION_ERROR";
   }
 
-  return 'DATABASE_ERROR';
+  return "DATABASE_ERROR";
 }
 
 /**
@@ -198,15 +203,21 @@ export interface QueryOptions {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   select?: string[];
 }
 
 export function createMongoQueryOptions(options: QueryOptions = {}) {
-  const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc', select } = options;
+  const {
+    page = 1,
+    limit = 20,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    select,
+  } = options;
 
   const skip = (page - 1) * limit;
-  const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+  const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
   const mongoOptions: any = {
     skip,
@@ -215,7 +226,7 @@ export function createMongoQueryOptions(options: QueryOptions = {}) {
   };
 
   if (select && select.length > 0) {
-    mongoOptions.select = select.join(' ');
+    mongoOptions.select = select.join(" ");
   }
 
   return mongoOptions;

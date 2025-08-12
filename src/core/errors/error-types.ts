@@ -8,71 +8,71 @@
  */
 export enum ErrorCode {
   // Validation Errors (400)
-  INVALID_INPUT = 'INVALID_INPUT',
-  INVALID_TWEET_FORMAT = 'INVALID_TWEET_FORMAT',
-  INVALID_TEXT_FORMAT = 'INVALID_TEXT_FORMAT',
-  INVALID_BATCH_SIZE = 'INVALID_BATCH_SIZE',
-  INVALID_TRAINING_DATA = 'INVALID_TRAINING_DATA',
-  INVALID_SENTIMENT_METHOD = 'INVALID_SENTIMENT_METHOD',
+  INVALID_INPUT = "INVALID_INPUT",
+  INVALID_TWEET_FORMAT = "INVALID_TWEET_FORMAT",
+  INVALID_TEXT_FORMAT = "INVALID_TEXT_FORMAT",
+  INVALID_BATCH_SIZE = "INVALID_BATCH_SIZE",
+  INVALID_TRAINING_DATA = "INVALID_TRAINING_DATA",
+  INVALID_SENTIMENT_METHOD = "INVALID_SENTIMENT_METHOD",
 
   // Authentication Errors (401)
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  INVALID_TOKEN = 'INVALID_TOKEN',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  UNAUTHORIZED = "UNAUTHORIZED",
+  INVALID_TOKEN = "INVALID_TOKEN",
+  TOKEN_EXPIRED = "TOKEN_EXPIRED",
 
   // Authorization Errors (403)
-  FORBIDDEN = 'FORBIDDEN',
-  INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
+  FORBIDDEN = "FORBIDDEN",
+  INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS",
 
   // Not Found Errors (404)
-  RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
-  TWEET_NOT_FOUND = 'TWEET_NOT_FOUND',
-  USER_NOT_FOUND = 'USER_NOT_FOUND',
-  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',
+  RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND",
+  TWEET_NOT_FOUND = "TWEET_NOT_FOUND",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  MODEL_NOT_FOUND = "MODEL_NOT_FOUND",
 
   // Business Logic Errors (422)
-  BUSINESS_RULE_VIOLATION = 'BUSINESS_RULE_VIOLATION',
-  MODEL_PROCESSING_ERROR = 'MODEL_PROCESSING_ERROR',
-  ANALYSIS_FAILED = 'ANALYSIS_FAILED',
-  TRAINING_FAILED = 'TRAINING_FAILED',
+  BUSINESS_RULE_VIOLATION = "BUSINESS_RULE_VIOLATION",
+  MODEL_PROCESSING_ERROR = "MODEL_PROCESSING_ERROR",
+  ANALYSIS_FAILED = "ANALYSIS_FAILED",
+  TRAINING_FAILED = "TRAINING_FAILED",
 
   // Rate Limiting (429)
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
+  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
+  QUOTA_EXCEEDED = "QUOTA_EXCEEDED",
 
   // Internal Server Errors (500)
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
-  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  DATABASE_ERROR = "DATABASE_ERROR",
+  EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR",
+  CONFIGURATION_ERROR = "CONFIGURATION_ERROR",
 
   // Service Unavailable (503)
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  MODEL_UNAVAILABLE = 'MODEL_UNAVAILABLE',
-  ANALYSIS_ENGINE_UNAVAILABLE = 'ANALYSIS_ENGINE_UNAVAILABLE',
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE",
+  ANALYSIS_ENGINE_UNAVAILABLE = "ANALYSIS_ENGINE_UNAVAILABLE",
 }
 
 /**
  * Categorías de error para logging y monitoreo
  */
 export enum ErrorCategory {
-  VALIDATION = 'VALIDATION',
-  AUTHENTICATION = 'AUTHENTICATION',
-  AUTHORIZATION = 'AUTHORIZATION',
-  BUSINESS_LOGIC = 'BUSINESS_LOGIC',
-  EXTERNAL_SERVICE = 'EXTERNAL_SERVICE',
-  INFRASTRUCTURE = 'INFRASTRUCTURE',
-  UNKNOWN = 'UNKNOWN',
+  VALIDATION = "VALIDATION",
+  AUTHENTICATION = "AUTHENTICATION",
+  AUTHORIZATION = "AUTHORIZATION",
+  BUSINESS_LOGIC = "BUSINESS_LOGIC",
+  EXTERNAL_SERVICE = "EXTERNAL_SERVICE",
+  INFRASTRUCTURE = "INFRASTRUCTURE",
+  UNKNOWN = "UNKNOWN",
 }
 
 /**
  * Severidad del error para alertas y monitoreo
  */
 export enum ErrorSeverity {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  CRITICAL = 'CRITICAL',
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  CRITICAL = "CRITICAL",
 }
 
 /**
@@ -130,7 +130,7 @@ export abstract class BaseError extends Error {
       message: this.message,
       metadata: this.metadata,
       timestamp: this.timestamp,
-      stack: process.env.NODE_ENV === 'development' ? this.stack : undefined,
+      stack: process.env.NODE_ENV === "development" ? this.stack : undefined,
     };
   }
 
@@ -150,7 +150,7 @@ export class ValidationError extends BaseError {
     message: string,
     code: ErrorCode = ErrorCode.INVALID_INPUT,
     context?: ErrorContext,
-    suggestions?: string[]
+    suggestions?: string[],
   ) {
     super(message, {
       code,
@@ -168,7 +168,11 @@ export class ValidationError extends BaseError {
  * Error de autenticación (401)
  */
 export class AuthenticationError extends BaseError {
-  constructor(message: string, code: ErrorCode = ErrorCode.UNAUTHORIZED, context?: ErrorContext) {
+  constructor(
+    message: string,
+    code: ErrorCode = ErrorCode.UNAUTHORIZED,
+    context?: ErrorContext,
+  ) {
     super(message, {
       code,
       category: ErrorCategory.AUTHENTICATION,
@@ -184,7 +188,11 @@ export class AuthenticationError extends BaseError {
  * Error de autorización (403)
  */
 export class AuthorizationError extends BaseError {
-  constructor(message: string, code: ErrorCode = ErrorCode.FORBIDDEN, context?: ErrorContext) {
+  constructor(
+    message: string,
+    code: ErrorCode = ErrorCode.FORBIDDEN,
+    context?: ErrorContext,
+  ) {
     super(message, {
       code,
       category: ErrorCategory.AUTHORIZATION,
@@ -203,7 +211,7 @@ export class NotFoundError extends BaseError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.RESOURCE_NOT_FOUND,
-    context?: ErrorContext
+    context?: ErrorContext,
   ) {
     super(message, {
       code,
@@ -224,7 +232,7 @@ export class BusinessLogicError extends BaseError {
     message: string,
     code: ErrorCode = ErrorCode.BUSINESS_RULE_VIOLATION,
     context?: ErrorContext,
-    suggestions?: string[]
+    suggestions?: string[],
   ) {
     super(message, {
       code,
@@ -245,7 +253,7 @@ export class RateLimitError extends BaseError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.RATE_LIMIT_EXCEEDED,
-    context?: ErrorContext
+    context?: ErrorContext,
   ) {
     super(message, {
       code,
@@ -266,7 +274,7 @@ export class InternalServerError extends BaseError {
     message: string,
     code: ErrorCode = ErrorCode.INTERNAL_ERROR,
     context?: ErrorContext,
-    cause?: Error
+    cause?: Error,
   ) {
     super(
       message,
@@ -278,7 +286,7 @@ export class InternalServerError extends BaseError {
         isOperational: false,
         context,
       },
-      cause
+      cause,
     );
   }
 }
@@ -290,7 +298,7 @@ export class ServiceUnavailableError extends BaseError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.SERVICE_UNAVAILABLE,
-    context?: ErrorContext
+    context?: ErrorContext,
   ) {
     super(message, {
       code,

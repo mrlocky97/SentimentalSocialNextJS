@@ -3,10 +3,16 @@
  * Following Interface Segregation Principle
  */
 
-import { BaseRepository, QueryOptions } from './base.repository';
-import { User, UserAuth, CreateUserRequest, UpdateUserRequest } from '../types/user';
+import { BaseRepository, QueryOptions } from "./base.repository";
+import {
+  User,
+  UserAuth,
+  CreateUserRequest,
+  UpdateUserRequest,
+} from "../types/user";
 
-export interface UserRepository extends BaseRepository<User, CreateUserRequest, UpdateUserRequest> {
+export interface UserRepository
+  extends BaseRepository<User, CreateUserRequest, UpdateUserRequest> {
   // Specific user methods
   findByEmail(email: string): Promise<User | null>;
   findByUsername(username: string): Promise<User | null>;

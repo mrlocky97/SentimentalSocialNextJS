@@ -3,12 +3,12 @@
  * Handles authentication during server startup with integrated cookie management
  */
 
-import fs from 'fs';
-import path from 'path';
-import { credentialsEncryption } from '../lib/security/credentials-encryption';
-import { secureSessionStore } from '../lib/security/session-store';
-import { SessionData } from '../types/twitter';
-import { TwitterRealScraperService } from './twitter-scraper.service';
+import fs from "fs";
+import path from "path";
+import { credentialsEncryption } from "../lib/security/credentials-encryption";
+import { secureSessionStore } from "../lib/security/session-store";
+import { SessionData } from "../types/twitter";
+import { TwitterRealScraperService } from "./twitter-scraper.service";
 
 export class TwitterAuthManager {
   private static instance: TwitterAuthManager;
@@ -22,7 +22,7 @@ export class TwitterAuthManager {
   private readonly SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
   private constructor() {
-    this.cookiesPath = path.join(process.cwd(), 'cookies.json');
+    this.cookiesPath = path.join(process.cwd(), "cookies.json");
     this.loadCookies();
   }
 
@@ -47,7 +47,9 @@ export class TwitterAuthManager {
       this.isInitialized = true;
     } catch (error) {
       this.initializationError =
-        error instanceof Error ? error : new Error('Unknown initialization error');
+        error instanceof Error
+          ? error
+          : new Error("Unknown initialization error");
 
       // Don't throw error - let server start anyway
       this.isInitialized = true; // Mark as initialized even with error
@@ -107,7 +109,11 @@ export class TwitterAuthManager {
   /**
    * Get current session data for status checks
    */
-  public getSessionInfo(): { authenticated: boolean; expiresAt?: number; cookieCount: number } {
+  public getSessionInfo(): {
+    authenticated: boolean;
+    expiresAt?: number;
+    cookieCount: number;
+  } {
     if (!this.sessionData) {
       return { authenticated: false, cookieCount: 0 };
     }
@@ -126,24 +132,38 @@ export class TwitterAuthManager {
     const credentials = this.getTwitterCredentials();
 
     if (!credentials) {
-      throw new Error('Twitter credentials not configured');
+      throw new Error("Twitter credentials not configured");
     }
 
     try {
       // Try to initialize the scraper (this will attempt login)
-      await this.scraperService!.scrapeByHashtag('test', { maxTweets: 1 });
+      await this.scraperService!.scrapeByHashtag("test", { maxTweets: 1 });
     } catch (error) {
       // Enhanced error analysis
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
-      if (errorMessage.includes('Forbidden') || errorMessage.includes('401')) {
-        throw new Error('Invalid Twitter credentials - check username/password/email');
-      } else if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
-        throw new Error('Twitter rate limit exceeded - wait before retrying');
-      } else if (errorMessage.includes('suspended') || errorMessage.includes('locked')) {
-        throw new Error('Twitter account suspended or locked');
-      } else if (errorMessage.includes('2FA') || errorMessage.includes('two-factor')) {
-        throw new Error('Two-factor authentication required - configure TWITTER_2FA_SECRET');
+      if (errorMessage.includes("Forbidden") || errorMessage.includes("401")) {
+        throw new Error(
+          "Invalid Twitter credentials - check username/password/email",
+        );
+      } else if (
+        errorMessage.includes("429") ||
+        errorMessage.includes("rate limit")
+      ) {
+        throw new Error("Twitter rate limit exceeded - wait before retrying");
+      } else if (
+        errorMessage.includes("suspended") ||
+        errorMessage.includes("locked")
+      ) {
+        throw new Error("Twitter account suspended or locked");
+      } else if (
+        errorMessage.includes("2FA") ||
+        errorMessage.includes("two-factor")
+      ) {
+        throw new Error(
+          "Two-factor authentication required - configure TWITTER_2FA_SECRET",
+        );
       } else {
         throw new Error(`Twitter authentication failed: ${errorMessage}`);
       }
@@ -153,19 +173,28 @@ export class TwitterAuthManager {
   /**
    * Get Twitter credentials from environment with security validation
    */
-  private getTwitterCredentials(): { email: string; username: string; password: string } | null {
+  private getTwitterCredentials(): {
+    email: string;
+    username: string;
+    password: string;
+  } | null {
     try {
       // SECURITY: Check for master password for credential decryption
       const masterPassword = process.env.TWITTER_MASTER_PASSWORD;
-      const encryptedCredsPath = path.join(process.cwd(), 'encrypted-twitter-creds.json');
+      const encryptedCredsPath = path.join(
+        process.cwd(),
+        "encrypted-twitter-creds.json",
+      );
 
       // Try encrypted credentials first (more secure)
       if (masterPassword && fs.existsSync(encryptedCredsPath)) {
         try {
-          const encryptedData = JSON.parse(fs.readFileSync(encryptedCredsPath, 'utf8'));
+          const encryptedData = JSON.parse(
+            fs.readFileSync(encryptedCredsPath, "utf8"),
+          );
           const decrypted = credentialsEncryption.decryptTwitterCredentials(
             encryptedData,
-            masterPassword
+            masterPassword,
           );
           return decrypted;
         } catch {
@@ -193,7 +222,9 @@ export class TwitterAuthManager {
    */
   getScraperService(): TwitterRealScraperService {
     if (!this.isInitialized) {
-      throw new Error('Twitter authentication not initialized. Call initializeOnStartup() first.');
+      throw new Error(
+        "Twitter authentication not initialized. Call initializeOnStartup() first.",
+      );
     }
 
     if (this.initializationError) {
@@ -201,7 +232,7 @@ export class TwitterAuthManager {
     }
 
     if (!this.scraperService) {
-      throw new Error('Scraper service not available');
+      throw new Error("Scraper service not available");
     }
 
     return this.scraperService;
@@ -211,7 +242,11 @@ export class TwitterAuthManager {
    * Check if scraper is ready for use
    */
   isReady(): boolean {
-    return this.isInitialized && !this.initializationError && this.scraperService !== null;
+    return (
+      this.isInitialized &&
+      !this.initializationError &&
+      this.scraperService !== null
+    );
   }
 
   /**

@@ -3,7 +3,7 @@
  * Following Single Responsibility Principle - only handles authentication
  */
 
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from "express";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -16,15 +16,17 @@ export interface AuthenticatedRequest extends Request {
 /**
  * JWT Token verification (mock implementation)
  */
-function verifyToken(token: string): { userId: string; email: string; username: string } | null {
+function verifyToken(
+  token: string,
+): { userId: string; email: string; username: string } | null {
   try {
     // In a real app, you would verify the JWT token here
     // For now, just return a mock user
-    if (token === 'valid-token') {
+    if (token === "valid-token") {
       return {
-        userId: '1',
-        email: 'user@example.com',
-        username: 'testuser',
+        userId: "1",
+        email: "user@example.com",
+        username: "testuser",
       };
     }
     return null;
@@ -36,16 +38,20 @@ function verifyToken(token: string): { userId: string; email: string; username: 
 /**
  * Authentication middleware
  */
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+export function requireAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): void {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(401).json({
         success: false,
         error: {
-          code: 'UNAUTHORIZED',
-          message: 'Missing or invalid authorization header',
+          code: "UNAUTHORIZED",
+          message: "Missing or invalid authorization header",
         },
         timestamp: new Date().toISOString(),
       });
@@ -59,8 +65,8 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
       res.status(401).json({
         success: false,
         error: {
-          code: 'INVALID_TOKEN',
-          message: 'Invalid or expired token',
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired token",
         },
         timestamp: new Date().toISOString(),
       });
@@ -76,13 +82,13 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error("Authentication error:", error);
 
     res.status(500).json({
       success: false,
       error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Internal server error',
+        code: "INTERNAL_ERROR",
+        message: "Internal server error",
       },
       timestamp: new Date().toISOString(),
     });
@@ -92,11 +98,15 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 /**
  * Optional authentication middleware (doesn't fail if no token)
  */
-export function optionalAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+export function optionalAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): void {
   try {
     const authHeader = req.headers.authorization;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.substring(7);
       const user = verifyToken(token);
 
@@ -111,7 +121,7 @@ export function optionalAuth(req: AuthenticatedRequest, res: Response, next: Nex
 
     next();
   } catch (error) {
-    console.error('Optional authentication error:', error);
+    console.error("Optional authentication error:", error);
     // Continue without authentication on error
     next();
   }
@@ -131,29 +141,32 @@ export function rateLimit(options: RateLimitOptions) {
   return function (req: Request, res: Response, next: NextFunction): void {
     try {
       const clientIP =
-        (req.headers['x-forwarded-for'] as string) ||
-        (req.headers['x-real-ip'] as string) ||
+        (req.headers["x-forwarded-for"] as string) ||
+        (req.headers["x-real-ip"] as string) ||
         req.socket.remoteAddress ||
-        'unknown';
+        "unknown";
       const now = Date.now();
       const key = `${clientIP}-${Math.floor(now / options.windowMs)}`;
 
-      const current = rateLimitStore.get(key) || { count: 0, resetTime: now + options.windowMs };
+      const current = rateLimitStore.get(key) || {
+        count: 0,
+        resetTime: now + options.windowMs,
+      };
 
       if (current.count >= options.maxRequests) {
         res.status(429).json({
           success: false,
           error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests, please try again later',
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many requests, please try again later",
           },
           timestamp: new Date().toISOString(),
         });
 
         res.set({
-          'X-RateLimit-Limit': options.maxRequests.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': current.resetTime.toString(),
+          "X-RateLimit-Limit": options.maxRequests.toString(),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": current.resetTime.toString(),
         });
 
         return;
@@ -174,14 +187,16 @@ export function rateLimit(options: RateLimitOptions) {
 
       // Add rate limit headers
       res.set({
-        'X-RateLimit-Limit': options.maxRequests.toString(),
-        'X-RateLimit-Remaining': (options.maxRequests - current.count).toString(),
-        'X-RateLimit-Reset': current.resetTime.toString(),
+        "X-RateLimit-Limit": options.maxRequests.toString(),
+        "X-RateLimit-Remaining": (
+          options.maxRequests - current.count
+        ).toString(),
+        "X-RateLimit-Reset": current.resetTime.toString(),
       });
 
       next();
     } catch (error) {
-      console.error('Rate limiting error:', error);
+      console.error("Rate limiting error:", error);
       next();
     }
   };
@@ -190,15 +205,19 @@ export function rateLimit(options: RateLimitOptions) {
 /**
  * CORS middleware
  */
-export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function corsMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Set CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Max-Age', '86400');
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Max-Age", "86400");
 
   // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }

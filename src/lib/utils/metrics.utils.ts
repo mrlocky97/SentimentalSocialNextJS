@@ -3,7 +3,7 @@
  * Centralized functions for calculating various metrics across the application
  */
 
-import { SentimentResult } from '../../types/sentiment';
+import { SentimentResult } from "../../types/sentiment";
 
 /**
  * Calculate engagement rate based on metrics
@@ -13,7 +13,7 @@ export function calculateEngagementRate(
   retweets: number,
   replies: number,
   quotes: number,
-  views?: number
+  views?: number,
 ): number {
   const totalEngagement = likes + retweets + replies + quotes;
 
@@ -54,9 +54,9 @@ export function calculateBatchSentimentMetrics(sentiments: SentimentResult[]): {
   const totalScore = sentiments.reduce((sum, s) => sum + s.score, 0);
   const totalConfidence = sentiments.reduce((sum, s) => sum + s.confidence, 0);
 
-  const positiveCount = sentiments.filter((s) => s.label === 'positive').length;
-  const negativeCount = sentiments.filter((s) => s.label === 'negative').length;
-  const neutralCount = sentiments.filter((s) => s.label === 'neutral').length;
+  const positiveCount = sentiments.filter((s) => s.label === "positive").length;
+  const negativeCount = sentiments.filter((s) => s.label === "negative").length;
+  const neutralCount = sentiments.filter((s) => s.label === "neutral").length;
 
   const total = sentiments.length;
 
@@ -77,19 +77,34 @@ export function calculateBatchSentimentMetrics(sentiments: SentimentResult[]): {
  */
 export function calculateEvaluationMetrics(
   actual: string[],
-  predicted: string[]
+  predicted: string[],
 ): {
   accuracy: number;
-  precision: { positive: number; negative: number; neutral: number; macro: number };
-  recall: { positive: number; negative: number; neutral: number; macro: number };
-  f1Score: { positive: number; negative: number; neutral: number; macro: number };
+  precision: {
+    positive: number;
+    negative: number;
+    neutral: number;
+    macro: number;
+  };
+  recall: {
+    positive: number;
+    negative: number;
+    neutral: number;
+    macro: number;
+  };
+  f1Score: {
+    positive: number;
+    negative: number;
+    neutral: number;
+    macro: number;
+  };
   confusionMatrix: { [key: string]: { [key: string]: number } };
 } {
   if (actual.length !== predicted.length) {
-    throw new Error('Actual and predicted arrays must have the same length');
+    throw new Error("Actual and predicted arrays must have the same length");
   }
 
-  const labels = ['positive', 'negative', 'neutral'];
+  const labels = ["positive", "negative", "neutral"];
   const confusionMatrix: { [key: string]: { [key: string]: number } } = {};
 
   // Initialize confusion matrix
@@ -107,30 +122,45 @@ export function calculateEvaluationMetrics(
   });
 
   // Calculate metrics for each class
-  const metrics: { [key: string]: { precision: number; recall: number; f1Score: number } } = {};
+  const metrics: {
+    [key: string]: { precision: number; recall: number; f1Score: number };
+  } = {};
 
   labels.forEach((label) => {
     const tp = confusionMatrix[label][label]; // True positives
-    const fp = labels.reduce((sum, l) => (l !== label ? sum + confusionMatrix[l][label] : sum), 0); // False positives
-    const fn = labels.reduce((sum, l) => (l !== label ? sum + confusionMatrix[label][l] : sum), 0); // False negatives
+    const fp = labels.reduce(
+      (sum, l) => (l !== label ? sum + confusionMatrix[l][label] : sum),
+      0,
+    ); // False positives
+    const fn = labels.reduce(
+      (sum, l) => (l !== label ? sum + confusionMatrix[label][l] : sum),
+      0,
+    ); // False negatives
 
     const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
     const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
-    const f1Score = precision + recall > 0 ? (2 * (precision * recall)) / (precision + recall) : 0;
+    const f1Score =
+      precision + recall > 0
+        ? (2 * (precision * recall)) / (precision + recall)
+        : 0;
 
     metrics[label] = { precision, recall, f1Score };
   });
 
   // Calculate macro averages
   const macroPrecision =
-    labels.reduce((sum, label) => sum + metrics[label].precision, 0) / labels.length;
-  const macroRecall = labels.reduce((sum, label) => sum + metrics[label].recall, 0) / labels.length;
+    labels.reduce((sum, label) => sum + metrics[label].precision, 0) /
+    labels.length;
+  const macroRecall =
+    labels.reduce((sum, label) => sum + metrics[label].recall, 0) /
+    labels.length;
   const macroF1Score =
-    labels.reduce((sum, label) => sum + metrics[label].f1Score, 0) / labels.length;
+    labels.reduce((sum, label) => sum + metrics[label].f1Score, 0) /
+    labels.length;
 
   // Calculate accuracy
   const correctPredictions = actual.filter(
-    (actualLabel, index) => actualLabel === predicted[index]
+    (actualLabel, index) => actualLabel === predicted[index],
   ).length;
   const accuracy = correctPredictions / actual.length;
 
@@ -165,13 +195,14 @@ export function calculateInfluenceScore(
   followersCount: number,
   followingCount: number,
   tweetsCount: number,
-  avgEngagement: number
+  avgEngagement: number,
 ): number {
   // Normalize followers (log scale to handle large numbers)
   const normalizedFollowers = Math.log10(Math.max(1, followersCount)) / 8; // Max log10(100M) = 8
 
   // Calculate follower-to-following ratio (capped at 10)
-  const followRatio = Math.min(10, followersCount / Math.max(1, followingCount)) / 10;
+  const followRatio =
+    Math.min(10, followersCount / Math.max(1, followingCount)) / 10;
 
   // Activity score based on tweets count (log scale)
   const activityScore = Math.log10(Math.max(1, tweetsCount)) / 6; // Max log10(1M) = 6
@@ -196,7 +227,7 @@ export function calculateInfluenceScore(
 export function calculateTrendingScore(
   currentCount: number,
   previousCount: number,
-  timeWindow: number // in hours
+  timeWindow: number, // in hours
 ): number {
   if (previousCount === 0) {
     return currentCount > 0 ? 100 : 0;
@@ -219,7 +250,7 @@ export function calculateCampaignPerformance(metrics: {
   timeRemaining: number; // in days
 }): {
   score: number;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade: "A" | "B" | "C" | "D" | "F";
   insights: string[];
 } {
   const insights: string[] = [];
@@ -228,21 +259,22 @@ export function calculateCampaignPerformance(metrics: {
   // Volume score (30%)
   const volumeScore = Math.min(
     100,
-    (metrics.totalTweets / Math.max(1, metrics.targetReached)) * 100
+    (metrics.totalTweets / Math.max(1, metrics.targetReached)) * 100,
   );
   score += volumeScore * 0.3;
 
   if (volumeScore < 50) {
-    insights.push('Low tweet volume - consider increasing campaign reach');
+    insights.push("Low tweet volume - consider increasing campaign reach");
   }
 
   // Engagement score (30%)
-  const avgEngagementPerTweet = metrics.totalEngagement / Math.max(1, metrics.totalTweets);
+  const avgEngagementPerTweet =
+    metrics.totalEngagement / Math.max(1, metrics.totalTweets);
   const engagementScore = Math.min(100, avgEngagementPerTweet * 10); // Assume 10 engagement per tweet is good
   score += engagementScore * 0.3;
 
   if (engagementScore < 50) {
-    insights.push('Low engagement rate - content may need optimization');
+    insights.push("Low engagement rate - content may need optimization");
   }
 
   // Sentiment score (25%)
@@ -250,25 +282,27 @@ export function calculateCampaignPerformance(metrics: {
   score += sentimentScore * 0.25;
 
   if (sentimentScore < 50) {
-    insights.push('Negative sentiment detected - monitor brand perception');
+    insights.push("Negative sentiment detected - monitor brand perception");
   }
 
   // Time efficiency score (15%)
   const timeScore =
-    metrics.timeRemaining > 0 ? 100 : Math.max(0, 100 - Math.abs(metrics.timeRemaining) * 10);
+    metrics.timeRemaining > 0
+      ? 100
+      : Math.max(0, 100 - Math.abs(metrics.timeRemaining) * 10);
   score += timeScore * 0.15;
 
   if (timeScore < 50) {
-    insights.push('Campaign timeline needs attention');
+    insights.push("Campaign timeline needs attention");
   }
 
   // Determine grade
-  let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-  if (score >= 90) grade = 'A';
-  else if (score >= 80) grade = 'B';
-  else if (score >= 70) grade = 'C';
-  else if (score >= 60) grade = 'D';
-  else grade = 'F';
+  let grade: "A" | "B" | "C" | "D" | "F";
+  if (score >= 90) grade = "A";
+  else if (score >= 80) grade = "B";
+  else if (score >= 70) grade = "C";
+  else if (score >= 60) grade = "D";
+  else grade = "F";
 
   return {
     score: Math.round(score),
@@ -280,7 +314,10 @@ export function calculateCampaignPerformance(metrics: {
 /**
  * Calculate percentile rank
  */
-export function calculatePercentileRank(value: number, dataset: number[]): number {
+export function calculatePercentileRank(
+  value: number,
+  dataset: number[],
+): number {
   if (dataset.length === 0) return 0;
 
   const sortedData = [...dataset].sort((a, b) => a - b);
@@ -294,7 +331,7 @@ export function calculatePercentileRank(value: number, dataset: number[]): numbe
  */
 export function calculateMovingAverage(
   data: { value: number; timestamp: Date }[],
-  windowSize: number
+  windowSize: number,
 ): { value: number; timestamp: Date }[] {
   if (data.length < windowSize) return data;
 
@@ -302,7 +339,8 @@ export function calculateMovingAverage(
 
   for (let i = windowSize - 1; i < data.length; i++) {
     const window = data.slice(i - windowSize + 1, i + 1);
-    const average = window.reduce((sum, item) => sum + item.value, 0) / windowSize;
+    const average =
+      window.reduce((sum, item) => sum + item.value, 0) / windowSize;
 
     result.push({
       value: average,

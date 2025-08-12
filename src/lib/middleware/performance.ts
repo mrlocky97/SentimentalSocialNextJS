@@ -3,12 +3,12 @@
  * Optimized middleware for compression, rate limiting, and performance monitoring
  */
 
-import { Request, Response, NextFunction } from 'express';
-import compression from 'compression';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import { appConfig } from '../config/app';
-import { appCache } from '../cache';
-import { metricsService } from '../monitoring/metrics';
+import { Request, Response, NextFunction } from "express";
+import compression from "compression";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { appConfig } from "../config/app";
+import { appCache } from "../cache";
+import { metricsService } from "../monitoring/metrics";
 
 /**
  * Compression middleware with optimization
@@ -18,7 +18,7 @@ export const compressionMiddleware = compression({
   threshold: 1024, // Only compress responses > 1KB
   filter: (req: Request, res: Response) => {
     // Don't compress if explicitly disabled
-    if (req.headers['x-no-compression']) {
+    if (req.headers["x-no-compression"]) {
       return false;
     }
     // Use compression for all compressible responses
@@ -44,7 +44,7 @@ export const createRateLimit = (options?: {
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       // Use proper IPv6-compatible key generation
-      const rawIp = req.ip || req.connection.remoteAddress || 'unknown';
+      const rawIp = req.ip || req.connection.remoteAddress || "unknown";
       const ip = ipKeyGenerator(rawIp);
       const userId = (req as any).user?.id;
       return userId ? `${ip}-${userId}` : ip;
@@ -53,8 +53,8 @@ export const createRateLimit = (options?: {
       res.status(429).json({
         success: false,
         error: {
-          message: 'Too many requests from this IP, please try again later',
-          code: 'RATE_LIMIT_EXCEEDED',
+          message: "Too many requests from this IP, please try again later",
+          code: "RATE_LIMIT_EXCEEDED",
           retryAfter: Math.ceil(config.windowMs / 1000),
           timestamp: new Date().toISOString(),
         },
@@ -86,15 +86,19 @@ export const analyticsRateLimit = createRateLimit({
 /**
  * Performance monitoring middleware
  */
-export const performanceMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const performanceMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const start = Date.now();
 
   // Track request size
-  const requestSize = parseInt(req.headers['content-length'] || '0', 10);
+  const requestSize = parseInt(req.headers["content-length"] || "0", 10);
 
   // Set request size header early
   if (!res.headersSent) {
-    res.setHeader('X-Request-Size', `${requestSize}b`);
+    res.setHeader("X-Request-Size", `${requestSize}b`);
   }
 
   // Store original send method
@@ -108,7 +112,7 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
 
     // Set response time header before sending
     if (!res.headersSent) {
-      res.setHeader('X-Response-Time', `${duration}ms`);
+      res.setHeader("X-Response-Time", `${duration}ms`);
     }
 
     // Record metrics
@@ -116,12 +120,14 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
 
     // Log slow requests (> 1 second)
     if (duration > 1000) {
-      console.warn(`Slow request: ${method} ${url} - ${duration}ms - ${status}`);
+      console.warn(
+        `Slow request: ${method} ${url} - ${duration}ms - ${status}`,
+      );
     }
 
     // Cache performance metrics asynchronously
     setImmediate(() => {
-      const metricsKey = `perf_${method}_${url.split('?')[0]}`;
+      const metricsKey = `perf_${method}_${url.split("?")[0]}`;
       const existingMetrics = appCache.get<any>(metricsKey) || {
         count: 0,
         totalDuration: 0,
@@ -132,8 +138,12 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
 
       existingMetrics.count++;
       existingMetrics.totalDuration += duration;
-      existingMetrics.averageDuration = existingMetrics.totalDuration / existingMetrics.count;
-      existingMetrics.maxDuration = Math.max(existingMetrics.maxDuration, duration);
+      existingMetrics.averageDuration =
+        existingMetrics.totalDuration / existingMetrics.count;
+      existingMetrics.maxDuration = Math.max(
+        existingMetrics.maxDuration,
+        duration,
+      );
 
       if (status >= 400) {
         existingMetrics.errors++;
@@ -156,11 +166,11 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
 export const cacheControlMiddleware = (maxAge: number = 300) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Only cache GET requests
-    if (req.method === 'GET') {
-      res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
-      res.setHeader('ETag', `"${Date.now()}"`);
+    if (req.method === "GET") {
+      res.setHeader("Cache-Control", `public, max-age=${maxAge}`);
+      res.setHeader("ETag", `"${Date.now()}"`);
     } else {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     }
     next();
   };
@@ -169,15 +179,19 @@ export const cacheControlMiddleware = (maxAge: number = 300) => {
 /**
  * Request sanitization middleware
  */
-export const sanitizeMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   // Remove potentially dangerous characters from query parameters
   if (req.query) {
     for (const key in req.query) {
-      if (typeof req.query[key] === 'string') {
+      if (typeof req.query[key] === "string") {
         req.query[key] = (req.query[key] as string)
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/javascript:/gi, '')
-          .replace(/on\w+\s*=/gi, '');
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+          .replace(/javascript:/gi, "")
+          .replace(/on\w+\s*=/gi, "");
       }
     }
   }
@@ -188,8 +202,12 @@ export const sanitizeMiddleware = (req: Request, res: Response, next: NextFuncti
 /**
  * Health check middleware that doesn't count towards rate limits
  */
-export const healthCheckMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  if (req.path === '/health' || req.path === '/api/v1/health') {
+export const healthCheckMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.path === "/health" || req.path === "/api/v1/health") {
     // Skip rate limiting for health checks
     return next();
   }

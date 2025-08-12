@@ -95,6 +95,7 @@ export class ModelPersistenceManager {
 
       // Load the classifier
       await new Promise<void>((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const natural = require('natural');
         natural.BayesClassifier.load(modelPath, null, (err: Error | null, classifier: any) => {
           if (err || !classifier) {
@@ -150,7 +151,12 @@ export class ModelPersistenceManager {
   async validateModel(
     service: NaiveBayesSentimentService,
     testCases: Array<{ text: string; expectedSentiment: string }>
-  ): Promise<{ accuracy: number; precision: number; recall: number; f1Score: number }> {
+  ): Promise<{
+    accuracy: number;
+    precision: number;
+    recall: number;
+    f1Score: number;
+  }> {
     let correct = 0;
     let truePositives = 0;
     let falsePositives = 0;
@@ -190,6 +196,7 @@ export class ModelPersistenceManager {
       precision: precision * 100,
       recall: recall * 100,
       f1Score: f1Score * 100,
+      testResults: results, // Include the detailed results
     };
 
     console.log(`📊 Model Validation Results:`);

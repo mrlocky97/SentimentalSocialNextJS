@@ -66,25 +66,28 @@ export class AdvancedHybridAnalyzer {
   };
 
   private emotionalIntensifiers = {
-    high: ['absolutely', 'completely', 'totally', 'extremely', 'incredibly'],
-    medium: ['very', 'really', 'quite', 'pretty'],
-    low: ['somewhat', 'kind of', 'sort of', 'rather'],
+    high: ["absolutely", "completely", "totally", "extremely", "incredibly"],
+    medium: ["very", "really", "quite", "pretty"],
+    low: ["somewhat", "kind of", "sort of", "rather"],
   };
 
   /**
    * Extract contextual features from text
    */
-  extractContextualFeatures(text: string, language: string = 'en'): ContextualFeatures {
+  extractContextualFeatures(
+    text: string,
+    language: string = "en",
+  ): ContextualFeatures {
     const lowerText = text.toLowerCase();
 
     return {
       textLength: text.length,
       hasEmojis:
         /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(
-          text
+          text,
         ),
-      hasExclamation: text.includes('!'),
-      hasQuestion: text.includes('?'),
+      hasExclamation: text.includes("!"),
+      hasQuestion: text.includes("?"),
       emotionalWords: this.countEmotionalWords(lowerText),
       sarcasmIndicators: this.detectSarcasmIndicators(lowerText, language),
       language,
@@ -107,7 +110,7 @@ export class AdvancedHybridAnalyzer {
     });
 
     // Contextual indicators
-    if (text.includes('...')) indicators += 1;
+    if (text.includes("...")) indicators += 1;
     if (/\s+😒|\s+🙄|\s+😏/.test(text)) indicators += 2;
     if (/really\s+\w+|sure\s+\w+|totally\s+\w+/.test(text)) indicators += 1;
 
@@ -119,22 +122,22 @@ export class AdvancedHybridAnalyzer {
    */
   private countEmotionalWords(text: string): number {
     const emotionalWords = [
-      'love',
-      'hate',
-      'amazing',
-      'terrible',
-      'fantastic',
-      'awful',
-      'brilliant',
-      'horrible',
-      'excellent',
-      'disgusting',
-      'wonderful',
-      'pathetic',
-      'outstanding',
-      'dreadful',
-      'marvelous',
-      'atrocious',
+      "love",
+      "hate",
+      "amazing",
+      "terrible",
+      "fantastic",
+      "awful",
+      "brilliant",
+      "horrible",
+      "excellent",
+      "disgusting",
+      "wonderful",
+      "pathetic",
+      "outstanding",
+      "dreadful",
+      "marvelous",
+      "atrocious",
     ];
 
     return emotionalWords.filter((word) => text.includes(word)).length;
@@ -145,7 +148,8 @@ export class AdvancedHybridAnalyzer {
    */
   private calculateTextComplexity(text: string): number {
     const words = text.split(/\s+/);
-    const avgWordLength = words.reduce((sum, word) => sum + word.length, 0) / words.length;
+    const avgWordLength =
+      words.reduce((sum, word) => sum + word.length, 0) / words.length;
     const sentenceCount = text.split(/[.!?]+/).length;
     const avgSentenceLength = words.length / sentenceCount;
 
@@ -158,7 +162,7 @@ export class AdvancedHybridAnalyzer {
   adjustWeights(
     features: ContextualFeatures,
     naiveResult: { label: string; confidence: number },
-    ruleResult: { label: string; confidence: number }
+    ruleResult: { label: string; confidence: number },
   ): { naiveWeight: number; ruleWeight: number; confidence: number } {
     let naiveWeight = this.baseConfig.naiveWeight;
     let ruleWeight = this.baseConfig.ruleWeight;
@@ -221,7 +225,7 @@ export class AdvancedHybridAnalyzer {
     text: string,
     naiveResult: { label: string; confidence: number },
     ruleResult: { label: string; confidence: number; score?: number },
-    language: string = 'en'
+    language: string = "en",
   ): {
     label: string;
     confidence: number;
@@ -231,50 +235,56 @@ export class AdvancedHybridAnalyzer {
     explanation: string;
   } {
     const features = this.extractContextualFeatures(text, language);
-    const adjustedWeights = this.adjustWeights(features, naiveResult, ruleResult);
+    const adjustedWeights = this.adjustWeights(
+      features,
+      naiveResult,
+      ruleResult,
+    );
 
     // Calculate weighted score
     let naiveScore = 0;
-    if (naiveResult.label === 'positive') naiveScore = 0.7;
-    else if (naiveResult.label === 'negative') naiveScore = -0.7;
+    if (naiveResult.label === "positive") naiveScore = 0.7;
+    else if (naiveResult.label === "negative") naiveScore = -0.7;
 
     const ruleScore = ruleResult.score || 0;
     const weightedScore =
-      naiveScore * adjustedWeights.naiveWeight + ruleScore * adjustedWeights.ruleWeight;
+      naiveScore * adjustedWeights.naiveWeight +
+      ruleScore * adjustedWeights.ruleWeight;
 
     // Determine final label with adjusted thresholds for sarcasm
-    let finalLabel = 'neutral';
+    let finalLabel = "neutral";
     const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15; // Slightly higher threshold when sarcasm present
 
     if (weightedScore > threshold) {
-      finalLabel = 'positive';
+      finalLabel = "positive";
     } else if (weightedScore < -threshold) {
-      finalLabel = 'negative';
+      finalLabel = "negative";
     }
 
     // Sarcasm override: if sarcasm is detected and sentiment trends positive by any method, flip to negative
     if (features.sarcasmIndicators > 1) {
-      const rulePositive = ruleResult.label === 'positive' || (ruleResult.score ?? 0) > 0;
-      const naivePositive = naiveResult.label === 'positive';
+      const rulePositive =
+        ruleResult.label === "positive" || (ruleResult.score ?? 0) > 0;
+      const naivePositive = naiveResult.label === "positive";
       const scorePositive = weightedScore > 0.05;
       if (rulePositive || naivePositive || scorePositive) {
-        finalLabel = 'negative';
+        finalLabel = "negative";
       }
     }
 
     // Generate explanation
     let explanation = `Auto-adjusted weights (Naive: ${adjustedWeights.naiveWeight.toFixed(
-      2
+      2,
     )}, Rule: ${adjustedWeights.ruleWeight.toFixed(2)})`;
 
     if (features.sarcasmIndicators > 1) {
-      explanation += '; Sarcasm detected - biasing toward negative';
+      explanation += "; Sarcasm detected - biasing toward negative";
     }
     if (features.emotionalWords > 2) {
-      explanation += '; High emotional intensity detected';
+      explanation += "; High emotional intensity detected";
     }
     if (features.hasEmojis) {
-      explanation += '; Emoji analysis applied';
+      explanation += "; Emoji analysis applied";
     }
 
     return {

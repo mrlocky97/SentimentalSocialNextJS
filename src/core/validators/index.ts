@@ -3,7 +3,7 @@
  * Validadores centralizados para toda la aplicación
  */
 
-import { SentimentErrors } from '../errors';
+import { SentimentErrors } from "../errors";
 
 /**
  * Resultado de validación
@@ -42,7 +42,10 @@ export abstract class BaseValidator {
   /**
    * Crea resultado de validación con errores
    */
-  protected static createErrorResult(errors: string[], warnings: string[] = []): ValidationResult {
+  protected static createErrorResult(
+    errors: string[],
+    warnings: string[] = [],
+  ): ValidationResult {
     return {
       isValid: false,
       errors,
@@ -69,21 +72,25 @@ export abstract class BaseValidator {
   protected static validateStringLength(
     value: string,
     fieldName: string,
-    options: { min?: number; max?: number } = {}
+    options: { min?: number; max?: number } = {},
   ): string[] {
     const errors: string[] = [];
 
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }
 
     if (options.min && value.length < options.min) {
-      errors.push(`${fieldName} must be at least ${options.min} characters long`);
+      errors.push(
+        `${fieldName} must be at least ${options.min} characters long`,
+      );
     }
 
     if (options.max && value.length > options.max) {
-      errors.push(`${fieldName} must be no more than ${options.max} characters long`);
+      errors.push(
+        `${fieldName} must be no more than ${options.max} characters long`,
+      );
     }
 
     return errors;
@@ -96,11 +103,11 @@ export abstract class BaseValidator {
     value: number,
     fieldName: string,
     min?: number,
-    max?: number
+    max?: number,
   ): string[] {
     const errors: string[] = [];
 
-    if (typeof value !== 'number' || isNaN(value)) {
+    if (typeof value !== "number" || isNaN(value)) {
       errors.push(`${fieldName} must be a valid number`);
       return errors;
     }
@@ -119,11 +126,15 @@ export abstract class BaseValidator {
   /**
    * Valida que un valor esté en una lista de opciones válidas
    */
-  protected static validateEnum<T>(value: T, fieldName: string, validOptions: T[]): string[] {
+  protected static validateEnum<T>(
+    value: T,
+    fieldName: string,
+    validOptions: T[],
+  ): string[] {
     const errors: string[] = [];
 
     if (!validOptions.includes(value)) {
-      errors.push(`${fieldName} must be one of: ${validOptions.join(', ')}`);
+      errors.push(`${fieldName} must be one of: ${validOptions.join(", ")}`);
     }
 
     return errors;
@@ -132,10 +143,13 @@ export abstract class BaseValidator {
   /**
    * Valida formato de email
    */
-  protected static validateEmail(email: string, fieldName: string = 'email'): string[] {
+  protected static validateEmail(
+    email: string,
+    fieldName: string = "email",
+  ): string[] {
     const errors: string[] = [];
 
-    if (typeof email !== 'string') {
+    if (typeof email !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }
@@ -151,10 +165,13 @@ export abstract class BaseValidator {
   /**
    * Valida URL
    */
-  protected static validateURL(url: string, fieldName: string = 'url'): string[] {
+  protected static validateURL(
+    url: string,
+    fieldName: string = "url",
+  ): string[] {
     const errors: string[] = [];
 
-    if (typeof url !== 'string') {
+    if (typeof url !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }
@@ -176,12 +193,15 @@ export class TweetValidator extends BaseValidator {
   /**
    * Valida objeto tweet completo
    */
-  static validate(tweet: any, options: ValidationOptions = {}): ValidationResult {
+  static validate(
+    tweet: any,
+    options: ValidationOptions = {},
+  ): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Validaciones básicas
-    errors.push(...this.validateRequired(tweet, 'tweet'));
+    errors.push(...this.validateRequired(tweet, "tweet"));
 
     if (!tweet) {
       return this.createErrorResult(errors, warnings);
@@ -189,36 +209,36 @@ export class TweetValidator extends BaseValidator {
 
     // Validar ID
     if (!tweet.id && !tweet.tweetId) {
-      errors.push('Tweet must have an id or tweetId');
-    } else if (tweet.id === '' && tweet.tweetId === '') {
-      errors.push('Tweet ID cannot be empty');
+      errors.push("Tweet must have an id or tweetId");
+    } else if (tweet.id === "" && tweet.tweetId === "") {
+      errors.push("Tweet ID cannot be empty");
     }
 
     // Validar contenido
     const content = tweet.content || tweet.text;
     if (!content) {
-      errors.push('Tweet must have content or text');
+      errors.push("Tweet must have content or text");
     } else {
       errors.push(
-        ...this.validateStringLength(content, 'content', {
+        ...this.validateStringLength(content, "content", {
           min: options.minLength || 1,
           max: options.maxLength || 5000,
-        })
+        }),
       );
 
       // Advertencias para contenido sospechoso
       if (content.length > 280) {
-        warnings.push('Tweet content exceeds typical Twitter character limit');
+        warnings.push("Tweet content exceeds typical Twitter character limit");
       }
 
       if (this.isSpamlike(content)) {
-        warnings.push('Tweet content appears spam-like');
+        warnings.push("Tweet content appears spam-like");
       }
     }
 
     // Validar autor
     if (!tweet.author) {
-      errors.push('Tweet must have author information');
+      errors.push("Tweet must have author information");
     } else {
       const authorErrors = this.validateAuthor(tweet.author);
       errors.push(...authorErrors);
@@ -232,15 +252,15 @@ export class TweetValidator extends BaseValidator {
 
     // Validar arrays opcionales
     if (tweet.hashtags && !Array.isArray(tweet.hashtags)) {
-      errors.push('hashtags must be an array');
+      errors.push("hashtags must be an array");
     }
 
     if (tweet.mentions && !Array.isArray(tweet.mentions)) {
-      errors.push('mentions must be an array');
+      errors.push("mentions must be an array");
     }
 
     if (tweet.urls && !Array.isArray(tweet.urls)) {
-      errors.push('urls must be an array');
+      errors.push("urls must be an array");
     }
 
     return errors.length > 0
@@ -255,19 +275,34 @@ export class TweetValidator extends BaseValidator {
     const errors: string[] = [];
 
     if (!author.username) {
-      errors.push('Author must have username');
+      errors.push("Author must have username");
     } else {
       errors.push(
-        ...this.validateStringLength(author.username, 'author.username', { min: 1, max: 50 })
+        ...this.validateStringLength(author.username, "author.username", {
+          min: 1,
+          max: 50,
+        }),
       );
     }
 
     if (author.followersCount !== undefined) {
-      errors.push(...this.validateNumberRange(author.followersCount, 'author.followersCount', 0));
+      errors.push(
+        ...this.validateNumberRange(
+          author.followersCount,
+          "author.followersCount",
+          0,
+        ),
+      );
     }
 
     if (author.followingCount !== undefined) {
-      errors.push(...this.validateNumberRange(author.followingCount, 'author.followingCount', 0));
+      errors.push(
+        ...this.validateNumberRange(
+          author.followingCount,
+          "author.followingCount",
+          0,
+        ),
+      );
     }
 
     return errors;
@@ -280,15 +315,21 @@ export class TweetValidator extends BaseValidator {
     const errors: string[] = [];
 
     if (metrics.likes !== undefined) {
-      errors.push(...this.validateNumberRange(metrics.likes, 'metrics.likes', 0));
+      errors.push(
+        ...this.validateNumberRange(metrics.likes, "metrics.likes", 0),
+      );
     }
 
     if (metrics.retweets !== undefined) {
-      errors.push(...this.validateNumberRange(metrics.retweets, 'metrics.retweets', 0));
+      errors.push(
+        ...this.validateNumberRange(metrics.retweets, "metrics.retweets", 0),
+      );
     }
 
     if (metrics.replies !== undefined) {
-      errors.push(...this.validateNumberRange(metrics.replies, 'metrics.replies', 0));
+      errors.push(
+        ...this.validateNumberRange(metrics.replies, "metrics.replies", 0),
+      );
     }
 
     return errors;
@@ -319,17 +360,22 @@ export class TweetValidator extends BaseValidator {
   /**
    * Valida lote de tweets
    */
-  static validateBatch(tweets: any[], options: ValidationOptions = {}): ValidationResult {
+  static validateBatch(
+    tweets: any[],
+    options: ValidationOptions = {},
+  ): ValidationResult {
     if (!Array.isArray(tweets)) {
-      return this.createErrorResult(['Input must be an array of tweets']);
+      return this.createErrorResult(["Input must be an array of tweets"]);
     }
 
     if (tweets.length === 0) {
-      return this.createErrorResult(['Array cannot be empty']);
+      return this.createErrorResult(["Array cannot be empty"]);
     }
 
     if (tweets.length > 100) {
-      return this.createErrorResult([`Maximum 100 tweets allowed, received ${tweets.length}`]);
+      return this.createErrorResult([
+        `Maximum 100 tweets allowed, received ${tweets.length}`,
+      ]);
     }
 
     const errors: string[] = [];
@@ -338,9 +384,13 @@ export class TweetValidator extends BaseValidator {
     tweets.forEach((tweet, index) => {
       const result = this.validate(tweet, options);
       if (!result.isValid) {
-        errors.push(...result.errors.map((error) => `Tweet ${index}: ${error}`));
+        errors.push(
+          ...result.errors.map((error) => `Tweet ${index}: ${error}`),
+        );
       }
-      warnings.push(...result.warnings.map((warning) => `Tweet ${index}: ${warning}`));
+      warnings.push(
+        ...result.warnings.map((warning) => `Tweet ${index}: ${warning}`),
+      );
     });
 
     return errors.length > 0
@@ -356,42 +406,47 @@ export class SentimentAnalysisValidator extends BaseValidator {
   /**
    * Valida texto para análisis
    */
-  static validateText(text: any, options: ValidationOptions = {}): ValidationResult {
+  static validateText(
+    text: any,
+    options: ValidationOptions = {},
+  ): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Validar que existe
-    errors.push(...this.validateRequired(text, 'text'));
+    errors.push(...this.validateRequired(text, "text"));
 
     if (!text) {
       return this.createErrorResult(errors, warnings);
     }
 
     // Validar que es string
-    if (typeof text !== 'string') {
-      errors.push('Text must be a string');
+    if (typeof text !== "string") {
+      errors.push("Text must be a string");
       return this.createErrorResult(errors, warnings);
     }
 
     // Validar longitud
     errors.push(
-      ...this.validateStringLength(text, 'text', {
+      ...this.validateStringLength(text, "text", {
         min: options.minLength || 1,
         max: options.maxLength || 5000,
-      })
+      }),
     );
 
     // Advertencias
     if (text.trim().length < 3) {
-      warnings.push('Very short text may not provide accurate sentiment analysis');
+      warnings.push(
+        "Very short text may not provide accurate sentiment analysis",
+      );
     }
 
     if (text.length > 1000) {
-      warnings.push('Long text may be truncated during analysis');
+      warnings.push("Long text may be truncated during analysis");
     }
 
     if (!/[a-zA-Z]/.test(text)) {
-      warnings.push('Text contains no alphabetic characters');
+      warnings.push("Text contains no alphabetic characters");
     }
 
     return errors.length > 0
@@ -403,10 +458,12 @@ export class SentimentAnalysisValidator extends BaseValidator {
    * Valida método de análisis
    */
   static validateMethod(method: any): ValidationResult {
-    const validMethods = ['rule', 'naive', 'hybrid', 'advanced'];
-    const errors = this.validateEnum(method, 'method', validMethods);
+    const validMethods = ["rule", "naive", "hybrid", "advanced"];
+    const errors = this.validateEnum(method, "method", validMethods);
 
-    return errors.length > 0 ? this.createErrorResult(errors) : this.createSuccessResult();
+    return errors.length > 0
+      ? this.createErrorResult(errors)
+      : this.createSuccessResult();
   }
 
   /**
@@ -417,30 +474,34 @@ export class SentimentAnalysisValidator extends BaseValidator {
     const warnings: string[] = [];
 
     if (!Array.isArray(examples)) {
-      return this.createErrorResult(['Training data must be an array']);
+      return this.createErrorResult(["Training data must be an array"]);
     }
 
     if (examples.length === 0) {
-      return this.createErrorResult(['Training data cannot be empty']);
+      return this.createErrorResult(["Training data cannot be empty"]);
     }
 
     if (examples.length < 10) {
-      warnings.push('Training data should have at least 10 examples for better accuracy');
+      warnings.push(
+        "Training data should have at least 10 examples for better accuracy",
+      );
     }
 
     const labelCounts = { positive: 0, negative: 0, neutral: 0 };
 
     examples.forEach((example, index) => {
-      if (!example.text || typeof example.text !== 'string') {
+      if (!example.text || typeof example.text !== "string") {
         errors.push(`Example ${index}: text is required and must be a string`);
       }
 
       if (!example.label) {
         errors.push(`Example ${index}: label is required`);
       } else {
-        const validLabels = ['positive', 'negative', 'neutral'];
+        const validLabels = ["positive", "negative", "neutral"];
         if (!validLabels.includes(example.label)) {
-          errors.push(`Example ${index}: label must be one of ${validLabels.join(', ')}`);
+          errors.push(
+            `Example ${index}: label must be one of ${validLabels.join(", ")}`,
+          );
         } else {
           labelCounts[example.label as keyof typeof labelCounts]++;
         }
@@ -453,7 +514,7 @@ export class SentimentAnalysisValidator extends BaseValidator {
       const percentage = (count / total) * 100;
       if (percentage < 20) {
         warnings.push(
-          `Label '${label}' represents only ${percentage.toFixed(1)}% of training data`
+          `Label '${label}' represents only ${percentage.toFixed(1)}% of training data`,
         );
       }
     });
@@ -476,18 +537,18 @@ export class APIValidator extends BaseValidator {
     const warnings: string[] = [];
 
     if (page !== undefined) {
-      if (typeof page !== 'number' || page < 1) {
-        errors.push('Page must be a positive integer');
+      if (typeof page !== "number" || page < 1) {
+        errors.push("Page must be a positive integer");
       }
     }
 
     if (limit !== undefined) {
-      if (typeof limit !== 'number' || limit < 1) {
-        errors.push('Limit must be a positive integer');
+      if (typeof limit !== "number" || limit < 1) {
+        errors.push("Limit must be a positive integer");
       } else if (limit > 100) {
-        errors.push('Limit cannot exceed 100');
+        errors.push("Limit cannot exceed 100");
       } else if (limit > 50) {
-        warnings.push('Large page sizes may impact performance');
+        warnings.push("Large page sizes may impact performance");
       }
     }
 
@@ -512,18 +573,22 @@ export class APIValidator extends BaseValidator {
       const end = new Date(filters.endDate);
 
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        errors.push('Invalid date format in filters');
+        errors.push("Invalid date format in filters");
       } else if (start > end) {
-        errors.push('Start date cannot be after end date');
+        errors.push("Start date cannot be after end date");
       } else if (end.getTime() - start.getTime() > 90 * 24 * 60 * 60 * 1000) {
-        warnings.push('Date range exceeds 90 days, consider narrowing for better performance');
+        warnings.push(
+          "Date range exceeds 90 days, consider narrowing for better performance",
+        );
       }
     }
 
     if (filters.sentiment) {
-      const validSentiments = ['positive', 'negative', 'neutral'];
+      const validSentiments = ["positive", "negative", "neutral"];
       if (!validSentiments.includes(filters.sentiment)) {
-        errors.push(`Sentiment filter must be one of: ${validSentiments.join(', ')}`);
+        errors.push(
+          `Sentiment filter must be one of: ${validSentiments.join(", ")}`,
+        );
       }
     }
 
@@ -558,8 +623,8 @@ export class ValidationUtils {
     if (result.isValid) return null;
 
     const message = context
-      ? `Validation failed for ${context}: ${result.errors.join(', ')}`
-      : `Validation failed: ${result.errors.join(', ')}`;
+      ? `Validation failed for ${context}: ${result.errors.join(", ")}`
+      : `Validation failed: ${result.errors.join(", ")}`;
 
     return SentimentErrors.invalidText(message);
   }

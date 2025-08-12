@@ -3,15 +3,21 @@
  * Data access layer for campaign operations
  */
 
-import { ICampaignDocument, CampaignModel } from '../models/Campaign.model';
-import { CreateCampaignRequest, UpdateCampaignRequest, CampaignFilter } from '../types/campaign';
-import { PaginationOptions } from '../types/common';
+import { ICampaignDocument, CampaignModel } from "../models/Campaign.model";
+import {
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
+  CampaignFilter,
+} from "../types/campaign";
+import { PaginationOptions } from "../types/common";
 
 export class MongoCampaignRepository {
   /**
    * Create a new campaign
    */
-  async create(campaignData: CreateCampaignRequest): Promise<ICampaignDocument> {
+  async create(
+    campaignData: CreateCampaignRequest,
+  ): Promise<ICampaignDocument> {
     try {
       // Convert date strings to Date objects
       const campaignToCreate = {
@@ -36,15 +42,15 @@ export class MongoCampaignRepository {
       return savedCampaign;
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message.includes('validation failed')) {
-          throw new Error('VALIDATION_ERROR');
+        if (error.message.includes("validation failed")) {
+          throw new Error("VALIDATION_ERROR");
         }
-        if (error.message.includes('duplicate key')) {
-          throw new Error('CAMPAIGN_NAME_EXISTS');
+        if (error.message.includes("duplicate key")) {
+          throw new Error("CAMPAIGN_NAME_EXISTS");
         }
       }
-      console.error('Error creating campaign:', error);
-      throw new Error('CREATE_CAMPAIGN_ERROR');
+      console.error("Error creating campaign:", error);
+      throw new Error("CREATE_CAMPAIGN_ERROR");
     }
   }
 
@@ -56,7 +62,7 @@ export class MongoCampaignRepository {
       const campaign = await CampaignModel.findById(id);
       return campaign;
     } catch (error) {
-      console.error('Error finding campaign by ID:', error);
+      console.error("Error finding campaign by ID:", error);
       return null;
     }
   }
@@ -66,19 +72,26 @@ export class MongoCampaignRepository {
    */
   async findMany(
     filter: CampaignFilter = {},
-    options: PaginationOptions = {}
+    options: PaginationOptions = {},
   ): Promise<ICampaignDocument[]> {
     try {
-      const { offset = 0, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+      const {
+        offset = 0,
+        limit = 20,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = options;
 
       // Build MongoDB filter
       const mongoFilter: Record<string, unknown> = {};
 
       if (filter.status) mongoFilter.status = filter.status;
       if (filter.type) mongoFilter.type = filter.type;
-      if (filter.organizationId) mongoFilter.organizationId = filter.organizationId;
+      if (filter.organizationId)
+        mongoFilter.organizationId = filter.organizationId;
       if (filter.createdBy) mongoFilter.createdBy = filter.createdBy;
-      if (filter.assignedTo) mongoFilter.assignedTo = { $in: [filter.assignedTo] };
+      if (filter.assignedTo)
+        mongoFilter.assignedTo = { $in: [filter.assignedTo] };
       if (filter.dataSources && filter.dataSources.length > 0) {
         mongoFilter.dataSources = { $in: filter.dataSources };
       }
@@ -87,25 +100,33 @@ export class MongoCampaignRepository {
       if (filter.startDateFrom || filter.startDateTo) {
         mongoFilter.startDate = {};
         if (filter.startDateFrom) {
-          (mongoFilter.startDate as Record<string, unknown>).$gte = new Date(filter.startDateFrom);
+          (mongoFilter.startDate as Record<string, unknown>).$gte = new Date(
+            filter.startDateFrom,
+          );
         }
         if (filter.startDateTo) {
-          (mongoFilter.startDate as Record<string, unknown>).$lte = new Date(filter.startDateTo);
+          (mongoFilter.startDate as Record<string, unknown>).$lte = new Date(
+            filter.startDateTo,
+          );
         }
       }
 
       if (filter.endDateFrom || filter.endDateTo) {
         mongoFilter.endDate = {};
         if (filter.endDateFrom) {
-          (mongoFilter.endDate as Record<string, unknown>).$gte = new Date(filter.endDateFrom);
+          (mongoFilter.endDate as Record<string, unknown>).$gte = new Date(
+            filter.endDateFrom,
+          );
         }
         if (filter.endDateTo) {
-          (mongoFilter.endDate as Record<string, unknown>).$lte = new Date(filter.endDateTo);
+          (mongoFilter.endDate as Record<string, unknown>).$lte = new Date(
+            filter.endDateTo,
+          );
         }
       }
 
       // Build sort object
-      const sortDirection = sortOrder === 'desc' ? -1 : 1;
+      const sortDirection = sortOrder === "desc" ? -1 : 1;
       const sort: Record<string, 1 | -1> = { [sortBy]: sortDirection };
 
       const campaigns = await CampaignModel.find(mongoFilter)
@@ -116,8 +137,8 @@ export class MongoCampaignRepository {
 
       return campaigns;
     } catch (error) {
-      console.error('Error finding campaigns:', error);
-      throw new Error('FIND_CAMPAIGNS_ERROR');
+      console.error("Error finding campaigns:", error);
+      throw new Error("FIND_CAMPAIGNS_ERROR");
     }
   }
 
@@ -130,9 +151,11 @@ export class MongoCampaignRepository {
 
       if (filter.status) mongoFilter.status = filter.status;
       if (filter.type) mongoFilter.type = filter.type;
-      if (filter.organizationId) mongoFilter.organizationId = filter.organizationId;
+      if (filter.organizationId)
+        mongoFilter.organizationId = filter.organizationId;
       if (filter.createdBy) mongoFilter.createdBy = filter.createdBy;
-      if (filter.assignedTo) mongoFilter.assignedTo = { $in: [filter.assignedTo] };
+      if (filter.assignedTo)
+        mongoFilter.assignedTo = { $in: [filter.assignedTo] };
       if (filter.dataSources && filter.dataSources.length > 0) {
         mongoFilter.dataSources = { $in: filter.dataSources };
       }
@@ -141,25 +164,32 @@ export class MongoCampaignRepository {
       if (filter.startDateFrom || filter.startDateTo) {
         mongoFilter.startDate = {};
         if (filter.startDateFrom) {
-          (mongoFilter.startDate as Record<string, unknown>).$gte = new Date(filter.startDateFrom);
+          (mongoFilter.startDate as Record<string, unknown>).$gte = new Date(
+            filter.startDateFrom,
+          );
         }
         if (filter.startDateTo) {
-          (mongoFilter.startDate as Record<string, unknown>).$lte = new Date(filter.startDateTo);
+          (mongoFilter.startDate as Record<string, unknown>).$lte = new Date(
+            filter.startDateTo,
+          );
         }
       }
 
       const count = await CampaignModel.countDocuments(mongoFilter);
       return count;
     } catch (error) {
-      console.error('Error counting campaigns:', error);
-      throw new Error('COUNT_CAMPAIGNS_ERROR');
+      console.error("Error counting campaigns:", error);
+      throw new Error("COUNT_CAMPAIGNS_ERROR");
     }
   }
 
   /**
    * Update campaign by ID
    */
-  async update(id: string, updateData: UpdateCampaignRequest): Promise<ICampaignDocument | null> {
+  async update(
+    id: string,
+    updateData: UpdateCampaignRequest,
+  ): Promise<ICampaignDocument | null> {
     try {
       // Convert date strings to Date objects if provided
       const updatePayload: Record<string, unknown> = { ...updateData };
@@ -173,21 +203,21 @@ export class MongoCampaignRepository {
       const updatedCampaign = await CampaignModel.findByIdAndUpdate(
         id,
         { ...updatePayload, updatedAt: new Date() },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       return updatedCampaign;
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message.includes('validation failed')) {
-          throw new Error('VALIDATION_ERROR');
+        if (error.message.includes("validation failed")) {
+          throw new Error("VALIDATION_ERROR");
         }
-        if (error.message.includes('Cannot modify tracking parameters')) {
-          throw new Error('CANNOT_MODIFY_ACTIVE_CAMPAIGN');
+        if (error.message.includes("Cannot modify tracking parameters")) {
+          throw new Error("CANNOT_MODIFY_ACTIVE_CAMPAIGN");
         }
       }
-      console.error('Error updating campaign:', error);
-      throw new Error('UPDATE_CAMPAIGN_ERROR');
+      console.error("Error updating campaign:", error);
+      throw new Error("UPDATE_CAMPAIGN_ERROR");
     }
   }
 
@@ -198,27 +228,31 @@ export class MongoCampaignRepository {
     try {
       const result = await CampaignModel.findByIdAndUpdate(
         id,
-        { status: 'archived', updatedAt: new Date() },
-        { new: true }
+        { status: "archived", updatedAt: new Date() },
+        { new: true },
       );
 
       return result !== null;
     } catch (error) {
-      console.error('Error deleting campaign:', error);
-      throw new Error('DELETE_CAMPAIGN_ERROR');
+      console.error("Error deleting campaign:", error);
+      throw new Error("DELETE_CAMPAIGN_ERROR");
     }
   }
 
   /**
    * Find campaigns by organization
    */
-  async findByOrganization(organizationId: string): Promise<ICampaignDocument[]> {
+  async findByOrganization(
+    organizationId: string,
+  ): Promise<ICampaignDocument[]> {
     try {
-      const campaigns = await CampaignModel.find({ organizationId }).sort({ createdAt: -1 });
+      const campaigns = await CampaignModel.find({ organizationId }).sort({
+        createdAt: -1,
+      });
       return campaigns;
     } catch (error) {
-      console.error('Error finding campaigns by organization:', error);
-      throw new Error('FIND_CAMPAIGNS_BY_ORG_ERROR');
+      console.error("Error finding campaigns by organization:", error);
+      throw new Error("FIND_CAMPAIGNS_BY_ORG_ERROR");
     }
   }
 
@@ -228,12 +262,15 @@ export class MongoCampaignRepository {
   async findActiveByUser(userId: string): Promise<ICampaignDocument[]> {
     try {
       const campaigns = await CampaignModel.find({
-        $and: [{ status: 'active' }, { $or: [{ createdBy: userId }, { assignedTo: userId }] }],
+        $and: [
+          { status: "active" },
+          { $or: [{ createdBy: userId }, { assignedTo: userId }] },
+        ],
       }).sort({ startDate: 1 });
       return campaigns;
     } catch (error) {
-      console.error('Error finding active campaigns by user:', error);
-      throw new Error('FIND_ACTIVE_CAMPAIGNS_ERROR');
+      console.error("Error finding active campaigns by user:", error);
+      throw new Error("FIND_ACTIVE_CAMPAIGNS_ERROR");
     }
   }
 
@@ -243,13 +280,13 @@ export class MongoCampaignRepository {
   async findByHashtag(hashtag: string): Promise<ICampaignDocument[]> {
     try {
       const campaigns = await CampaignModel.find({
-        hashtags: { $in: [hashtag.toLowerCase().replace('#', '')] },
+        hashtags: { $in: [hashtag.toLowerCase().replace("#", "")] },
       }).sort({ createdAt: -1 });
 
       return campaigns;
     } catch (error) {
-      console.error('Error finding campaigns by hashtag:', error);
-      throw new Error('FIND_CAMPAIGNS_BY_HASHTAG_ERROR');
+      console.error("Error finding campaigns by hashtag:", error);
+      throw new Error("FIND_CAMPAIGNS_BY_HASHTAG_ERROR");
     }
   }
 
@@ -260,15 +297,15 @@ export class MongoCampaignRepository {
     try {
       const now = new Date();
       const campaigns = await CampaignModel.find({
-        status: 'active',
+        status: "active",
         startDate: { $lte: now },
         endDate: { $gte: now },
       }).sort({ lastDataCollection: 1 }); // Prioritize campaigns that haven't been collected recently
 
       return campaigns;
     } catch (error) {
-      console.error('Error finding campaigns for collection:', error);
-      throw new Error('FIND_CAMPAIGNS_FOR_COLLECTION_ERROR');
+      console.error("Error finding campaigns for collection:", error);
+      throw new Error("FIND_CAMPAIGNS_FOR_COLLECTION_ERROR");
     }
   }
 
@@ -284,7 +321,7 @@ export class MongoCampaignRepository {
       topHashtags?: { tag: string; count: number }[];
       topMentions?: { mention: string; count: number }[];
       dailyVolume?: { date: string; count: number }[];
-    }
+    },
   ): Promise<ICampaignDocument | null> {
     try {
       const updatedCampaign = await CampaignModel.findByIdAndUpdate(
@@ -294,13 +331,13 @@ export class MongoCampaignRepository {
           lastDataCollection: new Date(),
           updatedAt: new Date(),
         },
-        { new: true }
+        { new: true },
       );
 
       return updatedCampaign;
     } catch (error) {
-      console.error('Error updating campaign stats:', error);
-      throw new Error('UPDATE_CAMPAIGN_STATS_ERROR');
+      console.error("Error updating campaign stats:", error);
+      throw new Error("UPDATE_CAMPAIGN_STATS_ERROR");
     }
   }
 
@@ -310,7 +347,7 @@ export class MongoCampaignRepository {
   async searchByText(
     searchTerm: string,
     organizationId?: string,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<ICampaignDocument[]> {
     try {
       const filter: Record<string, unknown> = {
@@ -321,14 +358,16 @@ export class MongoCampaignRepository {
         filter.organizationId = organizationId;
       }
 
-      const campaigns = await CampaignModel.find(filter, { score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
+      const campaigns = await CampaignModel.find(filter, {
+        score: { $meta: "textScore" },
+      })
+        .sort({ score: { $meta: "textScore" } })
         .limit(limit);
 
       return campaigns;
     } catch (error) {
-      console.error('Error searching campaigns by text:', error);
-      throw new Error('SEARCH_CAMPAIGNS_ERROR');
+      console.error("Error searching campaigns by text:", error);
+      throw new Error("SEARCH_CAMPAIGNS_ERROR");
     }
   }
 }

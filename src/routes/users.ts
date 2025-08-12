@@ -3,7 +3,7 @@
  * API endpoints for user CRUD operations and management
  */
 
-import { Router } from 'express';
+import { Router } from "express";
 import {
   BusinessLogicError,
   ErrorCode,
@@ -11,11 +11,11 @@ import {
   NotFoundError,
   ResponseHelper,
   ValidationError,
-} from '../core/errors';
-import { Order } from '../enums/api.enum';
-import { authenticateToken, requireRole } from '../middleware/express-auth';
-import { MongoUserRepository } from '../repositories/mongo-user.repository';
-import { CreateUserRequest, UpdateUserRequest } from '../types/user';
+} from "../core/errors";
+import { Order } from "../enums/api.enum";
+import { authenticateToken, requireRole } from "../middleware/express-auth";
+import { MongoUserRepository } from "../repositories/mongo-user.repository";
+import { CreateUserRequest, UpdateUserRequest } from "../types/user";
 
 const router = Router();
 const userRepository = new MongoUserRepository();
@@ -102,9 +102,9 @@ const userRepository = new MongoUserRepository();
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-  '/',
+  "/",
   authenticateToken,
-  requireRole(['admin', 'manager']),
+  requireRole(["admin", "manager"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const { page = 1, limit = 20, role, organizationId, isActive } = req.query;
 
@@ -112,7 +112,7 @@ router.get(
     const filter: any = {};
     if (role) filter.role = role as string;
     if (organizationId) filter.organizationId = organizationId as string;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     // Convert pagination params
     const pageNum = parseInt(page as string);
@@ -121,25 +121,25 @@ router.get(
     // Validate pagination parameters
     if (isNaN(pageNum) || pageNum < 1) {
       throw new ValidationError(
-        'Invalid page number',
+        "Invalid page number",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'user_pagination',
+          operation: "user_pagination",
           additionalData: { page },
         },
-        ['Page must be a positive integer']
+        ["Page must be a positive integer"],
       );
     }
 
     if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
       throw new ValidationError(
-        'Invalid limit value',
+        "Invalid limit value",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'user_pagination',
+          operation: "user_pagination",
           additionalData: { limit },
         },
-        ['Limit must be between 1 and 100']
+        ["Limit must be between 1 and 100"],
       );
     }
 
@@ -149,7 +149,7 @@ router.get(
     const users = await userRepository.findMany(filter, {
       offset,
       limit: limitNum,
-      sortBy: 'createdAt',
+      sortBy: "createdAt",
       sortOrder: Order.DESC,
     });
 
@@ -168,7 +168,7 @@ router.get(
         hasPrev: pageNum > 1,
       },
     });
-  })
+  }),
 );
 
 /**
@@ -268,47 +268,60 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.post(
-  '/',
+  "/",
   authenticateToken,
-  requireRole(['admin']),
+  requireRole(["admin"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const userData: CreateUserRequest = req.body;
 
     // Validate required fields
-    if (!userData.email || !userData.password || !userData.displayName || !userData.username) {
+    if (
+      !userData.email ||
+      !userData.password ||
+      !userData.displayName ||
+      !userData.username
+    ) {
       throw new ValidationError(
-        'Missing required fields',
+        "Missing required fields",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'create_user',
+          operation: "create_user",
           additionalData: {
-            required: ['email', 'password', 'displayName', 'username'],
+            required: ["email", "password", "displayName", "username"],
             provided: Object.keys(req.body),
           },
         },
-        ['Please provide all required fields: email, password, displayName, username']
+        [
+          "Please provide all required fields: email, password, displayName, username",
+        ],
       );
     }
 
     // Create user
     try {
       const newUser = await userRepository.create(userData);
-      ResponseHelper.created(res, newUser, 'User created successfully');
+      ResponseHelper.created(res, newUser, "User created successfully");
     } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+      if (
+        error instanceof Error &&
+        error.message === "EMAIL_OR_USERNAME_EXISTS"
+      ) {
         throw new BusinessLogicError(
-          'Email or username already exists',
+          "Email or username already exists",
           ErrorCode.BUSINESS_RULE_VIOLATION,
           {
-            operation: 'create_user',
-            additionalData: { email: userData.email, username: userData.username },
+            operation: "create_user",
+            additionalData: {
+              email: userData.email,
+              username: userData.username,
+            },
           },
-          ['Use a different email address', 'Use a different username']
+          ["Use a different email address", "Use a different username"],
         );
       }
       throw error;
     }
-  })
+  }),
 );
 
 /**
@@ -388,7 +401,7 @@ router.post(
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-  '/profile',
+  "/profile",
   authenticateToken,
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const userId = (req as any).user.id;
@@ -396,14 +409,18 @@ router.get(
     const user = await userRepository.findById(userId);
 
     if (!user) {
-      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-        operation: 'get_user_profile',
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+        operation: "get_user_profile",
         additionalData: { userId },
       });
     }
 
-    ResponseHelper.success(res, { user }, 'User profile retrieved successfully');
-  })
+    ResponseHelper.success(
+      res,
+      { user },
+      "User profile retrieved successfully",
+    );
+  }),
 );
 
 /**
@@ -463,7 +480,7 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.put(
-  '/profile',
+  "/profile",
   authenticateToken,
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const userId = (req as any).user.id;
@@ -476,47 +493,51 @@ router.put(
     const updatedUser = await userRepository.update(userId, profileData);
 
     if (!updatedUser) {
-      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-        operation: 'update_user_profile',
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+        operation: "update_user_profile",
         additionalData: { userId },
       });
     }
 
-    ResponseHelper.success(res, { user: updatedUser }, 'User profile updated successfully');
-  })
+    ResponseHelper.success(
+      res,
+      { user: updatedUser },
+      "User profile updated successfully",
+    );
+  }),
 );
 
 router.get(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin', 'manager']),
+  requireRole(["admin", "manager"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format (basic validation)
     if (!id || id.length !== 24) {
       throw new ValidationError(
-        'Invalid user ID format',
+        "Invalid user ID format",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'get_user_by_id',
+          operation: "get_user_by_id",
           additionalData: { providedId: id },
         },
-        ['Please provide a valid 24-character MongoDB ObjectId']
+        ["Please provide a valid 24-character MongoDB ObjectId"],
       );
     }
 
     const user = await userRepository.findById(id);
 
     if (!user) {
-      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-        operation: 'get_user_by_id',
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+        operation: "get_user_by_id",
         additionalData: { userId: id },
       });
     }
 
     ResponseHelper.success(res, user);
-  })
+  }),
 );
 
 /**
@@ -599,9 +620,9 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.put(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin']),
+  requireRole(["admin"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
     const updateData: UpdateUserRequest = req.body;
@@ -609,18 +630,18 @@ router.put(
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
       throw new ValidationError(
-        'Invalid user ID format',
+        "Invalid user ID format",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'update_user',
+          operation: "update_user",
           additionalData: { providedId: id },
         },
-        ['Please provide a valid 24-character MongoDB ObjectId']
+        ["Please provide a valid 24-character MongoDB ObjectId"],
       );
     }
 
     // Remove password from update data (should use separate endpoint for password changes)
-    if ('password' in updateData) {
+    if ("password" in updateData) {
       delete updateData.password;
     }
 
@@ -629,28 +650,31 @@ router.put(
       const updatedUser = await userRepository.update(id, updateData);
 
       if (!updatedUser) {
-        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-          operation: 'update_user',
+        throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+          operation: "update_user",
           additionalData: { userId: id },
         });
       }
 
-      ResponseHelper.success(res, updatedUser, 'User updated successfully');
+      ResponseHelper.success(res, updatedUser, "User updated successfully");
     } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+      if (
+        error instanceof Error &&
+        error.message === "EMAIL_OR_USERNAME_EXISTS"
+      ) {
         throw new BusinessLogicError(
-          'Email or username already exists',
+          "Email or username already exists",
           ErrorCode.BUSINESS_RULE_VIOLATION,
           {
-            operation: 'update_user',
+            operation: "update_user",
             additionalData: { userId: id, updateData },
           },
-          ['Use a different email address', 'Use a different username']
+          ["Use a different email address", "Use a different username"],
         );
       }
       throw error;
     }
-  })
+  }),
 );
 
 /**
@@ -703,30 +727,30 @@ router.put(
  *               $ref: '#/components/schemas/Error'
  */
 router.delete(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin']),
+  requireRole(["admin"]),
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
       throw new ValidationError(
-        'Invalid user ID format',
+        "Invalid user ID format",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'delete_user',
+          operation: "delete_user",
           additionalData: { providedId: id },
         },
-        ['Please provide a valid 24-character MongoDB ObjectId']
+        ["Please provide a valid 24-character MongoDB ObjectId"],
       );
     }
 
     // Check if user exists before deletion
     const existingUser = await userRepository.findById(id);
     if (!existingUser) {
-      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-        operation: 'delete_user',
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+        operation: "delete_user",
         additionalData: { userId: id },
       });
     }
@@ -738,18 +762,22 @@ router.delete(
 
     if (!deactivatedUser) {
       throw new BusinessLogicError(
-        'Failed to deactivate user',
+        "Failed to deactivate user",
         ErrorCode.BUSINESS_RULE_VIOLATION,
         {
-          operation: 'delete_user',
-          additionalData: { userId: id, reason: 'deactivation_failed' },
+          operation: "delete_user",
+          additionalData: { userId: id, reason: "deactivation_failed" },
         },
-        ['Try again later', 'Contact system administrator if problem persists']
+        ["Try again later", "Contact system administrator if problem persists"],
       );
     }
 
-    ResponseHelper.success(res, { id, isActive: false }, 'User deactivated successfully');
-  })
+    ResponseHelper.success(
+      res,
+      { id, isActive: false },
+      "User deactivated successfully",
+    );
+  }),
 );
 
 export default router;

@@ -3,10 +3,10 @@
  * Provides pre-configured campaign templates and smart recommendations
  */
 
-import express from 'express';
-import { CampaignTemplatesService } from '../services/campaign-templates.service';
-import { AICampaignAssistantService } from '../services/ai-campaign-assistant.service';
-import { authenticateToken, requireRole } from '../middleware/express-auth';
+import express from "express";
+import { CampaignTemplatesService } from "../services/campaign-templates.service";
+import { AICampaignAssistantService } from "../services/ai-campaign-assistant.service";
+import { authenticateToken, requireRole } from "../middleware/express-auth";
 
 const router = express.Router();
 
@@ -43,16 +43,18 @@ const router = express.Router();
  *                     $ref: '#/components/schemas/CampaignTemplate'
  */
 router.get(
-  '/',
+  "/",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   async (req, res) => {
     try {
       const { category } = req.query;
 
       let templates;
       if (category) {
-        templates = CampaignTemplatesService.getTemplatesByCategory(category as string);
+        templates = CampaignTemplatesService.getTemplatesByCategory(
+          category as string,
+        );
       } else {
         templates = CampaignTemplatesService.getTemplates();
       }
@@ -62,21 +64,26 @@ router.get(
         data: templates,
         meta: {
           total: templates.length,
-          categories: ['marketing', 'brand-monitoring', 'competitor-analysis', 'crisis-management'],
+          categories: [
+            "marketing",
+            "brand-monitoring",
+            "competitor-analysis",
+            "crisis-management",
+          ],
         },
       });
     } catch (error: unknown) {
-      console.error('Error fetching templates:', error);
+      console.error("Error fetching templates:", error);
       res.status(500).json({
         success: false,
         error: {
-          message: 'Failed to fetch campaign templates',
-          code: 'FETCH_TEMPLATES_ERROR',
+          message: "Failed to fetch campaign templates",
+          code: "FETCH_TEMPLATES_ERROR",
           timestamp: new Date().toISOString(),
         },
       });
     }
-  }
+  },
 );
 
 /**
@@ -102,9 +109,9 @@ router.get(
  *         description: Template not found
  */
 router.get(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -114,8 +121,8 @@ router.get(
         return res.status(404).json({
           success: false,
           error: {
-            message: 'Template not found',
-            code: 'TEMPLATE_NOT_FOUND',
+            message: "Template not found",
+            code: "TEMPLATE_NOT_FOUND",
             timestamp: new Date().toISOString(),
           },
         });
@@ -126,17 +133,17 @@ router.get(
         data: template,
       });
     } catch (error: unknown) {
-      console.error('Error fetching template:', error);
+      console.error("Error fetching template:", error);
       res.status(500).json({
         success: false,
         error: {
-          message: 'Failed to fetch template',
-          code: 'FETCH_TEMPLATE_ERROR',
+          message: "Failed to fetch template",
+          code: "FETCH_TEMPLATE_ERROR",
           timestamp: new Date().toISOString(),
         },
       });
     }
-  }
+  },
 );
 
 /**
@@ -201,9 +208,9 @@ router.get(
  *                   $ref: '#/components/schemas/CreateCampaignRequest'
  */
 router.post(
-  '/:id/generate',
+  "/:id/generate",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -213,35 +220,36 @@ router.post(
         return res.status(400).json({
           success: false,
           error: {
-            message: 'Campaign name and organization ID are required',
-            code: 'MISSING_REQUIRED_FIELDS',
+            message: "Campaign name and organization ID are required",
+            code: "MISSING_REQUIRED_FIELDS",
             timestamp: new Date().toISOString(),
           },
         });
       }
 
-      const campaignConfig = CampaignTemplatesService.generateCampaignFromTemplate(id, {
-        name,
-        hashtags,
-        keywords,
-        mentions,
-        organizationId,
-      });
+      const campaignConfig =
+        CampaignTemplatesService.generateCampaignFromTemplate(id, {
+          name,
+          hashtags,
+          keywords,
+          mentions,
+          organizationId,
+        });
 
       res.json({
         success: true,
         data: campaignConfig,
-        message: 'Campaign configuration generated from template',
+        message: "Campaign configuration generated from template",
       });
     } catch (error: unknown) {
-      console.error('Error generating campaign from template:', error);
+      console.error("Error generating campaign from template:", error);
 
-      if (error instanceof Error && error.message === 'Template not found') {
+      if (error instanceof Error && error.message === "Template not found") {
         return res.status(404).json({
           success: false,
           error: {
-            message: 'Template not found',
-            code: 'TEMPLATE_NOT_FOUND',
+            message: "Template not found",
+            code: "TEMPLATE_NOT_FOUND",
             timestamp: new Date().toISOString(),
           },
         });
@@ -250,13 +258,13 @@ router.post(
       res.status(500).json({
         success: false,
         error: {
-          message: 'Failed to generate campaign from template',
-          code: 'GENERATE_CAMPAIGN_ERROR',
+          message: "Failed to generate campaign from template",
+          code: "GENERATE_CAMPAIGN_ERROR",
           timestamp: new Date().toISOString(),
         },
       });
     }
-  }
+  },
 );
 
 /**
@@ -322,32 +330,33 @@ router.post(
  *                         type: string
  */
 router.post(
-  '/smart-suggestions',
+  "/smart-suggestions",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   async (req, res) => {
     try {
       const userInput = req.body;
 
-      const suggestions = AICampaignAssistantService.generateSmartCampaignSuggestions(userInput);
+      const suggestions =
+        AICampaignAssistantService.generateSmartCampaignSuggestions(userInput);
 
       res.json({
         success: true,
         data: suggestions,
-        message: 'Smart campaign suggestions generated',
+        message: "Smart campaign suggestions generated",
       });
     } catch (error: unknown) {
-      console.error('Error generating smart suggestions:', error);
+      console.error("Error generating smart suggestions:", error);
       res.status(500).json({
         success: false,
         error: {
-          message: 'Failed to generate smart suggestions',
-          code: 'SMART_SUGGESTIONS_ERROR',
+          message: "Failed to generate smart suggestions",
+          code: "SMART_SUGGESTIONS_ERROR",
           timestamp: new Date().toISOString(),
         },
       });
     }
-  }
+  },
 );
 
 export default router;

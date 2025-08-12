@@ -5,9 +5,14 @@
  * It handles I/O-bound tasks like caching, logging, and data mapping (DTOs),
  * while delegating the core analysis to the pure SentimentAnalysisEngine.
  */
-import { NaiveBayesTrainingExample } from '../../services/naive-bayes-sentiment.service';
-import { SentimentAnalysisEngine } from './engine';
-import { AnalysisRequest, AnalysisResult, SentimentOrchestrator, TweetDTO } from './types';
+import { NaiveBayesTrainingExample } from "../../services/naive-bayes-sentiment.service";
+import { SentimentAnalysisEngine } from "./engine";
+import {
+  AnalysisRequest,
+  AnalysisResult,
+  SentimentOrchestrator,
+  TweetDTO,
+} from "./types";
 
 // A simple in-memory cache for demonstration purposes.
 // In a production environment, this would be replaced with Redis, Memcached, etc.
@@ -28,9 +33,11 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    * @param examples - Training data.
    */
   trainEngine(examples: NaiveBayesTrainingExample[]): void {
-    console.log(`[Orchestrator] Starting training with ${examples.length} examples...`);
+    console.log(
+      `[Orchestrator] Starting training with ${examples.length} examples...`,
+    );
     this.engine.train(examples);
-    console.log('[Orchestrator] Training complete.');
+    console.log("[Orchestrator] Training complete.");
   }
 
   /**
@@ -45,14 +52,16 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       return cache.get(cacheKey)!;
     }
 
-    console.log(`[Orchestrator] Cache miss. Analyzing text: "${request.text.substring(0, 50)}..."`);
+    console.log(
+      `[Orchestrator] Cache miss. Analyzing text: "${request.text.substring(0, 50)}..."`,
+    );
     try {
       const result = await this.engine.analyze(request);
       cache.set(cacheKey, result);
       return result;
     } catch (error) {
-      console.error('[Orchestrator] Error during text analysis:', error);
-      throw new Error('Failed to analyze text.');
+      console.error("[Orchestrator] Error during text analysis:", error);
+      throw new Error("Failed to analyze text.");
     }
   }
 
@@ -61,7 +70,9 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    * @param tweet - The tweet data transfer object.
    * @returns The sentiment analysis result, including the tweet ID.
    */
-  async analyzeTweet(tweet: TweetDTO): Promise<AnalysisResult & { tweetId: string }> {
+  async analyzeTweet(
+    tweet: TweetDTO,
+  ): Promise<AnalysisResult & { tweetId: string }> {
     const cacheKey = `tweet:${tweet.id}`;
     if (cache.has(cacheKey)) {
       console.log(`[Orchestrator] Cache hit for tweet: ${tweet.id}`);
@@ -80,7 +91,10 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       cache.set(cacheKey, result);
       return { ...result, tweetId: tweet.id };
     } catch (error) {
-      console.error(`[Orchestrator] Error during tweet analysis for ${tweet.id}:`, error);
+      console.error(
+        `[Orchestrator] Error during tweet analysis for ${tweet.id}:`,
+        error,
+      );
       throw new Error(`Failed to analyze tweet ${tweet.id}.`);
     }
   }
@@ -90,10 +104,16 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    * @param tweets - An array of tweet DTOs.
    * @returns An array of analysis results.
    */
-  async analyzeTweetsBatch(tweets: TweetDTO[]): Promise<(AnalysisResult & { tweetId: string })[]> {
-    console.log(`[Orchestrator] Starting batch analysis for ${tweets.length} tweets.`);
-    const results = await Promise.all(tweets.map((tweet) => this.analyzeTweet(tweet)));
-    console.log('[Orchestrator] Batch analysis complete.');
+  async analyzeTweetsBatch(
+    tweets: TweetDTO[],
+  ): Promise<(AnalysisResult & { tweetId: string })[]> {
+    console.log(
+      `[Orchestrator] Starting batch analysis for ${tweets.length} tweets.`,
+    );
+    const results = await Promise.all(
+      tweets.map((tweet) => this.analyzeTweet(tweet)),
+    );
+    console.log("[Orchestrator] Batch analysis complete.");
     return results;
   }
 }

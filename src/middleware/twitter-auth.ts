@@ -3,8 +3,8 @@
  * Optional middleware to check Twitter authentication status
  */
 
-import { NextFunction, Request, Response } from 'express';
-import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
+import { NextFunction, Request, Response } from "express";
+import { TwitterAuthManager } from "../services/twitter-auth-manager.service";
 
 // Extend Request interface to include Twitter auth info
 export interface TwitterAuthenticatedRequest extends Request {
@@ -22,7 +22,7 @@ export interface TwitterAuthenticatedRequest extends Request {
 export const checkTwitterAuth = async (
   req: TwitterAuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const authManager = TwitterAuthManager.getInstance();
@@ -38,7 +38,7 @@ export const checkTwitterAuth = async (
     // Always continue to next middleware
     next();
   } catch (error) {
-    console.error('Error checking Twitter auth:', error);
+    console.error("Error checking Twitter auth:", error);
 
     // Set default values and continue
     req.twitterAuth = {
@@ -58,7 +58,7 @@ export const checkTwitterAuth = async (
 export const requireTwitterAuth = async (
   req: TwitterAuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const authManager = TwitterAuthManager.getInstance();
@@ -67,10 +67,10 @@ export const requireTwitterAuth = async (
     if (!sessionInfo.authenticated) {
       res.status(401).json({
         success: false,
-        message: 'Twitter authentication required',
-        error: 'NO_TWITTER_AUTH',
+        message: "Twitter authentication required",
+        error: "NO_TWITTER_AUTH",
         suggestion:
-          'Authenticate via /api/v1/twitter-auth/login (and ensure credentials or encrypted creds are configured)',
+          "Authenticate via /api/v1/twitter-auth/login (and ensure credentials or encrypted creds are configured)",
       });
       return;
     }
@@ -84,10 +84,10 @@ export const requireTwitterAuth = async (
 
     next();
   } catch (error) {
-    console.error('Error requiring Twitter auth:', error);
+    console.error("Error requiring Twitter auth:", error);
     res.status(500).json({
       success: false,
-      message: 'Error checking Twitter authentication',
+      message: "Error checking Twitter authentication",
     });
   }
 };
@@ -112,15 +112,15 @@ export class TwitterAuthStatus {
         cookieCount: sessionInfo.cookieCount || 0,
         suggestion: sessionInfo.authenticated
           ? undefined
-          : 'Authenticate via /api/v1/twitter-auth/login (configure TWITTER_* envs or encrypted creds)',
+          : "Authenticate via /api/v1/twitter-auth/login (configure TWITTER_* envs or encrypted creds)",
       };
     } catch (error) {
-      console.error('Error getting Twitter auth status:', error);
+      console.error("Error getting Twitter auth status:", error);
       return {
         authenticated: false,
         hasValidSession: false,
         cookieCount: 0,
-        suggestion: 'Error checking authentication status',
+        suggestion: "Error checking authentication status",
       };
     }
   }

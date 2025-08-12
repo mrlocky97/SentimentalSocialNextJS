@@ -3,14 +3,14 @@
  * Defines data structures for tweets, users, and social media data
  */
 
-import { CampaignStatus } from '../enums/campaign.enum';
-import { Label } from '../enums/sentiment.enum';
+import { CampaignStatus } from "../enums/campaign.enum";
+import { Label } from "../enums/sentiment.enum";
 import {
   PriorityScrapingStrategy,
   TweetCollectionJobStatus,
   TweetCookieSameSite,
   TwitterRateLimitStrategy,
-} from '../enums/tweet.enum';
+} from "../enums/tweet.enum";
 
 // Core Twitter Types
 export interface Tweet {

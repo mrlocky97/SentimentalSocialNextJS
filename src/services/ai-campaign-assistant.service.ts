@@ -7,8 +7,11 @@ import {
   AssistantRecommendationType,
   AssistantRecommendationUrgency,
   CampaignHealthScoreGrade,
-} from '../enums/campaign.enum';
-import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
+} from "../enums/campaign.enum";
+import {
+  AssistantRecommendation,
+  CampaignHealthScore,
+} from "../types/campaign";
 
 export class AICampaignAssistantService {
   /**
@@ -18,21 +21,21 @@ export class AICampaignAssistantService {
     metrics: any,
     _userHistory: any[],
     user?: any,
-    campaign?: any
+    campaign?: any,
   ): AssistantRecommendation[] {
     const recommendations: AssistantRecommendation[] = [];
 
     // Onboarding recommendations for new users
-    if (user?.experience === 'beginner') {
+    if (user?.experience === "beginner") {
       recommendations.push({
-        id: 'beginner-hashtag-tip',
+        id: "beginner-hashtag-tip",
         type: AssistantRecommendationType.learningTip,
         urgency: AssistantRecommendationUrgency.low,
-        title: '💡 Pro Tip: Hashtag Strategy',
+        title: "💡 Pro Tip: Hashtag Strategy",
         message:
-          'Use 3-5 relevant hashtags per campaign. Too many can dilute your focus, too few limit your reach.',
+          "Use 3-5 relevant hashtags per campaign. Too many can dilute your focus, too few limit your reach.",
         learnMore:
-          'Research shows campaigns with 3-5 targeted hashtags perform 40% better than those with 10+ hashtags.',
+          "Research shows campaigns with 3-5 targeted hashtags perform 40% better than those with 10+ hashtags.",
         dismissible: true,
         showUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Show for 1 week
       });
@@ -41,16 +44,16 @@ export class AICampaignAssistantService {
     // Performance-based recommendations
     if (metrics.sentimentScore < 0) {
       recommendations.push({
-        id: 'negative-sentiment-action',
+        id: "negative-sentiment-action",
         type: AssistantRecommendationType.quickAction,
         urgency: AssistantRecommendationUrgency.high,
-        title: '⚠️ Negative Sentiment Alert',
+        title: "⚠️ Negative Sentiment Alert",
         message:
-          'Your campaign sentiment is trending negative. Take immediate action to prevent crisis.',
+          "Your campaign sentiment is trending negative. Take immediate action to prevent crisis.",
         actionButton: {
-          text: 'View Negative Mentions',
-          action: 'navigate_to_negative_tweets',
-          parameters: { campaignId: campaign?.id, sentiment: 'negative' },
+          text: "View Negative Mentions",
+          action: "navigate_to_negative_tweets",
+          parameters: { campaignId: campaign?.id, sentiment: "negative" },
         },
         dismissible: false,
       });
@@ -59,14 +62,15 @@ export class AICampaignAssistantService {
     // Optimization opportunities
     if (!campaign?.sentimentAnalysis) {
       recommendations.push({
-        id: 'enable-sentiment-analysis',
+        id: "enable-sentiment-analysis",
         type: AssistantRecommendationType.strategicAdvice,
         urgency: AssistantRecommendationUrgency.medium,
-        title: '📊 Unlock Deeper Insights',
-        message: 'Enable sentiment analysis to understand how people really feel about your brand.',
+        title: "📊 Unlock Deeper Insights",
+        message:
+          "Enable sentiment analysis to understand how people really feel about your brand.",
         actionButton: {
-          text: 'Enable Sentiment Analysis',
-          action: 'update_campaign_settings',
+          text: "Enable Sentiment Analysis",
+          action: "update_campaign_settings",
           parameters: { campaignId: campaign?.id, sentimentAnalysis: true },
         },
         dismissible: true,
@@ -75,13 +79,13 @@ export class AICampaignAssistantService {
 
     // Industry best practices
     recommendations.push({
-      id: 'best-practice-timing',
+      id: "best-practice-timing",
       type: AssistantRecommendationType.bestPractice,
       urgency: AssistantRecommendationUrgency.low,
-      title: '🕐 Optimal Posting Times',
+      title: "🕐 Optimal Posting Times",
       message:
-        'Your audience is most active on weekdays between 9-11 AM and 2-4 PM. Schedule important updates during these windows.',
-      learnMore: 'Based on analysis of similar campaigns in your industry.',
+        "Your audience is most active on weekdays between 9-11 AM and 2-4 PM. Schedule important updates during these windows.",
+      learnMore: "Based on analysis of similar campaigns in your industry.",
       dismissible: true,
     });
 
@@ -94,7 +98,10 @@ export class AICampaignAssistantService {
   /**
    * Calculate comprehensive campaign health score
    */
-  static calculateCampaignHealth(campaign: any, metrics: any): CampaignHealthScore {
+  static calculateCampaignHealth(
+    campaign: any,
+    metrics: any,
+  ): CampaignHealthScore {
     let setupScore = 0;
     let performanceScore = 0;
     let optimizationScore = 0;
@@ -106,25 +113,25 @@ export class AICampaignAssistantService {
     if (campaign.hashtags.length >= 3 && campaign.hashtags.length <= 7) {
       setupScore += 5;
     } else {
-      improvements.push('Optimize hashtag count (3-7 recommended)');
+      improvements.push("Optimize hashtag count (3-7 recommended)");
     }
 
     if (campaign.description && campaign.description.length > 50) {
       setupScore += 5;
     } else {
-      improvements.push('Add detailed campaign description');
+      improvements.push("Add detailed campaign description");
     }
 
     if (campaign.sentimentAnalysis && campaign.emotionAnalysis) {
       setupScore += 10;
     } else {
-      improvements.push('Enable comprehensive analysis features');
+      improvements.push("Enable comprehensive analysis features");
     }
 
     if (campaign.endDate) {
       setupScore += 5;
     } else {
-      improvements.push('Set campaign end date for better tracking');
+      improvements.push("Set campaign end date for better tracking");
     }
 
     // Performance Score (25 points max)
@@ -133,7 +140,9 @@ export class AICampaignAssistantService {
     } else if (metrics.sentimentScore > 0) {
       performanceScore += 5;
     } else {
-      improvements.push('Improve sentiment score through better content strategy');
+      improvements.push(
+        "Improve sentiment score through better content strategy",
+      );
     }
 
     if (metrics.avgEngagementRate > 0.03) {
@@ -141,29 +150,34 @@ export class AICampaignAssistantService {
     } else if (metrics.avgEngagementRate > 0.01) {
       performanceScore += 5;
     } else {
-      improvements.push('Increase engagement through interactive content');
+      improvements.push("Increase engagement through interactive content");
     }
 
     if (metrics.totalTweets > 100) {
       performanceScore += 5;
     } else {
-      improvements.push('Boost campaign visibility to increase mention volume');
+      improvements.push("Boost campaign visibility to increase mention volume");
     }
 
     // Optimization Score (25 points max)
-    const hashtagPerformance = metrics.topHashtags[0]?.count / metrics.totalTweets;
+    const hashtagPerformance =
+      metrics.topHashtags[0]?.count / metrics.totalTweets;
     if (hashtagPerformance > 0.5) {
       optimizationScore += 10;
     } else if (hashtagPerformance > 0.2) {
       optimizationScore += 5;
     } else {
-      improvements.push('Improve hashtag adoption rate');
+      improvements.push("Improve hashtag adoption rate");
     }
 
-    if (metrics.hourlyDistribution.some((h: any) => h.count > metrics.totalTweets * 0.2)) {
+    if (
+      metrics.hourlyDistribution.some(
+        (h: any) => h.count > metrics.totalTweets * 0.2,
+      )
+    ) {
       optimizationScore += 10;
     } else {
-      improvements.push('Optimize content timing for peak engagement');
+      improvements.push("Optimize content timing for peak engagement");
     }
 
     optimizationScore += 5; // Base optimization points
@@ -171,20 +185,21 @@ export class AICampaignAssistantService {
     // Risk Score (25 points max, deduct for risks)
     if (metrics.sentimentScore < -0.3) {
       riskScore -= 15;
-      improvements.push('URGENT: Address negative sentiment crisis');
+      improvements.push("URGENT: Address negative sentiment crisis");
     }
 
     const negativeRatio = metrics.negativeCount / metrics.totalTweets;
     if (negativeRatio > 0.4) {
       riskScore -= 10;
-      improvements.push('Monitor and respond to negative mentions');
+      improvements.push("Monitor and respond to negative mentions");
     }
 
     riskScore = Math.max(0, Math.min(25, riskScore / 4)); // Scale to 25 points
 
-    const overall = setupScore + performanceScore + optimizationScore + riskScore;
+    const overall =
+      setupScore + performanceScore + optimizationScore + riskScore;
 
-    let grade: CampaignHealthScore['grade'];
+    let grade: CampaignHealthScore["grade"];
     if (overall >= 90) grade = CampaignHealthScoreGrade.APlus;
     else if (overall >= 85) grade = CampaignHealthScoreGrade.A;
     else if (overall >= 80) grade = CampaignHealthScoreGrade.BPlus;
@@ -227,51 +242,74 @@ export class AICampaignAssistantService {
     const { industry, goal, brandName, duration } = userInput;
 
     // Smart name generation
-    const suggestedName = `${brandName || 'Brand'} ${goal || 'Monitoring'} - ${new Date().toLocaleDateString()}`;
+    const suggestedName = `${brandName || "Brand"} ${goal || "Monitoring"} - ${new Date().toLocaleDateString()}`;
 
     // Industry-specific hashtag suggestions
     const industryHashtags: Record<string, string[]> = {
-      technology: ['#innovation', '#tech', '#digital', '#AI', '#software'],
-      fashion: ['#fashion', '#style', '#trend', '#outfit', '#designer'],
-      food: ['#foodie', '#recipe', '#restaurant', '#cooking', '#delicious'],
-      fitness: ['#fitness', '#workout', '#health', '#gym', '#motivation'],
-      travel: ['#travel', '#adventure', '#explore', '#vacation', '#wanderlust'],
+      technology: ["#innovation", "#tech", "#digital", "#AI", "#software"],
+      fashion: ["#fashion", "#style", "#trend", "#outfit", "#designer"],
+      food: ["#foodie", "#recipe", "#restaurant", "#cooking", "#delicious"],
+      fitness: ["#fitness", "#workout", "#health", "#gym", "#motivation"],
+      travel: ["#travel", "#adventure", "#explore", "#vacation", "#wanderlust"],
     };
 
     const suggestedHashtags = [
-      `#${brandName?.toLowerCase().replace(/\s+/g, '')}`,
-      ...(industryHashtags[industry || 'technology'] || industryHashtags.technology).slice(0, 4),
+      `#${brandName?.toLowerCase().replace(/\s+/g, "")}`,
+      ...(
+        industryHashtags[industry || "technology"] ||
+        industryHashtags.technology
+      ).slice(0, 4),
     ];
 
     // Goal-specific keywords
     const goalKeywords: Record<string, string[]> = {
-      'brand monitoring': ['brand perception', 'customer feedback', 'brand mentions'],
-      'product launch': ['new product', 'launch event', 'innovation', 'available now'],
-      'competitor analysis': ['competitor comparison', 'market analysis', 'alternative'],
-      'crisis management': ['issue resolution', 'customer service', 'brand protection'],
+      "brand monitoring": [
+        "brand perception",
+        "customer feedback",
+        "brand mentions",
+      ],
+      "product launch": [
+        "new product",
+        "launch event",
+        "innovation",
+        "available now",
+      ],
+      "competitor analysis": [
+        "competitor comparison",
+        "market analysis",
+        "alternative",
+      ],
+      "crisis management": [
+        "issue resolution",
+        "customer service",
+        "brand protection",
+      ],
     };
 
     const suggestedKeywords = [
-      brandName || 'brand',
-      ...(goalKeywords[goal || 'brand monitoring'] || goalKeywords['brand monitoring']),
+      brandName || "brand",
+      ...(goalKeywords[goal || "brand monitoring"] ||
+        goalKeywords["brand monitoring"]),
     ];
 
     const suggestedDuration =
-      duration || (goal === 'crisis management' ? 7 : goal === 'product launch' ? 14 : 30);
+      duration ||
+      (goal === "crisis management" ? 7 : goal === "product launch" ? 14 : 30);
 
     const suggestedSettings = {
       sentimentAnalysis: true,
-      emotionAnalysis: goal === 'brand monitoring' || goal === 'crisis management',
-      influencerAnalysis: goal === 'product launch',
-      maxTweets: goal === 'crisis management' ? 10000 : 50000,
-      languages: ['en'],
-      dataSources: ['twitter', 'instagram'],
+      emotionAnalysis:
+        goal === "brand monitoring" || goal === "crisis management",
+      influencerAnalysis: goal === "product launch",
+      maxTweets: goal === "crisis management" ? 10000 : 50000,
+      languages: ["en"],
+      dataSources: ["twitter", "instagram"],
     };
 
     const reasoning = [
       `Campaign duration set to ${suggestedDuration} days based on ${goal} best practices`,
       `Hashtags selected for ${industry} industry relevance and searchability`,
-      'Sentiment analysis enabled for brand perception monitoring',
+      "Sentiment analysis enabled for brand perception monitoring",
       `Settings optimized for ${goal} campaign objectives`,
     ];
 
@@ -296,39 +334,41 @@ export class AICampaignAssistantService {
     const helpContent = {
       dashboard: {
         tips: [
-          'Use filters to focus on specific time periods or sentiment ranges',
-          'Click on any chart element to drill down into detailed data',
-          'Set up alerts to be notified of significant changes',
+          "Use filters to focus on specific time periods or sentiment ranges",
+          "Click on any chart element to drill down into detailed data",
+          "Set up alerts to be notified of significant changes",
         ],
         shortcuts: [
-          { key: 'Ctrl+F', action: 'Quick search campaigns' },
-          { key: 'N', action: 'Create new campaign' },
-          { key: 'R', action: 'Refresh data' },
+          { key: "Ctrl+F", action: "Quick search campaigns" },
+          { key: "N", action: "Create new campaign" },
+          { key: "R", action: "Refresh data" },
         ],
       },
       campaigns: {
         tips: [
-          'Use campaign templates to get started quickly',
-          'Monitor your campaign health score regularly',
-          'Set realistic goals and track progress daily',
+          "Use campaign templates to get started quickly",
+          "Monitor your campaign health score regularly",
+          "Set realistic goals and track progress daily",
         ],
         shortcuts: [
-          { key: 'Ctrl+N', action: 'New campaign' },
-          { key: 'Ctrl+E', action: 'Edit selected campaign' },
-          { key: 'Space', action: 'Play/pause campaign' },
+          { key: "Ctrl+N", action: "New campaign" },
+          { key: "Ctrl+E", action: "Edit selected campaign" },
+          { key: "Space", action: "Play/pause campaign" },
         ],
       },
     };
 
-    const pageHelp = helpContent[currentPage as keyof typeof helpContent] || helpContent.dashboard;
+    const pageHelp =
+      helpContent[currentPage as keyof typeof helpContent] ||
+      helpContent.dashboard;
 
     return {
       tips: pageHelp.tips,
       shortcuts: pageHelp.shortcuts,
       relatedHelp: [
-        { title: 'Campaign Best Practices', url: '/help/campaigns' },
-        { title: 'Understanding Sentiment Analysis', url: '/help/sentiment' },
-        { title: 'Crisis Management Guide', url: '/help/crisis' },
+        { title: "Campaign Best Practices", url: "/help/campaigns" },
+        { title: "Understanding Sentiment Analysis", url: "/help/sentiment" },
+        { title: "Crisis Management Guide", url: "/help/crisis" },
       ],
     };
   }
@@ -350,36 +390,37 @@ export class AICampaignAssistantService {
   }> {
     return [
       {
-        id: 'create-first-campaign',
-        title: 'Create Your First Campaign',
-        description: 'Set up monitoring for your brand or product',
+        id: "create-first-campaign",
+        title: "Create Your First Campaign",
+        description: "Set up monitoring for your brand or product",
         completed: userProgress.campaignsCreated > 0,
-        action: 'create_campaign',
-        estimatedTime: '5 minutes',
+        action: "create_campaign",
+        estimatedTime: "5 minutes",
       },
       {
-        id: 'explore-insights',
-        title: 'Explore Campaign Insights',
-        description: 'Learn how to read sentiment analysis and engagement metrics',
+        id: "explore-insights",
+        title: "Explore Campaign Insights",
+        description:
+          "Learn how to read sentiment analysis and engagement metrics",
         completed: userProgress.insightsViewed > 5,
-        action: 'view_insights_tutorial',
-        estimatedTime: '3 minutes',
+        action: "view_insights_tutorial",
+        estimatedTime: "3 minutes",
       },
       {
-        id: 'generate-report',
-        title: 'Generate Your First Report',
-        description: 'Create a comprehensive campaign performance report',
+        id: "generate-report",
+        title: "Generate Your First Report",
+        description: "Create a comprehensive campaign performance report",
         completed: userProgress.reportsGenerated > 0,
-        action: 'generate_report',
-        estimatedTime: '2 minutes',
+        action: "generate_report",
+        estimatedTime: "2 minutes",
       },
       {
-        id: 'set-up-alerts',
-        title: 'Set Up Smart Alerts',
-        description: 'Get notified when important events happen',
+        id: "set-up-alerts",
+        title: "Set Up Smart Alerts",
+        description: "Get notified when important events happen",
         completed: false, // This would check if user has alerts configured
-        action: 'configure_alerts',
-        estimatedTime: '3 minutes',
+        action: "configure_alerts",
+        estimatedTime: "3 minutes",
       },
     ];
   }

@@ -2,10 +2,5 @@
   "version": "2.0.0",
   "trainingDate": "2025-08-11T21:13:14.457Z",
   "datasetSize": 4005,
-  "features": [
-    "Social media",
-    "Emojis",
-    "Sarcasm",
-    "Multilingual"
-  ]
+  "features": ["Social media", "Emojis", "Sarcasm", "Multilingual"]
 }

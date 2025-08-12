@@ -3,8 +3,8 @@
  * Singleton pattern for database connection with improved error handling
  */
 
-import mongoose from 'mongoose';
-import { databaseConfig } from '../config/database';
+import mongoose from "mongoose";
+import { databaseConfig } from "../config/database";
 
 class DatabaseConnection {
   private static instance: DatabaseConnection;
@@ -25,12 +25,12 @@ class DatabaseConnection {
 
   async connect(): Promise<void> {
     if (this.isConnected) {
-      console.log('✅ MongoDB already connected');
+      console.log("✅ MongoDB already connected");
       return;
     }
 
     if (this.isConnecting) {
-      console.log('⏳ MongoDB connection in progress...');
+      console.log("⏳ MongoDB connection in progress...");
       return;
     }
 
@@ -40,14 +40,14 @@ class DatabaseConnection {
       const mongoUri = databaseConfig.mongodb.uri;
 
       if (!mongoUri) {
-        throw new Error('MongoDB URI is not defined in environment variables');
+        throw new Error("MongoDB URI is not defined in environment variables");
       }
 
-      console.log('🔌 Connecting to MongoDB...');
-      console.log(`📍 URI: ${mongoUri.replace(/\/\/.*@/, '//***:***@')}`); // Hide credentials in logs
+      console.log("🔌 Connecting to MongoDB...");
+      console.log(`📍 URI: ${mongoUri.replace(/\/\/.*@/, "//***:***@")}`); // Hide credentials in logs
 
       // Set mongoose configuration
-      mongoose.set('strictQuery', false);
+      mongoose.set("strictQuery", false);
 
       await mongoose.connect(mongoUri, {
         ...databaseConfig.mongodb.options,
@@ -57,7 +57,7 @@ class DatabaseConnection {
       this.isConnecting = false;
       this.connectionAttempts = 0;
 
-      console.log('✅ MongoDB connected successfully');
+      console.log("✅ MongoDB connected successfully");
       console.log(`🏷️  Database: ${mongoose.connection.db?.databaseName}`);
 
       // Setup event handlers
@@ -68,16 +68,20 @@ class DatabaseConnection {
 
       console.error(
         `❌ MongoDB connection failed (attempt ${this.connectionAttempts}/${this.maxRetries}):`,
-        error
+        error,
       );
 
       if (this.connectionAttempts < this.maxRetries) {
-        console.log(`🔄 Retrying connection in ${this.retryDelay / 1000} seconds...`);
+        console.log(
+          `🔄 Retrying connection in ${this.retryDelay / 1000} seconds...`,
+        );
         setTimeout(() => this.connect(), this.retryDelay);
         return;
       }
 
-      console.error('💥 Maximum connection attempts exceeded. Please check MongoDB service.');
+      console.error(
+        "💥 Maximum connection attempts exceeded. Please check MongoDB service.",
+      );
       this.isConnected = false;
       throw error;
     }
@@ -88,36 +92,38 @@ class DatabaseConnection {
    */
   private setupEventHandlers(): void {
     // Handle connection events
-    mongoose.connection.on('error', (error) => {
-      console.error('❌ MongoDB connection error:', error);
+    mongoose.connection.on("error", (error) => {
+      console.error("❌ MongoDB connection error:", error);
       this.isConnected = false;
     });
 
-    mongoose.connection.on('disconnected', () => {
-      console.log('⚠️ MongoDB disconnected - attempting reconnection...');
+    mongoose.connection.on("disconnected", () => {
+      console.log("⚠️ MongoDB disconnected - attempting reconnection...");
       this.isConnected = false;
       // Auto-reconnect after disconnection
       setTimeout(() => {
         if (!this.isConnected && !this.isConnecting) {
-          this.connect().catch((err) => console.error('Auto-reconnect failed:', err));
+          this.connect().catch((err) =>
+            console.error("Auto-reconnect failed:", err),
+          );
         }
       }, this.retryDelay);
     });
 
-    mongoose.connection.on('reconnected', () => {
-      console.log('🔄 MongoDB reconnected');
+    mongoose.connection.on("reconnected", () => {
+      console.log("🔄 MongoDB reconnected");
       this.isConnected = true;
     });
 
     // Graceful shutdown
-    process.on('SIGINT', async () => {
-      console.log('📦 Gracefully shutting down MongoDB connection...');
+    process.on("SIGINT", async () => {
+      console.log("📦 Gracefully shutting down MongoDB connection...");
       await this.disconnect();
       process.exit(0);
     });
 
-    process.on('SIGTERM', async () => {
-      console.log('📦 Gracefully shutting down MongoDB connection...');
+    process.on("SIGTERM", async () => {
+      console.log("📦 Gracefully shutting down MongoDB connection...");
       await this.disconnect();
       process.exit(0);
     });
@@ -131,16 +137,16 @@ class DatabaseConnection {
     try {
       await mongoose.disconnect();
       this.isConnected = false;
-      console.log('📴 MongoDB disconnected successfully');
+      console.log("📴 MongoDB disconnected successfully");
     } catch (error) {
-      console.error('❌ Error disconnecting from MongoDB:', error);
+      console.error("❌ Error disconnecting from MongoDB:", error);
       throw error;
     }
   }
 
   getConnection(): typeof mongoose {
     if (!this.isConnected) {
-      throw new Error('Database not connected. Call connect() first.');
+      throw new Error("Database not connected. Call connect() first.");
     }
     return mongoose;
   }
@@ -158,20 +164,22 @@ class DatabaseConnection {
     database: string;
   }> {
     const readyStates = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting',
+      0: "disconnected",
+      1: "connected",
+      2: "connecting",
+      3: "disconnecting",
     };
 
     return {
       connected: this.isConnected,
       readyState: mongoose.connection.readyState,
       readyStateText:
-        readyStates[mongoose.connection.readyState as keyof typeof readyStates] || 'unknown',
-      host: mongoose.connection.host || 'unknown',
+        readyStates[
+          mongoose.connection.readyState as keyof typeof readyStates
+        ] || "unknown",
+      host: mongoose.connection.host || "unknown",
       port: mongoose.connection.port || 0,
-      database: mongoose.connection.db?.databaseName || 'unknown',
+      database: mongoose.connection.db?.databaseName || "unknown",
     };
   }
 
@@ -185,7 +193,7 @@ class DatabaseConnection {
       await mongoose.connection.db?.admin().ping();
       return true;
     } catch (error) {
-      console.error('❌ MongoDB connection test failed:', error);
+      console.error("❌ MongoDB connection test failed:", error);
       return false;
     }
   }

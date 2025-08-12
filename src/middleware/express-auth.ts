@@ -3,9 +3,9 @@
  * Handles JWT token verification and user authentication for Express routes
  */
 
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { tokenBlacklistService } from '../lib/security/token-blacklist';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { tokenBlacklistService } from "../lib/security/token-blacklist";
 
 // Extend Request interface to include user
 export interface AuthenticatedRequest extends Request {
@@ -30,11 +30,15 @@ interface JwtPayload {
 const JWT_SECRET = (() => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    console.error('🔒 SECURITY ERROR: JWT_SECRET environment variable is required');
+    console.error(
+      "🔒 SECURITY ERROR: JWT_SECRET environment variable is required",
+    );
     process.exit(1);
   }
   if (secret.length < 32) {
-    console.error('🔒 SECURITY ERROR: JWT_SECRET must be at least 32 characters long');
+    console.error(
+      "🔒 SECURITY ERROR: JWT_SECRET must be at least 32 characters long",
+    );
     process.exit(1);
   }
   return secret;
@@ -46,17 +50,17 @@ const JWT_SECRET = (() => {
 export const authenticateToken = (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
     res.status(401).json({
       success: false,
       error: {
-        message: 'Access token is required',
-        code: 'TOKEN_REQUIRED',
+        message: "Access token is required",
+        code: "TOKEN_REQUIRED",
         timestamp: new Date().toISOString(),
       },
     });
@@ -68,8 +72,8 @@ export const authenticateToken = (
     res.status(401).json({
       success: false,
       error: {
-        message: 'Token has been invalidated',
-        code: 'TOKEN_BLACKLISTED',
+        message: "Token has been invalidated",
+        code: "TOKEN_BLACKLISTED",
         timestamp: new Date().toISOString(),
       },
     });
@@ -90,8 +94,8 @@ export const authenticateToken = (
       res.status(401).json({
         success: false,
         error: {
-          message: 'Access token has expired',
-          code: 'TOKEN_EXPIRED',
+          message: "Access token has expired",
+          code: "TOKEN_EXPIRED",
           timestamp: new Date().toISOString(),
         },
       });
@@ -102,8 +106,8 @@ export const authenticateToken = (
       res.status(401).json({
         success: false,
         error: {
-          message: 'Invalid access token',
-          code: 'INVALID_TOKEN',
+          message: "Invalid access token",
+          code: "INVALID_TOKEN",
           timestamp: new Date().toISOString(),
         },
       });
@@ -113,8 +117,8 @@ export const authenticateToken = (
     res.status(500).json({
       success: false,
       error: {
-        message: 'Token verification failed',
-        code: 'TOKEN_VERIFICATION_FAILED',
+        message: "Token verification failed",
+        code: "TOKEN_VERIFICATION_FAILED",
         timestamp: new Date().toISOString(),
       },
     });
@@ -125,13 +129,17 @@ export const authenticateToken = (
  * Middleware to check user roles
  */
 export const requireRole = (allowedRoles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+  return (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): void => {
     if (!req.user) {
       res.status(401).json({
         success: false,
         error: {
-          message: 'Authentication required',
-          code: 'AUTHENTICATION_REQUIRED',
+          message: "Authentication required",
+          code: "AUTHENTICATION_REQUIRED",
           timestamp: new Date().toISOString(),
         },
       });
@@ -142,8 +150,8 @@ export const requireRole = (allowedRoles: string[]) => {
       res.status(403).json({
         success: false,
         error: {
-          message: `Access denied. Required roles: ${allowedRoles.join(', ')}`,
-          code: 'INSUFFICIENT_PERMISSIONS',
+          message: `Access denied. Required roles: ${allowedRoles.join(", ")}`,
+          code: "INSUFFICIENT_PERMISSIONS",
           timestamp: new Date().toISOString(),
           requiredRoles: allowedRoles,
           userRole: req.user.role,
@@ -162,10 +170,10 @@ export const requireRole = (allowedRoles: string[]) => {
 export const optionalAuth = (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
     next();
@@ -190,18 +198,22 @@ export const optionalAuth = (
 /**
  * Generate JWT token
  */
-export const generateToken = (payload: Omit<JwtPayload, 'iat' | 'exp'>): string => {
+export const generateToken = (
+  payload: Omit<JwtPayload, "iat" | "exp">,
+): string => {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '1h', // 1 hour
+    expiresIn: "1h", // 1 hour
   });
 };
 
 /**
  * Generate refresh token
  */
-export const generateRefreshToken = (payload: Omit<JwtPayload, 'iat' | 'exp'>): string => {
+export const generateRefreshToken = (
+  payload: Omit<JwtPayload, "iat" | "exp">,
+): string => {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '7d', // 7 days
+    expiresIn: "7d", // 7 days
   });
 };
 
@@ -219,14 +231,18 @@ export const verifyRefreshToken = (token: string): JwtPayload | null => {
 /**
  * Admin only middleware
  */
-export const requireAdmin = requireRole(['admin']);
+export const requireAdmin = requireRole(["admin"]);
 
 /**
  * Manager or Admin middleware
  */
-export const requireManagerOrAdmin = requireRole(['manager', 'admin']);
+export const requireManagerOrAdmin = requireRole(["manager", "admin"]);
 
 /**
  * Analyst or higher middleware
  */
-export const requireAnalystOrHigher = requireRole(['analyst', 'manager', 'admin']);
+export const requireAnalystOrHigher = requireRole([
+  "analyst",
+  "manager",
+  "admin",
+]);

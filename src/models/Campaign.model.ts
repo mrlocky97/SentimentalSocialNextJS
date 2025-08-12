@@ -3,8 +3,12 @@
  * Mongoose schema and model for campaign data persistence
  */
 
-import mongoose, { Document, Schema } from 'mongoose';
-import { CampaignStatus, CampaignType, DataSource } from '../enums/campaign.enum';
+import mongoose, { Document, Schema } from "mongoose";
+import {
+  CampaignStatus,
+  CampaignType,
+  DataSource,
+} from "../enums/campaign.enum";
 
 export interface ICampaignDocument extends Document {
   name: string;
@@ -88,7 +92,7 @@ const geoLocationSchema = new Schema(
       lng: { type: Number, min: -180, max: 180 },
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const statsSchema = new Schema(
@@ -115,42 +119,43 @@ const statsSchema = new Schema(
       },
     ],
   },
-  { _id: false }
+  { _id: false },
 );
 
 const campaignSchema = new Schema<ICampaignDocument>(
   {
     name: {
       type: String,
-      required: [true, 'Campaign name is required'],
+      required: [true, "Campaign name is required"],
       trim: true,
-      minlength: [3, 'Campaign name must be at least 3 characters'],
-      maxlength: [100, 'Campaign name cannot exceed 100 characters'],
+      minlength: [3, "Campaign name must be at least 3 characters"],
+      maxlength: [100, "Campaign name cannot exceed 100 characters"],
       index: true,
     },
 
     description: {
       type: String,
       trim: true,
-      maxlength: [500, 'Description cannot exceed 500 characters'],
+      maxlength: [500, "Description cannot exceed 500 characters"],
     },
 
     type: {
       type: String,
-      required: [true, 'Campaign type is required'],
+      required: [true, "Campaign type is required"],
       enum: {
         values: Object.values(CampaignType),
-        message: 'Type must be one of: hashtag, keyword, mention, competitor',
+        message: "Type must be one of: hashtag, keyword, mention, competitor",
       },
       index: true,
     },
 
     status: {
       type: String,
-      required: [true, 'Campaign status is required'],
+      required: [true, "Campaign status is required"],
       enum: {
         values: Object.values(CampaignStatus),
-        message: 'Status must be one of: draft, active, paused, completed, archived',
+        message:
+          "Status must be one of: draft, active, paused, completed, archived",
       },
       default: CampaignStatus.draft,
       index: true,
@@ -161,7 +166,8 @@ const campaignSchema = new Schema<ICampaignDocument>(
         type: String,
         enum: {
           values: Object.values(DataSource),
-          message: 'Data source must be one of: twitter, instagram, facebook, tiktok, linkedin',
+          message:
+            "Data source must be one of: twitter, instagram, facebook, tiktok, linkedin",
         },
       },
     ],
@@ -170,7 +176,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
       {
         type: String,
         trim: true,
-        maxlength: [50, 'Hashtag cannot exceed 50 characters'],
+        maxlength: [50, "Hashtag cannot exceed 50 characters"],
       },
     ],
 
@@ -178,7 +184,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
       {
         type: String,
         trim: true,
-        maxlength: [100, 'Keyword cannot exceed 100 characters'],
+        maxlength: [100, "Keyword cannot exceed 100 characters"],
       },
     ],
 
@@ -186,33 +192,33 @@ const campaignSchema = new Schema<ICampaignDocument>(
       {
         type: String,
         trim: true,
-        maxlength: [50, 'Mention cannot exceed 50 characters'],
+        maxlength: [50, "Mention cannot exceed 50 characters"],
       },
     ],
 
     startDate: {
       type: Date,
-      required: [true, 'Start date is required'],
+      required: [true, "Start date is required"],
       index: true,
     },
 
     endDate: {
       type: Date,
-      required: [true, 'End date is required'],
+      required: [true, "End date is required"],
       index: true,
     },
 
     timezone: {
       type: String,
-      required: [true, 'Timezone is required'],
-      default: 'UTC',
+      required: [true, "Timezone is required"],
+      default: "UTC",
     },
 
     maxTweets: {
       type: Number,
-      required: [true, 'Max tweets limit is required'],
-      min: [100, 'Minimum tweets collection is 100'],
-      max: [1000000, 'Maximum tweets collection is 1,000,000'],
+      required: [true, "Max tweets limit is required"],
+      min: [100, "Minimum tweets collection is 100"],
+      max: [1000000, "Maximum tweets collection is 1,000,000"],
       default: 10000,
     },
 
@@ -226,9 +232,12 @@ const campaignSchema = new Schema<ICampaignDocument>(
     languages: [
       {
         type: String,
-        maxlength: [2, 'Language code must be 2 characters'],
-        minlength: [2, 'Language code must be 2 characters'],
-        match: [/^[a-z]{2}$/, 'Language code must be a valid 2-letter ISO code'],
+        maxlength: [2, "Language code must be 2 characters"],
+        minlength: [2, "Language code must be 2 characters"],
+        match: [
+          /^[a-z]{2}$/,
+          "Language code must be a valid 2-letter ISO code",
+        ],
       },
     ],
 
@@ -239,13 +248,13 @@ const campaignSchema = new Schema<ICampaignDocument>(
 
     organizationId: {
       type: String,
-      required: [true, 'Organization ID is required'],
+      required: [true, "Organization ID is required"],
       index: true,
     },
 
     createdBy: {
       type: String,
-      required: [true, 'Creator user ID is required'],
+      required: [true, "Creator user ID is required"],
       index: true,
     },
 
@@ -265,26 +274,32 @@ const campaignSchema = new Schema<ICampaignDocument>(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 // Pre-save middleware
-campaignSchema.pre('save', function (this: ICampaignDocument, next) {
-  if (this.hashtags.length === 0 && this.keywords.length === 0 && this.mentions.length === 0) {
-    next(new Error('At least one hashtag, keyword, or mention must be provided'));
+campaignSchema.pre("save", function (this: ICampaignDocument, next) {
+  if (
+    this.hashtags.length === 0 &&
+    this.keywords.length === 0 &&
+    this.mentions.length === 0
+  ) {
+    next(
+      new Error("At least one hashtag, keyword, or mention must be provided"),
+    );
     return;
   }
 
   if (this.dataSources.length === 0) {
-    next(new Error('At least one data source must be selected'));
+    next(new Error("At least one data source must be selected"));
     return;
   }
 
   const daysDiff = Math.ceil(
-    (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24)
+    (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24),
   );
   if (daysDiff > 365) {
-    next(new Error('Campaign duration cannot exceed 365 days'));
+    next(new Error("Campaign duration cannot exceed 365 days"));
     return;
   }
 
@@ -297,12 +312,16 @@ campaignSchema.methods.canUserEdit = function (userId: string): boolean {
 };
 
 campaignSchema.methods.getDurationInDays = function (): number {
-  return Math.ceil((this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil(
+    (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
 };
 
 campaignSchema.methods.isActive = function (): boolean {
   const now = new Date();
-  return this.status === 'active' && this.startDate <= now && this.endDate >= now;
+  return (
+    this.status === "active" && this.startDate <= now && this.endDate >= now
+  );
 };
 
 // Static methods
@@ -312,9 +331,15 @@ campaignSchema.statics.findByOrganization = function (organizationId: string) {
 
 campaignSchema.statics.findActiveByUser = function (userId: string) {
   return this.find({
-    $and: [{ status: 'active' }, { $or: [{ createdBy: userId }, { assignedTo: userId }] }],
+    $and: [
+      { status: "active" },
+      { $or: [{ createdBy: userId }, { assignedTo: userId }] },
+    ],
   }).sort({ startDate: 1 });
 };
 
-export const CampaignModel = mongoose.model<ICampaignDocument>('Campaign', campaignSchema);
+export const CampaignModel = mongoose.model<ICampaignDocument>(
+  "Campaign",
+  campaignSchema,
+);
 export default CampaignModel;

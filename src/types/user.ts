@@ -3,7 +3,7 @@
  * Defines data structures for user management
  */
 
-import { Permission, UserRole } from '../enums/user.enum';
+import { Permission, UserRole } from "../enums/user.enum";
 
 // Re-export enums for easier access
 export { Permission, UserRole };
@@ -36,8 +36,8 @@ export interface RoleDefinition {
 export const ROLE_DEFINITIONS: RoleDefinition[] = [
   {
     role: UserRole.ADMIN,
-    name: 'Administrator',
-    description: 'Full system access and user management',
+    name: "Administrator",
+    description: "Full system access and user management",
     level: 100,
     permissions: [
       Permission.CAMPAIGNS_CREATE,
@@ -65,8 +65,8 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
   },
   {
     role: UserRole.MANAGER,
-    name: 'Campaign Manager',
-    description: 'Can create and manage marketing campaigns',
+    name: "Campaign Manager",
+    description: "Can create and manage marketing campaigns",
     level: 75,
     permissions: [
       Permission.CAMPAIGNS_CREATE,
@@ -83,8 +83,8 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
   },
   {
     role: UserRole.ANALYST,
-    name: 'Data Analyst',
-    description: 'Can analyze data and generate reports',
+    name: "Data Analyst",
+    description: "Can analyze data and generate reports",
     level: 50,
     permissions: [
       Permission.CAMPAIGNS_VIEW,
@@ -96,15 +96,15 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
   },
   {
     role: UserRole.ONLY_VIEW,
-    name: 'View Only',
-    description: 'Read-only access to campaigns and basic analytics',
+    name: "View Only",
+    description: "Read-only access to campaigns and basic analytics",
     level: 25,
     permissions: [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW],
   },
   {
     role: UserRole.CLIENT,
-    name: 'Client',
-    description: 'Limited access for external clients',
+    name: "Client",
+    description: "Limited access for external clients",
     level: 10,
     permissions: [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW],
   },

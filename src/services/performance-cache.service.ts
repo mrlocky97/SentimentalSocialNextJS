@@ -3,7 +3,7 @@
  * Implements multiple caching strategies for optimal performance
  */
 
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 export interface CacheOptions {
   ttl?: number; // Time to live in milliseconds
@@ -84,10 +84,10 @@ export class PerformanceCacheService {
    */
   generateKey(...params: any[]): string {
     const combined = params
-      .map((p) => (typeof p === 'object' ? JSON.stringify(p) : String(p)))
-      .join('|');
+      .map((p) => (typeof p === "object" ? JSON.stringify(p) : String(p)))
+      .join("|");
 
-    return createHash('sha256').update(combined).digest('hex');
+    return createHash("sha256").update(combined).digest("hex");
   }
 
   /**

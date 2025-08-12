@@ -3,7 +3,11 @@
  * Input validation following Single Responsibility Principle
  */
 
-import { isValidEmail, isValidPassword, isValidUsername } from '../utils/validation.utils';
+import {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+} from "../utils/validation.utils";
 
 // Simple validation functions (you can replace with Zod, Joi, etc.)
 
@@ -18,7 +22,7 @@ export class Validator {
 
     return {
       isValid,
-      errors: isValid ? [] : ['Invalid email format'],
+      errors: isValid ? [] : ["Invalid email format"],
     };
   }
 
@@ -28,7 +32,7 @@ export class Validator {
 
     if (!isValid) {
       errors.push(
-        'Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens'
+        "Username must be 3-20 characters long and contain only letters, numbers, underscores, or hyphens",
       );
     }
 
@@ -44,7 +48,7 @@ export class Validator {
 
     if (!isValid) {
       errors.push(
-        'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number'
+        "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number",
       );
     }
 
@@ -58,11 +62,11 @@ export class Validator {
     const errors: string[] = [];
 
     if (!content.trim()) {
-      errors.push('Post content cannot be empty');
+      errors.push("Post content cannot be empty");
     }
 
     if (content.length > 2000) {
-      errors.push('Post content must be less than 2000 characters');
+      errors.push("Post content must be less than 2000 characters");
     }
 
     return {
@@ -75,11 +79,11 @@ export class Validator {
     const errors: string[] = [];
 
     if (displayName.length < 1) {
-      errors.push('Display name cannot be empty');
+      errors.push("Display name cannot be empty");
     }
 
     if (displayName.length > 50) {
-      errors.push('Display name must be less than 50 characters');
+      errors.push("Display name must be less than 50 characters");
     }
 
     return {
@@ -92,7 +96,7 @@ export class Validator {
     const errors: string[] = [];
 
     if (bio.length > 160) {
-      errors.push('Bio must be less than 160 characters');
+      errors.push("Bio must be less than 160 characters");
     }
 
     return {
@@ -105,15 +109,15 @@ export class Validator {
     const errors: string[] = [];
 
     if (page < 1) {
-      errors.push('Page must be greater than 0');
+      errors.push("Page must be greater than 0");
     }
 
     if (limit < 1) {
-      errors.push('Limit must be greater than 0');
+      errors.push("Limit must be greater than 0");
     }
 
     if (limit > 100) {
-      errors.push('Limit must be less than or equal to 100');
+      errors.push("Limit must be less than or equal to 100");
     }
 
     return {

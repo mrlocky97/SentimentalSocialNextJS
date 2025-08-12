@@ -6,18 +6,28 @@
 /**
  * Normalize sentiment labels to standard format
  */
-export function normalizeSentimentLabel(label: string): 'positive' | 'negative' | 'neutral' {
+export function normalizeSentimentLabel(
+  label: string,
+): "positive" | "negative" | "neutral" {
   const normalized = label.toLowerCase().trim();
 
-  if (normalized.includes('very_positive') || normalized === 'positive' || normalized === 'pos') {
-    return 'positive';
+  if (
+    normalized.includes("very_positive") ||
+    normalized === "positive" ||
+    normalized === "pos"
+  ) {
+    return "positive";
   }
 
-  if (normalized.includes('very_negative') || normalized === 'negative' || normalized === 'neg') {
-    return 'negative';
+  if (
+    normalized.includes("very_negative") ||
+    normalized === "negative" ||
+    normalized === "neg"
+  ) {
+    return "negative";
   }
 
-  return 'neutral';
+  return "neutral";
 }
 
 /**
@@ -45,14 +55,16 @@ export interface SentimentMetrics {
 export function calculateSentimentMetrics(
   predictions: string[],
   actuals: string[],
-  times: number[]
+  times: number[],
 ): SentimentMetrics {
-  const labels = ['positive', 'negative', 'neutral'];
+  const labels = ["positive", "negative", "neutral"];
 
   // Accuracy general
   const accuracy =
-    predictions.reduce((correct, pred, idx) => (pred === actuals[idx] ? correct + 1 : correct), 0) /
-    predictions.length;
+    predictions.reduce(
+      (correct, pred, idx) => (pred === actuals[idx] ? correct + 1 : correct),
+      0,
+    ) / predictions.length;
 
   // Métricas por clase
   let totalPrecision = 0;
@@ -64,16 +76,19 @@ export function calculateSentimentMetrics(
 
   for (const label of labels) {
     const tp = predictions.reduce(
-      (count, pred, idx) => (pred === label && actuals[idx] === label ? count + 1 : count),
-      0
+      (count, pred, idx) =>
+        pred === label && actuals[idx] === label ? count + 1 : count,
+      0,
     );
     const fp = predictions.reduce(
-      (count, pred, idx) => (pred === label && actuals[idx] !== label ? count + 1 : count),
-      0
+      (count, pred, idx) =>
+        pred === label && actuals[idx] !== label ? count + 1 : count,
+      0,
     );
     const fn = predictions.reduce(
-      (count, pred, idx) => (pred !== label && actuals[idx] === label ? count + 1 : count),
-      0
+      (count, pred, idx) =>
+        pred !== label && actuals[idx] === label ? count + 1 : count,
+      0,
     );
 
     if (tp + fp > 0 && tp + fn > 0) {
@@ -120,7 +135,7 @@ export interface SentimentComparison {
 export function compareSentimentResults(
   original: SentimentMetrics,
   improved: SentimentMetrics,
-  significanceThreshold: number = 2
+  significanceThreshold: number = 2,
 ): SentimentComparison {
   const accuracyImprovement = (improved.accuracy - original.accuracy) * 100;
   const f1Improvement = (improved.f1Score - original.f1Score) * 100;
@@ -131,11 +146,12 @@ export function compareSentimentResults(
 
   let summary: string;
   if (isSignificantImprovement) {
-    summary = 'MEJORA SIGNIFICATIVA: El nuevo modelo mejora notablemente el rendimiento';
+    summary =
+      "MEJORA SIGNIFICATIVA: El nuevo modelo mejora notablemente el rendimiento";
   } else if (accuracyImprovement > 0) {
-    summary = 'MEJORA MODERADA: El nuevo modelo muestra mejoras menores';
+    summary = "MEJORA MODERADA: El nuevo modelo muestra mejoras menores";
   } else {
-    summary = 'SIN MEJORA: El nuevo modelo no mejora el rendimiento';
+    summary = "SIN MEJORA: El nuevo modelo no mejora el rendimiento";
   }
 
   return {
@@ -151,7 +167,9 @@ export function compareSentimentResults(
 /**
  * Remove duplicates from training data by text content
  */
-export function removeDuplicateSentiments<T extends { text: string }>(data: T[]): T[] {
+export function removeDuplicateSentiments<T extends { text: string }>(
+  data: T[],
+): T[] {
   const seen = new Set<string>();
   const unique: T[] = [];
 
@@ -171,7 +189,7 @@ export function removeDuplicateSentiments<T extends { text: string }>(data: T[])
  */
 export function balanceSentimentClasses<T extends { sentiment: string }>(
   data: T[],
-  targetSize?: number
+  targetSize?: number,
 ): T[] {
   const byClass = data.reduce(
     (acc, item) => {
@@ -180,12 +198,14 @@ export function balanceSentimentClasses<T extends { sentiment: string }>(
       acc[normalized].push(item);
       return acc;
     },
-    {} as Record<string, T[]>
+    {} as Record<string, T[]>,
   );
 
   // Find minimum class size or use target
   const sizes = Object.values(byClass).map((arr) => arr.length);
-  const minSize = targetSize ? Math.min(targetSize, Math.min(...sizes)) : Math.min(...sizes);
+  const minSize = targetSize
+    ? Math.min(targetSize, Math.min(...sizes))
+    : Math.min(...sizes);
 
   // Balance each class
   const balanced: T[] = [];
@@ -203,11 +223,11 @@ export function balanceSentimentClasses<T extends { sentiment: string }>(
 export function generateSentimentReport(
   results: SentimentMetrics,
   modelName: string,
-  datasetSize: number
+  datasetSize: number,
 ): string {
   return `
 REPORTE DE RENDIMIENTO - ${modelName.toUpperCase()}
-${'='.repeat(50)}
+${"=".repeat(50)}
 
 MÉTRICAS GENERALES:
    Accuracy: ${(results.accuracy * 100).toFixed(2)}%
@@ -226,8 +246,8 @@ ${Object.entries(results.detailedMetrics)
      Recall: ${(metrics.recall * 100).toFixed(1)}%
      F1-Score: ${(metrics.f1 * 100).toFixed(1)}%
      TP: ${metrics.tp}, FP: ${metrics.fp}, FN: ${metrics.fn}
-`
+`,
   )
-  .join('')}
+  .join("")}
 `;
 }

@@ -3,8 +3,13 @@
  * Manejador centralizado de errores con logging y respuestas HTTP
  */
 
-import { NextFunction, Request, Response } from 'express';
-import { BaseError, ErrorSeverity, InternalServerError, ValidationError } from './error-types';
+import { NextFunction, Request, Response } from "express";
+import {
+  BaseError,
+  ErrorSeverity,
+  InternalServerError,
+  ValidationError,
+} from "./error-types";
 
 /**
  * Configuración del manejador de errores
@@ -13,7 +18,7 @@ interface ErrorHandlerConfig {
   enableDetailedErrors: boolean;
   enableStackTrace: boolean;
   enableErrorLogging: boolean;
-  logLevel: 'error' | 'warn' | 'info' | 'debug';
+  logLevel: "error" | "warn" | "info" | "debug";
 }
 
 /**
@@ -43,10 +48,10 @@ export class CentralizedErrorHandler {
 
   constructor(config: Partial<ErrorHandlerConfig> = {}) {
     this.config = {
-      enableDetailedErrors: process.env.NODE_ENV === 'development',
-      enableStackTrace: process.env.NODE_ENV === 'development',
+      enableDetailedErrors: process.env.NODE_ENV === "development",
+      enableStackTrace: process.env.NODE_ENV === "development",
       enableErrorLogging: true,
-      logLevel: 'error',
+      logLevel: "error",
       ...config,
     };
 
@@ -57,7 +62,12 @@ export class CentralizedErrorHandler {
   /**
    * Middleware principal para Express
    */
-  expressHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+  expressHandler = (
+    err: any,
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void => {
     // Evitar doble procesamiento
     if (res.headersSent) {
       return next(err);
@@ -83,35 +93,37 @@ export class CentralizedErrorHandler {
     }
 
     // Convertir errores conocidos
-    if (error.name === 'ValidationError' && error.errors) {
-      return new ValidationError('Validation failed', undefined, {
+    if (error.name === "ValidationError" && error.errors) {
+      return new ValidationError("Validation failed", undefined, {
         operation: req?.path,
         additionalData: { validationErrors: error.errors },
       });
     }
 
-    if (error.name === 'MongoError' || error.name === 'MongooseError') {
-      return new InternalServerError('Database operation failed', undefined, {
+    if (error.name === "MongoError" || error.name === "MongooseError") {
+      return new InternalServerError("Database operation failed", undefined, {
         operation: req?.path,
         additionalData: { mongoError: error.code },
       });
     }
 
-    if (error instanceof SyntaxError && 'body' in error) {
-      return new ValidationError('Invalid JSON format in request body');
+    if (error instanceof SyntaxError && "body" in error) {
+      return new ValidationError("Invalid JSON format in request body");
     }
 
     // Error desconocido - convertir a InternalServerError
     return new InternalServerError(
       this.config.enableDetailedErrors
-        ? error.message || 'Internal server error'
-        : 'An unexpected error occurred',
+        ? error.message || "Internal server error"
+        : "An unexpected error occurred",
       undefined,
       {
         operation: req?.path,
-        additionalData: this.config.enableDetailedErrors ? { originalError: error } : undefined,
+        additionalData: this.config.enableDetailedErrors
+          ? { originalError: error }
+          : undefined,
       },
-      error
+      error,
     );
   }
 
@@ -127,7 +139,7 @@ export class CentralizedErrorHandler {
         category: error.metadata.category,
         severity: error.metadata.severity,
         timestamp: error.timestamp.toISOString(),
-        requestId: req?.headers['x-request-id'] as string,
+        requestId: req?.headers["x-request-id"] as string,
       },
     };
 
@@ -137,7 +149,10 @@ export class CentralizedErrorHandler {
     }
 
     // Agregar detalles en desarrollo
-    if (this.config.enableDetailedErrors && error.metadata.context?.additionalData) {
+    if (
+      this.config.enableDetailedErrors &&
+      error.metadata.context?.additionalData
+    ) {
       response.error.details = error.metadata.context.additionalData;
     }
 
@@ -169,9 +184,9 @@ export class CentralizedErrorHandler {
         ? {
             method: req.method,
             url: req.url,
-            userAgent: req.get('user-agent'),
+            userAgent: req.get("user-agent"),
             ip: req.ip,
-            requestId: req.headers['x-request-id'],
+            requestId: req.headers["x-request-id"],
           }
         : undefined,
       context: error.metadata.context,
@@ -182,19 +197,19 @@ export class CentralizedErrorHandler {
     // Log según severidad
     switch (error.metadata.severity) {
       case ErrorSeverity.CRITICAL:
-        this.logger.error('🚨 CRITICAL ERROR:', logData);
+        this.logger.error("🚨 CRITICAL ERROR:", logData);
         break;
       case ErrorSeverity.HIGH:
-        this.logger.error('❌ HIGH SEVERITY ERROR:', logData);
+        this.logger.error("❌ HIGH SEVERITY ERROR:", logData);
         break;
       case ErrorSeverity.MEDIUM:
-        this.logger.warn('⚠️ MEDIUM SEVERITY ERROR:', logData);
+        this.logger.warn("⚠️ MEDIUM SEVERITY ERROR:", logData);
         break;
       case ErrorSeverity.LOW:
-        this.logger.info('ℹ️ LOW SEVERITY ERROR:', logData);
+        this.logger.info("ℹ️ LOW SEVERITY ERROR:", logData);
         break;
       default:
-        this.logger.error('❓ UNKNOWN SEVERITY ERROR:', logData);
+        this.logger.error("❓ UNKNOWN SEVERITY ERROR:", logData);
     }
   }
 
@@ -202,16 +217,20 @@ export class CentralizedErrorHandler {
    * Handler para promises no manejadas
    */
   handleUnhandledRejection = (reason: any): void => {
-    const error = new InternalServerError('Unhandled Promise Rejection', undefined, {
-      operation: 'unhandled_rejection',
-      additionalData: { reason: reason?.message || reason },
-    });
+    const error = new InternalServerError(
+      "Unhandled Promise Rejection",
+      undefined,
+      {
+        operation: "unhandled_rejection",
+        additionalData: { reason: reason?.message || reason },
+      },
+    );
 
     this.logError(error);
 
     // En producción, considera cerrar el proceso gracefully
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Shutting down due to unhandled promise rejection');
+    if (process.env.NODE_ENV === "production") {
+      console.log("Shutting down due to unhandled promise rejection");
       process.exit(1);
     }
   };
@@ -221,18 +240,18 @@ export class CentralizedErrorHandler {
    */
   handleUncaughtException = (error: Error): void => {
     const processedError = new InternalServerError(
-      'Uncaught Exception',
+      "Uncaught Exception",
       undefined,
       {
-        operation: 'uncaught_exception',
+        operation: "uncaught_exception",
         additionalData: { originalError: error.message },
       },
-      error
+      error,
     );
 
     this.logError(processedError);
 
-    console.log('Shutting down due to uncaught exception');
+    console.log("Shutting down due to uncaught exception");
     process.exit(1);
   };
 
@@ -240,10 +259,14 @@ export class CentralizedErrorHandler {
    * Handler 404 para rutas no encontradas
    */
   notFoundHandler = (req: Request, res: Response): void => {
-    const error = new ValidationError(`Route not found: ${req.originalUrl}`, undefined, {
-      operation: 'route_not_found',
-      additionalData: { method: req.method, url: req.originalUrl },
-    });
+    const error = new ValidationError(
+      `Route not found: ${req.originalUrl}`,
+      undefined,
+      {
+        operation: "route_not_found",
+        additionalData: { method: req.method, url: req.originalUrl },
+      },
+    );
 
     const response = this.createErrorResponse(error, req);
     this.logError(error, req);
@@ -264,7 +287,9 @@ export class CentralizedErrorHandler {
   /**
    * Wrapper para Express route handlers
    */
-  expressAsyncWrapper = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+  expressAsyncWrapper = (
+    fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
+  ) => {
     return (req: Request, res: Response, next: NextFunction): void => {
       Promise.resolve(fn(req, res, next)).catch(next);
     };
@@ -286,8 +311,8 @@ export class ResponseHelper {
   static success<T>(
     res: Response,
     data: T,
-    message = 'Operation successful',
-    statusCode = 200
+    message = "Operation successful",
+    statusCode = 200,
   ): void {
     res.status(statusCode).json({
       success: true,
@@ -300,14 +325,21 @@ export class ResponseHelper {
   /**
    * Respuesta de creación exitosa
    */
-  static created<T>(res: Response, data: T, message = 'Resource created successfully'): void {
+  static created<T>(
+    res: Response,
+    data: T,
+    message = "Resource created successfully",
+  ): void {
     ResponseHelper.success(res, data, message, 201);
   }
 
   /**
    * Respuesta sin contenido
    */
-  static noContent(res: Response, message = 'Operation completed successfully'): void {
+  static noContent(
+    res: Response,
+    message = "Operation completed successfully",
+  ): void {
     res.status(204).json({
       success: true,
       message,
@@ -320,6 +352,6 @@ export class ResponseHelper {
  * Configurar manejadores globales
  */
 export function setupGlobalErrorHandlers(): void {
-  process.on('unhandledRejection', errorHandler.handleUnhandledRejection);
-  process.on('uncaughtException', errorHandler.handleUncaughtException);
+  process.on("unhandledRejection", errorHandler.handleUnhandledRejection);
+  process.on("uncaughtException", errorHandler.handleUncaughtException);
 }

@@ -6,7 +6,7 @@ export class HttpError extends Error {
     super(message);
     this.status = status;
     this.details = details;
-    this.name = 'HttpError';
+    this.name = "HttpError";
     Error.captureStackTrace(this, this.constructor);
   }
 }

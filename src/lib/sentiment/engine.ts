@@ -5,31 +5,31 @@
  * It combines rule-based, machine learning (Naive Bayes), and hybrid analysis techniques.
  * Enhanced with multiple open-source models for superior accuracy.
  */
-import natural from 'natural';
+import natural from "natural";
 import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
-} from '../../services/advanced-hybrid-analyzer.service';
-import { enhancedSentimentEngine } from '../../services/enhanced-sentiment-engine.service';
-import { InternalSentimentAnalyzer } from '../../services/internal-sentiment-analyzer.service';
+} from "../../services/advanced-hybrid-analyzer.service";
+import { enhancedSentimentEngine } from "../../services/enhanced-sentiment-engine.service";
+import { InternalSentimentAnalyzer } from "../../services/internal-sentiment-analyzer.service";
 import {
   NaiveBayesSentimentService,
   NaiveBayesTrainingExample,
   SentimentLabel,
-} from '../../services/naive-bayes-sentiment.service';
+} from "../../services/naive-bayes-sentiment.service";
 import {
   AnalysisRequest,
   AnalysisResult,
   AnalyzerEngine,
   LanguageCode,
   SignalBreakdown,
-} from './types';
+} from "./types";
 
 export class SentimentAnalysisEngine implements AnalyzerEngine {
   private ruleBasedAnalyzer: InternalSentimentAnalyzer;
   private naiveBayesAnalyzer: NaiveBayesSentimentService;
   private hybridAnalyzer: AdvancedHybridAnalyzer;
-  private engineVersion = '1.0.0';
+  private engineVersion = "1.0.0";
 
   constructor() {
     this.ruleBasedAnalyzer = new InternalSentimentAnalyzer();
@@ -71,17 +71,26 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
    * @returns An object with the detailed analysis result.
    */
   public async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
-    const { text, language = 'en' } = request;
+    const { text, language = "en" } = request;
 
     // Use enhanced sentiment engine for better accuracy
     try {
-      const enhancedResult = await enhancedSentimentEngine.analyzeEnhanced(text, language);
+      const enhancedResult = await enhancedSentimentEngine.analyzeEnhanced(
+        text,
+        language,
+      );
 
       // Map enhanced result to our AnalysisResult format
       const lang = language;
-      const detectedLanguage: LanguageCode = ['en', 'es', 'fr', 'de', 'unknown'].includes(lang)
+      const detectedLanguage: LanguageCode = [
+        "en",
+        "es",
+        "fr",
+        "de",
+        "unknown",
+      ].includes(lang)
         ? (lang as LanguageCode)
-        : 'unknown';
+        : "unknown";
 
       const signals: SignalBreakdown = {
         tokens: [], // Would be populated from enhanced analysis
@@ -128,10 +137,13 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
         keywords: [], // Would be extracted from enhanced analysis
         language: detectedLanguage,
         signals,
-        version: '2.0.0-enhanced',
+        version: "2.0.0-enhanced",
       };
     } catch (error) {
-      console.warn('Enhanced engine failed, falling back to basic hybrid analysis:', error);
+      console.warn(
+        "Enhanced engine failed, falling back to basic hybrid analysis:",
+        error,
+      );
       return this.analyzeBasic(request);
     }
   }
@@ -139,8 +151,10 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
   /**
    * Fallback basic analysis method (original implementation)
    */
-  private async analyzeBasic(request: AnalysisRequest): Promise<AnalysisResult> {
-    const { text, language = 'en' } = request;
+  private async analyzeBasic(
+    request: AnalysisRequest,
+  ): Promise<AnalysisResult> {
+    const { text, language = "en" } = request;
 
     // 1. Get predictions from both rule-based and Naive Bayes analyzers.
     const ruleResultPromise = this.ruleBasedAnalyzer.analyze(text);
@@ -156,16 +170,25 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
         confidence: ruleResult.sentiment.confidence,
         score: ruleResult.sentiment.score,
       },
-      language
+      language,
     );
 
     // 3. Construct the final, unified AnalysisResult.
-    const signals = this.buildSignalBreakdown(hybridPrediction.features, ruleResult.keywords);
+    const signals = this.buildSignalBreakdown(
+      hybridPrediction.features,
+      ruleResult.keywords,
+    );
 
     const lang = hybridPrediction.features.language;
-    const detectedLanguage: LanguageCode = ['en', 'es', 'fr', 'de', 'unknown'].includes(lang)
+    const detectedLanguage: LanguageCode = [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "unknown",
+    ].includes(lang)
       ? (lang as LanguageCode)
-      : 'unknown';
+      : "unknown";
 
     return {
       sentiment: {
@@ -175,24 +198,42 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
         confidence: hybridPrediction.confidence,
         emotions: {
           joy: hybridPrediction.score > 0.5 ? hybridPrediction.confidence : 0,
-          sadness: hybridPrediction.score < -0.5 ? hybridPrediction.confidence * 0.7 : 0,
-          anger: hybridPrediction.score < -0.5 ? hybridPrediction.confidence * 0.8 : 0,
-          fear: hybridPrediction.score < -0.3 ? hybridPrediction.confidence * 0.5 : 0,
-          surprise: Math.abs(hybridPrediction.score) > 0.8 ? hybridPrediction.confidence * 0.3 : 0,
-          disgust: hybridPrediction.score < -0.6 ? hybridPrediction.confidence * 0.6 : 0,
+          sadness:
+            hybridPrediction.score < -0.5
+              ? hybridPrediction.confidence * 0.7
+              : 0,
+          anger:
+            hybridPrediction.score < -0.5
+              ? hybridPrediction.confidence * 0.8
+              : 0,
+          fear:
+            hybridPrediction.score < -0.3
+              ? hybridPrediction.confidence * 0.5
+              : 0,
+          surprise:
+            Math.abs(hybridPrediction.score) > 0.8
+              ? hybridPrediction.confidence * 0.3
+              : 0,
+          disgust:
+            hybridPrediction.score < -0.6
+              ? hybridPrediction.confidence * 0.6
+              : 0,
         },
       },
       keywords: ruleResult.keywords,
       language: detectedLanguage,
       signals,
-      version: '1.0.0-unified',
+      version: "1.0.0-unified",
     };
   }
 
   /**
    * Helper to assemble the signal breakdown from various analysis features.
    */
-  private buildSignalBreakdown(features: ContextualFeatures, keywords: string[]): SignalBreakdown {
+  private buildSignalBreakdown(
+    features: ContextualFeatures,
+    keywords: string[],
+  ): SignalBreakdown {
     return {
       tokens: keywords,
       ngrams: {}, // Placeholder for future n-gram analysis

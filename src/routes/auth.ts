@@ -3,8 +3,8 @@
  * API routes for user authentication and authorization
  */
 
-import { Router } from 'express';
-import jwt from 'jsonwebtoken';
+import { Router } from "express";
+import jwt from "jsonwebtoken";
 import {
   AuthenticationError,
   BusinessLogicError,
@@ -12,11 +12,14 @@ import {
   errorHandler,
   ResponseHelper,
   ValidationError,
-} from '../core/errors';
-import { tokenBlacklistService } from '../lib/security/token-blacklist';
-import { AuthenticatedRequest, authenticateToken } from '../middleware/express-auth';
-import { AuthService } from '../services/auth.service';
-import { LoginRequest, RegisterRequest } from '../types/auth';
+} from "../core/errors";
+import { tokenBlacklistService } from "../lib/security/token-blacklist";
+import {
+  AuthenticatedRequest,
+  authenticateToken,
+} from "../middleware/express-auth";
+import { AuthService } from "../services/auth.service";
+import { LoginRequest, RegisterRequest } from "../types/auth";
 
 const router = Router();
 const authService = new AuthService();
@@ -166,36 +169,39 @@ const authService = new AuthService();
  *                     code: "USER_ALREADY_EXISTS"
  */
 router.post(
-  '/register',
+  "/register",
   errorHandler.expressAsyncWrapper(async (req, res) => {
     // Validate request body
-    const { email, password, displayName, username, role }: RegisterRequest = req.body;
+    const { email, password, displayName, username, role }: RegisterRequest =
+      req.body;
 
     if (!email || !password || !displayName || !username) {
       throw new ValidationError(
-        'Missing required fields',
+        "Missing required fields",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'user_registration',
+          operation: "user_registration",
           additionalData: {
-            required: ['email', 'password', 'displayName', 'username'],
+            required: ["email", "password", "displayName", "username"],
             provided: Object.keys(req.body),
           },
         },
-        ['Please provide all required fields: email, password, displayName, username']
+        [
+          "Please provide all required fields: email, password, displayName, username",
+        ],
       );
     }
 
     // Validate email format
     if (!authService.validateEmail(email)) {
       throw new ValidationError(
-        'Invalid email format',
+        "Invalid email format",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'email_validation',
+          operation: "email_validation",
           additionalData: { email },
         },
-        ['Please provide a valid email address']
+        ["Please provide a valid email address"],
       );
     }
 
@@ -203,13 +209,13 @@ router.post(
     const passwordValidation = authService.validatePassword(password);
     if (!passwordValidation.isValid) {
       throw new ValidationError(
-        'Password does not meet requirements',
+        "Password does not meet requirements",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'password_validation',
+          operation: "password_validation",
           additionalData: { validationErrors: passwordValidation.errors },
         },
-        passwordValidation.errors
+        passwordValidation.errors,
       );
     }
 
@@ -223,36 +229,36 @@ router.post(
         role,
       });
 
-      ResponseHelper.created(res, result, 'User registered successfully');
+      ResponseHelper.created(res, result, "User registered successfully");
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'User with this email already exists') {
+        if (error.message === "User with this email already exists") {
           throw new BusinessLogicError(
-            'User with this email already exists',
+            "User with this email already exists",
             ErrorCode.BUSINESS_RULE_VIOLATION,
             {
-              operation: 'user_registration',
+              operation: "user_registration",
               additionalData: { email },
             },
-            ['Try logging in instead', 'Use a different email address']
+            ["Try logging in instead", "Use a different email address"],
           );
         }
 
-        if (error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+        if (error.message === "EMAIL_OR_USERNAME_EXISTS") {
           throw new BusinessLogicError(
-            'Email or username already exists',
+            "Email or username already exists",
             ErrorCode.BUSINESS_RULE_VIOLATION,
             {
-              operation: 'user_registration',
+              operation: "user_registration",
               additionalData: { email, username },
             },
-            ['Try logging in instead', 'Use a different email or username']
+            ["Try logging in instead", "Use a different email or username"],
           );
         }
       }
       throw error;
     }
-  })
+  }),
 );
 
 /**
@@ -370,20 +376,20 @@ router.post(
  *               $ref: '#/components/schemas/Error'
  */
 router.post(
-  '/login',
+  "/login",
   errorHandler.expressAsyncWrapper(async (req, res) => {
     // Validate request body
     const { email, password, rememberMe }: LoginRequest = req.body;
 
     if (!email || !password) {
       throw new ValidationError(
-        'Email and password are required',
+        "Email and password are required",
         ErrorCode.INVALID_INPUT,
         {
-          operation: 'user_login',
+          operation: "user_login",
           additionalData: { hasEmail: !!email, hasPassword: !!password },
         },
-        ['Please provide both email and password']
+        ["Please provide both email and password"],
       );
     }
 
@@ -395,30 +401,36 @@ router.post(
         rememberMe,
       });
 
-      ResponseHelper.success(res, result, 'Login successful');
+      ResponseHelper.success(res, result, "Login successful");
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'Invalid email or password') {
-          throw new AuthenticationError('Invalid email or password', ErrorCode.UNAUTHORIZED, {
-            operation: 'user_login',
-            additionalData: { email },
-          });
-        }
-
-        if (error.message === 'Account is deactivated. Please contact support.') {
+        if (error.message === "Invalid email or password") {
           throw new AuthenticationError(
-            'Account is deactivated. Please contact support.',
+            "Invalid email or password",
             ErrorCode.UNAUTHORIZED,
             {
-              operation: 'user_login',
-              additionalData: { email, reason: 'account_deactivated' },
-            }
+              operation: "user_login",
+              additionalData: { email },
+            },
+          );
+        }
+
+        if (
+          error.message === "Account is deactivated. Please contact support."
+        ) {
+          throw new AuthenticationError(
+            "Account is deactivated. Please contact support.",
+            ErrorCode.UNAUTHORIZED,
+            {
+              operation: "user_login",
+              additionalData: { email, reason: "account_deactivated" },
+            },
           );
         }
       }
       throw error;
     }
-  })
+  }),
 );
 
 /**
@@ -485,7 +497,7 @@ router.post(
  *                     message: "Invalid or expired refresh token"
  *                     code: "INVALID_REFRESH_TOKEN"
  */
-router.post('/refresh', async (req, res) => {
+router.post("/refresh", async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
@@ -493,8 +505,8 @@ router.post('/refresh', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: {
-          message: 'Refresh token is required',
-          code: 'MISSING_REFRESH_TOKEN',
+          message: "Refresh token is required",
+          code: "MISSING_REFRESH_TOKEN",
           timestamp: new Date().toISOString(),
         },
       });
@@ -505,16 +517,16 @@ router.post('/refresh', async (req, res) => {
     res.json({
       success: true,
       data: result,
-      message: 'Token refreshed successfully',
+      message: "Token refreshed successfully",
     });
   } catch (error) {
-    console.error('Token refresh error:', error);
+    console.error("Token refresh error:", error);
 
     res.status(401).json({
       success: false,
       error: {
-        message: 'Invalid or expired refresh token',
-        code: 'INVALID_REFRESH_TOKEN',
+        message: "Invalid or expired refresh token",
+        code: "INVALID_REFRESH_TOKEN",
         timestamp: new Date().toISOString(),
       },
     });
@@ -577,10 +589,10 @@ router.post('/refresh', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
+router.post("/logout", authenticateToken, (req: AuthenticatedRequest, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
     const { refreshToken, logoutAllDevices } = req.body;
 
     if (token) {
@@ -602,7 +614,11 @@ router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       // Add refresh token to blacklist
-      tokenBlacklistService.blacklistToken(refreshToken, req.user!.id, refreshExpiresAt);
+      tokenBlacklistService.blacklistToken(
+        refreshToken,
+        req.user!.id,
+        refreshExpiresAt,
+      );
     }
 
     if (logoutAllDevices) {
@@ -614,18 +630,18 @@ router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
       success: true,
       data: {
         loggedOutAt: new Date().toISOString(),
-        tokensInvalidated: logoutAllDevices ? 'all' : refreshToken ? 2 : 1,
+        tokensInvalidated: logoutAllDevices ? "all" : refreshToken ? 2 : 1,
       },
-      message: 'Logout successful',
+      message: "Logout successful",
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
 
     res.status(500).json({
       success: false,
       error: {
-        message: 'Error during logout',
-        code: 'LOGOUT_ERROR',
+        message: "Error during logout",
+        code: "LOGOUT_ERROR",
         timestamp: new Date().toISOString(),
       },
     });
@@ -697,8 +713,8 @@ router.post('/logout', authenticateToken, (req: AuthenticatedRequest, res) => {
  *                     details:
  *                       retryAfter: 300
  */
-router.post('/forgot-password', (req, res) => {
-  res.json({ message: 'Forgot password endpoint - not implemented yet' });
+router.post("/forgot-password", (req, res) => {
+  res.json({ message: "Forgot password endpoint - not implemented yet" });
 });
 
 /**
@@ -777,8 +793,8 @@ router.post('/forgot-password', (req, res) => {
  *                     message: "Password confirmation does not match"
  *                     code: "PASSWORD_MISMATCH"
  */
-router.post('/reset-password', (req, res) => {
-  res.json({ message: 'Reset password endpoint - not implemented yet' });
+router.post("/reset-password", (req, res) => {
+  res.json({ message: "Reset password endpoint - not implemented yet" });
 });
 
 /**
@@ -859,8 +875,8 @@ router.post('/reset-password', (req, res) => {
  *                     message: "Current password is incorrect"
  *                     code: "INVALID_CURRENT_PASSWORD"
  */
-router.post('/change-password', (req, res) => {
-  res.json({ message: 'Change password endpoint - not implemented yet' });
+router.post("/change-password", (req, res) => {
+  res.json({ message: "Change password endpoint - not implemented yet" });
 });
 
 /**
@@ -929,45 +945,49 @@ router.post('/change-password', (req, res) => {
  *                     message: "Invalid or expired access token"
  *                     code: "INVALID_ACCESS_TOKEN"
  */
-router.post('/verify-token', authenticateToken, (req: AuthenticatedRequest, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
+router.post(
+  "/verify-token",
+  authenticateToken,
+  (req: AuthenticatedRequest, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            message: "Invalid access token",
+            code: "INVALID_ACCESS_TOKEN",
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          valid: true,
+          user: req.user,
+          tokenInfo: {
+            issuedAt: new Date().toISOString(),
+            // In a real implementation, you would get this from the JWT payload
+            expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+            remainingTime: 3600, // 1 hour in seconds
+          },
+        },
+        message: "Token is valid",
+      });
+    } catch (error) {
+      console.error("Token verification error:", error);
+
+      res.status(401).json({
         success: false,
         error: {
-          message: 'Invalid access token',
-          code: 'INVALID_ACCESS_TOKEN',
+          message: "Invalid or expired access token",
+          code: "INVALID_ACCESS_TOKEN",
           timestamp: new Date().toISOString(),
         },
       });
     }
-
-    res.json({
-      success: true,
-      data: {
-        valid: true,
-        user: req.user,
-        tokenInfo: {
-          issuedAt: new Date().toISOString(),
-          // In a real implementation, you would get this from the JWT payload
-          expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-          remainingTime: 3600, // 1 hour in seconds
-        },
-      },
-      message: 'Token is valid',
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-
-    res.status(401).json({
-      success: false,
-      error: {
-        message: 'Invalid or expired access token',
-        code: 'INVALID_ACCESS_TOKEN',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  },
+);
 
 export default router;

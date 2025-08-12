@@ -3,13 +3,16 @@
  * Separate authentication system for Twitter scraping
  */
 
-import { Response, Router } from 'express';
+import { Response, Router } from "express";
 // REMOVED: TwitterAuthHelper moved to backup (legacy manual auth)
 // import { TwitterAuthHelper } from '../utils/twitter-auth-helper';
-import fs from 'fs/promises';
-import path from 'path';
-import { AuthenticatedRequest, authenticateToken } from '../middleware/express-auth';
-import { TwitterAuthManager } from '../services/twitter-auth-manager.service'; // Consolidated
+import fs from "fs/promises";
+import path from "path";
+import {
+  AuthenticatedRequest,
+  authenticateToken,
+} from "../middleware/express-auth";
+import { TwitterAuthManager } from "../services/twitter-auth-manager.service"; // Consolidated
 
 const router = Router();
 
@@ -37,35 +40,39 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post('/login', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const authManager = TwitterAuthManager.getInstance();
+router.post(
+  "/login",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const authManager = TwitterAuthManager.getInstance();
 
-    // Force re-initialization if needed
-    await authManager.initializeOnStartup();
-    const sessionInfo = authManager.getSessionInfo();
+      // Force re-initialization if needed
+      await authManager.initializeOnStartup();
+      const sessionInfo = authManager.getSessionInfo();
 
-    if (sessionInfo.authenticated) {
-      res.json({
-        success: true,
-        message: 'Twitter authentication successful',
-        authenticated: true,
-        cookieCount: sessionInfo.cookieCount,
-      });
-    } else {
-      res.status(401).json({
+      if (sessionInfo.authenticated) {
+        res.json({
+          success: true,
+          message: "Twitter authentication successful",
+          authenticated: true,
+          cookieCount: sessionInfo.cookieCount,
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          message: "Twitter authentication failed - check credentials",
+        });
+      }
+    } catch (error) {
+      console.error("Twitter login error:", error);
+      res.status(500).json({
         success: false,
-        message: 'Twitter authentication failed - check credentials',
+        message: "Internal server error during Twitter authentication",
       });
     }
-  } catch (error) {
-    console.error('Twitter login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during Twitter authentication',
-    });
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -122,26 +129,30 @@ router.post('/import-cookies', authenticateToken, async (req: AuthenticatedReque
  *       200:
  *         description: Authentication status retrieved
  */
-router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const authManager = TwitterAuthManager.getInstance();
-    const sessionInfo = authManager.getSessionInfo();
+router.get(
+  "/status",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const authManager = TwitterAuthManager.getInstance();
+      const sessionInfo = authManager.getSessionInfo();
 
-    res.json({
-      success: true,
-      authenticated: sessionInfo.authenticated,
-      cookieCount: sessionInfo.cookieCount,
-      sessionValid: sessionInfo.authenticated,
-      expiresAt: sessionInfo.expiresAt,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check authentication status',
-      error: error,
-    });
-  }
-});
+      res.json({
+        success: true,
+        authenticated: sessionInfo.authenticated,
+        cookieCount: sessionInfo.cookieCount,
+        sessionValid: sessionInfo.authenticated,
+        expiresAt: sessionInfo.expiresAt,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to check authentication status",
+        error: error,
+      });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -156,23 +167,27 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
  *       200:
  *         description: Logout successful
  */
-router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const authManager = TwitterAuthManager.getInstance();
-    authManager.clearSession();
+router.post(
+  "/logout",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const authManager = TwitterAuthManager.getInstance();
+      authManager.clearSession();
 
-    res.json({
-      success: true,
-      message: 'Twitter logout successful',
-    });
-  } catch (error) {
-    console.error('Twitter logout error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to logout from Twitter',
-    });
-  }
-});
+      res.json({
+        success: true,
+        message: "Twitter logout successful",
+      });
+    } catch (error) {
+      console.error("Twitter logout error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to logout from Twitter",
+      });
+    }
+  },
+);
 
 /**
  * @swagger
@@ -188,7 +203,7 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res:
  *         description: Cookie validation completed
  */
 router.get(
-  '/validate-cookies',
+  "/validate-cookies",
   authenticateToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -197,17 +212,17 @@ router.get(
 
       res.json({
         success: true,
-        message: hasSession ? 'Cookies are valid' : 'No valid session found',
+        message: hasSession ? "Cookies are valid" : "No valid session found",
         valid: hasSession,
       });
     } catch (error) {
-      console.error('Twitter cookie validation error:', error);
+      console.error("Twitter cookie validation error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to validate Twitter cookies',
+        message: "Failed to validate Twitter cookies",
       });
     }
-  }
+  },
 );
 
 /**
@@ -223,38 +238,42 @@ router.get(
  *       200:
  *         description: Session information retrieved
  */
-router.get('/session-info', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const authManager = TwitterAuthManager.getInstance();
-    const sessionInfo = authManager.getSessionInfo();
-
-    // Check if manual cookies file exists
-    const manualCookiesPath = path.join(process.cwd(), 'manual-cookies.json');
-    let hasManualCookies = false;
+router.get(
+  "/session-info",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      await fs.access(manualCookiesPath);
-      hasManualCookies = true;
-    } catch {
-      hasManualCookies = false;
-    }
+      const authManager = TwitterAuthManager.getInstance();
+      const sessionInfo = authManager.getSessionInfo();
 
-    res.json({
-      success: true,
-      sessionInfo: {
-        authenticated: sessionInfo.authenticated,
-        cookieCount: sessionInfo.cookieCount,
-        hasManualCookies,
-        expiresAt: sessionInfo.expiresAt,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    console.error('Twitter session info error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve session information',
-    });
-  }
-});
+      // Check if manual cookies file exists
+      const manualCookiesPath = path.join(process.cwd(), "manual-cookies.json");
+      let hasManualCookies = false;
+      try {
+        await fs.access(manualCookiesPath);
+        hasManualCookies = true;
+      } catch {
+        hasManualCookies = false;
+      }
+
+      res.json({
+        success: true,
+        sessionInfo: {
+          authenticated: sessionInfo.authenticated,
+          cookieCount: sessionInfo.cookieCount,
+          hasManualCookies,
+          expiresAt: sessionInfo.expiresAt,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Twitter session info error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve session information",
+      });
+    }
+  },
+);
 
 export default router;

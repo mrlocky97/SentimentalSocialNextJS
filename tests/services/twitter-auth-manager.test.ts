@@ -9,10 +9,13 @@ describe('TwitterAuthManager - CRÍTICO', () => {
   let authManager: TwitterAuthManager;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     authManager = TwitterAuthManager.getInstance();
   });
 
   afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
     // Limpiar estado después de cada test
     authManager.clearSession();
   });

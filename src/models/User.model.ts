@@ -3,8 +3,8 @@
  * Mongoose schema for users collection
  */
 
-import mongoose, { Document, Schema } from 'mongoose';
-import { Permission, UserRole } from '../enums/user.enum';
+import mongoose, { Document, Schema } from "mongoose";
+import { Permission, UserRole } from "../enums/user.enum";
 
 // User document interface for MongoDB - Updated for marketing platform
 export interface IUserDocument extends Document {
@@ -103,7 +103,7 @@ const userSchema = new Schema<IUserDocument>(
         return ret;
       },
     },
-  }
+  },
 );
 
 // Indexes for performance - Updated for marketing platform
@@ -116,7 +116,7 @@ userSchema.index({ isVerified: 1, isActive: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Virtual for profile URL
-userSchema.virtual('profileUrl').get(function (this: IUserDocument) {
+userSchema.virtual("profileUrl").get(function (this: IUserDocument) {
   return `/users/${this.username}`;
 });
 
@@ -135,7 +135,10 @@ userSchema.methods.toProfileJSON = function (this: IUserDocument) {
   };
 };
 
-userSchema.methods.hasPermission = function (this: IUserDocument, permission: string) {
+userSchema.methods.hasPermission = function (
+  this: IUserDocument,
+  permission: string,
+) {
   return this.permissions.includes(permission);
 };
 
@@ -146,7 +149,10 @@ userSchema.methods.hasRole = function (this: IUserDocument, role: string) {
 // Static methods - Updated for marketing platform
 userSchema.statics.findByEmailOrUsername = function (identifier: string) {
   return this.findOne({
-    $or: [{ email: identifier.toLowerCase() }, { username: identifier.toLowerCase() }],
+    $or: [
+      { email: identifier.toLowerCase() },
+      { username: identifier.toLowerCase() },
+    ],
   });
 };
 
@@ -158,8 +164,11 @@ userSchema.statics.findByOrganization = function (organizationId: string) {
   return this.find({ organizationId, isActive: true });
 };
 
-userSchema.statics.searchByQuery = function (query: string, limit: number = 20) {
-  const searchRegex = new RegExp(query, 'i');
+userSchema.statics.searchByQuery = function (
+  query: string,
+  limit: number = 20,
+) {
+  const searchRegex = new RegExp(query, "i");
   return this.find({
     $or: [{ username: searchRegex }, { displayName: searchRegex }],
     isActive: true,
@@ -167,7 +176,7 @@ userSchema.statics.searchByQuery = function (query: string, limit: number = 20) 
 };
 
 // Pre-save middleware
-userSchema.pre('save', function (this: IUserDocument, next) {
+userSchema.pre("save", function (this: IUserDocument, next) {
   // Ensure email and username are lowercase
   if (this.email) {
     this.email = this.email.toLowerCase();
@@ -204,7 +213,10 @@ userSchema.pre('save', function (this: IUserDocument, next) {
         ];
         break;
       case UserRole.ONLY_VIEW:
-        this.permissions = [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW];
+        this.permissions = [
+          Permission.CAMPAIGNS_VIEW,
+          Permission.ANALYTICS_VIEW,
+        ];
         break;
       case UserRole.CLIENT:
       default:
@@ -217,6 +229,7 @@ userSchema.pre('save', function (this: IUserDocument, next) {
 });
 
 // Create and export model
-export const UserModel = mongoose.models.User || mongoose.model<IUserDocument>('User', userSchema);
+export const UserModel =
+  mongoose.models.User || mongoose.model<IUserDocument>("User", userSchema);
 
 export default UserModel;

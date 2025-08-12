@@ -3,7 +3,7 @@
  * Optimizes database queries and API calls for better performance
  */
 
-import { performanceCache } from './performance-cache.service';
+import { performanceCache } from "./performance-cache.service";
 
 export interface QueryMetrics {
   executionTime: number;
@@ -48,8 +48,8 @@ export class QueryOptimizationService {
     options?: {
       ttl?: number;
       forceRefresh?: boolean;
-      priority?: 'high' | 'normal' | 'low';
-    }
+      priority?: "high" | "normal" | "low";
+    },
   ): Promise<T> {
     const startTime = Date.now();
     let cacheHit = false;
@@ -92,7 +92,7 @@ export class QueryOptimizationService {
       this.recordMetrics({
         executionTime: Date.now() - startTime,
         cacheHit,
-        queryType: queryKey.split(':')[0] || 'unknown',
+        queryType: queryKey.split(":")[0] || "unknown",
         resultCount: this.getResultCount(result),
         timestamp: new Date(),
       });
@@ -108,24 +108,24 @@ export class QueryOptimizationService {
     queries: Array<{
       key: string;
       fn: () => Promise<T>;
-      options?: { ttl?: number; priority?: 'high' | 'normal' | 'low' };
-    }>
+      options?: { ttl?: number; priority?: "high" | "normal" | "low" };
+    }>,
   ): Promise<T[]> {
     const results: T[] = [];
     const batches = this.createBatches(queries, this.config.batchSize);
 
     for (const batch of batches) {
       const batchPromises = batch.map((query) =>
-        this.executeQuery(query.key, query.fn, query.options)
+        this.executeQuery(query.key, query.fn, query.options),
       );
 
       const batchResults = await Promise.allSettled(batchPromises);
 
       batchResults.forEach((result) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           results.push(result.value);
         } else {
-          console.error('Batch query failed:', result.reason);
+          console.error("Batch query failed:", result.reason);
         }
       });
     }
@@ -139,9 +139,13 @@ export class QueryOptimizationService {
   async optimizeAggregation<T>(
     collection: string,
     pipeline: any[],
-    options?: { allowDiskUse?: boolean; maxTimeMS?: number }
+    options?: { allowDiskUse?: boolean; maxTimeMS?: number },
   ): Promise<T[]> {
-    const queryKey = performanceCache.generateKey('aggregation', collection, pipeline);
+    const queryKey = performanceCache.generateKey(
+      "aggregation",
+      collection,
+      pipeline,
+    );
 
     return this.executeQuery(
       queryKey,
@@ -150,7 +154,7 @@ export class QueryOptimizationService {
         const optimizedPipeline = this.optimizePipeline(pipeline);
 
         // Simulate aggregation execution (replace with actual MongoDB call)
-        console.log('Executing optimized aggregation:', {
+        console.log("Executing optimized aggregation:", {
           collection,
           pipeline: optimizedPipeline,
           options,
@@ -159,7 +163,7 @@ export class QueryOptimizationService {
         // Return mock result for now
         return [] as T[];
       },
-      { ttl: 10 * 60 * 1000 } // 10 minutes for aggregations
+      { ttl: 10 * 60 * 1000 }, // 10 minutes for aggregations
     );
   }
 
@@ -181,7 +185,10 @@ export class QueryOptimizationService {
       };
     }
 
-    const totalTime = this.metrics.reduce((sum, metric) => sum + metric.executionTime, 0);
+    const totalTime = this.metrics.reduce(
+      (sum, metric) => sum + metric.executionTime,
+      0,
+    );
     const cacheHits = this.metrics.filter((m) => m.cacheHit).length;
     const queryTypes: Record<string, number> = {};
 
@@ -288,7 +295,7 @@ export class QueryOptimizationService {
     if (Array.isArray(result)) {
       return result.length;
     }
-    if (result && typeof result === 'object' && 'count' in result) {
+    if (result && typeof result === "object" && "count" in result) {
       return result.count;
     }
     return 1;

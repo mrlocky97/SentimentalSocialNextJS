@@ -3,32 +3,37 @@
  * Optimizes responses for mobile devices and reduces bandwidth usage
  */
 
-import compression from 'compression';
-import { NextFunction, Request, Response } from 'express';
+import compression from "compression";
+import { NextFunction, Request, Response } from "express";
 
 export interface MobileOptimizedResponse {
   compact?: boolean;
   essential?: boolean;
-  bandwidth?: 'low' | 'medium' | 'high';
+  bandwidth?: "low" | "medium" | "high";
 }
 
 /**
  * Detect mobile devices and apply optimization
  */
-export const mobileDetectionMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const userAgent = req.get('User-Agent') || '';
-  const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    userAgent
-  );
+export const mobileDetectionMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userAgent = req.get("User-Agent") || "";
+  const isMobile =
+    /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      userAgent,
+    );
 
   // Add mobile context to request
   (req as any).isMobile = isMobile;
-  (req as any).deviceType = isMobile ? 'mobile' : 'desktop';
+  (req as any).deviceType = isMobile ? "mobile" : "desktop";
 
   // Set response headers for mobile optimization
   if (isMobile) {
-    res.setHeader('X-Device-Type', 'mobile');
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // Extended cache for mobile
+    res.setHeader("X-Device-Type", "mobile");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // Extended cache for mobile
   }
 
   next();
@@ -53,10 +58,14 @@ export const adaptiveCompressionMiddleware = compression({
 /**
  * Optimize JSON responses for mobile
  */
-export const mobileResponseOptimizer = (req: Request, res: Response, next: NextFunction) => {
+export const mobileResponseOptimizer = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const isMobile = (req as any).isMobile;
 
-  if (isMobile && req.path.includes('/api/v1/sentiment/')) {
+  if (isMobile && req.path.includes("/api/v1/sentiment/")) {
     // Override json method to optimize responses
     const originalJson = res.json;
 
@@ -105,7 +114,8 @@ function optimizeSentimentResponseForMobile(data: any): any {
         tweetId: analysis.tweetId,
         sentiment: {
           label: analysis.analysis.sentiment.label,
-          confidence: Math.round(analysis.analysis.sentiment.confidence * 100) / 100,
+          confidence:
+            Math.round(analysis.analysis.sentiment.confidence * 100) / 100,
           score: Math.round(analysis.analysis.sentiment.score * 100) / 100,
         },
       })),
@@ -117,7 +127,8 @@ function optimizeSentimentResponseForMobile(data: any): any {
     return {
       summary: data.summary,
       sentimentCounts: data.statistics.sentimentCounts,
-      averageSentiment: Math.round(data.statistics.averageSentiment * 100) / 100,
+      averageSentiment:
+        Math.round(data.statistics.averageSentiment * 100) / 100,
     };
   }
 
@@ -138,9 +149,9 @@ export const mobileRateLimitConfig = {
   message: {
     success: false,
     error: {
-      message: 'Too many requests from this device. Please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED',
-      retryAfter: '15 minutes',
+      message: "Too many requests from this device. Please try again later.",
+      code: "RATE_LIMIT_EXCEEDED",
+      retryAfter: "15 minutes",
     },
   },
   standardHeaders: true,
@@ -150,12 +161,16 @@ export const mobileRateLimitConfig = {
 /**
  * Lightweight response for mobile health checks
  */
-export const mobileHealthResponse = (req: Request, res: Response, next: NextFunction) => {
+export const mobileHealthResponse = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const isMobile = (req as any).isMobile;
 
-  if (isMobile && req.path === '/health') {
+  if (isMobile && req.path === "/health") {
     return res.status(200).json({
-      status: 'OK',
+      status: "OK",
       timestamp: new Date().toISOString(),
       mobile: true,
     });

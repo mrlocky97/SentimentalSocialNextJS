@@ -12,7 +12,7 @@ import {
   CampaignStatus,
   CampaignType,
   DataSource,
-} from '../enums/campaign.enum';
+} from "../enums/campaign.enum";
 
 // Re-export enums for easier access
 export {
@@ -224,7 +224,11 @@ export interface CampaignMetrics {
   cityDistribution: { city: string; count: number; percentage: number }[];
 
   // Language Analysis
-  languageDistribution: { language: string; count: number; percentage: number }[];
+  languageDistribution: {
+    language: string;
+    count: number;
+    percentage: number;
+  }[];
 
   // Influencer Analysis
   topInfluencers: {

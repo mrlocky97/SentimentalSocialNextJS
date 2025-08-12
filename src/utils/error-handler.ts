@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Custom error class for API errors
@@ -23,7 +23,7 @@ export class ApiError extends Error {
 export class ValidationError extends ApiError {
   constructor(message: string, details?: any) {
     super(message, 400, details);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
   }
 }
 
@@ -33,7 +33,7 @@ export class ValidationError extends ApiError {
 export class BusinessLogicError extends ApiError {
   constructor(message: string, details?: any) {
     super(message, 422, details);
-    this.name = 'BusinessLogicError';
+    this.name = "BusinessLogicError";
   }
 }
 
@@ -41,9 +41,9 @@ export class BusinessLogicError extends ApiError {
  * Custom error class for resource not found errors
  */
 export class NotFoundError extends ApiError {
-  constructor(resource: string = 'Resource') {
+  constructor(resource: string = "Resource") {
     super(`${resource} not found`, 404);
-    this.name = 'NotFoundError';
+    this.name = "NotFoundError";
   }
 }
 
@@ -55,13 +55,17 @@ export class SentimentAnalysisError {
    * Handle tweet validation errors
    */
   static invalidTweet(details?: any): ValidationError {
-    return new ValidationError('Tweet object with content is required', {
+    return new ValidationError("Tweet object with content is required", {
       expected: {
         tweet: {
-          tweetId: 'string',
-          content: 'string (required)',
-          author: { username: 'string', verified: 'boolean', followersCount: 'number' },
-          metrics: { likes: 'number', retweets: 'number', replies: 'number' },
+          tweetId: "string",
+          content: "string (required)",
+          author: {
+            username: "string",
+            verified: "boolean",
+            followersCount: "number",
+          },
+          metrics: { likes: "number", retweets: "number", replies: "number" },
         },
       },
       ...details,
@@ -72,8 +76,10 @@ export class SentimentAnalysisError {
    * Handle text validation errors
    */
   static invalidText(details?: any): ValidationError {
-    return new ValidationError('Text string is required', {
-      example: { text: "I love this product! It's amazing and works perfectly." },
+    return new ValidationError("Text string is required", {
+      example: {
+        text: "I love this product! It's amazing and works perfectly.",
+      },
       ...details,
     });
   }
@@ -85,18 +91,22 @@ export class SentimentAnalysisError {
     const message =
       receivedCount && receivedCount > 100
         ? `Maximum 100 tweets allowed per batch request. Received: ${receivedCount}`
-        : 'Array of tweets is required';
+        : "Array of tweets is required";
 
     return new ValidationError(message, {
       maxItems: 100,
       receivedCount,
       example: {
         tweets: [
-          { tweetId: '1', content: 'I love this product!', author: { username: 'user1' } },
           {
-            tweetId: '2',
-            content: 'Not satisfied with the service',
-            author: { username: 'user2' },
+            tweetId: "1",
+            content: "I love this product!",
+            author: { username: "user1" },
+          },
+          {
+            tweetId: "2",
+            content: "Not satisfied with the service",
+            author: { username: "user2" },
           },
         ],
       },
@@ -107,12 +117,12 @@ export class SentimentAnalysisError {
    * Handle model training errors
    */
   static invalidTrainingData(details?: any): ValidationError {
-    return new ValidationError('Array of training examples is required', {
+    return new ValidationError("Array of training examples is required", {
       example: {
         examples: [
-          { text: 'I love this product!', label: 'positive' },
-          { text: 'This is terrible service', label: 'negative' },
-          { text: 'The package arrived yesterday', label: 'neutral' },
+          { text: "I love this product!", label: "positive" },
+          { text: "This is terrible service", label: "negative" },
+          { text: "The package arrived yesterday", label: "neutral" },
         ],
       },
       ...details,
@@ -123,10 +133,10 @@ export class SentimentAnalysisError {
    * Handle invalid training examples
    */
   static noValidTrainingExamples(): ValidationError {
-    return new ValidationError('No valid training examples provided', {
+    return new ValidationError("No valid training examples provided", {
       requirements: {
-        text: 'Must be a non-empty string',
-        label: 'Must be one of: positive, negative, neutral',
+        text: "Must be a non-empty string",
+        label: "Must be one of: positive, negative, neutral",
       },
     });
   }
@@ -135,13 +145,16 @@ export class SentimentAnalysisError {
    * Handle analysis array validation errors
    */
   static invalidAnalysisArray(): ValidationError {
-    return new ValidationError('Array of sentiment analyses is required');
+    return new ValidationError("Array of sentiment analyses is required");
   }
 
   /**
    * Handle model processing errors
    */
-  static modelProcessingError(operation: string, error: Error): BusinessLogicError {
+  static modelProcessingError(
+    operation: string,
+    error: Error,
+  ): BusinessLogicError {
     return new BusinessLogicError(`Failed to ${operation}`, {
       operation,
       originalError: error.message,
@@ -154,7 +167,7 @@ export class SentimentAnalysisError {
    */
   static invalidSentimentMethod(method: string): ValidationError {
     return new ValidationError(`Invalid sentiment analysis method: ${method}`, {
-      validMethods: ['rule', 'naive'],
+      validMethods: ["rule", "naive"],
       received: method,
     });
   }
@@ -176,7 +189,7 @@ export const successResponse = (
   res: Response,
   data: any,
   message: string,
-  statusCode: number = 200
+  statusCode: number = 200,
 ) => {
   return res.status(statusCode).json({
     success: true,
@@ -189,12 +202,17 @@ export const successResponse = (
 /**
  * Error response helper
  */
-export const errorResponse = (res: Response, error: ApiError | Error, statusCode?: number) => {
-  const status = statusCode || (error instanceof ApiError ? error.statusCode : 500);
+export const errorResponse = (
+  res: Response,
+  error: ApiError | Error,
+  statusCode?: number,
+) => {
+  const status =
+    statusCode || (error instanceof ApiError ? error.statusCode : 500);
 
   const response: any = {
     success: false,
-    error: error.message || 'Internal server error',
+    error: error.message || "Internal server error",
     timestamp: new Date().toISOString(),
   };
 
@@ -204,11 +222,11 @@ export const errorResponse = (res: Response, error: ApiError | Error, statusCode
   }
 
   // Add stack trace in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     response.stack = error.stack;
   }
 
-  console.error(`❌ ${error.name || 'Error'}:`, error.message);
+  console.error(`❌ ${error.name || "Error"}:`, error.message);
   if (error.stack) {
     console.error(error.stack);
   }
@@ -219,7 +237,12 @@ export const errorResponse = (res: Response, error: ApiError | Error, statusCode
 /**
  * Global error handling middleware for Express applications
  */
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   // If response was already sent, delegate to default Express error handler
   if (res.headersSent) {
     return next(err);
@@ -231,35 +254,37 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
   }
 
   // Handle MongoDB/Mongoose errors
-  if (err.name === 'MongoError' || err.name === 'MongooseError') {
-    const mongoError = new ApiError('Database operation failed', 500, {
-      type: 'DatabaseError',
+  if (err.name === "MongoError" || err.name === "MongooseError") {
+    const mongoError = new ApiError("Database operation failed", 500, {
+      type: "DatabaseError",
       code: err.code,
     });
     return errorResponse(res, mongoError);
   }
 
   // Handle validation errors from express-validator or similar
-  if (err.name === 'ValidationError' && err.errors) {
-    const validationError = new ValidationError('Validation failed', {
+  if (err.name === "ValidationError" && err.errors) {
+    const validationError = new ValidationError("Validation failed", {
       fields: err.errors,
     });
     return errorResponse(res, validationError);
   }
 
   // Handle JSON parsing errors
-  if (err instanceof SyntaxError && 'body' in err) {
-    const parseError = new ValidationError('Invalid JSON format in request body');
+  if (err instanceof SyntaxError && "body" in err) {
+    const parseError = new ValidationError(
+      "Invalid JSON format in request body",
+    );
     return errorResponse(res, parseError);
   }
 
   // Handle unknown errors
   const unknownError = new ApiError(
-    process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message || 'Internal server error',
+    process.env.NODE_ENV === "production"
+      ? "An unexpected error occurred"
+      : err.message || "Internal server error",
     500,
-    process.env.NODE_ENV === 'development' ? { originalError: err } : undefined
+    process.env.NODE_ENV === "development" ? { originalError: err } : undefined,
   );
 
   return errorResponse(res, unknownError);

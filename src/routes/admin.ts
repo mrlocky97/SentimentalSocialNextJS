@@ -1,17 +1,18 @@
 /**
- * Admin Routes - Temporary endpoints for development
- * Remove in production
+ * Admin Routes - System monitoring and management endpoints
  */
 
-import { Router } from 'express';
+import { Router } from "express";
 import {
   ErrorCode,
   errorHandler,
   InternalServerError,
   NotFoundError,
   ResponseHelper,
-} from '../core/errors';
-import { MongoUserRepository } from '../repositories/mongo-user.repository';
+} from "../core/errors";
+import { MongoUserRepository } from "../repositories/mongo-user.repository";
+import { cacheService } from "../services/cache.service";
+import { performanceMonitor } from "../services/performance-monitor.service";
 
 const router = Router();
 const userRepository = new MongoUserRepository();
@@ -39,7 +40,7 @@ const userRepository = new MongoUserRepository();
  *                     $ref: '#/components/schemas/User'
  */
 router.get(
-  '/users',
+  "/users",
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const users = await userRepository.findMany();
     ResponseHelper.success(
@@ -48,9 +49,9 @@ router.get(
         users,
         count: users.length,
       },
-      'Users retrieved successfully'
+      "Users retrieved successfully",
     );
-  })
+  }),
 );
 
 /**
@@ -70,20 +71,20 @@ router.get(
  *         description: User deleted successfully
  */
 router.delete(
-  '/users/:id',
+  "/users/:id",
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
     const deleted = await userRepository.delete(id);
 
     if (!deleted) {
-      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
-        operation: 'delete_user',
+      throw new NotFoundError("User not found", ErrorCode.USER_NOT_FOUND, {
+        operation: "delete_user",
         additionalData: { userId: id },
       });
     }
 
-    ResponseHelper.success(res, null, 'User deleted successfully');
-  })
+    ResponseHelper.success(res, null, "User deleted successfully");
+  }),
 );
 
 /**
@@ -98,18 +99,75 @@ router.delete(
  *         description: All users cleared
  */
 router.post(
-  '/clear-users',
+  "/clear-users",
   errorHandler.expressAsyncWrapper(async () => {
     // This would need to be implemented in the repository
     throw new InternalServerError(
-      'Clear users functionality not implemented',
+      "Clear users functionality not implemented",
       ErrorCode.CONFIGURATION_ERROR,
       {
-        operation: 'clear_users',
-        additionalData: { reason: 'Method not implemented in repository' },
-      }
+        operation: "clear_users",
+        additionalData: { reason: "Method not implemented in repository" },
+      },
     );
-  })
+  }),
 );
+
+/**
+ * Enhanced monitoring endpoints
+ */
+
+// System health endpoint
+router.get("/health", (req, res) => {
+  try {
+    const healthStatus = performanceMonitor.getHealthStatus();
+    res.status(healthStatus.status === "critical" ? 503 : 200).json({
+      success: true,
+      data: healthStatus,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, error: "Health check failed. " + error });
+  }
+});
+
+// Performance metrics endpoint
+router.get("/metrics", (req, res) => {
+  try {
+    const timeWindow = parseInt(req.query.timeWindow as string) || 3600000;
+    const metrics = performanceMonitor.getMetrics(timeWindow);
+    res.json({ success: true, data: metrics });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, error: "Metrics retrieval failed. " + error });
+  }
+});
+
+// Cache statistics endpoint
+router.get("/cache-stats", (req, res) => {
+  try {
+    const stats = cacheService.getStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Cache stats retrieval failed. " + error,
+    });
+  }
+});
+
+// Clear cache endpoint
+router.post("/clear-cache", (req, res) => {
+  try {
+    cacheService.clear();
+    res.json({ success: true, message: "Cache cleared successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, error: "Cache clear failed." + error });
+  }
+});
 
 export default router;

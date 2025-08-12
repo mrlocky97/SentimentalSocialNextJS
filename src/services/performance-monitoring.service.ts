@@ -3,15 +3,15 @@
  * Tracks and reports application performance metrics
  */
 
-import { performanceCache } from './performance-cache.service';
-import { queryOptimizer } from './query-optimization.service';
+import { performanceCache } from "./performance-cache.service";
+import { queryOptimizer } from "./query-optimization.service";
 
 export interface PerformanceMetric {
   name: string;
   value: number;
   unit: string;
   timestamp: Date;
-  category: 'response_time' | 'throughput' | 'resource_usage' | 'error_rate';
+  category: "response_time" | "throughput" | "resource_usage" | "error_rate";
   tags?: Record<string, string>;
 }
 
@@ -48,8 +48,8 @@ export class PerformanceMonitoringService {
     name: string,
     value: number,
     unit: string,
-    category: PerformanceMetric['category'],
-    tags?: Record<string, string>
+    category: PerformanceMetric["category"],
+    tags?: Record<string, string>,
   ): void {
     const metric: PerformanceMetric = {
       name,
@@ -74,22 +74,22 @@ export class PerformanceMonitoringService {
   async measureExecutionTime<T>(
     name: string,
     fn: () => Promise<T>,
-    tags?: Record<string, string>
+    tags?: Record<string, string>,
   ): Promise<T> {
     const startTime = Date.now();
     try {
       const result = await fn();
       const executionTime = Date.now() - startTime;
 
-      this.recordMetric(name, executionTime, 'ms', 'response_time', tags);
+      this.recordMetric(name, executionTime, "ms", "response_time", tags);
 
       return result;
     } catch (error) {
       const executionTime = Date.now() - startTime;
 
-      this.recordMetric(`${name}_error`, executionTime, 'ms', 'error_rate', {
+      this.recordMetric(`${name}_error`, executionTime, "ms", "error_rate", {
         ...tags,
-        error: 'true',
+        error: "true",
       });
 
       throw error;
@@ -105,7 +105,7 @@ export class PerformanceMonitoringService {
     statusCode: number,
     responseTime: number,
     requestSize?: number,
-    responseSize?: number
+    responseSize?: number,
   ): void {
     const tags = {
       method,
@@ -114,19 +114,37 @@ export class PerformanceMonitoringService {
       status_class: `${Math.floor(statusCode / 100)}xx`,
     };
 
-    this.recordMetric('api_response_time', responseTime, 'ms', 'response_time', tags);
-    this.recordMetric('api_requests', 1, 'count', 'throughput', tags);
+    this.recordMetric(
+      "api_response_time",
+      responseTime,
+      "ms",
+      "response_time",
+      tags,
+    );
+    this.recordMetric("api_requests", 1, "count", "throughput", tags);
 
     if (requestSize) {
-      this.recordMetric('request_size', requestSize, 'bytes', 'resource_usage', tags);
+      this.recordMetric(
+        "request_size",
+        requestSize,
+        "bytes",
+        "resource_usage",
+        tags,
+      );
     }
 
     if (responseSize) {
-      this.recordMetric('response_size', responseSize, 'bytes', 'resource_usage', tags);
+      this.recordMetric(
+        "response_size",
+        responseSize,
+        "bytes",
+        "resource_usage",
+        tags,
+      );
     }
 
     if (statusCode >= 400) {
-      this.recordMetric('api_errors', 1, 'count', 'error_rate', tags);
+      this.recordMetric("api_errors", 1, "count", "error_rate", tags);
     }
   }
 
@@ -141,24 +159,35 @@ export class PerformanceMonitoringService {
     };
 
     const filteredMetrics = this.metrics.filter(
-      (m) => m.timestamp >= range.start && m.timestamp <= range.end
+      (m) => m.timestamp >= range.start && m.timestamp <= range.end,
     );
 
-    const responseTimeMetrics = filteredMetrics.filter((m) => m.category === 'response_time');
-    const throughputMetrics = filteredMetrics.filter((m) => m.category === 'throughput');
-    const errorMetrics = filteredMetrics.filter((m) => m.category === 'error_rate');
+    const responseTimeMetrics = filteredMetrics.filter(
+      (m) => m.category === "response_time",
+    );
+    const throughputMetrics = filteredMetrics.filter(
+      (m) => m.category === "throughput",
+    );
+    const errorMetrics = filteredMetrics.filter(
+      (m) => m.category === "error_rate",
+    );
 
     // Calculate summary statistics
     const responseTimes = responseTimeMetrics.map((m) => m.value);
     const avgResponseTime =
       responseTimes.length > 0
-        ? responseTimes.reduce((sum, val) => sum + val, 0) / responseTimes.length
+        ? responseTimes.reduce((sum, val) => sum + val, 0) /
+          responseTimes.length
         : 0;
 
     const p95ResponseTime = this.calculatePercentile(responseTimes, 95);
 
-    const totalRequests = throughputMetrics.reduce((sum, m) => sum + m.value, 0);
-    const timeRangeHours = (range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60);
+    const totalRequests = throughputMetrics.reduce(
+      (sum, m) => sum + m.value,
+      0,
+    );
+    const timeRangeHours =
+      (range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60);
     const requestsPerSecond = totalRequests / (timeRangeHours * 3600);
 
     const totalErrors = errorMetrics.reduce((sum, m) => sum + m.value, 0);
@@ -177,9 +206,9 @@ export class PerformanceMonitoringService {
         cacheHitRate: queryStats.cacheHitRate,
       },
       trends: {
-        responseTime: this.aggregateMetricsByTime(responseTimeMetrics, 'hour'),
-        throughput: this.aggregateMetricsByTime(throughputMetrics, 'hour'),
-        errors: this.aggregateMetricsByTime(errorMetrics, 'hour'),
+        responseTime: this.aggregateMetricsByTime(responseTimeMetrics, "hour"),
+        throughput: this.aggregateMetricsByTime(throughputMetrics, "hour"),
+        errors: this.aggregateMetricsByTime(errorMetrics, "hour"),
       },
       recommendations: this.generateRecommendations({
         avgResponseTime,
@@ -202,7 +231,9 @@ export class PerformanceMonitoringService {
     const last5Minutes = new Date(now.getTime() - 5 * 60 * 1000);
 
     const recentMetrics = this.metrics.filter((m) => m.timestamp >= lastMinute);
-    const last5MinMetrics = this.metrics.filter((m) => m.timestamp >= last5Minutes);
+    const last5MinMetrics = this.metrics.filter(
+      (m) => m.timestamp >= last5Minutes,
+    );
 
     const current: Record<string, number> = {};
     const recent: Record<string, number[]> = {};
@@ -241,26 +272,51 @@ export class PerformanceMonitoringService {
   private collectSystemMetrics(): void {
     // Memory usage
     const memUsage = process.memoryUsage();
-    this.recordMetric('memory_heap_used', memUsage.heapUsed, 'bytes', 'resource_usage');
-    this.recordMetric('memory_heap_total', memUsage.heapTotal, 'bytes', 'resource_usage');
-    this.recordMetric('memory_rss', memUsage.rss, 'bytes', 'resource_usage');
+    this.recordMetric(
+      "memory_heap_used",
+      memUsage.heapUsed,
+      "bytes",
+      "resource_usage",
+    );
+    this.recordMetric(
+      "memory_heap_total",
+      memUsage.heapTotal,
+      "bytes",
+      "resource_usage",
+    );
+    this.recordMetric("memory_rss", memUsage.rss, "bytes", "resource_usage");
 
     // CPU usage (simplified)
     const cpuUsage = process.cpuUsage();
-    this.recordMetric('cpu_user', cpuUsage.user, 'microseconds', 'resource_usage');
-    this.recordMetric('cpu_system', cpuUsage.system, 'microseconds', 'resource_usage');
+    this.recordMetric(
+      "cpu_user",
+      cpuUsage.user,
+      "microseconds",
+      "resource_usage",
+    );
+    this.recordMetric(
+      "cpu_system",
+      cpuUsage.system,
+      "microseconds",
+      "resource_usage",
+    );
 
     // Event loop lag (simplified)
     const start = Date.now();
     setImmediate(() => {
       const lag = Date.now() - start;
-      this.recordMetric('event_loop_lag', lag, 'ms', 'response_time');
+      this.recordMetric("event_loop_lag", lag, "ms", "response_time");
     });
 
     // Cache metrics
     const cacheStats = performanceCache.getStats();
-    this.recordMetric('cache_size', cacheStats.size, 'count', 'resource_usage');
-    this.recordMetric('cache_hit_rate', cacheStats.hitRate, 'percentage', 'throughput');
+    this.recordMetric("cache_size", cacheStats.size, "count", "resource_usage");
+    this.recordMetric(
+      "cache_hit_rate",
+      cacheStats.hitRate,
+      "percentage",
+      "throughput",
+    );
   }
 
   /**
@@ -279,7 +335,7 @@ export class PerformanceMonitoringService {
    */
   private aggregateMetricsByTime(
     metrics: PerformanceMetric[],
-    interval: 'minute' | 'hour' | 'day'
+    interval: "minute" | "hour" | "day",
   ): Array<{ timestamp: Date; value: number }> {
     const intervalMs = {
       minute: 60 * 1000,
@@ -290,7 +346,8 @@ export class PerformanceMonitoringService {
     const groups = new Map<number, number[]>();
 
     metrics.forEach((metric) => {
-      const bucketTime = Math.floor(metric.timestamp.getTime() / intervalMs) * intervalMs;
+      const bucketTime =
+        Math.floor(metric.timestamp.getTime() / intervalMs) * intervalMs;
       if (!groups.has(bucketTime)) {
         groups.set(bucketTime, []);
       }
@@ -316,29 +373,31 @@ export class PerformanceMonitoringService {
 
     if (summary.avgResponseTime > 1000) {
       recommendations.push(
-        'Average response time is high (>1s). Consider optimizing slow queries.'
+        "Average response time is high (>1s). Consider optimizing slow queries.",
       );
     }
 
     if (summary.p95ResponseTime > 2000) {
       recommendations.push(
-        '95th percentile response time is very high (>2s). Investigate performance bottlenecks.'
+        "95th percentile response time is very high (>2s). Investigate performance bottlenecks.",
       );
     }
 
     if (summary.errorRate > 0.05) {
-      recommendations.push('Error rate is high (>5%). Check error logs and fix failing endpoints.');
+      recommendations.push(
+        "Error rate is high (>5%). Check error logs and fix failing endpoints.",
+      );
     }
 
     if (summary.cacheHitRate < 0.7) {
       recommendations.push(
-        'Cache hit rate is low (<70%). Review caching strategy and TTL settings.'
+        "Cache hit rate is low (<70%). Review caching strategy and TTL settings.",
       );
     }
 
     if (recommendations.length === 0) {
       recommendations.push(
-        'Performance metrics look good! Keep monitoring for continued optimization.'
+        "Performance metrics look good! Keep monitoring for continued optimization.",
       );
     }
 

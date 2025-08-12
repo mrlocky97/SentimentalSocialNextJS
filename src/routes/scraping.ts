@@ -3,12 +3,12 @@
  * Usa twikit para scraping sin API oficial
  */
 
-import { Request, Response, Router } from 'express';
-import { Label } from '../enums/sentiment.enum';
-import { TweetDatabaseService } from '../services/tweet-database.service';
-import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
-import { TwitterAuthManager } from '../services/twitter-auth-manager.service';
-import { TwitterRealScraperService } from '../services/twitter-scraper.service';
+import { Request, Response, Router } from "express";
+import { Label } from "../enums/sentiment.enum";
+import { TweetDatabaseService } from "../services/tweet-database.service";
+import { TweetSentimentAnalysisManager } from "../services/tweet-sentiment-analysis.manager.service";
+import { TwitterAuthManager } from "../services/twitter-auth-manager.service";
+import { TwitterRealScraperService } from "../services/twitter-scraper.service";
 
 const router = Router();
 
@@ -39,7 +39,9 @@ function processSentimentAnalysis(tweets: any[], analyses: any[]) {
     if (!analysis) return tweet;
 
     const sentiment = analysis.analysis.sentiment;
-    const label = [Label.VERY_POSITIVE, Label.POSITIVE].includes(sentiment.label)
+    const label = [Label.VERY_POSITIVE, Label.POSITIVE].includes(
+      sentiment.label,
+    )
       ? Label.POSITIVE
       : [Label.VERY_NEGATIVE, Label.NEGATIVE].includes(sentiment.label)
         ? Label.NEGATIVE
@@ -63,7 +65,7 @@ function processSentimentAnalysis(tweets: any[], analyses: any[]) {
 
 // Función para manejar errores de scraping
 function handleScrapingError(res: Response, error: unknown, context: string) {
-  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  const errorMessage = error instanceof Error ? error.message : "Unknown error";
   console.error(`Error in ${context}:`, error);
   res.status(500).json({
     success: false,
@@ -76,11 +78,11 @@ function handleScrapingError(res: Response, error: unknown, context: string) {
 function validateRequestParams(
   res: Response,
   params: { [key: string]: any },
-  options: { minTweets?: number; maxTweets?: number } = {}
+  options: { minTweets?: number; maxTweets?: number } = {},
 ): boolean {
   const { minTweets = 1, maxTweets = 1000 } = options;
 
-  if (!params.identifier || typeof params.identifier !== 'string') {
+  if (!params.identifier || typeof params.identifier !== "string") {
     res.status(400).json({
       success: false,
       error: `${params.type} is required and must be a string`,
@@ -97,7 +99,10 @@ function validateRequestParams(
     return false;
   }
 
-  if (params.tweetsToRetrieve < minTweets || params.tweetsToRetrieve > maxTweets) {
+  if (
+    params.tweetsToRetrieve < minTweets ||
+    params.tweetsToRetrieve > maxTweets
+  ) {
     res.status(400).json({
       success: false,
       error: `maxTweets/limit must be between ${minTweets} and ${maxTweets}`,
@@ -109,8 +114,8 @@ function validateRequestParams(
   if (params.language && !params.validLanguages.includes(params.language)) {
     res.status(400).json({
       success: false,
-      error: `Invalid language code. Must be one of: ${params.validLanguages.join(', ')}`,
-      example: { language: 'es' },
+      error: `Invalid language code. Must be one of: ${params.validLanguages.join(", ")}`,
+      example: { language: "es" },
     });
     return false;
   }
@@ -120,22 +125,27 @@ function validateRequestParams(
 
 // Sanitizadores
 function sanitizeHashtag(input: string): string {
-  const trimmed = (input || '').trim().replace(/^#/, '');
-  return trimmed.replace(SANITIZE_HASHTAG, '').slice(0, 50);
+  const trimmed = (input || "").trim().replace(/^#/, "");
+  return trimmed.replace(SANITIZE_HASHTAG, "").slice(0, 50);
 }
 
 function sanitizeUsername(input: string): string {
-  const val = (input || '').trim().replace(/^@/, '').slice(0, 15);
+  const val = (input || "").trim().replace(/^@/, "").slice(0, 15);
   return val;
 }
 
 function sanitizeQuery(input: string): string {
-  const trimmed = (input || '').trim().slice(0, 120);
+  const trimmed = (input || "").trim().slice(0, 120);
   // Elimina caracteres no permitidos y colapsa espacios
-  return trimmed.replace(SAFE_QUERY, '').replace(/\s+/g, ' ');
+  return trimmed.replace(SAFE_QUERY, "").replace(/\s+/g, " ");
 }
 
-function ensureNotEmpty(res: Response, value: string, field: string, example: string): boolean {
+function ensureNotEmpty(
+  res: Response,
+  value: string,
+  field: string,
+  example: string,
+): boolean {
   if (!value) {
     res.status(400).json({
       success: false,
@@ -151,9 +161,12 @@ function ensureNotEmpty(res: Response, value: string, field: string, example: st
 async function handleScrapingRequest(
   req: Request,
   res: Response,
-  scrapingFunction: (scraper: TwitterRealScraperService, options: any) => Promise<any>,
+  scrapingFunction: (
+    scraper: TwitterRealScraperService,
+    options: any,
+  ) => Promise<any>,
   context: {
-    type: 'hashtag' | 'user' | 'search';
+    type: "hashtag" | "user" | "search";
     identifier: string;
     exampleValue: string;
   },
@@ -163,7 +176,7 @@ async function handleScrapingRequest(
     defaultTweets?: number;
     includeReplies?: boolean;
     languageFilter?: boolean;
-  } = {}
+  } = {},
 ) {
   const {
     minTweets = 1,
@@ -175,29 +188,34 @@ async function handleScrapingRequest(
 
   try {
     // Concurrencia por IP
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.connection.remoteAddress || "unknown";
     const now = Date.now();
     // Cleanup de entradas expiradas
     for (const [key, ts] of inFlightByIp.entries()) {
       if (now - ts > INFLIGHT_TTL_MS) inFlightByIp.delete(key);
     }
-    const currentCount = [...inFlightByIp.keys()].filter((k) => k === ip).length;
+    const currentCount = [...inFlightByIp.keys()].filter(
+      (k) => k === ip,
+    ).length;
     if (currentCount >= MAX_CONCURRENT_BY_IP) {
       return res.status(429).json({
         success: false,
-        error: 'Too many concurrent scraping requests from this IP. Please wait.',
-        code: 'CONCURRENCY_LIMIT',
+        error:
+          "Too many concurrent scraping requests from this IP. Please wait.",
+        code: "CONCURRENCY_LIMIT",
       });
     }
     inFlightByIp.set(ip, now);
 
     const params = {
       identifier: req.body[context.type] || req.body.query || req.body.username,
-      tweetsToRetrieve: Number(req.body.limit || req.body.maxTweets || defaultTweets),
+      tweetsToRetrieve: Number(
+        req.body.limit || req.body.maxTweets || defaultTweets,
+      ),
       analyzeSentiment: req.body.analyzeSentiment !== false,
       campaignId: req.body.campaignId,
-      language: req.body.language || 'en',
-      validLanguages: ['en', 'es', 'fr', 'de'],
+      language: req.body.language || "en",
+      validLanguages: ["en", "es", "fr", "de"],
       type: context.type,
       exampleValue: context.exampleValue,
     };
@@ -205,28 +223,31 @@ async function handleScrapingRequest(
     if (!validateRequestParams(res, params, { minTweets, maxTweets })) return;
 
     // Sanitización específica por tipo
-    let safeIdentifier = '';
-    if (context.type === 'hashtag') {
+    let safeIdentifier = "";
+    if (context.type === "hashtag") {
       safeIdentifier = sanitizeHashtag(params.identifier);
-      if (!ensureNotEmpty(res, safeIdentifier, 'hashtag', 'JustDoIt')) return;
-    } else if (context.type === 'user') {
+      if (!ensureNotEmpty(res, safeIdentifier, "hashtag", "JustDoIt")) return;
+    } else if (context.type === "user") {
       const uname = sanitizeUsername(params.identifier);
       if (!VALID_USERNAME.test(uname)) {
         return res.status(400).json({
           success: false,
-          error: 'Invalid username. Use 1-15 alphanumeric or underscore characters, without @',
-          example: { username: 'nike' },
+          error:
+            "Invalid username. Use 1-15 alphanumeric or underscore characters, without @",
+          example: { username: "nike" },
         });
       }
       safeIdentifier = uname;
-    } else if (context.type === 'search') {
+    } else if (context.type === "search") {
       const q = sanitizeQuery(params.identifier);
-      if (!ensureNotEmpty(res, q, 'query', 'nike shoes')) return;
+      if (!ensureNotEmpty(res, q, "query", "nike shoes")) return;
       // Para evitar inyección en query del scraper, reducimos a primera palabra o hashtag
       const hashtagMatch = q.match(/#([A-Za-z0-9_]+)/);
       const firstWord = q.split(/\s+/)[0];
-      safeIdentifier = sanitizeHashtag(hashtagMatch ? hashtagMatch[1] : firstWord);
-      if (!ensureNotEmpty(res, safeIdentifier, 'query', 'nike')) return;
+      safeIdentifier = sanitizeHashtag(
+        hashtagMatch ? hashtagMatch[1] : firstWord,
+      );
+      if (!ensureNotEmpty(res, safeIdentifier, "query", "nike")) return;
     }
 
     const startTime = Date.now();
@@ -241,13 +262,22 @@ async function handleScrapingRequest(
 
     // Ejecutar scraping con identificador saneado y opciones controladas
     let scrapingResult: any;
-    if (context.type === 'hashtag') {
-      scrapingResult = await scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
-    } else if (context.type === 'user') {
-      scrapingResult = await scraper.scrapeByUser(safeIdentifier, scrapingOptions);
+    if (context.type === "hashtag") {
+      scrapingResult = await scraper.scrapeByHashtag(
+        safeIdentifier,
+        scrapingOptions,
+      );
+    } else if (context.type === "user") {
+      scrapingResult = await scraper.scrapeByUser(
+        safeIdentifier,
+        scrapingOptions,
+      );
     } else {
       // Búsqueda: usamos hashtag/primer término como proxy seguro
-      scrapingResult = await scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
+      scrapingResult = await scraper.scrapeByHashtag(
+        safeIdentifier,
+        scrapingOptions,
+      );
     }
 
     // Procesamiento de sentimiento
@@ -255,20 +285,26 @@ async function handleScrapingRequest(
     let tweetsWithSentiment = scrapingResult.tweets;
 
     if (params.analyzeSentiment && tweetsWithSentiment.length > 0) {
-      const analyses = await sentimentManager.analyzeTweetsBatch(tweetsWithSentiment);
+      const analyses =
+        await sentimentManager.analyzeTweetsBatch(tweetsWithSentiment);
       sentimentSummary = sentimentManager.generateStatistics(analyses);
-      tweetsWithSentiment = processSentimentAnalysis(tweetsWithSentiment, analyses);
+      tweetsWithSentiment = processSentimentAnalysis(
+        tweetsWithSentiment,
+        analyses,
+      );
     }
 
     // Guardar en base de datos
     if (tweetsWithSentiment.length > 0) {
       try {
-        console.log(`💾 Attempting to save ${tweetsWithSentiment.length} tweets to database...`);
+        console.log(
+          `💾 Attempting to save ${tweetsWithSentiment.length} tweets to database...`,
+        );
         console.log(`📋 Campaign ID: ${params.campaignId}`);
 
         const saveResult = await tweetDatabaseService.saveTweetsBulk(
           tweetsWithSentiment,
-          params.campaignId
+          params.campaignId,
         );
 
         console.log(`✅ Database save result:`, {
@@ -284,10 +320,10 @@ async function handleScrapingRequest(
           console.log(`❌ Save errors:`, saveResult.errorMessages);
         }
       } catch (dbError) {
-        console.error('❌ Database save error:', dbError);
+        console.error("❌ Database save error:", dbError);
       }
     } else {
-      console.log('⚠️ No tweets to save to database');
+      console.log("⚠️ No tweets to save to database");
     }
 
     const executionTime = Date.now() - startTime;
@@ -295,16 +331,19 @@ async function handleScrapingRequest(
     res.json({
       success: true,
       data: {
-        [context.type]: context.type === 'hashtag' ? `#${safeIdentifier}` : `@${safeIdentifier}`,
+        [context.type]:
+          context.type === "hashtag"
+            ? `#${safeIdentifier}`
+            : `@${safeIdentifier}`,
         requested: params.tweetsToRetrieve,
         totalFound: scrapingResult.totalFound,
         totalScraped: tweetsWithSentiment.length,
         tweets: tweetsWithSentiment,
         sentiment_summary: sentimentSummary,
-        campaignId: params.campaignId ?? '',
+        campaignId: params.campaignId ?? "",
         campaignInfo: {
-          id: params.campaignId ?? '',
-          type: params.campaignId ? 'user-provided' : 'auto-generated',
+          id: params.campaignId ?? "",
+          type: params.campaignId ? "user-provided" : "auto-generated",
           source: context.type,
         },
         rate_limit: {
@@ -315,13 +354,13 @@ async function handleScrapingRequest(
       execution_time: executionTime,
       message: `Scraped ${tweetsWithSentiment.length}/${params.tweetsToRetrieve} ${
         context.type
-      } tweets${params.analyzeSentiment ? ' with sentiment' : ''} → Campaign: ${params.campaignId}`,
+      } tweets${params.analyzeSentiment ? " with sentiment" : ""} → Campaign: ${params.campaignId}`,
     });
   } catch (error) {
     handleScrapingError(res, error, `${context.type} scraping`);
   } finally {
     // Libera la marca de concurrencia del IP
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.connection.remoteAddress || "unknown";
     inFlightByIp.delete(ip);
   }
 }
@@ -408,13 +447,13 @@ async function handleScrapingRequest(
  *       500:
  *         description: Scraping failed
  */
-router.post('/hashtag', async (req: Request, res: Response) => {
+router.post("/hashtag", async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
     async () => ({}), // ignorado, usamos la ruta segura dentro de handle
-    { type: 'hashtag', identifier: req.body.hashtag, exampleValue: 'JustDoIt' },
-    { languageFilter: true }
+    { type: "hashtag", identifier: req.body.hashtag, exampleValue: "JustDoIt" },
+    { languageFilter: true },
   );
 });
 
@@ -470,13 +509,13 @@ router.post('/hashtag', async (req: Request, res: Response) => {
  *       500:
  *         description: Scraping failed
  */
-router.post('/user', async (req: Request, res: Response) => {
+router.post("/user", async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
     async () => ({}), // ignorado, usamos la ruta segura dentro de handle
-    { type: 'user', identifier: req.body.username, exampleValue: 'nike' },
-    { maxTweets: 500, defaultTweets: 30 }
+    { type: "user", identifier: req.body.username, exampleValue: "nike" },
+    { maxTweets: 500, defaultTweets: 30 },
   );
 });
 
@@ -534,13 +573,13 @@ router.post('/user', async (req: Request, res: Response) => {
  *       500:
  *         description: Search failed
  */
-router.post('/search', async (req: Request, res: Response) => {
+router.post("/search", async (req: Request, res: Response) => {
   await handleScrapingRequest(
     req,
     res,
     async () => ({}), // ignorado, usamos la ruta segura dentro de handle
-    { type: 'search', identifier: req.body.query, exampleValue: 'nike shoes' },
-    { languageFilter: true }
+    { type: "search", identifier: req.body.query, exampleValue: "nike shoes" },
+    { languageFilter: true },
   );
 });
 
@@ -572,7 +611,7 @@ router.post('/search', async (req: Request, res: Response) => {
  *                     last_scraping:
  *                       type: object
  */
-router.get('/status', async (req: Request, res: Response) => {
+router.get("/status", async (req: Request, res: Response) => {
   try {
     const scraper = await getScraperService();
     const rateLimitStatus = scraper.getRateLimitStatus();
@@ -581,9 +620,9 @@ router.get('/status', async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: {
-        service_status: 'operational',
+        service_status: "operational",
         authentication: {
-          status: authStatusDetail.isAuthenticated ? 'authenticated' : 'failed',
+          status: authStatusDetail.isAuthenticated ? "authenticated" : "failed",
           last_check: authStatusDetail.lastCheck,
           consecutive_failures: authStatusDetail.consecutiveFailures,
         },
@@ -593,15 +632,15 @@ router.get('/status', async (req: Request, res: Response) => {
           request_count: rateLimitStatus.requestCount,
         },
         scraper_info: {
-          type: '@the-convocation/twitter-scraper',
+          type: "@the-convocation/twitter-scraper",
           max_tweets_per_request: 1000,
-          rate_limit_window: '1 hour',
+          rate_limit_window: "1 hour",
         },
       },
-      message: 'Scraping service operational',
+      message: "Scraping service operational",
     });
   } catch (error) {
-    handleScrapingError(res, error, 'status check');
+    handleScrapingError(res, error, "status check");
   }
 });
 
@@ -629,19 +668,21 @@ router.get('/status', async (req: Request, res: Response) => {
  *       500:
  *         description: Re-authentication failed
  */
-router.post('/reauth', async (req: Request, res: Response) => {
+router.post("/reauth", async (req: Request, res: Response) => {
   try {
     await twitterAuth.forceReauth();
     const status = twitterAuth.getStatus();
 
     res.json({
       success: status.ready,
-      message: status.ready ? 'Re-authentication successful' : 'Re-authentication failed',
+      message: status.ready
+        ? "Re-authentication successful"
+        : "Re-authentication failed",
       error: status.error,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    handleScrapingError(res, error, 're-authentication');
+    handleScrapingError(res, error, "re-authentication");
   }
 });
 
@@ -668,7 +709,7 @@ router.post('/reauth', async (req: Request, res: Response) => {
  *       200:
  *         description: Tweets retrieved successfully
  */
-router.get('/tweets', async (req: Request, res: Response) => {
+router.get("/tweets", async (req: Request, res: Response) => {
   try {
     const { campaignId, limit = 10 } = req.query;
 
@@ -676,13 +717,13 @@ router.get('/tweets', async (req: Request, res: Response) => {
     if (campaignId) {
       tweets = await tweetDatabaseService.getTweetsByCampaign(
         campaignId as string,
-        parseInt(limit as string)
+        parseInt(limit as string),
       );
     } else {
       // Get recent tweets from any campaign
       tweets = await tweetDatabaseService.getTweetsByHashtag(
-        '', // Empty hashtag to get all
-        parseInt(limit as string)
+        "", // Empty hashtag to get all
+        parseInt(limit as string),
       );
     }
 
@@ -690,10 +731,10 @@ router.get('/tweets', async (req: Request, res: Response) => {
       success: true,
       data: {
         total: tweets.length,
-        campaignId: campaignId || 'all',
+        campaignId: campaignId || "all",
         tweets: tweets.map((tweet) => ({
           tweetId: tweet.tweetId,
-          content: tweet.content.substring(0, 100) + '...',
+          content: tweet.content.substring(0, 100) + "...",
           campaignId: tweet.campaignId,
           sentiment: tweet.sentiment,
           createdAt: tweet.createdAt,
@@ -703,11 +744,11 @@ router.get('/tweets', async (req: Request, res: Response) => {
       message: `Found ${tweets.length} tweets in database`,
     });
   } catch (error) {
-    console.error('Error retrieving tweets:', error);
+    console.error("Error retrieving tweets:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve tweets from database',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      error: "Failed to retrieve tweets from database",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });

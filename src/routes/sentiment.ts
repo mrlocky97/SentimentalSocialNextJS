@@ -3,11 +3,15 @@
  * API endpoints for tweet sentiment analysis and marketing insights
  */
 
-import { Request, Response, Router } from 'express';
-import { Method } from '../enums/sentiment.enum';
-import { sentimentService } from '../services/sentiment.service';
-import { Tweet } from '../types/twitter';
-import { asyncHandler, SentimentAnalysisError, successResponse } from '../utils/error-handler';
+import { Request, Response, Router } from "express";
+import { Method } from "../enums/sentiment.enum";
+import { sentimentService } from "../services/sentiment.service";
+import { Tweet } from "../types/twitter";
+import {
+  asyncHandler,
+  SentimentAnalysisError,
+  successResponse,
+} from "../utils/error-handler";
 
 const router = Router();
 
@@ -55,18 +59,25 @@ const router = Router();
  *         description: Invalid text input
  */
 router.post(
-  '/analyze-text',
+  "/analyze-text",
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
     // Use the hybrid method for best precision (default in the engine)
-    const result = await sentimentService.testSentimentAnalysis({ text, method: Method.hybrid });
-    return successResponse(res, result, 'Text sentiment analysis completed successfully');
-  })
+    const result = await sentimentService.testSentimentAnalysis({
+      text,
+      method: Method.hybrid,
+    });
+    return successResponse(
+      res,
+      result,
+      "Text sentiment analysis completed successfully",
+    );
+  }),
 );
 
 /**
@@ -137,17 +148,24 @@ router.post(
  *         description: Invalid text input
  */
 router.post(
-  '/analyze-multilang',
+  "/analyze-multilang",
   asyncHandler(async (req: Request, res: Response) => {
     const { text, language } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
-    const result = await sentimentService.analyzeMultiLanguageText(text, language);
-    return successResponse(res, result, 'Multi-language sentiment analysis completed successfully');
-  })
+    const result = await sentimentService.analyzeMultiLanguageText(
+      text,
+      language,
+    );
+    return successResponse(
+      res,
+      result,
+      "Multi-language sentiment analysis completed successfully",
+    );
+  }),
 );
 
 /**
@@ -178,7 +196,7 @@ router.post(
  *         description: Invalid tweet data
  */
 router.post(
-  '/analyze',
+  "/analyze",
   asyncHandler(async (req: Request, res: Response) => {
     const { tweet, config } = req.body;
 
@@ -186,9 +204,16 @@ router.post(
       throw SentimentAnalysisError.invalidTweet();
     }
 
-    const analysis = await sentimentService.analyzeTweet(tweet as Tweet, config);
-    return successResponse(res, analysis, 'Tweet sentiment analysis completed successfully');
-  })
+    const analysis = await sentimentService.analyzeTweet(
+      tweet as Tweet,
+      config,
+    );
+    return successResponse(
+      res,
+      analysis,
+      "Tweet sentiment analysis completed successfully",
+    );
+  }),
 );
 
 /**
@@ -223,7 +248,7 @@ router.post(
  *         description: Batch sentiment analysis completed
  */
 router.post(
-  '/batch',
+  "/batch",
   asyncHandler(async (req: Request, res: Response) => {
     const { tweets, config, includeStats = true } = req.body;
 
@@ -238,14 +263,14 @@ router.post(
     const result = await sentimentService.analyzeTweetsBatch(
       tweets as Tweet[],
       config,
-      includeStats
+      includeStats,
     );
     return successResponse(
       res,
       result,
-      `Successfully analyzed ${result.summary.totalProcessed} tweets`
+      `Successfully analyzed ${result.summary.totalProcessed} tweets`,
     );
-  })
+  }),
 );
 
 /**
@@ -273,7 +298,7 @@ router.post(
  *         description: Statistics generated successfully
  */
 router.post(
-  '/statistics',
+  "/statistics",
   asyncHandler(async (req: Request, res: Response) => {
     const { analyses } = req.body;
 
@@ -282,8 +307,12 @@ router.post(
     }
 
     const statistics = sentimentService.generateStatistics(analyses);
-    return successResponse(res, statistics, `Statistics generated for ${analyses.length} analyses`);
-  })
+    return successResponse(
+      res,
+      statistics,
+      `Statistics generated for ${analyses.length} analyses`,
+    );
+  }),
 );
 
 /**
@@ -315,7 +344,7 @@ router.post(
  *         description: Sentiment trends generated successfully
  */
 router.post(
-  '/trends',
+  "/trends",
   asyncHandler(async (req: Request, res: Response) => {
     const { analyses, intervalHours = 1 } = req.body;
 
@@ -323,9 +352,16 @@ router.post(
       throw SentimentAnalysisError.invalidAnalysisArray();
     }
 
-    const result = sentimentService.generateSentimentTrends(analyses, intervalHours);
-    return successResponse(res, result, `Generated ${result.totalDataPoints} trend data points`);
-  })
+    const result = sentimentService.generateSentimentTrends(
+      analyses,
+      intervalHours,
+    );
+    return successResponse(
+      res,
+      result,
+      `Generated ${result.totalDataPoints} trend data points`,
+    );
+  }),
 );
 
 /**
@@ -339,11 +375,15 @@ router.post(
  *         description: Demo analysis completed successfully
  */
 router.get(
-  '/demo',
+  "/demo",
   asyncHandler(async (req: Request, res: Response) => {
     const result = await sentimentService.getDemoAnalysis();
-    return successResponse(res, result, 'Demo sentiment analysis completed successfully');
-  })
+    return successResponse(
+      res,
+      result,
+      "Demo sentiment analysis completed successfully",
+    );
+  }),
 );
 
 /**
@@ -375,21 +415,28 @@ router.get(
  *         description: Text analysis completed successfully
  */
 router.post(
-  '/test',
+  "/test",
   asyncHandler(async (req: Request, res: Response) => {
     const { text, method = Method.hybrid } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
-    if (method && !['rule', 'naive', 'hybrid'].includes(method)) {
+    if (method && !["rule", "naive", "hybrid"].includes(method)) {
       throw SentimentAnalysisError.invalidSentimentMethod(method);
     }
 
-    const result = await sentimentService.testSentimentAnalysis({ text, method });
-    return successResponse(res, result, 'Sentiment analysis test completed successfully');
-  })
+    const result = await sentimentService.testSentimentAnalysis({
+      text,
+      method,
+    });
+    return successResponse(
+      res,
+      result,
+      "Sentiment analysis test completed successfully",
+    );
+  }),
 );
 
 /**
@@ -425,7 +472,7 @@ router.post(
  *         description: Model updated successfully
  */
 router.post(
-  '/update-model',
+  "/update-model",
   asyncHandler(async (req: Request, res: Response) => {
     const { examples, saveModel = true } = req.body;
 
@@ -437,9 +484,9 @@ router.post(
     return successResponse(
       res,
       result,
-      `Model successfully updated with ${result.trainingStats.newExamples} new examples`
+      `Model successfully updated with ${result.trainingStats.newExamples} new examples`,
     );
-  })
+  }),
 );
 
 /**
@@ -453,11 +500,11 @@ router.post(
  *         description: Model information retrieved successfully
  */
 router.get(
-  '/model-status',
+  "/model-status",
   asyncHandler(async (req: Request, res: Response) => {
     const result = await sentimentService.getModelStatus();
-    return successResponse(res, result, 'Model status retrieved successfully');
-  })
+    return successResponse(res, result, "Model status retrieved successfully");
+  }),
 );
 
 /**
@@ -483,17 +530,21 @@ router.get(
  *         description: Comparison completed successfully
  */
 router.post(
-  '/compare',
+  "/compare",
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
     const result = await sentimentService.compareSentimentMethods({ text });
-    return successResponse(res, result, 'Sentiment analysis comparison completed successfully');
-  })
+    return successResponse(
+      res,
+      result,
+      "Sentiment analysis comparison completed successfully",
+    );
+  }),
 );
 
 /**
@@ -515,9 +566,9 @@ router.post(
  *         description: Quick evaluation results
  */
 router.get(
-  '/quick-eval',
+  "/quick-eval",
   asyncHandler(async (req: Request, res: Response) => {
-    const { dataset = 'general' } = req.query as { dataset?: string };
+    const { dataset = "general" } = req.query as { dataset?: string };
 
     // Import test datasets
     const {
@@ -526,20 +577,20 @@ router.get(
       techSpecificTestDataset,
       sarcasmTestDataset,
       multilingualTestDataset,
-    } = await import('../data/test-datasets');
+    } = await import("../data/test-datasets");
 
     let testCases;
     switch (dataset) {
-      case 'marketing':
+      case "marketing":
         testCases = marketingSpecificTestDataset;
         break;
-      case 'tech':
+      case "tech":
         testCases = techSpecificTestDataset;
         break;
-      case 'sarcasm':
+      case "sarcasm":
         testCases = sarcasmTestDataset;
         break;
-      case 'multilingual':
+      case "multilingual":
         testCases = multilingualTestDataset;
         break;
       default:
@@ -555,10 +606,10 @@ router.get(
       res,
       results,
       `Quick evaluation completed: ${results.overall.accuracy.toFixed(
-        2
-      )}% accuracy on ${dataset} dataset`
+        2,
+      )}% accuracy on ${dataset} dataset`,
     );
-  })
+  }),
 );
 
 /**
@@ -594,7 +645,7 @@ router.get(
  *         description: Evaluation results with accuracy metrics
  */
 router.post(
-  '/evaluate',
+  "/evaluate",
   asyncHandler(async (req: Request, res: Response) => {
     const { testCases, includeComparison = true } = req.body;
 
@@ -611,10 +662,10 @@ router.post(
       res,
       results,
       `Evaluated ${testCases.length} test cases with ${results.overall.accuracy.toFixed(
-        2
-      )}% accuracy`
+        2,
+      )}% accuracy`,
     );
-  })
+  }),
 );
 
 /**
@@ -681,22 +732,29 @@ router.post(
  *                           type: string
  */
 router.post(
-  '/enhanced-analyze',
+  "/enhanced-analyze",
   asyncHandler(async (req: Request, res: Response) => {
-    const { text, language = 'en' } = req.body;
+    const { text, language = "en" } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
     // Use the enhanced sentiment engine
     const { enhancedSentimentEngine } = await import(
-      '../services/enhanced-sentiment-engine.service'
+      "../services/enhanced-sentiment-engine.service"
     );
-    const result = await enhancedSentimentEngine.analyzeEnhanced(text, language);
+    const result = await enhancedSentimentEngine.analyzeEnhanced(
+      text,
+      language,
+    );
 
-    return successResponse(res, result, 'Enhanced sentiment analysis completed successfully');
-  })
+    return successResponse(
+      res,
+      result,
+      "Enhanced sentiment analysis completed successfully",
+    );
+  }),
 );
 
 /**
@@ -710,9 +768,11 @@ router.post(
  *         description: Model information retrieved successfully
  */
 router.get(
-  '/model-info',
+  "/model-info",
   asyncHandler(async (req: Request, res: Response) => {
-    const { modelPersistenceManager } = await import('../services/model-persistence.service');
+    const { modelPersistenceManager } = await import(
+      "../services/model-persistence.service"
+    );
     const modelInfo = await modelPersistenceManager.getModelInfo();
 
     const result = {
@@ -720,41 +780,45 @@ router.get(
         naiveBayes: modelInfo,
         enhanced: {
           available: true,
-          models: ['VADER', 'TextBlob', 'Rule-based', 'Naive Bayes'],
-          ensembleMethod: 'Dynamic weighted voting',
+          models: ["VADER", "TextBlob", "Rule-based", "Naive Bayes"],
+          ensembleMethod: "Dynamic weighted voting",
           features: [
-            'Sarcasm detection',
-            'Emotional intensity analysis',
-            'Context-aware weight adjustment',
-            'Multi-language support',
-            'Social media optimization',
+            "Sarcasm detection",
+            "Emotional intensity analysis",
+            "Context-aware weight adjustment",
+            "Multi-language support",
+            "Social media optimization",
           ],
         },
       },
       capabilities: {
-        supportedLanguages: ['en', 'es', 'fr', 'de'],
+        supportedLanguages: ["en", "es", "fr", "de"],
         specialFeatures: [
-          'Automatic weight adjustment based on text characteristics',
-          'Sarcasm and irony detection',
-          'Emoji and emoticon analysis',
-          'Negation handling',
-          'Intensifier detection',
+          "Automatic weight adjustment based on text characteristics",
+          "Sarcasm and irony detection",
+          "Emoji and emoticon analysis",
+          "Negation handling",
+          "Intensifier detection",
         ],
       },
       performance: {
-        expectedAccuracy: '70-85%',
-        optimizedFor: 'Social media text, reviews, marketing content',
+        expectedAccuracy: "70-85%",
+        optimizedFor: "Social media text, reviews, marketing content",
         benchmarks: {
-          general: '70%',
-          marketing: '75%',
-          tech: '68%',
-          sarcasm: '62%',
+          general: "70%",
+          marketing: "75%",
+          tech: "68%",
+          sarcasm: "62%",
         },
       },
     };
 
-    return successResponse(res, result, 'Model information retrieved successfully');
-  })
+    return successResponse(
+      res,
+      result,
+      "Model information retrieved successfully",
+    );
+  }),
 );
 
 /**
@@ -780,21 +844,23 @@ router.get(
  *         description: Advanced comparison completed successfully
  */
 router.post(
-  '/advanced-compare',
+  "/advanced-compare",
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
-    const result = await sentimentService.advancedCompareSentimentMethods({ text });
+    const result = await sentimentService.advancedCompareSentimentMethods({
+      text,
+    });
     return successResponse(
       res,
       result,
-      'Advanced sentiment analysis comparison completed successfully'
+      "Advanced sentiment analysis comparison completed successfully",
     );
-  })
+  }),
 );
 
 export default router;

@@ -3,7 +3,7 @@
  * Manages invalidated JWT tokens to prevent reuse after logout
  */
 
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 interface BlacklistedToken {
   tokenHash: string;
@@ -22,11 +22,11 @@ class TokenBlacklistService {
       () => {
         this.cleanupExpiredTokens();
       },
-      60 * 60 * 1000
+      60 * 60 * 1000,
     );
 
     // Do not keep the event loop alive because of this interval (helps tests exit cleanly)
-    if (typeof this.cleanupInterval.unref === 'function') {
+    if (typeof this.cleanupInterval.unref === "function") {
       this.cleanupInterval.unref();
     }
   }
@@ -35,7 +35,7 @@ class TokenBlacklistService {
    * Hash token for secure storage (we don't store raw tokens)
    */
   private hashToken(token: string): string {
-    return createHash('sha256').update(token).digest('hex');
+    return createHash("sha256").update(token).digest("hex");
   }
 
   /**
@@ -52,7 +52,9 @@ class TokenBlacklistService {
 
     this.blacklistedTokens.set(tokenHash, blacklistedToken);
 
-    console.log(`🔒 Token blacklisted for user ${userId} (expires: ${expiresAt.toISOString()})`);
+    console.log(
+      `🔒 Token blacklisted for user ${userId} (expires: ${expiresAt.toISOString()})`,
+    );
   }
 
   /**
@@ -80,13 +82,13 @@ class TokenBlacklistService {
    */
   blacklistAllUserTokens(userId: string): void {
     const blacklistedCount = Array.from(this.blacklistedTokens.values()).filter(
-      (token) => token.userId === userId
+      (token) => token.userId === userId,
     ).length;
 
     // Note: In a real implementation, you'd need to track all user tokens
     // For now, we just log the action
     console.log(
-      `🔒 Attempted to blacklist all tokens for user ${userId} (${blacklistedCount} already blacklisted)`
+      `🔒 Attempted to blacklist all tokens for user ${userId} (${blacklistedCount} already blacklisted)`,
     );
   }
 
@@ -97,7 +99,10 @@ class TokenBlacklistService {
     const now = new Date();
     let cleanedCount = 0;
 
-    for (const [tokenHash, blacklistedToken] of this.blacklistedTokens.entries()) {
+    for (const [
+      tokenHash,
+      blacklistedToken,
+    ] of this.blacklistedTokens.entries()) {
       if (blacklistedToken.expiresAt < now) {
         this.blacklistedTokens.delete(tokenHash);
         cleanedCount++;
@@ -144,10 +149,10 @@ class TokenBlacklistService {
 export const tokenBlacklistService = new TokenBlacklistService();
 
 // Cleanup on process exit
-process.on('SIGINT', () => {
+process.on("SIGINT", () => {
   tokenBlacklistService.destroy();
 });
 
-process.on('SIGTERM', () => {
+process.on("SIGTERM", () => {
   tokenBlacklistService.destroy();
 });

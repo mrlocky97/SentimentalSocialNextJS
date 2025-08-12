@@ -3,7 +3,11 @@
  * Following Dependency Inversion Principle - depend on abstractions, not concretions
  */
 
-export interface BaseRepository<T, CreateData = Partial<T>, UpdateData = Partial<T>> {
+export interface BaseRepository<
+  T,
+  CreateData = Partial<T>,
+  UpdateData = Partial<T>,
+> {
   create(data: CreateData): Promise<T>;
   findById(id: string): Promise<T | null>;
   findMany(filter?: Partial<T>, options?: QueryOptions): Promise<T[]>;
@@ -17,7 +21,7 @@ export interface QueryOptions {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   include?: string[];
 }
 

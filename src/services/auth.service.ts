@@ -3,13 +3,16 @@
  * Handles user authentication logic including registration and login
  */
 
-import bcrypt from 'bcryptjs';
-import { UserRole } from '../enums/user.enum';
-import { isValidEmail, isValidPassword } from '../lib/utils/validation.utils';
-import { generateRefreshToken, generateToken } from '../middleware/express-auth';
-import { MongoUserRepository } from '../repositories/mongo-user.repository';
-import { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
-import { CreateUserRequest } from '../types/user';
+import bcrypt from "bcryptjs";
+import { UserRole } from "../enums/user.enum";
+import { isValidEmail, isValidPassword } from "../lib/utils/validation.utils";
+import {
+  generateRefreshToken,
+  generateToken,
+} from "../middleware/express-auth";
+import { MongoUserRepository } from "../repositories/mongo-user.repository";
+import { AuthResponse, LoginRequest, RegisterRequest } from "../types/auth";
+import { CreateUserRequest } from "../types/user";
 
 export class AuthService {
   private userRepository: MongoUserRepository;
@@ -25,7 +28,7 @@ export class AuthService {
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(data.email);
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error("User with this email already exists");
     }
 
     // Create user request object matching the CreateUserRequest interface
@@ -64,26 +67,31 @@ export class AuthService {
    */
   async login(data: LoginRequest): Promise<AuthResponse> {
     // Find user by email with password hash
-    const userAuth = await this.userRepository.findAuthByEmail(data.email.toLowerCase().trim());
+    const userAuth = await this.userRepository.findAuthByEmail(
+      data.email.toLowerCase().trim(),
+    );
     if (!userAuth) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Check if user is active
     if (!userAuth.isActive) {
-      throw new Error('Account is deactivated. Please contact support.');
+      throw new Error("Account is deactivated. Please contact support.");
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(data.password, userAuth.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      userAuth.passwordHash,
+    );
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Get full user profile
     const user = await this.userRepository.findById(userAuth.id);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Update last login (we'll skip this for now since UpdateUserRequest doesn't support it)
@@ -111,19 +119,22 @@ export class AuthService {
   /**
    * Refresh access token
    */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
+  async refreshToken(
+    refreshToken: string,
+  ): Promise<{ accessToken: string; expiresIn: number }> {
     try {
-      const decoded = (await import('jsonwebtoken').then((jwt) =>
+      const decoded = (await import("jsonwebtoken").then((jwt) =>
         jwt.verify(
           refreshToken,
-          process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-        )
+          process.env.JWT_SECRET ||
+            "your-super-secret-jwt-key-change-in-production",
+        ),
       )) as { id: string; email: string; role: string; fullName: string };
 
       // Verify user still exists and is active
       const user = await this.userRepository.findById(decoded.id);
       if (!user || !user.isActive) {
-        throw new Error('User not found or inactive');
+        throw new Error("User not found or inactive");
       }
 
       // Generate new access token
@@ -141,7 +152,7 @@ export class AuthService {
         expiresIn: 3600, // 1 hour
       };
     } catch {
-      throw new Error('Invalid or expired refresh token');
+      throw new Error("Invalid or expired refresh token");
     }
   }
 
@@ -151,25 +162,30 @@ export class AuthService {
   async changePassword(
     userId: string,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<void> {
     // Find user with password hash
     const userAuth = await this.userRepository.findAuthById(userId);
     if (!userAuth) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userAuth.passwordHash);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      userAuth.passwordHash,
+    );
     if (!isCurrentPasswordValid) {
-      throw new Error('Current password is incorrect');
+      throw new Error("Current password is incorrect");
     }
 
     // Hash new password and update (this would need a repository method to update password)
     // For now, we'll throw an error indicating this feature needs implementation
     // TODO: Use newPassword parameter to hash and update user password when repository method is implemented
-    console.log('New password length:', newPassword.length); // Temporary to satisfy linter
-    throw new Error('Password change feature needs implementation in repository');
+    console.log("New password length:", newPassword.length); // Temporary to satisfy linter
+    throw new Error(
+      "Password change feature needs implementation in repository",
+    );
   }
 
   /**
@@ -181,7 +197,7 @@ export class AuthService {
 
     if (!isValid) {
       errors.push(
-        'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number'
+        "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number",
       );
     }
 

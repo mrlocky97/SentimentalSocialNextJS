@@ -3,7 +3,7 @@
  * Defines data structures for auth operations
  */
 
-import { UserRole } from '../enums/user.enum';
+import { UserRole } from "../enums/user.enum";
 
 export interface RegisterRequest {
   email: string;
@@ -20,7 +20,7 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
-  user: Omit<import('./user').User, 'password'>;
+  user: Omit<import("./user").User, "password">;
   accessToken: string;
   refreshToken: string;
   expiresIn: number;

@@ -3,7 +3,7 @@
  * Encrypts sensitive credentials using AES-256-GCM
  */
 
-import { createCipher, createDecipher, randomBytes, createHash } from 'crypto';
+import { createCipher, createDecipher, randomBytes, createHash } from "crypto";
 
 interface EncryptedCredentials {
   encrypted: string;
@@ -12,14 +12,14 @@ interface EncryptedCredentials {
 }
 
 class CredentialsEncryptionService {
-  private readonly algorithm = 'aes-256-gcm';
-  private readonly keyDerivationSalt = 'sentimentalsocial-salt-2025';
+  private readonly algorithm = "aes-256-gcm";
+  private readonly keyDerivationSalt = "sentimentalsocial-salt-2025";
 
   /**
    * Derive encryption key from master password
    */
   private deriveKey(masterPassword: string): Buffer {
-    return createHash('sha256')
+    return createHash("sha256")
       .update(masterPassword + this.keyDerivationSalt)
       .digest();
   }
@@ -34,20 +34,22 @@ class CredentialsEncryptionService {
 
       const cipher = createCipher(this.algorithm, key);
 
-      let encrypted = cipher.update(plaintext, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
+      let encrypted = cipher.update(plaintext, "utf8", "hex");
+      encrypted += cipher.final("hex");
 
       // Get authentication tag for GCM mode
-      const tag = (cipher as any).getAuthTag ? (cipher as any).getAuthTag().toString('hex') : '';
+      const tag = (cipher as any).getAuthTag
+        ? (cipher as any).getAuthTag().toString("hex")
+        : "";
 
       return {
         encrypted,
-        iv: iv.toString('hex'),
+        iv: iv.toString("hex"),
         tag,
       };
     } catch (error) {
-      console.error('🔒 Encryption error:', error);
-      throw new Error('Failed to encrypt credentials');
+      console.error("🔒 Encryption error:", error);
+      throw new Error("Failed to encrypt credentials");
     }
   }
 
@@ -61,16 +63,18 @@ class CredentialsEncryptionService {
 
       // Set auth tag for GCM mode
       if (encryptedData.tag && (decipher as any).setAuthTag) {
-        (decipher as any).setAuthTag(Buffer.from(encryptedData.tag, 'hex'));
+        (decipher as any).setAuthTag(Buffer.from(encryptedData.tag, "hex"));
       }
 
-      let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+      let decrypted = decipher.update(encryptedData.encrypted, "hex", "utf8");
+      decrypted += decipher.final("utf8");
 
       return decrypted;
     } catch (error) {
-      console.error('🔒 Decryption error:', error);
-      throw new Error('Failed to decrypt credentials - invalid master password or corrupted data');
+      console.error("🔒 Decryption error:", error);
+      throw new Error(
+        "Failed to decrypt credentials - invalid master password or corrupted data",
+      );
     }
   }
 
@@ -81,7 +85,7 @@ class CredentialsEncryptionService {
     email: string,
     username: string,
     password: string,
-    masterPassword: string
+    masterPassword: string,
   ): {
     email: EncryptedCredentials;
     username: EncryptedCredentials;
@@ -103,7 +107,7 @@ class CredentialsEncryptionService {
       username: EncryptedCredentials;
       password: EncryptedCredentials;
     },
-    masterPassword: string
+    masterPassword: string,
   ): {
     email: string;
     username: string;
@@ -120,33 +124,38 @@ class CredentialsEncryptionService {
    * Generate a secure master password
    */
   generateMasterPassword(): string {
-    return randomBytes(32).toString('base64');
+    return randomBytes(32).toString("base64");
   }
 
   /**
    * Validate master password strength
    */
-  validateMasterPassword(password: string): { valid: boolean; errors: string[] } {
+  validateMasterPassword(password: string): {
+    valid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
     if (password.length < 16) {
-      errors.push('Master password must be at least 16 characters long');
+      errors.push("Master password must be at least 16 characters long");
     }
 
     if (!/[A-Z]/.test(password)) {
-      errors.push('Master password must contain at least one uppercase letter');
+      errors.push("Master password must contain at least one uppercase letter");
     }
 
     if (!/[a-z]/.test(password)) {
-      errors.push('Master password must contain at least one lowercase letter');
+      errors.push("Master password must contain at least one lowercase letter");
     }
 
     if (!/[0-9]/.test(password)) {
-      errors.push('Master password must contain at least one number');
+      errors.push("Master password must contain at least one number");
     }
 
     if (!/[^A-Za-z0-9]/.test(password)) {
-      errors.push('Master password must contain at least one special character');
+      errors.push(
+        "Master password must contain at least one special character",
+      );
     }
 
     return {

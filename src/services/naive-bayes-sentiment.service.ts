@@ -1,6 +1,6 @@
-import natural from 'natural';
+import natural from "natural";
 
-export type SentimentLabel = 'positive' | 'negative' | 'neutral';
+export type SentimentLabel = "positive" | "negative" | "neutral";
 
 export interface NaiveBayesTrainingExample {
   text: string;
@@ -24,7 +24,7 @@ export class NaiveBayesSentimentService {
   predict(text: string): { label: SentimentLabel; confidence: number } {
     const classifications = this.classifier.getClassifications(text);
     if (classifications.length === 0) {
-      return { label: 'neutral', confidence: 0.5 };
+      return { label: "neutral", confidence: 0.5 };
     }
     const best = classifications[0];
     return {
@@ -35,14 +35,15 @@ export class NaiveBayesSentimentService {
 
   saveToFile(filePath: string) {
     this.classifier.save(filePath, (err) => {
-      if (err) console.error('Error saving classifier:', err);
+      if (err) console.error("Error saving classifier:", err);
     });
   }
 
   loadFromFile(filePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       natural.BayesClassifier.load(filePath, null, (err, classifier) => {
-        if (err || !classifier) return reject(err || new Error('Classifier not loaded'));
+        if (err || !classifier)
+          return reject(err || new Error("Classifier not loaded"));
         this.classifier = classifier;
         resolve();
       });

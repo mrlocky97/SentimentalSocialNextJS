@@ -3,7 +3,7 @@
  * Defines data structures for API requests and responses
  */
 
-import { Order } from '../enums/api.enum';
+import { Order } from "../enums/api.enum";
 
 export interface ApiResponse<T = any> {
   success: boolean;

@@ -3,8 +3,8 @@
  * Provides performance metrics and system monitoring
  */
 
-import os from 'os';
-import { appCache } from '../cache';
+import os from "os";
+import { appCache } from "../cache";
 
 export interface SystemMetrics {
   uptime: number;
@@ -94,7 +94,9 @@ export class MetricsService {
         successful: this.successCounter,
         failed: this.failureCounter,
         averageResponseTime:
-          this.requestCounter > 0 ? this.totalResponseTime / this.requestCounter : 0,
+          this.requestCounter > 0
+            ? this.totalResponseTime / this.requestCounter
+            : 0,
       },
     };
   }
@@ -134,10 +136,10 @@ export class MetricsService {
 
     // Check memory usage
     if (metrics.memory.percentage > 90) {
-      issues.push('High memory usage (>90%)');
+      issues.push("High memory usage (>90%)");
       score -= 30;
     } else if (metrics.memory.percentage > 75) {
-      issues.push('Moderate memory usage (>75%)');
+      issues.push("Moderate memory usage (>75%)");
       score -= 15;
     }
 
@@ -145,31 +147,33 @@ export class MetricsService {
     const avgLoad = metrics.cpu.load[0];
     const maxLoad = metrics.cpu.cores;
     if (avgLoad > maxLoad * 0.9) {
-      issues.push('High CPU load');
+      issues.push("High CPU load");
       score -= 25;
     } else if (avgLoad > maxLoad * 0.7) {
-      issues.push('Moderate CPU load');
+      issues.push("Moderate CPU load");
       score -= 10;
     }
 
     // Check error rate
     const errorRate =
-      metrics.requests.total > 0 ? (metrics.requests.failed / metrics.requests.total) * 100 : 0;
+      metrics.requests.total > 0
+        ? (metrics.requests.failed / metrics.requests.total) * 100
+        : 0;
 
     if (errorRate > 10) {
-      issues.push('High error rate (>10%)');
+      issues.push("High error rate (>10%)");
       score -= 20;
     } else if (errorRate > 5) {
-      issues.push('Moderate error rate (>5%)');
+      issues.push("Moderate error rate (>5%)");
       score -= 10;
     }
 
     // Check response time
     if (metrics.requests.averageResponseTime > 2000) {
-      issues.push('Slow response times (>2s)');
+      issues.push("Slow response times (>2s)");
       score -= 15;
     } else if (metrics.requests.averageResponseTime > 1000) {
-      issues.push('Moderate response times (>1s)');
+      issues.push("Moderate response times (>1s)");
       score -= 5;
     }
 
@@ -184,7 +188,7 @@ export class MetricsService {
    * Generate health report
    */
   generateHealthReport(): {
-    status: 'healthy' | 'warning' | 'critical';
+    status: "healthy" | "warning" | "critical";
     timestamp: string;
     uptime: string;
     metrics: SystemMetrics;
@@ -201,21 +205,25 @@ export class MetricsService {
 
     // Generate recommendations based on metrics
     if (metrics.memory.percentage > 80) {
-      recommendations.push('Consider implementing memory cleanup routines');
-      recommendations.push('Monitor for memory leaks');
+      recommendations.push("Consider implementing memory cleanup routines");
+      recommendations.push("Monitor for memory leaks");
     }
 
     if (metrics.requests.averageResponseTime > 1000) {
-      recommendations.push('Optimize slow endpoints');
-      recommendations.push('Consider implementing response caching');
+      recommendations.push("Optimize slow endpoints");
+      recommendations.push("Consider implementing response caching");
     }
 
     if (appCache.getStats().expiredItems > 100) {
-      recommendations.push('Run cache cleanup to free memory');
+      recommendations.push("Run cache cleanup to free memory");
     }
 
-    const status: 'healthy' | 'warning' | 'critical' =
-      health.score >= 80 ? 'healthy' : health.score >= 60 ? 'warning' : 'critical';
+    const status: "healthy" | "warning" | "critical" =
+      health.score >= 80
+        ? "healthy"
+        : health.score >= 60
+          ? "warning"
+          : "critical";
 
     return {
       status,

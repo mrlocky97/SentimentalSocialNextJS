@@ -1,10 +1,10 @@
-export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'unknown';
+export type LanguageCode = "en" | "es" | "fr" | "de" | "unknown";
 export type SentimentLabel =
-  | 'positive'
-  | 'neutral'
-  | 'negative'
-  | 'very_positive'
-  | 'very_negative';
+  | "positive"
+  | "neutral"
+  | "negative"
+  | "very_positive"
+  | "very_negative";
 
 export interface AnalysisRequest {
   text: string;
@@ -92,7 +92,7 @@ export interface MarketingInsights {
   targetDemographics: string[];
   competitorMentions: string[];
   trendAlignment: number;
-  brandRisk: 'low' | 'medium' | 'high';
+  brandRisk: "low" | "medium" | "high";
   opportunityScore: number;
 }
 

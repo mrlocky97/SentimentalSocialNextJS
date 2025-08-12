@@ -6,8 +6,8 @@
 import {
   CampaignType as CampaignTypeEnum,
   DataSource as DataSourceEnum,
-} from '../../enums/campaign.enum';
-import { CampaignType, DataSource } from '../../types/campaign';
+} from "../../enums/campaign.enum";
+import { CampaignType, DataSource } from "../../types/campaign";
 
 /**
  * Validate email format
@@ -65,22 +65,25 @@ export function isValidDataSource(source: string): source is DataSource {
  * Validate hashtag format (should start with #)
  */
 export function isValidHashtag(hashtag: string): boolean {
-  return hashtag.startsWith('#') && hashtag.length > 1;
+  return hashtag.startsWith("#") && hashtag.length > 1;
 }
 
 /**
  * Validate mention format (should start with @)
  */
 export function isValidMention(mention: string): boolean {
-  return mention.startsWith('@') && mention.length > 1;
+  return mention.startsWith("@") && mention.length > 1;
 }
 
 /**
  * Validate date range (start date should be before end date)
  */
-export function isValidDateRange(startDate: Date | string, endDate: Date | string): boolean {
-  const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
-  const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
+export function isValidDateRange(
+  startDate: Date | string,
+  endDate: Date | string,
+): boolean {
+  const start = typeof startDate === "string" ? new Date(startDate) : startDate;
+  const end = typeof endDate === "string" ? new Date(endDate) : endDate;
 
   return start < end;
 }
@@ -137,11 +140,14 @@ export function isValidUsername(username: string): boolean {
 /**
  * Validate array of strings is not empty and all strings are valid
  */
-export function isValidStringArray(arr: string[], validator?: (item: string) => boolean): boolean {
+export function isValidStringArray(
+  arr: string[],
+  validator?: (item: string) => boolean,
+): boolean {
   if (!Array.isArray(arr) || arr.length === 0) return false;
 
   return arr.every((item) => {
-    if (typeof item !== 'string' || item.trim().length === 0) return false;
+    if (typeof item !== "string" || item.trim().length === 0) return false;
     return validator ? validator(item) : true;
   });
 }
@@ -157,7 +163,7 @@ export function isValidPaginationParams(page: number, limit: number): boolean {
  * Sanitize string input (remove HTML tags and trim)
  */
 export function sanitizeString(input: string): string {
-  return input.replace(/<[^>]*>/g, '').trim();
+  return input.replace(/<[^>]*>/g, "").trim();
 }
 
 /**
@@ -167,7 +173,7 @@ export function validateAndSanitizeHashtags(hashtags: string[]): string[] {
   return hashtags
     .map((tag) => {
       const sanitized = sanitizeString(tag);
-      return sanitized.startsWith('#') ? sanitized : `#${sanitized}`;
+      return sanitized.startsWith("#") ? sanitized : `#${sanitized}`;
     })
     .filter((tag) => isValidHashtag(tag));
 }
@@ -179,7 +185,7 @@ export function validateAndSanitizeMentions(mentions: string[]): string[] {
   return mentions
     .map((mention) => {
       const sanitized = sanitizeString(mention);
-      return sanitized.startsWith('@') ? sanitized : `@${sanitized}`;
+      return sanitized.startsWith("@") ? sanitized : `@${sanitized}`;
     })
     .filter((mention) => isValidMention(mention));
 }
@@ -189,7 +195,7 @@ export function validateAndSanitizeMentions(mentions: string[]): string[] {
  */
 export function validateRequiredFields<T extends Record<string, any>>(
   body: T,
-  requiredFields: (keyof T)[]
+  requiredFields: (keyof T)[],
 ): { isValid: boolean; missingFields: string[] } {
   const missingFields: string[] = [];
 
