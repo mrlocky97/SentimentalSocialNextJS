@@ -4,6 +4,7 @@ import { Core, SentimentUtils } from '../core';
 import { sentimentManager } from '../lib/sentiment-manager';
 import { ModelUpdateRequest, SentimentTestRequest } from '../types';
 import { Tweet } from '../types/twitter';
+import { multiLanguageAnalyzer } from './multi-language-analyzer.service';
 
 const DEMO_TWEETS: Tweet[] = [
   {
@@ -126,7 +127,15 @@ export class SentimentService {
     const validation = Core.Validators.Tweet.validate(tweet);
     Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');
 
-    return sentimentManager.analyzeTweet(tweet, config);
+    const result = await sentimentManager.analyzeTweet(tweet, config);
+
+    // TODO: Add multi-language analysis support once types are updated
+    // if (tweet.language && tweet.language !== 'en') {
+    //   const multiLangResult = multiLanguageAnalyzer.analyzeMultiLanguage(tweet.content, tweet.language);
+    //   result.analysis.multiLanguage = multiLangResult;
+    // }
+
+    return result;
   }
 
   async analyzeTweetsBatch(tweets: Tweet[], config?: any, includeStats = true) {
@@ -217,6 +226,49 @@ export class SentimentService {
     return SentimentUtils.mapSentimentResult(analysis, naiveBayesResult, method);
   }
 
+  /**
+   * Analyze text with multi-language support
+   */
+  async analyzeMultiLanguageText(text: string, language?: string) {
+    if (!text?.trim()) throw new Error('Text is required');
+
+    // Detect or use provided language
+    const detectedLanguage = language || multiLanguageAnalyzer.detectLanguage(text);
+
+    // Get multi-language analysis
+    const multiLangResult = multiLanguageAnalyzer.analyzeMultiLanguage(text, detectedLanguage);
+
+    // Also get standard analysis for comparison
+    const mockTweet = SentimentUtils.createMockTweet(text, detectedLanguage);
+    const standardAnalysis = await sentimentManager.analyzeTweet(mockTweet, undefined);
+
+    return {
+      text,
+      detectedLanguage,
+      supportedLanguages: multiLanguageAnalyzer.getSupportedLanguages(),
+      analysis: {
+        multiLanguage: {
+          sentiment: multiLangResult.sentiment,
+          confidence: multiLangResult.confidence,
+          score: multiLangResult.score,
+          languageConfidence: multiLangResult.languageConfidence,
+        },
+        standard: {
+          sentiment: standardAnalysis.analysis.sentiment.label,
+          confidence: standardAnalysis.analysis.sentiment.confidence,
+          score: standardAnalysis.analysis.sentiment.score,
+        },
+        comparison: {
+          agreement: multiLangResult.sentiment === standardAnalysis.analysis.sentiment.label,
+          confidenceDiff: Math.abs(
+            multiLangResult.confidence - standardAnalysis.analysis.sentiment.confidence
+          ),
+          method: 'language-aware vs standard',
+        },
+      },
+    };
+  }
+
   async updateModel({ examples, saveModel = true }: ModelUpdateRequest) {
     if (!examples?.length) throw new Error('Array of training examples is required');
 
@@ -226,8 +278,8 @@ export class SentimentService {
 
     if (!validExamples.length) throw new Error('No valid training examples provided');
 
-    const { enhancedTrainingData } = await import('../data/enhanced-training-data');
-    const trainingData = [...enhancedTrainingData, ...validExamples];
+    const { enhancedTrainingDataV3 } = await import('../data/enhanced-training-data-v3');
+    const trainingData = [...enhancedTrainingDataV3, ...validExamples];
 
     console.log(`🔄 Training model with ${validExamples.length} new examples...`);
     const startTime = Date.now();

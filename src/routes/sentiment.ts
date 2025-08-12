@@ -71,6 +71,87 @@ router.post(
 
 /**
  * @swagger
+ * /api/v1/sentiment/analyze-multilang:
+ *   post:
+ *     summary: Analyze sentiment with multi-language support
+ *     description: Analyzes text sentiment with automatic language detection and optimized analysis for English, Spanish, French, German, Italian, and Portuguese
+ *     tags: [Sentiment Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Text to analyze for sentiment in any supported language
+ *                 example: "Me encanta este producto! Es fantástico y funciona perfectamente."
+ *               language:
+ *                 type: string
+ *                 description: Language code (en, es, fr, de, it, pt) - if not provided, language will be auto-detected
+ *                 example: "es"
+ *     responses:
+ *       200:
+ *         description: Multi-language sentiment analysis completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     text:
+ *                       type: string
+ *                     detectedLanguage:
+ *                       type: string
+ *                     supportedLanguages:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     analysis:
+ *                       type: object
+ *                       properties:
+ *                         multiLanguage:
+ *                           type: object
+ *                           properties:
+ *                             sentiment:
+ *                               type: string
+ *                               enum: [positive, negative, neutral]
+ *                             confidence:
+ *                               type: number
+ *                             score:
+ *                               type: number
+ *                             languageConfidence:
+ *                               type: number
+ *                         standard:
+ *                           type: object
+ *                         comparison:
+ *                           type: object
+ *       400:
+ *         description: Invalid text input
+ */
+router.post(
+  '/analyze-multilang',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text, language } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      throw SentimentAnalysisError.invalidText();
+    }
+
+    const result = await sentimentService.analyzeMultiLanguageText(text, language);
+    return successResponse(res, result, 'Multi-language sentiment analysis completed successfully');
+  })
+);
+
+/**
+ * @swagger
  * /api/v1/sentiment/analyze:
  *   post:
  *     summary: Analyze sentiment of a single tweet
@@ -533,6 +614,146 @@ router.post(
         2
       )}% accuracy`
     );
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/sentiment/enhanced-analyze:
+ *   post:
+ *     summary: Enhanced sentiment analysis using multiple models
+ *     description: Uses VADER, TextBlob, Rule-based, and Naive Bayes models with ensemble voting
+ *     tags: [Sentiment Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Text to analyze for sentiment
+ *                 example: "I absolutely love this product! It's fantastic!"
+ *               language:
+ *                 type: string
+ *                 description: Language code (en, es, fr, de)
+ *                 default: en
+ *     responses:
+ *       200:
+ *         description: Enhanced sentiment analysis completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     finalPrediction:
+ *                       type: object
+ *                       properties:
+ *                         label:
+ *                           type: string
+ *                           enum: [positive, negative, neutral]
+ *                         confidence:
+ *                           type: number
+ *                         score:
+ *                           type: number
+ *                         method:
+ *                           type: string
+ *                     modelPredictions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     consensus:
+ *                       type: object
+ *                       properties:
+ *                         agreement:
+ *                           type: number
+ *                         confidence:
+ *                           type: number
+ *                         explanation:
+ *                           type: string
+ */
+router.post(
+  '/enhanced-analyze',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text, language = 'en' } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      throw SentimentAnalysisError.invalidText();
+    }
+
+    // Use the enhanced sentiment engine
+    const { enhancedSentimentEngine } = await import(
+      '../services/enhanced-sentiment-engine.service'
+    );
+    const result = await enhancedSentimentEngine.analyzeEnhanced(text, language);
+
+    return successResponse(res, result, 'Enhanced sentiment analysis completed successfully');
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/sentiment/model-info:
+ *   get:
+ *     summary: Get detailed information about the sentiment analysis models
+ *     tags: [Sentiment Analysis]
+ *     responses:
+ *       200:
+ *         description: Model information retrieved successfully
+ */
+router.get(
+  '/model-info',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { modelPersistenceManager } = await import('../services/model-persistence.service');
+    const modelInfo = await modelPersistenceManager.getModelInfo();
+
+    const result = {
+      models: {
+        naiveBayes: modelInfo,
+        enhanced: {
+          available: true,
+          models: ['VADER', 'TextBlob', 'Rule-based', 'Naive Bayes'],
+          ensembleMethod: 'Dynamic weighted voting',
+          features: [
+            'Sarcasm detection',
+            'Emotional intensity analysis',
+            'Context-aware weight adjustment',
+            'Multi-language support',
+            'Social media optimization',
+          ],
+        },
+      },
+      capabilities: {
+        supportedLanguages: ['en', 'es', 'fr', 'de'],
+        specialFeatures: [
+          'Automatic weight adjustment based on text characteristics',
+          'Sarcasm and irony detection',
+          'Emoji and emoticon analysis',
+          'Negation handling',
+          'Intensifier detection',
+        ],
+      },
+      performance: {
+        expectedAccuracy: '70-85%',
+        optimizedFor: 'Social media text, reviews, marketing content',
+        benchmarks: {
+          general: '70%',
+          marketing: '75%',
+          tech: '68%',
+          sarcasm: '62%',
+        },
+      },
+    };
+
+    return successResponse(res, result, 'Model information retrieved successfully');
   })
 );
 

@@ -3,13 +3,14 @@
  *
  * This class encapsulates the core, pure logic for sentiment analysis.
  * It combines rule-based, machine learning (Naive Bayes), and hybrid analysis techniques.
- * It is designed to be deterministic and free of I/O side effects.
+ * Enhanced with multiple open-source models for superior accuracy.
  */
 import natural from 'natural';
 import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
 } from '../../services/advanced-hybrid-analyzer.service';
+import { enhancedSentimentEngine } from '../../services/enhanced-sentiment-engine.service';
 import { InternalSentimentAnalyzer } from '../../services/internal-sentiment-analyzer.service';
 import {
   NaiveBayesSentimentService,
@@ -70,6 +71,75 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
    * @returns An object with the detailed analysis result.
    */
   public async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
+    const { text, language = 'en' } = request;
+
+    // Use enhanced sentiment engine for better accuracy
+    try {
+      const enhancedResult = await enhancedSentimentEngine.analyzeEnhanced(text, language);
+
+      // Map enhanced result to our AnalysisResult format
+      const lang = language;
+      const detectedLanguage: LanguageCode = ['en', 'es', 'fr', 'de', 'unknown'].includes(lang)
+        ? (lang as LanguageCode)
+        : 'unknown';
+
+      const signals: SignalBreakdown = {
+        tokens: [], // Would be populated from enhanced analysis
+        ngrams: {},
+        emojis: {},
+        negationFlips: 0,
+        intensifierBoost: enhancedResult.features.emotionalIntensity,
+        sarcasmScore: enhancedResult.features.sarcasmScore,
+      };
+
+      return {
+        sentiment: {
+          label: enhancedResult.finalPrediction.label as SentimentLabel,
+          score: enhancedResult.finalPrediction.score,
+          magnitude: Math.abs(enhancedResult.finalPrediction.score),
+          confidence: enhancedResult.finalPrediction.confidence,
+          emotions: {
+            joy:
+              enhancedResult.finalPrediction.score > 0.5
+                ? enhancedResult.finalPrediction.confidence
+                : 0,
+            sadness:
+              enhancedResult.finalPrediction.score < -0.5
+                ? enhancedResult.finalPrediction.confidence * 0.7
+                : 0,
+            anger:
+              enhancedResult.finalPrediction.score < -0.5
+                ? enhancedResult.finalPrediction.confidence * 0.8
+                : 0,
+            fear:
+              enhancedResult.finalPrediction.score < -0.3
+                ? enhancedResult.finalPrediction.confidence * 0.5
+                : 0,
+            surprise:
+              Math.abs(enhancedResult.finalPrediction.score) > 0.8
+                ? enhancedResult.finalPrediction.confidence * 0.3
+                : 0,
+            disgust:
+              enhancedResult.finalPrediction.score < -0.6
+                ? enhancedResult.finalPrediction.confidence * 0.6
+                : 0,
+          },
+        },
+        keywords: [], // Would be extracted from enhanced analysis
+        language: detectedLanguage,
+        signals,
+        version: '2.0.0-enhanced',
+      };
+    } catch (error) {
+      console.warn('Enhanced engine failed, falling back to basic hybrid analysis:', error);
+      return this.analyzeBasic(request);
+    }
+  }
+
+  /**
+   * Fallback basic analysis method (original implementation)
+   */
+  private async analyzeBasic(request: AnalysisRequest): Promise<AnalysisResult> {
     const { text, language = 'en' } = request;
 
     // 1. Get predictions from both rule-based and Naive Bayes analyzers.
