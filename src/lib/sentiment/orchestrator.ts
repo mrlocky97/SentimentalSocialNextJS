@@ -51,6 +51,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
   private cache = new Map<string, CacheEntry>();
   private metrics: OrchestratorMetrics;
   private circuitBreaker: CircuitBreakerState;
+  private cleanupInterval?: NodeJS.Timeout;
 
   // Configuration
   private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour
@@ -78,7 +79,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
     };
 
     // Start cache cleanup interval
-    setInterval(() => this.cleanupExpiredCache(), 5 * 60 * 1000); // Every 5 minutes
+    this.cleanupInterval = setInterval(() => this.cleanupExpiredCache(), 5 * 60 * 1000); // Every 5 minutes
   }
   analyzeBatch(tweets: any[]): Promise<AnalysisResult[]> {
     throw new Error('Method not implemented.' + tweets);
@@ -454,5 +455,17 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       processingTime: 0, // TODO: track this properly
       version: result.version,
     };
+  }
+
+  /**
+   * Clean up resources and intervals
+   * Essential for testing environments
+   */
+  public dispose(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
+    this.cache.clear();
   }
 }

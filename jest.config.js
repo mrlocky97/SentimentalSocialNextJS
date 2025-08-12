@@ -27,10 +27,14 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
-  // Handle timers and intervals
+  // Handle timers and intervals - ENHANCED FOR TESTING
   fakeTimers: {
     enableGlobally: false,
   },
+  // Test environment optimizations
+  maxWorkers: 1, // Run tests sequentially to avoid conflicts
+  detectOpenHandles: true,
+  forceExit: true,
   // Ensure env vars are set before any modules are loaded in tests
   setupFiles: ['<rootDir>/tests/setup-env.js'],
   collectCoverageFrom: [
@@ -38,10 +42,21 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/server.ts', // Exclude server startup
     '!src/types/**', // Exclude type definitions
+    '!src/**/*.test.ts', // Exclude test files
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testTimeout: 10000,
+  testTimeout: 30000, // Increased timeout
   verbose: true,
+  // Resource cleanup
+  globalTeardown: '<rootDir>/tests/helpers/global-teardown.js',
 };

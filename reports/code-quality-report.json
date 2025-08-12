@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-08-12T17:38:08.755Z",
+  "metrics": {
+    "fileCount": 129,
+    "lineCount": 35398,
+    "functionCount": 648,
+    "classCount": 114,
+    "interfaceCount": 204,
+    "testCoverage": 8,
+    "duplicatedLines": 708,
+    "complexityScore": 15
+  },
+  "details": {
+    "mostComplexFiles": [
+      {
+        "file": "src\\types\\twitter.ts",
+        "complexity": 136,
+        "lines": 403
+      },
+      {
+        "file": "src\\core\\validators\\index.ts",
+        "complexity": 82,
+        "lines": 642
+      },
+      {
+        "file": "src\\repositories\\mongo-tweet.repository.ts",
+        "complexity": 54,
+        "lines": 807
+      },
+      {
+        "file": "src\\types\\campaign.ts",
+        "complexity": 54,
+        "lines": 320
+      },
+      {
+        "file": "src\\core\\mappers\\sentiment-mappers.ts",
+        "complexity": 50,
+        "lines": 686
+      }
+    ],
+    "largestFiles": [
+      {
+        "file": "src\\routes\\auth.ts",
+        "lines": 994,
+        "functions": 10
+      },
+      {
+        "file": "src\\routes\\campaigns.ts",
+        "lines": 916,
+        "functions": 4
+      },
+      {
+        "file": "src\\routes\\sentiment.ts",
+        "lines": 866,
+        "functions": 1
+      },
+      {
+        "file": "src\\repositories\\mongo-tweet.repository.ts",
+        "lines": 807,
+        "functions": 6
+      },
+      {
+        "file": "src\\routes\\users.ts",
+        "lines": 784,
+        "functions": 0
+      }
+    ]
+  },
+  "recommendations": [
+    "Increase test coverage to at least 80%",
+    "Reduce cyclomatic complexity by refactoring complex functions",
+    "Consider breaking large files into smaller, more focused modules"
+  ]
+}
