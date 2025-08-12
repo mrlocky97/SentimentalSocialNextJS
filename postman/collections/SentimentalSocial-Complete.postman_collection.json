@@ -367,11 +367,11 @@
               "raw": "{\n  \"text\": \"I love this amazing product! It's absolutely fantastic and works perfectly.\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-text",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "analyze"]
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-text"]
             },
-            "description": "Analyze sentiment of a single text"
+            "description": "Analyze sentiment of a single text using hybrid analysis system for maximum precision"
           }
         },
         {
@@ -399,11 +399,43 @@
               "raw": "{\n  \"texts\": [\n    \"I love this product!\",\n    \"This is terrible, I hate it.\",\n    \"It's okay, nothing special.\",\n    \"Amazing quality and great service!\"\n  ]\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-batch",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/test",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-batch"]
+              "path": ["api", "{{apiVersion}}", "sentiment", "test"]
             },
-            "description": "Analyze sentiment of multiple texts in batch"
+            "description": "Test sentiment analysis with hybrid system (use for single text testing)"
+          }
+        },
+        {
+          "name": "Compare Analysis Methods",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"I love this amazing product but the delivery was terrible!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/compare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "compare"]
+            },
+            "description": "Compare different sentiment analysis methods (rule-based, naive bayes, hybrid) on the same text"
           }
         },
         {

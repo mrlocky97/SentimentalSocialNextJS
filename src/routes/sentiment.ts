@@ -4,11 +4,70 @@
  */
 
 import { Request, Response, Router } from 'express';
+import { Method } from '../enums/sentiment.enum';
 import { sentimentService } from '../services/sentiment.service';
 import { Tweet } from '../types/twitter';
 import { asyncHandler, SentimentAnalysisError, successResponse } from '../utils/error-handler';
 
 const router = Router();
+
+/**
+ * @swagger
+ * /api/v1/sentiment/analyze-text:
+ *   post:
+ *     summary: Analyze sentiment of plain text using hybrid system
+ *     description: Analyzes text sentiment using advanced hybrid analysis (rule-based + machine learning + auto-weight adjustment) for maximum precision
+ *     tags: [Sentiment Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Text to analyze for sentiment
+ *                 example: "I love this amazing product! It's absolutely fantastic and works perfectly."
+ *     responses:
+ *       200:
+ *         description: Sentiment analysis completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sentiment:
+ *                       type: string
+ *                       enum: [positive, negative, neutral]
+ *                     confidence:
+ *                       type: number
+ *                     score:
+ *                       type: number
+ *       400:
+ *         description: Invalid text input
+ */
+router.post(
+  '/analyze-text',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string') {
+      throw SentimentAnalysisError.invalidText();
+    }
+
+    // Use the hybrid method for best precision (default in the engine)
+    const result = await sentimentService.testSentimentAnalysis({ text, method: Method.hybrid });
+    return successResponse(res, result, 'Text sentiment analysis completed successfully');
+  })
+);
 
 /**
  * @swagger
@@ -227,9 +286,9 @@ router.get(
  *                 example: "I love this product! It's amazing and works perfectly."
  *               method:
  *                 type: string
- *                 description: Analysis method to use (rule or naive)
- *                 enum: [rule, naive]
- *                 default: rule
+ *                 description: Analysis method to use (rule, naive, or hybrid for best results)
+ *                 enum: [rule, naive, hybrid]
+ *                 default: hybrid
  *     responses:
  *       200:
  *         description: Text analysis completed successfully
@@ -237,13 +296,13 @@ router.get(
 router.post(
   '/test',
   asyncHandler(async (req: Request, res: Response) => {
-    const { text, method = 'rule' } = req.body;
+    const { text, method = Method.hybrid } = req.body;
 
     if (!text || typeof text !== 'string') {
       throw SentimentAnalysisError.invalidText();
     }
 
-    if (method && !['rule', 'naive'].includes(method)) {
+    if (method && !['rule', 'naive', 'hybrid'].includes(method)) {
       throw SentimentAnalysisError.invalidSentimentMethod(method);
     }
 

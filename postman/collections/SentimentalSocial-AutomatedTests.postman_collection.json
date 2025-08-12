@@ -206,9 +206,9 @@
           "raw": "{\n  \"text\": \"{{testSentimentText}}\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze",
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-text",
           "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "sentiment", "analyze"]
+          "path": ["api", "{{apiVersion}}", "sentiment", "analyze-text"]
         }
       }
     },

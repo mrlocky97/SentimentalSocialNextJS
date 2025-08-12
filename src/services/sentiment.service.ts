@@ -1,7 +1,6 @@
 // sentiment-service.ts
 
 import { Core, SentimentUtils } from '../core';
-import { Method } from '../enums/sentiment.enum';
 import { sentimentManager } from '../lib/sentiment-manager';
 import { ModelUpdateRequest, SentimentTestRequest } from '../types';
 import { Tweet } from '../types/twitter';
@@ -207,7 +206,7 @@ export class SentimentService {
     };
   }
 
-  async testSentimentAnalysis({ text, method = Method.rule }: SentimentTestRequest) {
+  async testSentimentAnalysis({ text, method }: SentimentTestRequest) {
     if (!text) throw new Error('Text string is required');
 
     const mockTweet = SentimentUtils.createMockTweet(text);
