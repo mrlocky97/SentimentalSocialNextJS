@@ -3,8 +3,8 @@
  * Modular authentication routes with separated handlers and middleware
  */
 
-import { Router } from 'express';
-import { authenticateToken } from '../../../middleware/express-auth';
+import { Router } from "express";
+import { authenticateToken } from "../../../middleware/express-auth";
 import {
   changePasswordHandler,
   forgotPasswordHandler,
@@ -14,7 +14,7 @@ import {
   registerHandler,
   resetPasswordHandler,
   verifyEmailHandler,
-} from './handlers';
+} from "./handlers";
 import {
   authRateLimit,
   logAuthRequest,
@@ -24,7 +24,7 @@ import {
   validatePasswordResetRequest,
   validateRefreshTokenRequest,
   validateRegisterRequest,
-} from './middleware';
+} from "./middleware";
 
 const router = Router();
 
@@ -148,10 +148,10 @@ router.use(logAuthRequest);
  *         description: Internal server error
  */
 router.post(
-  '/register',
+  "/register",
   authRateLimit(3, 15 * 60 * 1000), // 3 attempts per 15 minutes
   validateRegisterRequest,
-  registerHandler
+  registerHandler,
 );
 
 /**
@@ -183,10 +183,10 @@ router.post(
  *         description: Internal server error
  */
 router.post(
-  '/login',
+  "/login",
   authRateLimit(5, 15 * 60 * 1000), // 5 attempts per 15 minutes
   validateLoginRequest,
-  loginHandler
+  loginHandler,
 );
 
 /**
@@ -235,10 +235,10 @@ router.post(
  *         description: Internal server error
  */
 router.post(
-  '/refresh',
+  "/refresh",
   authRateLimit(10, 15 * 60 * 1000), // 10 attempts per 15 minutes
   validateRefreshTokenRequest,
-  refreshTokenHandler
+  refreshTokenHandler,
 );
 
 /**
@@ -271,7 +271,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.post('/logout', authenticateToken, logoutHandler);
+router.post("/logout", authenticateToken, logoutHandler);
 
 /**
  * @swagger
@@ -317,9 +317,9 @@ router.post('/logout', authenticateToken, logoutHandler);
  *         description: Internal server error
  */
 router.post(
-  '/forgot-password',
+  "/forgot-password",
   authRateLimit(3, 60 * 60 * 1000), // 3 attempts per hour
-  forgotPasswordHandler
+  forgotPasswordHandler,
 );
 
 /**
@@ -370,10 +370,10 @@ router.post(
  *         description: Internal server error
  */
 router.post(
-  '/reset-password',
+  "/reset-password",
   authRateLimit(5, 60 * 60 * 1000), // 5 attempts per hour
   validatePasswordResetRequest,
-  resetPasswordHandler
+  resetPasswordHandler,
 );
 
 /**
@@ -428,11 +428,11 @@ router.post(
  *         description: Internal server error
  */
 router.post(
-  '/change-password',
+  "/change-password",
   authenticateToken,
   authRateLimit(5, 60 * 60 * 1000), // 5 attempts per hour
   validatePasswordChangeRequest,
-  changePasswordHandler
+  changePasswordHandler,
 );
 
 /**
@@ -478,9 +478,9 @@ router.post(
  *         description: Internal server error
  */
 router.post(
-  '/verify-email',
+  "/verify-email",
   authRateLimit(10, 60 * 60 * 1000), // 10 attempts per hour
-  verifyEmailHandler
+  verifyEmailHandler,
 );
 
 export default router;

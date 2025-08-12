@@ -4,8 +4,8 @@
  */
 
 // Re-export all types from modular structure
-export * from './twitter';
+export * from "./twitter";
 
 // Default export for legacy imports
-import * as TwitterTypes from './twitter';
+import * as TwitterTypes from "./twitter";
 export default TwitterTypes;

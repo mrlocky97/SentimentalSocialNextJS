@@ -5,8 +5,10 @@
  * Entrena y prueba el modelo de análisis de sentimientos con el nuevo dataset mejorado
  */
 
-import { enhancedTrainingData } from "../data/enhanced-training-data";
-import { NaiveBayesSentimentService } from "../services/naive-bayes-sentiment.service";
+import * as fs from "fs";
+import * as path from "path";
+import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
+import { FixedNaiveBayesService } from "../services/fixed-naive-bayes.service";
 
 async function trainAndTestModel() {
   console.log(
@@ -14,40 +16,71 @@ async function trainAndTestModel() {
   );
 
   // Mostrar estadísticas del dataset
-  const positiveCount = enhancedTrainingData.filter(
-    (d) => d.label === "positive",
+  const positiveCount = enhancedTrainingDataV3Complete.filter(
+    (d: { label: string }) => d.label === "positive",
   ).length;
-  const negativeCount = enhancedTrainingData.filter(
-    (d) => d.label === "negative",
+  const negativeCount = enhancedTrainingDataV3Complete.filter(
+    (d: { label: string }) => d.label === "negative",
   ).length;
-  const neutralCount = enhancedTrainingData.filter(
-    (d) => d.label === "neutral",
+  const neutralCount = enhancedTrainingDataV3Complete.filter(
+    (d: { label: string }) => d.label === "neutral",
   ).length;
 
   console.log("📊 Estadísticas del Dataset Mejorado:");
-  console.log(`   Total ejemplos: ${enhancedTrainingData.length}`);
+  console.log(`   Total ejemplos: ${enhancedTrainingDataV3Complete.length}`);
   console.log(
-    `   Positivos: ${positiveCount} (${((positiveCount / enhancedTrainingData.length) * 100).toFixed(1)}%)`,
+    `   Positivos: ${positiveCount} (${((positiveCount / enhancedTrainingDataV3Complete.length) * 100).toFixed(1)}%)`,
   );
   console.log(
-    `   Negativos: ${negativeCount} (${((negativeCount / enhancedTrainingData.length) * 100).toFixed(1)}%)`,
+    `   Negativos: ${negativeCount} (${((negativeCount / enhancedTrainingDataV3Complete.length) * 100).toFixed(1)}%)`,
   );
   console.log(
-    `   Neutrales: ${neutralCount} (${((neutralCount / enhancedTrainingData.length) * 100).toFixed(1)}%)`,
+    `   Neutrales: ${neutralCount} (${((neutralCount / enhancedTrainingDataV3Complete.length) * 100).toFixed(1)}%)`,
   );
   console.log("");
 
-  // Inicializar el servicio de sentimientos
-  const sentimentService = new NaiveBayesSentimentService();
+  // Inicializar el servicio de sentimientos mejorado
+  const sentimentService = new FixedNaiveBayesService();
 
   // Entrenar el modelo
   console.log("🔄 Entrenando modelo...");
   const trainingStart = Date.now();
 
   try {
-    sentimentService.train(enhancedTrainingData);
+    // Convertir datos para compatibilidad con SimpleSentimentLabel
+    const trainingData = enhancedTrainingDataV3Complete.map((item) => ({
+      text: item.text,
+      label: item.label as "positive" | "negative" | "neutral",
+    }));
+
+    sentimentService.train(trainingData);
     const trainingTime = Date.now() - trainingStart;
     console.log(`✅ Modelo entrenado exitosamente en ${trainingTime}ms\n`);
+
+    // Guardar el modelo entrenado
+    console.log("💾 Guardando modelo entrenado...");
+    const modelData = {
+      trained: true,
+      trainingDate: new Date().toISOString(),
+      datasetSize: enhancedTrainingDataV3Complete.length,
+      stats: sentimentService.getStats(),
+      trainingTime: trainingTime,
+    };
+
+    // Crear el directorio si no existe
+    const modelPath = path.join(
+      __dirname,
+      "../../data/trained-sentiment-model-v3.json",
+    );
+
+    // Asegurar que el directorio existe
+    const dir = path.dirname(modelPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(modelPath, JSON.stringify(modelData, null, 2));
+    console.log(`✅ Modelo guardado en: ${modelPath}\n`);
 
     // Pruebas del modelo con ejemplos específicos de redes sociales
     console.log(
@@ -95,7 +128,7 @@ async function trainAndTestModel() {
     // Estadísticas adicionales
     console.log("📈 Análisis de Rendimiento:");
     console.log(
-      `   Dataset: ${enhancedTrainingData.length} ejemplos de alta calidad`,
+      `   Dataset: ${enhancedTrainingDataV3Complete.length} ejemplos de alta calidad`,
     );
     console.log(
       `   Características: Social media, emojis, sarcasmo, multilingüe`,

@@ -4,8 +4,8 @@
  * Phase 6.1: Observability and Metrics Implementation
  */
 
-import { AsyncLocalStorage } from 'async_hooks';
-import { randomUUID } from 'crypto';
+import { AsyncLocalStorage } from "async_hooks";
+import { randomUUID } from "crypto";
 
 export interface RequestContext {
   correlationId: string;
@@ -37,11 +37,12 @@ export class CorrelationService {
    */
   initializeContext(req: any): RequestContext {
     const context: RequestContext = {
-      correlationId: req.headers['x-correlation-id'] || this.generateCorrelationId(),
+      correlationId:
+        req.headers["x-correlation-id"] || this.generateCorrelationId(),
       requestId: this.generateRequestId(),
       userId: req.user?.id,
       sessionId: req.sessionID,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: this.extractIpAddress(req),
       timestamp: new Date(),
       metadata: {},
@@ -117,18 +118,20 @@ export class CorrelationService {
    */
   private extractIpAddress(req: any): string {
     return (
-      req.headers['x-forwarded-for']?.split(',')[0] ||
-      req.headers['x-real-ip'] ||
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.headers["x-real-ip"] ||
       req.connection?.remoteAddress ||
       req.socket?.remoteAddress ||
-      'unknown'
+      "unknown"
     );
   }
 
   /**
    * Create child context with additional metadata
    */
-  createChildContext(additionalMetadata: Record<string, any> = {}): RequestContext | undefined {
+  createChildContext(
+    additionalMetadata: Record<string, any> = {},
+  ): RequestContext | undefined {
     const currentContext = this.getCurrentContext();
     if (!currentContext) return undefined;
 

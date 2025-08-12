@@ -3,7 +3,7 @@
  * Types for campaign creation, management, and analytics
  */
 
-import { CampaignStatus } from '../../enums/campaign.enum';
+import { CampaignStatus } from "../../enums/campaign.enum";
 
 /**
  * Campaign interface - represents a social media monitoring campaign

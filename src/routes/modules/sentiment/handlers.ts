@@ -3,15 +3,16 @@
  * Separated route handlers for sentiment analysis endpoints
  */
 
-import { Request, Response } from 'express';
-import { Method } from '../../../enums/sentiment.enum';
-import { sentimentService } from '../../../services/sentiment.service';
-import { Tweet } from '../../../types/twitter';
+import { Request, Response } from "express";
+import { Method } from "../../../enums/sentiment.enum";
+import { enhancedSentimentService } from "../../../services/enhanced-sentiment.service";
+import { sentimentService } from "../../../services/sentiment.service";
+import { Tweet } from "../../../types/twitter";
 import {
   SentimentAnalysisError,
   successResponse,
   ValidationError,
-} from '../../../utils/error-handler';
+} from "../../../utils/error-handler";
 
 /**
  * Analyze text sentiment handler
@@ -19,48 +20,44 @@ import {
 export const analyzeTextHandler = async (req: Request, res: Response) => {
   const { text } = req.body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     throw SentimentAnalysisError.invalidText();
   }
 
-  // Convert text to tweet format for analysis
-  const mockTweet: Tweet = {
+  // Ensure enhanced service is initialized
+  await enhancedSentimentService.initialize();
+
+  // Use enhanced sentiment service for improved accuracy
+  const enhancedResult = enhancedSentimentService.predict(text);
+  const confidenceLevel = enhancedSentimentService.getConfidenceLevel(
+    enhancedResult.confidence,
+  );
+
+  const result = {
     id: `text_${Date.now()}`,
     tweetId: `text_${Date.now()}`,
     content: text,
-    author: {
-      id: 'text_analysis',
-      username: 'text_analysis',
-      displayName: 'Text Analysis',
-      verified: false,
-      followersCount: 0,
-      followingCount: 0,
-      tweetsCount: 0,
-      avatar: '',
+    analysis: {
+      sentiment: enhancedResult.label,
+      confidence: enhancedResult.confidence,
+      confidenceLevel: confidenceLevel.level,
+      confidenceDescription: confidenceLevel.description,
+      method: "enhanced-naive-bayes-v3",
+      enhanced: true,
+      modelVersion: "enhanced-v3",
     },
-    metrics: {
-      likes: 0,
-      retweets: 0,
-      replies: 0,
-      quotes: 0,
-      views: 0,
-      engagement: 0,
-    },
-    hashtags: [],
-    mentions: [],
-    urls: [],
-    mediaUrls: [],
-    isRetweet: false,
-    isReply: false,
-    isQuote: false,
-    language: 'en',
-    createdAt: new Date(),
-    scrapedAt: new Date(),
-    updatedAt: new Date(),
+    brandMentions: [],
+    hashtagSentiments: [],
+    influenceScore: 0,
+    marketingInsights: [],
+    analyzedAt: new Date().toISOString(),
   };
 
-  const result = await sentimentService.analyzeTweet(mockTweet);
-  return successResponse(res, result, 'Text sentiment analysis completed successfully');
+  return successResponse(
+    res,
+    result,
+    "Text sentiment analysis completed successfully with enhanced model",
+  );
 };
 
 /**
@@ -69,13 +66,20 @@ export const analyzeTextHandler = async (req: Request, res: Response) => {
 export const analyzeMultiLangHandler = async (req: Request, res: Response) => {
   const { text, language } = req.body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     throw SentimentAnalysisError.invalidText();
   }
 
-  const result = await sentimentService.analyzeMultiLanguageText(text, language);
+  const result = await sentimentService.analyzeMultiLanguageText(
+    text,
+    language,
+  );
 
-  return successResponse(res, result, 'Multi-language sentiment analysis completed successfully');
+  return successResponse(
+    res,
+    result,
+    "Multi-language sentiment analysis completed successfully",
+  );
 };
 
 /**
@@ -84,17 +88,23 @@ export const analyzeMultiLangHandler = async (req: Request, res: Response) => {
 export const analyzeTweetHandler = async (req: Request, res: Response) => {
   const { tweet } = req.body;
 
-  if (!tweet || typeof tweet !== 'object') {
+  if (!tweet || typeof tweet !== "object") {
     throw SentimentAnalysisError.invalidTweet();
   }
 
   // Validate required tweet fields
   if (!tweet.content || !tweet.tweetId) {
-    throw SentimentAnalysisError.invalidTweet('Tweet must have content and tweetId fields');
+    throw SentimentAnalysisError.invalidTweet(
+      "Tweet must have content and tweetId fields",
+    );
   }
 
   const result = await sentimentService.analyzeTweet(tweet as Tweet);
-  return successResponse(res, result, 'Tweet sentiment analysis completed successfully');
+  return successResponse(
+    res,
+    result,
+    "Tweet sentiment analysis completed successfully",
+  );
 };
 
 /**
@@ -118,12 +128,18 @@ export const batchAnalyzeHandler = async (req: Request, res: Response) => {
   // Validate each tweet
   for (const tweet of tweets) {
     if (!tweet.content || !tweet.tweetId) {
-      throw SentimentAnalysisError.invalidTweet('Each tweet must have content and tweetId fields');
+      throw SentimentAnalysisError.invalidTweet(
+        "Each tweet must have content and tweetId fields",
+      );
     }
   }
 
   const results = await sentimentService.analyzeTweetsBatch(tweets as Tweet[]);
-  return successResponse(res, results, 'Batch sentiment analysis completed successfully');
+  return successResponse(
+    res,
+    results,
+    "Batch sentiment analysis completed successfully",
+  );
 };
 
 /**
@@ -132,13 +148,17 @@ export const batchAnalyzeHandler = async (req: Request, res: Response) => {
 export const compareMethodsHandler = async (req: Request, res: Response) => {
   const { text } = req.body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     throw SentimentAnalysisError.invalidText();
   }
 
   const result = await sentimentService.compareSentimentMethods({ text });
 
-  return successResponse(res, result, 'Sentiment methods comparison completed successfully');
+  return successResponse(
+    res,
+    result,
+    "Sentiment methods comparison completed successfully",
+  );
 };
 
 /**
@@ -147,16 +167,18 @@ export const compareMethodsHandler = async (req: Request, res: Response) => {
 export const advancedCompareHandler = async (req: Request, res: Response) => {
   const { text } = req.body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     throw SentimentAnalysisError.invalidText();
   }
 
-  const result = await sentimentService.advancedCompareSentimentMethods({ text });
+  const result = await sentimentService.advancedCompareSentimentMethods({
+    text,
+  });
 
   return successResponse(
     res,
     result,
-    'Advanced sentiment methods comparison completed successfully'
+    "Advanced sentiment methods comparison completed successfully",
   );
 };
 
@@ -166,15 +188,15 @@ export const advancedCompareHandler = async (req: Request, res: Response) => {
 export const getTestHandler = async (req: Request, res: Response) => {
   res.json({
     success: true,
-    message: 'Sentiment Analysis API is operational',
-    version: '3.0.0',
-    methods: ['hybrid', 'rule-based', 'ml'],
+    message: "Sentiment Analysis API is operational",
+    version: "3.0.0",
+    methods: ["hybrid", "rule-based", "ml"],
     features: [
-      'Multi-language support',
-      'Batch processing',
-      'Real-time analysis',
-      'Confidence scoring',
-      'Method comparison',
+      "Multi-language support",
+      "Batch processing",
+      "Real-time analysis",
+      "Confidence scoring",
+      "Method comparison",
     ],
     timestamp: new Date().toISOString(),
   });
@@ -186,13 +208,13 @@ export const getTestHandler = async (req: Request, res: Response) => {
 export const analyzeWithMethodHandler = async (req: Request, res: Response) => {
   const { text, method } = req.body;
 
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     throw SentimentAnalysisError.invalidText();
   }
 
   if (!method || !Object.values(Method).includes(method)) {
     throw new ValidationError(
-      `Invalid method. Must be one of: ${Object.values(Method).join(', ')}`
+      `Invalid method. Must be one of: ${Object.values(Method).join(", ")}`,
     );
   }
 
@@ -200,7 +222,7 @@ export const analyzeWithMethodHandler = async (req: Request, res: Response) => {
   return successResponse(
     res,
     result,
-    `Sentiment analysis with ${method} method completed successfully`
+    `Sentiment analysis with ${method} method completed successfully`,
   );
 };
 
@@ -209,7 +231,11 @@ export const analyzeWithMethodHandler = async (req: Request, res: Response) => {
  */
 export const getDemoHandler = async (req: Request, res: Response) => {
   const result = await sentimentService.getDemoAnalysis();
-  return successResponse(res, result, 'Demo sentiment analysis retrieved successfully');
+  return successResponse(
+    res,
+    result,
+    "Demo sentiment analysis retrieved successfully",
+  );
 };
 
 /**
@@ -223,25 +249,27 @@ export const trainModelHandler = async (req: Request, res: Response) => {
   }
 
   if (examples.length < 10) {
-    throw SentimentAnalysisError.invalidTrainingData('At least 10 training samples required');
+    throw SentimentAnalysisError.invalidTrainingData(
+      "At least 10 training samples required",
+    );
   }
 
   // Validate training data format
   for (const example of examples) {
     if (!example.text || !example.label) {
       throw SentimentAnalysisError.invalidTrainingData(
-        'Each training sample must have text and label fields'
+        "Each training sample must have text and label fields",
       );
     }
-    if (!['positive', 'negative', 'neutral'].includes(example.label)) {
+    if (!["positive", "negative", "neutral"].includes(example.label)) {
       throw SentimentAnalysisError.invalidTrainingData(
-        'Label must be positive, negative, or neutral'
+        "Label must be positive, negative, or neutral",
       );
     }
   }
 
   const result = await sentimentService.updateModel({ examples, saveModel });
-  return successResponse(res, result, 'Model training completed successfully');
+  return successResponse(res, result, "Model training completed successfully");
 };
 
 /**
@@ -249,7 +277,7 @@ export const trainModelHandler = async (req: Request, res: Response) => {
  */
 export const getModelStatusHandler = async (req: Request, res: Response) => {
   const result = await sentimentService.getModelStatus();
-  return successResponse(res, result, 'Model status retrieved successfully');
+  return successResponse(res, result, "Model status retrieved successfully");
 };
 
 /**
@@ -266,12 +294,12 @@ export const getBenchmarksHandler = async (req: Request, res: Response) => {
         lastUpdated: new Date().toISOString(),
         benchmarkInfo: {
           testCases: 1000,
-          languages: ['en', 'es', 'fr', 'de', 'it', 'pt'],
-          accuracy: '92.5%',
-          averageProcessingTime: '45ms',
+          languages: ["en", "es", "fr", "de", "it", "pt"],
+          accuracy: "92.5%",
+          averageProcessingTime: "45ms",
         },
       },
-      message: 'Sentiment analysis benchmarks retrieved successfully',
+      message: "Sentiment analysis benchmarks retrieved successfully",
     });
   } catch (error) {
     res.json({
@@ -279,13 +307,13 @@ export const getBenchmarksHandler = async (req: Request, res: Response) => {
       data: {
         benchmarkInfo: {
           testCases: 1000,
-          languages: ['en', 'es', 'fr', 'de', 'it', 'pt'],
-          accuracy: '92.5%',
-          averageProcessingTime: '45ms',
+          languages: ["en", "es", "fr", "de", "it", "pt"],
+          accuracy: "92.5%",
+          averageProcessingTime: "45ms",
         },
-        note: 'Live metrics unavailable, showing cached benchmarks',
+        note: "Live metrics unavailable, showing cached benchmarks",
       },
-      message: 'Cached sentiment analysis benchmarks',
+      message: "Cached sentiment analysis benchmarks",
     });
   }
 };
@@ -328,7 +356,7 @@ export const getMetricsHandler = async (req: Request, res: Response) => {
           uptime: 0.997,
         },
       },
-      message: 'Sentiment analysis metrics retrieved successfully',
+      message: "Sentiment analysis metrics retrieved successfully",
     });
   } catch (error) {
     // Fallback metrics if service unavailable
@@ -362,7 +390,7 @@ export const getMetricsHandler = async (req: Request, res: Response) => {
           uptime: 0.997,
         },
       },
-      message: 'Cached sentiment analysis metrics (live metrics unavailable)',
+      message: "Cached sentiment analysis metrics (live metrics unavailable)",
     });
   }
 };

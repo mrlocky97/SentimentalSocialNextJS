@@ -103,6 +103,18 @@ temp/
 .rts2_cache_es/
 .rts2_cache_umd/
 
+# Temporary evaluation and test files
+evaluate-*.js
+test-*.js
+test_*.js
+backup-*.ts
+*.tsbuildinfo
+
+# Duplicate config files
+jest.config.js
+package.json.new
+package.json.backup
+
 # ==================== OS & SYSTEM ====================
 # macOS
 .DS_Store

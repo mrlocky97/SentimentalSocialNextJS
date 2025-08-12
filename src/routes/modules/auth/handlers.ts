@@ -3,19 +3,19 @@
  * Separated route handlers for authentication endpoints
  */
 
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import {
   AuthenticationError,
   BusinessLogicError,
   ErrorCode,
   ResponseHelper,
   ValidationError,
-} from '../../../core/errors';
-import { tokenBlacklistService } from '../../../lib/security/token-blacklist';
-import { AuthenticatedRequest } from '../../../middleware/express-auth';
-import { AuthService } from '../../../services/auth.service';
-import { LoginRequest, RegisterRequest } from '../../../types/auth';
+} from "../../../core/errors";
+import { tokenBlacklistService } from "../../../lib/security/token-blacklist";
+import { AuthenticatedRequest } from "../../../middleware/express-auth";
+import { AuthService } from "../../../services/auth.service";
+import { LoginRequest, RegisterRequest } from "../../../types/auth";
 
 const authService = new AuthService();
 
@@ -33,25 +33,31 @@ export const registerHandler = async (req: Request, res: Response) => {
       !registerData.displayName ||
       !registerData.username
     ) {
-      throw new ValidationError('Missing required fields', ErrorCode.INVALID_INPUT);
+      throw new ValidationError(
+        "Missing required fields",
+        ErrorCode.INVALID_INPUT,
+      );
     }
 
     if (registerData.password.length < 8) {
       throw new ValidationError(
-        'Password must be at least 8 characters long',
-        ErrorCode.INVALID_INPUT
+        "Password must be at least 8 characters long",
+        ErrorCode.INVALID_INPUT,
       );
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(registerData.email)) {
-      throw new ValidationError('Invalid email format', ErrorCode.INVALID_INPUT);
+      throw new ValidationError(
+        "Invalid email format",
+        ErrorCode.INVALID_INPUT,
+      );
     }
 
     const result = await authService.register(registerData);
 
     ResponseHelper.success(res, {
-      message: 'User registered successfully',
+      message: "User registered successfully",
       user: {
         id: result.user.id,
         email: result.user.email,
@@ -61,7 +67,10 @@ export const registerHandler = async (req: Request, res: Response) => {
       token: result.accessToken,
     });
   } catch (error) {
-    if (error instanceof ValidationError || error instanceof BusinessLogicError) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof BusinessLogicError
+    ) {
       const response = {
         success: false,
         error: {
@@ -74,12 +83,12 @@ export const registerHandler = async (req: Request, res: Response) => {
       };
       res.status(400).json(response);
     } else {
-      console.error('Registration error:', error);
+      console.error("Registration error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error during registration',
+          message: "Internal server error during registration",
           timestamp: new Date().toISOString(),
         },
       };
@@ -96,13 +105,16 @@ export const loginHandler = async (req: Request, res: Response) => {
     const loginData: LoginRequest = req.body;
 
     if (!loginData.email || !loginData.password) {
-      throw new ValidationError('Email and password are required', ErrorCode.INVALID_INPUT);
+      throw new ValidationError(
+        "Email and password are required",
+        ErrorCode.INVALID_INPUT,
+      );
     }
 
     const result = await authService.login(loginData);
 
     ResponseHelper.success(res, {
-      message: 'Login successful',
+      message: "Login successful",
       user: {
         id: result.user.id,
         email: result.user.email,
@@ -112,7 +124,10 @@ export const loginHandler = async (req: Request, res: Response) => {
       token: result.accessToken,
     });
   } catch (error) {
-    if (error instanceof AuthenticationError || error instanceof ValidationError) {
+    if (
+      error instanceof AuthenticationError ||
+      error instanceof ValidationError
+    ) {
       const response = {
         success: false,
         error: {
@@ -125,12 +140,12 @@ export const loginHandler = async (req: Request, res: Response) => {
       };
       res.status(401).json(response);
     } else {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error during login',
+          message: "Internal server error during login",
           timestamp: new Date().toISOString(),
         },
       };
@@ -147,29 +162,35 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      throw new ValidationError('Refresh token is required', ErrorCode.INVALID_TOKEN);
+      throw new ValidationError(
+        "Refresh token is required",
+        ErrorCode.INVALID_TOKEN,
+      );
     }
 
     // Verify refresh token
     const decoded = jwt.verify(
       refreshToken,
-      process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret'
+      process.env.JWT_REFRESH_SECRET || "fallback-refresh-secret",
     ) as any;
 
     // Check if token is blacklisted
     if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
-      throw new AuthenticationError('Invalid refresh token', ErrorCode.INVALID_TOKEN);
+      throw new AuthenticationError(
+        "Invalid refresh token",
+        ErrorCode.INVALID_TOKEN,
+      );
     }
 
     // Generate new access token
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, email: decoded.email },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '15m' }
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "15m" },
     );
 
     ResponseHelper.success(res, {
-      message: 'Token refreshed successfully',
+      message: "Token refreshed successfully",
       token: newAccessToken,
     });
   } catch (error) {
@@ -178,12 +199,15 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
         success: false,
         error: {
           code: ErrorCode.INVALID_TOKEN,
-          message: 'Invalid refresh token',
+          message: "Invalid refresh token",
           timestamp: new Date().toISOString(),
         },
       };
       res.status(401).json(response);
-    } else if (error instanceof ValidationError || error instanceof AuthenticationError) {
+    } else if (
+      error instanceof ValidationError ||
+      error instanceof AuthenticationError
+    ) {
       const response = {
         success: false,
         error: {
@@ -196,12 +220,12 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       };
       res.status(401).json(response);
     } else {
-      console.error('Token refresh error:', error);
+      console.error("Token refresh error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error during token refresh',
+          message: "Internal server error during token refresh",
           timestamp: new Date().toISOString(),
         },
       };
@@ -215,7 +239,7 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
  */
 export const logoutHandler = (req: AuthenticatedRequest, res: Response) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace("Bearer ", "");
 
     if (token) {
       // Extract expiration from token for blacklist
@@ -224,27 +248,31 @@ export const logoutHandler = (req: AuthenticatedRequest, res: Response) => {
         const expiresAt = decoded?.exp
           ? new Date(decoded.exp * 1000)
           : new Date(Date.now() + 15 * 60 * 1000);
-        tokenBlacklistService.blacklistToken(token, decoded?.userId || 'unknown', expiresAt);
+        tokenBlacklistService.blacklistToken(
+          token,
+          decoded?.userId || "unknown",
+          expiresAt,
+        );
       } catch {
         // If decode fails, blacklist for 15 minutes as fallback
         tokenBlacklistService.blacklistToken(
           token,
-          'unknown',
-          new Date(Date.now() + 15 * 60 * 1000)
+          "unknown",
+          new Date(Date.now() + 15 * 60 * 1000),
         );
       }
     }
 
     ResponseHelper.success(res, {
-      message: 'Logged out successfully',
+      message: "Logged out successfully",
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
     const response = {
       success: false,
       error: {
         code: ErrorCode.INTERNAL_ERROR,
-        message: 'Internal server error during logout',
+        message: "Internal server error during logout",
         timestamp: new Date().toISOString(),
       },
     };
@@ -260,18 +288,22 @@ export const forgotPasswordHandler = (req: Request, res: Response) => {
     const { email } = req.body;
 
     if (!email) {
-      throw new ValidationError('Email is required', ErrorCode.INVALID_INPUT);
+      throw new ValidationError("Email is required", ErrorCode.INVALID_INPUT);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      throw new ValidationError('Invalid email format', ErrorCode.INVALID_INPUT);
+      throw new ValidationError(
+        "Invalid email format",
+        ErrorCode.INVALID_INPUT,
+      );
     }
 
     // TODO: Implement actual password reset logic
     // For now, return success regardless to prevent email enumeration
     ResponseHelper.success(res, {
-      message: 'If an account with that email exists, a password reset link has been sent.',
+      message:
+        "If an account with that email exists, a password reset link has been sent.",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -287,12 +319,12 @@ export const forgotPasswordHandler = (req: Request, res: Response) => {
       };
       res.status(400).json(response);
     } else {
-      console.error('Forgot password error:', error);
+      console.error("Forgot password error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error',
+          message: "Internal server error",
           timestamp: new Date().toISOString(),
         },
       };
@@ -309,19 +341,22 @@ export const resetPasswordHandler = (req: Request, res: Response) => {
     const { token, newPassword } = req.body;
 
     if (!token || !newPassword) {
-      throw new ValidationError('Token and new password are required', ErrorCode.INVALID_INPUT);
+      throw new ValidationError(
+        "Token and new password are required",
+        ErrorCode.INVALID_INPUT,
+      );
     }
 
     if (newPassword.length < 8) {
       throw new ValidationError(
-        'Password must be at least 8 characters long',
-        ErrorCode.INVALID_INPUT
+        "Password must be at least 8 characters long",
+        ErrorCode.INVALID_INPUT,
       );
     }
 
     // TODO: Implement actual password reset logic
     ResponseHelper.success(res, {
-      message: 'Password reset successfully',
+      message: "Password reset successfully",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -337,12 +372,12 @@ export const resetPasswordHandler = (req: Request, res: Response) => {
       };
       res.status(400).json(response);
     } else {
-      console.error('Reset password error:', error);
+      console.error("Reset password error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error',
+          message: "Internal server error",
           timestamp: new Date().toISOString(),
         },
       };
@@ -360,21 +395,21 @@ export const changePasswordHandler = (req: Request, res: Response) => {
 
     if (!currentPassword || !newPassword) {
       throw new ValidationError(
-        'Current password and new password are required',
-        ErrorCode.INVALID_INPUT
+        "Current password and new password are required",
+        ErrorCode.INVALID_INPUT,
       );
     }
 
     if (newPassword.length < 8) {
       throw new ValidationError(
-        'New password must be at least 8 characters long',
-        ErrorCode.INVALID_INPUT
+        "New password must be at least 8 characters long",
+        ErrorCode.INVALID_INPUT,
       );
     }
 
     // TODO: Implement actual password change logic
     ResponseHelper.success(res, {
-      message: 'Password changed successfully',
+      message: "Password changed successfully",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -390,12 +425,12 @@ export const changePasswordHandler = (req: Request, res: Response) => {
       };
       res.status(400).json(response);
     } else {
-      console.error('Change password error:', error);
+      console.error("Change password error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error',
+          message: "Internal server error",
           timestamp: new Date().toISOString(),
         },
       };
@@ -412,12 +447,15 @@ export const verifyEmailHandler = (req: Request, res: Response) => {
     const { token } = req.body;
 
     if (!token) {
-      throw new ValidationError('Verification token is required', ErrorCode.INVALID_TOKEN);
+      throw new ValidationError(
+        "Verification token is required",
+        ErrorCode.INVALID_TOKEN,
+      );
     }
 
     // TODO: Implement actual email verification logic
     ResponseHelper.success(res, {
-      message: 'Email verified successfully',
+      message: "Email verified successfully",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -433,12 +471,12 @@ export const verifyEmailHandler = (req: Request, res: Response) => {
       };
       res.status(400).json(response);
     } else {
-      console.error('Email verification error:', error);
+      console.error("Email verification error:", error);
       const response = {
         success: false,
         error: {
           code: ErrorCode.INTERNAL_ERROR,
-          message: 'Internal server error',
+          message: "Internal server error",
           timestamp: new Date().toISOString(),
         },
       };

@@ -371,10 +371,10 @@ export class SentimentService {
     if (!validExamples.length)
       throw new Error("No valid training examples provided");
 
-    const { enhancedTrainingDataV3 } = await import(
+    const { enhancedTrainingDataV3Complete } = await import(
       "../data/enhanced-training-data-v3"
     );
-    const trainingData = [...enhancedTrainingDataV3, ...validExamples];
+    const trainingData = [...enhancedTrainingDataV3Complete, ...validExamples];
 
     console.log(
       `🔄 Training model with ${validExamples.length} new examples...`,

@@ -4,7 +4,7 @@
  * Phase 6.1: Observability and Metrics Implementation
  */
 
-import { correlationService } from './correlation';
+import { correlationService } from "./correlation";
 
 export enum LogLevel {
   ERROR = 0,
@@ -55,7 +55,7 @@ export class StructuredLogger {
   constructor(config: Partial<LoggerConfig> = {}) {
     this.config = {
       level: LogLevel.INFO,
-      component: 'app',
+      component: "app",
       enableConsoleOutput: true,
       enableFileOutput: false,
       enablePerformanceTracking: true,
@@ -70,7 +70,11 @@ export class StructuredLogger {
   /**
    * Log error message
    */
-  error(message: string, error?: Error, metadata: Record<string, any> = {}): void {
+  error(
+    message: string,
+    error?: Error,
+    metadata: Record<string, any> = {},
+  ): void {
     this.log(LogLevel.ERROR, message, {
       ...metadata,
       error: error
@@ -130,7 +134,10 @@ export class StructuredLogger {
   /**
    * End performance tracking and log duration
    */
-  endPerformanceTracking(operation: string, metadata: Record<string, any> = {}): number {
+  endPerformanceTracking(
+    operation: string,
+    metadata: Record<string, any> = {},
+  ): number {
     if (!this.config.enablePerformanceTracking) return 0;
 
     const startTime = this.performanceMarks.get(operation);
@@ -157,7 +164,7 @@ export class StructuredLogger {
   withPerformanceTracking<T>(
     operation: string,
     fn: () => T | Promise<T>,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, any> = {},
   ): T | Promise<T> {
     this.startPerformanceTracking(operation);
 
@@ -195,7 +202,11 @@ export class StructuredLogger {
   /**
    * Core logging method
    */
-  private log(level: LogLevel, message: string, metadata: Record<string, any> = {}): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    metadata: Record<string, any> = {},
+  ): void {
     if (level > this.config.level) return;
 
     const context = correlationService.getCurrentContext();
@@ -241,10 +252,13 @@ export class StructuredLogger {
   private formatForConsole(entry: LogEntry): string {
     const timestamp = entry.timestamp.toISOString();
     const level = LogLevel[entry.level].padEnd(5);
-    const correlation = entry.correlationId ? `[${entry.correlationId.substring(0, 8)}]` : '';
+    const correlation = entry.correlationId
+      ? `[${entry.correlationId.substring(0, 8)}]`
+      : "";
     const component = `[${entry.component}]`;
-    const operation = entry.operation ? `[${entry.operation}]` : '';
-    const duration = entry.duration !== undefined ? `(${entry.duration}ms)` : '';
+    const operation = entry.operation ? `[${entry.operation}]` : "";
+    const duration =
+      entry.duration !== undefined ? `(${entry.duration}ms)` : "";
 
     let logLine = `${timestamp} ${level} ${correlation}${component}${operation} ${entry.message} ${duration}`;
 
@@ -286,7 +300,10 @@ export class StructuredLogger {
 export class LoggerFactory {
   private static loggers = new Map<string, StructuredLogger>();
 
-  static getLogger(component: string, config: Partial<LoggerConfig> = {}): StructuredLogger {
+  static getLogger(
+    component: string,
+    config: Partial<LoggerConfig> = {},
+  ): StructuredLogger {
     const key = `${component}_${JSON.stringify(config)}`;
 
     if (!this.loggers.has(key)) {
@@ -295,7 +312,7 @@ export class LoggerFactory {
         new StructuredLogger({
           component,
           ...config,
-        })
+        }),
       );
     }
 
@@ -310,8 +327,8 @@ export class LoggerFactory {
 }
 
 // Export default logger instances
-export const systemLogger = LoggerFactory.getLogger('system');
-export const apiLogger = LoggerFactory.getLogger('api');
-export const cacheLogger = LoggerFactory.getLogger('cache');
-export const sentimentLogger = LoggerFactory.getLogger('sentiment');
-export const performanceLogger = LoggerFactory.getLogger('performance');
+export const systemLogger = LoggerFactory.getLogger("system");
+export const apiLogger = LoggerFactory.getLogger("api");
+export const cacheLogger = LoggerFactory.getLogger("cache");
+export const sentimentLogger = LoggerFactory.getLogger("sentiment");
+export const performanceLogger = LoggerFactory.getLogger("performance");

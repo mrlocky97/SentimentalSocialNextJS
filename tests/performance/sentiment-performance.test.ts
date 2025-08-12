@@ -3,20 +3,21 @@
  * Tests to ensure the application meets performance requirements
  */
 
-import { describe, expect, it } from '@jest/globals';
-import { TweetSentimentAnalysisManager } from '../../src/services/tweet-sentiment-analysis.manager.service';
-import { TestCleanup } from '../helpers/test-cleanup';
-import { createTestTweet } from '../utils/test-helpers';
+import { describe, expect, it } from "@jest/globals";
+import { TweetSentimentAnalysisManager } from "../../src/services/tweet-sentiment-analysis.manager.service";
+import { TestCleanup } from "../helpers/test-cleanup";
+import { createTestTweet } from "../utils/test-helpers";
 
 TestCleanup.setupTestTimeout();
 
-describe('Performance Tests - PASO 7', () => {
+describe("Performance Tests - PASO 7", () => {
   const analysisManager = new TweetSentimentAnalysisManager();
 
-  describe('Sentiment Analysis Performance', () => {
-    it('should analyze single tweet within 500ms', async () => {
+  describe("Sentiment Analysis Performance", () => {
+    it("should analyze single tweet within 500ms", async () => {
       const tweet = createTestTweet({
-        content: 'This is a performance test tweet with moderate content length',
+        content:
+          "This is a performance test tweet with moderate content length",
       });
 
       const startTime = performance.now();
@@ -30,11 +31,11 @@ describe('Performance Tests - PASO 7', () => {
       expect(executionTime).toBeLessThan(500); // 500ms target
     });
 
-    it('should handle batch analysis efficiently', async () => {
+    it("should handle batch analysis efficiently", async () => {
       const tweets = Array.from({ length: 10 }, (_, i) =>
         createTestTweet({
           content: `Batch test tweet number ${i + 1} with various sentiment content`,
-        })
+        }),
       );
 
       const startTime = performance.now();
@@ -48,8 +49,8 @@ describe('Performance Tests - PASO 7', () => {
       expect(averageTimePerTweet).toBeLessThan(200); // 200ms per tweet target
     });
 
-    it('should maintain performance with large text', async () => {
-      const largeContent = 'This is a very long tweet content '.repeat(50); // ~1700 chars
+    it("should maintain performance with large text", async () => {
+      const largeContent = "This is a very long tweet content ".repeat(50); // ~1700 chars
       const tweet = createTestTweet({ content: largeContent });
 
       const startTime = performance.now();
@@ -63,8 +64,8 @@ describe('Performance Tests - PASO 7', () => {
     });
   });
 
-  describe('Memory Usage Tests', () => {
-    it('should not have significant memory leaks in batch processing', async () => {
+  describe("Memory Usage Tests", () => {
+    it("should not have significant memory leaks in batch processing", async () => {
       const initialMemory = process.memoryUsage();
 
       // Process multiple batches
@@ -72,7 +73,7 @@ describe('Performance Tests - PASO 7', () => {
         const tweets = Array.from({ length: 20 }, (_, i) =>
           createTestTweet({
             content: `Memory test batch ${batch} tweet ${i}`,
-          })
+          }),
         );
 
         await analysisManager.analyzeTweetsBatch(tweets);
@@ -92,15 +93,15 @@ describe('Performance Tests - PASO 7', () => {
     });
   });
 
-  describe('Concurrent Processing Tests', () => {
-    it('should handle concurrent requests efficiently', async () => {
+  describe("Concurrent Processing Tests", () => {
+    it("should handle concurrent requests efficiently", async () => {
       const concurrentRequests = 5;
       const promises = Array.from({ length: concurrentRequests }, (_, i) =>
         analysisManager.analyzeTweet(
           createTestTweet({
             content: `Concurrent test ${i}`,
-          })
-        )
+          }),
+        ),
       );
 
       const startTime = performance.now();

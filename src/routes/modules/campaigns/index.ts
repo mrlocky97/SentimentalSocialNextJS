@@ -3,8 +3,11 @@
  * Modular campaign management routes with separated handlers and middleware
  */
 
-import { Router } from 'express';
-import { authenticateToken, requireRole } from '../../../middleware/express-auth';
+import { Router } from "express";
+import {
+  authenticateToken,
+  requireRole,
+} from "../../../middleware/express-auth";
 import {
   getCampaignsHandler,
   createCampaignHandler,
@@ -13,14 +16,14 @@ import {
   deleteCampaignHandler,
   getCampaignTweetsHandler,
   getCampaignsOverviewHandler,
-} from './handlers';
+} from "./handlers";
 import {
   validateCreateCampaignRequest,
   validateUpdateCampaignRequest,
   validateCampaignId,
   validatePagination,
   logCampaignRequest,
-} from './middleware';
+} from "./middleware";
 
 const router = Router();
 
@@ -296,11 +299,11 @@ router.use(logCampaignRequest);
  *         description: Internal server error
  */
 router.get(
-  '/',
+  "/",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   validatePagination,
-  getCampaignsHandler
+  getCampaignsHandler,
 );
 
 /**
@@ -346,11 +349,11 @@ router.get(
  *         description: Internal server error
  */
 router.post(
-  '/',
+  "/",
   authenticateToken,
-  requireRole(['admin', 'manager']),
+  requireRole(["admin", "manager"]),
   validateCreateCampaignRequest,
-  createCampaignHandler
+  createCampaignHandler,
 );
 
 /**
@@ -396,11 +399,11 @@ router.post(
  *         description: Internal server error
  */
 router.get(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   validateCampaignId,
-  getCampaignByIdHandler
+  getCampaignByIdHandler,
 );
 
 /**
@@ -457,12 +460,12 @@ router.get(
  *         description: Internal server error
  */
 router.put(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin', 'manager']),
+  requireRole(["admin", "manager"]),
   validateCampaignId,
   validateUpdateCampaignRequest,
-  updateCampaignHandler
+  updateCampaignHandler,
 );
 
 /**
@@ -509,11 +512,11 @@ router.put(
  *         description: Internal server error
  */
 router.delete(
-  '/:id',
+  "/:id",
   authenticateToken,
-  requireRole(['admin', 'manager']),
+  requireRole(["admin", "manager"]),
   validateCampaignId,
-  deleteCampaignHandler
+  deleteCampaignHandler,
 );
 
 /**
@@ -583,12 +586,12 @@ router.delete(
  *         description: Internal server error
  */
 router.get(
-  '/:campaignId/tweets',
+  "/:campaignId/tweets",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
+  requireRole(["admin", "manager", "analyst"]),
   validateCampaignId,
   validatePagination,
-  getCampaignTweetsHandler
+  getCampaignTweetsHandler,
 );
 
 /**
@@ -642,10 +645,10 @@ router.get(
  *         description: Internal server error
  */
 router.get(
-  '/overview',
+  "/overview",
   authenticateToken,
-  requireRole(['admin', 'manager', 'analyst']),
-  getCampaignsOverviewHandler
+  requireRole(["admin", "manager", "analyst"]),
+  getCampaignsOverviewHandler,
 );
 
 export default router;

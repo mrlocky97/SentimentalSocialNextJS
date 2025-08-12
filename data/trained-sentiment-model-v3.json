@@ -1,0 +1,17 @@
+{
+  "trained": true,
+  "trainingDate": "2025-08-12T20:02:56.810Z",
+  "datasetSize": 1274,
+  "stats": {
+    "trained": true,
+    "vocabularySize": 2888,
+    "totalDocuments": 1274,
+    "classCounts": {
+      "positive": 376,
+      "negative": 444,
+      "neutral": 406,
+      "sarcasm": 48
+    }
+  },
+  "trainingTime": 18
+}

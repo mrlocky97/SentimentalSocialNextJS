@@ -4,9 +4,9 @@
  * Phase 6.1: Observability and Metrics Implementation
  */
 
-import { NextFunction, Request, Response } from 'express';
-import { correlationService } from '../lib/observability/correlation';
-import { apiLogger } from '../lib/observability/logger';
+import { NextFunction, Request, Response } from "express";
+import { correlationService } from "../lib/observability/correlation";
+import { apiLogger } from "../lib/observability/logger";
 
 interface RequestWithLogging extends Request {
   correlationId?: string;
@@ -20,7 +20,7 @@ interface RequestWithLogging extends Request {
 export function requestLoggingMiddleware(
   req: RequestWithLogging,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const startTime = Date.now();
   req.startTime = startTime;
@@ -31,18 +31,18 @@ export function requestLoggingMiddleware(
   req.requestId = context.requestId;
 
   // Set correlation header in response
-  res.setHeader('X-Correlation-ID', context.correlationId);
-  res.setHeader('X-Request-ID', context.requestId);
+  res.setHeader("X-Correlation-ID", context.correlationId);
+  res.setHeader("X-Request-ID", context.requestId);
 
   // Run the request within correlation context
   correlationService.runWithContext(context, () => {
     // Log incoming request
-    apiLogger.info('Incoming request', {
+    apiLogger.info("Incoming request", {
       method: req.method,
       url: req.url,
-      userAgent: req.headers['user-agent'],
-      contentLength: req.headers['content-length'],
-      contentType: req.headers['content-type'],
+      userAgent: req.headers["user-agent"],
+      contentLength: req.headers["content-length"],
+      contentType: req.headers["content-type"],
       userId: context.userId,
       ipAddress: context.ipAddress,
     });
@@ -52,18 +52,18 @@ export function requestLoggingMiddleware(
     res.json = function (body: any) {
       const responseTime = Date.now() - startTime;
 
-      apiLogger.info('Outgoing response', {
+      apiLogger.info("Outgoing response", {
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
         responseTime,
-        contentType: res.getHeader('content-type'),
+        contentType: res.getHeader("content-type"),
         userId: context.userId,
       });
 
       // Add performance metadata
-      correlationService.addMetadata('responseTime', responseTime);
-      correlationService.addMetadata('statusCode', res.statusCode);
+      correlationService.addMetadata("responseTime", responseTime);
+      correlationService.addMetadata("statusCode", res.statusCode);
 
       return originalJson.call(this, body);
     };
@@ -74,7 +74,7 @@ export function requestLoggingMiddleware(
       const responseTime = Date.now() - startTime;
 
       if (res.statusCode >= 400) {
-        apiLogger.error('Request completed with error', undefined, {
+        apiLogger.error("Request completed with error", undefined, {
           method: req.method,
           url: req.url,
           statusCode: res.statusCode,
@@ -82,7 +82,7 @@ export function requestLoggingMiddleware(
           userId: context.userId,
         });
       } else {
-        apiLogger.info('Request completed successfully', {
+        apiLogger.info("Request completed successfully", {
           method: req.method,
           url: req.url,
           statusCode: res.statusCode,
@@ -95,24 +95,24 @@ export function requestLoggingMiddleware(
     };
 
     // Handle response finish event
-    res.on('finish', () => {
+    res.on("finish", () => {
       const responseTime = Date.now() - startTime;
 
-      apiLogger.debug('Response finished', {
+      apiLogger.debug("Response finished", {
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
         responseTime,
-        contentLength: res.getHeader('content-length'),
+        contentLength: res.getHeader("content-length"),
         userId: context.userId,
       });
     });
 
     // Handle errors
-    res.on('error', (error: Error) => {
+    res.on("error", (error: Error) => {
       const responseTime = Date.now() - startTime;
 
-      apiLogger.error('Response error', error, {
+      apiLogger.error("Response error", error, {
         method: req.method,
         url: req.url,
         responseTime,
@@ -131,7 +131,7 @@ export function errorLoggingMiddleware(
   error: Error,
   req: RequestWithLogging,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const responseTime = req.startTime ? Date.now() - req.startTime : undefined;
 
@@ -139,7 +139,7 @@ export function errorLoggingMiddleware(
   const context = correlationService.getCurrentContext();
   if (context) {
     correlationService.runWithContext(context, () => {
-      apiLogger.error('Unhandled request error', error, {
+      apiLogger.error("Unhandled request error", error, {
         method: req.method,
         url: req.url,
         responseTime,
@@ -149,7 +149,7 @@ export function errorLoggingMiddleware(
       });
     });
   } else {
-    apiLogger.error('Unhandled request error (no context)', error, {
+    apiLogger.error("Unhandled request error (no context)", error, {
       method: req.method,
       url: req.url,
       responseTime,
@@ -169,11 +169,11 @@ export function performanceLoggingMiddleware(thresholdMs: number = 1000) {
   return (req: RequestWithLogging, res: Response, next: NextFunction): void => {
     const startTime = Date.now();
 
-    res.on('finish', () => {
+    res.on("finish", () => {
       const responseTime = Date.now() - startTime;
 
       if (responseTime > thresholdMs) {
-        apiLogger.warn('Slow request detected', {
+        apiLogger.warn("Slow request detected", {
           method: req.method,
           url: req.url,
           responseTime,

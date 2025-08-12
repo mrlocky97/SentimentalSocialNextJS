@@ -7,7 +7,7 @@ import {
   PriorityScrapingStrategy,
   TweetCollectionJobStatus,
   TwitterRateLimitStrategy,
-} from '../../enums/tweet.enum';
+} from "../../enums/tweet.enum";
 
 /**
  * Tweet Collection Job interface - represents a data collection task

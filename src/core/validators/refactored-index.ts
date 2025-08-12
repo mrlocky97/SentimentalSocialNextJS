@@ -19,13 +19,13 @@ export {
   validateUsernameRequest,
   ValidatorFactory,
   Validators,
-} from './new-index';
+} from "./new-index";
 
-export type { ValidationOptions, ValidationResult } from './new-index';
+export type { ValidationOptions, ValidationResult } from "./new-index";
 
 /**
  * Main validation entry point for backward compatibility
  */
-import { ValidatorFactory } from './new-index';
+import { ValidatorFactory } from "./new-index";
 
 export default ValidatorFactory;

@@ -40,7 +40,10 @@ export abstract class BaseValidator {
   /**
    * Crea resultado de validación con errores
    */
-  protected static createErrorResult(errors: string[], warnings: string[] = []): ValidationResult {
+  protected static createErrorResult(
+    errors: string[],
+    warnings: string[] = [],
+  ): ValidationResult {
     return {
       isValid: false,
       errors,
@@ -67,11 +70,11 @@ export abstract class BaseValidator {
   protected static validateStringLength(
     value: string,
     fieldName: string,
-    options: { min?: number; max?: number } = {}
+    options: { min?: number; max?: number } = {},
   ): string[] {
     const errors: string[] = [];
 
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }
@@ -95,11 +98,11 @@ export abstract class BaseValidator {
   protected static validateNumberRange(
     value: number,
     fieldName: string,
-    options: { min?: number; max?: number } = {}
+    options: { min?: number; max?: number } = {},
   ): string[] {
     const errors: string[] = [];
 
-    if (typeof value !== 'number' || isNaN(value)) {
+    if (typeof value !== "number" || isNaN(value)) {
       errors.push(`${fieldName} must be a valid number`);
       return errors;
     }
@@ -120,11 +123,15 @@ export abstract class BaseValidator {
   /**
    * Valida enum
    */
-  protected static validateEnum<T>(value: any, fieldName: string, allowedValues: T[]): string[] {
+  protected static validateEnum<T>(
+    value: any,
+    fieldName: string,
+    allowedValues: T[],
+  ): string[] {
     const errors: string[] = [];
 
     if (!allowedValues.includes(value)) {
-      errors.push(`${fieldName} must be one of: ${allowedValues.join(', ')}`);
+      errors.push(`${fieldName} must be one of: ${allowedValues.join(", ")}`);
     }
 
     return errors;
@@ -137,7 +144,7 @@ export abstract class BaseValidator {
     const errors: string[] = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }
@@ -155,7 +162,7 @@ export abstract class BaseValidator {
   protected static validateURL(value: string, fieldName: string): string[] {
     const errors: string[] = [];
 
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
       errors.push(`${fieldName} must be a string`);
       return errors;
     }

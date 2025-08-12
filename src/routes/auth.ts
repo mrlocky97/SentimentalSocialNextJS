@@ -15,7 +15,7 @@
  */
 
 // Import and re-export the complete modular auth routes
-import authRoutes from './modules/auth/index';
+import authRoutes from "./modules/auth/index";
 
 // Default export for compatibility with server.ts
 export default authRoutes;

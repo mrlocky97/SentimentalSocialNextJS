@@ -4,14 +4,14 @@
  * Phase 6.3: Observability and Metrics Implementation
  */
 
-import { EventEmitter } from 'events';
-import { systemLogger } from '../observability/logger';
+import { EventEmitter } from "events";
+import { systemLogger } from "../observability/logger";
 
 export enum MetricType {
-  COUNTER = 'counter',
-  GAUGE = 'gauge',
-  HISTOGRAM = 'histogram',
-  SUMMARY = 'summary',
+  COUNTER = "counter",
+  GAUGE = "gauge",
+  HISTOGRAM = "histogram",
+  SUMMARY = "summary",
 }
 
 export interface MetricValue {
@@ -147,8 +147,8 @@ export class Metric extends EventEmitter {
       values.splice(0, values.length - 1000);
     }
 
-    this.emit('value', metricValue);
-    this.logger.debug('Metric value set', {
+    this.emit("value", metricValue);
+    this.logger.debug("Metric value set", {
       metric: this.name,
       value,
       labels,
@@ -166,7 +166,9 @@ export class Metric extends EventEmitter {
     const labelKey = this.generateLabelKey(labels);
     const currentValues = this.values.get(labelKey);
     const currentValue =
-      currentValues && currentValues.length > 0 ? currentValues[currentValues.length - 1].value : 0;
+      currentValues && currentValues.length > 0
+        ? currentValues[currentValues.length - 1].value
+        : 0;
 
     this.set(currentValue + amount, labels);
   }
@@ -175,7 +177,10 @@ export class Metric extends EventEmitter {
    * Observe value for histogram/summary metrics
    */
   observe(value: number, labels?: Record<string, string>): void {
-    if (this.type !== MetricType.HISTOGRAM && this.type !== MetricType.SUMMARY) {
+    if (
+      this.type !== MetricType.HISTOGRAM &&
+      this.type !== MetricType.SUMMARY
+    ) {
       throw new Error(`Cannot observe ${this.type} metric`);
     }
 
@@ -188,7 +193,9 @@ export class Metric extends EventEmitter {
   getValue(labels?: Record<string, string>): number | undefined {
     const labelKey = this.generateLabelKey(labels);
     const values = this.values.get(labelKey);
-    return values && values.length > 0 ? values[values.length - 1].value : undefined;
+    return values && values.length > 0
+      ? values[values.length - 1].value
+      : undefined;
   }
 
   /**
@@ -241,16 +248,18 @@ export class Metric extends EventEmitter {
    */
   reset(): void {
     this.values.clear();
-    this.logger.debug('Metric reset', { metric: this.name });
+    this.logger.debug("Metric reset", { metric: this.name });
   }
 
   private generateLabelKey(labels?: Record<string, string>): string {
     if (!labels || Object.keys(labels).length === 0) {
-      return '__default__';
+      return "__default__";
     }
 
-    const sortedEntries = Object.entries(labels).sort(([a], [b]) => a.localeCompare(b));
-    return sortedEntries.map(([key, value]) => `${key}=${value}`).join(',');
+    const sortedEntries = Object.entries(labels).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+    return sortedEntries.map(([key, value]) => `${key}=${value}`).join(",");
   }
 }
 
@@ -270,10 +279,10 @@ export class MetricsRegistry extends EventEmitter {
       () => {
         this.cleanup();
       },
-      60 * 60 * 1000
+      60 * 60 * 1000,
     );
 
-    this.logger.info('Metrics registry initialized');
+    this.logger.info("Metrics registry initialized");
   }
 
   /**
@@ -288,11 +297,11 @@ export class MetricsRegistry extends EventEmitter {
     this.metrics.set(definition.name, metric);
 
     // Forward metric events
-    metric.on('value', (value) => {
-      this.emit('metric_value', definition.name, value);
+    metric.on("value", (value) => {
+      this.emit("metric_value", definition.name, value);
     });
 
-    this.logger.info('Metric registered', {
+    this.logger.info("Metric registered", {
       name: definition.name,
       type: definition.type,
     });
@@ -346,7 +355,7 @@ export class MetricsRegistry extends EventEmitter {
     if (metric) {
       metric.removeAllListeners();
       this.metrics.delete(name);
-      this.logger.info('Metric unregistered', { name });
+      this.logger.info("Metric unregistered", { name });
       return true;
     }
     return false;
@@ -360,7 +369,7 @@ export class MetricsRegistry extends EventEmitter {
       metric.removeAllListeners();
     }
     this.metrics.clear();
-    this.logger.info('All metrics cleared');
+    this.logger.info("All metrics cleared");
   }
 
   /**
@@ -373,7 +382,7 @@ export class MetricsRegistry extends EventEmitter {
     }
 
     metric.reset();
-    this.logger.info('Metric reset', { metricName: name });
+    this.logger.info("Metric reset", { metricName: name });
     return true;
   }
 
@@ -384,7 +393,7 @@ export class MetricsRegistry extends EventEmitter {
     for (const [name, metric] of this.metrics) {
       metric.reset();
     }
-    this.logger.info('All metrics reset');
+    this.logger.info("All metrics reset");
   }
 
   /**
@@ -397,7 +406,7 @@ export class MetricsRegistry extends EventEmitter {
       cleanedCount++;
     }
 
-    this.logger.debug('Metrics cleanup completed', {
+    this.logger.debug("Metrics cleanup completed", {
       metricsProcessed: cleanedCount,
       cutoff: olderThan || new Date(Date.now() - 24 * 60 * 60 * 1000),
     });
@@ -407,20 +416,24 @@ export class MetricsRegistry extends EventEmitter {
    * Get system metrics
    */
   getSystemMetrics(): SystemMetrics {
-    const process = require('process');
-    const os = require('os');
+    const process = require("process");
+    const os = require("os");
 
     const memoryUsage = process.memoryUsage();
     const freeMem = os.freemem();
     const totalMem = os.totalmem();
 
     // Calculate application metrics from registered metrics
-    const requestsTotal = this.getMetric('http_requests_total')?.getValue() || 0;
-    const requestsErrors = this.getMetric('http_requests_errors_total')?.getValue() || 0;
-    const cacheHits = this.getMetric('cache_hits_total')?.getValue() || 0;
-    const cacheMisses = this.getMetric('cache_misses_total')?.getValue() || 0;
-    const sentimentAnalysisCount = this.getMetric('sentiment_analysis_total')?.getValue() || 0;
-    const sentimentErrors = this.getMetric('sentiment_analysis_errors_total')?.getValue() || 0;
+    const requestsTotal =
+      this.getMetric("http_requests_total")?.getValue() || 0;
+    const requestsErrors =
+      this.getMetric("http_requests_errors_total")?.getValue() || 0;
+    const cacheHits = this.getMetric("cache_hits_total")?.getValue() || 0;
+    const cacheMisses = this.getMetric("cache_misses_total")?.getValue() || 0;
+    const sentimentAnalysisCount =
+      this.getMetric("sentiment_analysis_total")?.getValue() || 0;
+    const sentimentErrors =
+      this.getMetric("sentiment_analysis_errors_total")?.getValue() || 0;
 
     return {
       timestamp: new Date(),
@@ -446,19 +459,25 @@ export class MetricsRegistry extends EventEmitter {
       application: {
         requests: {
           total: requestsTotal,
-          rate: this.calculateRate('http_requests_total'),
+          rate: this.calculateRate("http_requests_total"),
           errors: requestsErrors,
-          errorRate: requestsTotal > 0 ? (requestsErrors / requestsTotal) * 100 : 0,
+          errorRate:
+            requestsTotal > 0 ? (requestsErrors / requestsTotal) * 100 : 0,
         },
         cache: {
           hits: cacheHits,
           misses: cacheMisses,
-          hitRate: cacheHits + cacheMisses > 0 ? (cacheHits / (cacheHits + cacheMisses)) * 100 : 0,
-          size: this.getMetric('cache_size')?.getValue() || 0,
+          hitRate:
+            cacheHits + cacheMisses > 0
+              ? (cacheHits / (cacheHits + cacheMisses)) * 100
+              : 0,
+          size: this.getMetric("cache_size")?.getValue() || 0,
         },
         sentiment: {
           analysisCount: sentimentAnalysisCount,
-          averageLatency: this.calculateAverage('sentiment_analysis_duration_ms'),
+          averageLatency: this.calculateAverage(
+            "sentiment_analysis_duration_ms",
+          ),
           errorCount: sentimentErrors,
         },
       },
@@ -477,13 +496,16 @@ export class MetricsRegistry extends EventEmitter {
 
     const now = Date.now();
     const windowStart = now - windowMs;
-    const recentValues = values.filter((v) => v.timestamp.getTime() > windowStart);
+    const recentValues = values.filter(
+      (v) => v.timestamp.getTime() > windowStart,
+    );
 
     if (recentValues.length < 2) return 0;
 
     const earliest = recentValues[0];
     const latest = recentValues[recentValues.length - 1];
-    const timeDiff = (latest.timestamp.getTime() - earliest.timestamp.getTime()) / 1000;
+    const timeDiff =
+      (latest.timestamp.getTime() - earliest.timestamp.getTime()) / 1000;
     const valueDiff = latest.value - earliest.value;
 
     return timeDiff > 0 ? valueDiff / timeDiff : 0;
@@ -492,7 +514,10 @@ export class MetricsRegistry extends EventEmitter {
   /**
    * Calculate average value for a metric
    */
-  private calculateAverage(metricName: string, windowMs: number = 300000): number {
+  private calculateAverage(
+    metricName: string,
+    windowMs: number = 300000,
+  ): number {
     const metric = this.getMetric(metricName);
     if (!metric) return 0;
 
@@ -501,7 +526,9 @@ export class MetricsRegistry extends EventEmitter {
 
     const now = Date.now();
     const windowStart = now - windowMs;
-    const recentValues = values.filter((v) => v.timestamp.getTime() > windowStart);
+    const recentValues = values.filter(
+      (v) => v.timestamp.getTime() > windowStart,
+    );
 
     if (recentValues.length === 0) return 0;
 
@@ -516,7 +543,7 @@ export class MetricsRegistry extends EventEmitter {
     clearInterval(this.cleanupInterval);
     this.clear();
     this.removeAllListeners();
-    this.logger.info('Metrics registry destroyed');
+    this.logger.info("Metrics registry destroyed");
   }
 }
 
@@ -526,93 +553,93 @@ export const metricsRegistry = new MetricsRegistry();
 // Register default metrics
 export const defaultMetrics = {
   httpRequestsTotal: metricsRegistry.register({
-    name: 'http_requests_total',
+    name: "http_requests_total",
     type: MetricType.COUNTER,
-    help: 'Total number of HTTP requests',
-    labels: ['method', 'status_code', 'route'],
+    help: "Total number of HTTP requests",
+    labels: ["method", "status_code", "route"],
   }),
 
   httpRequestDuration: metricsRegistry.register({
-    name: 'http_request_duration_ms',
+    name: "http_request_duration_ms",
     type: MetricType.HISTOGRAM,
-    help: 'HTTP request duration in milliseconds',
-    labels: ['method', 'route'],
+    help: "HTTP request duration in milliseconds",
+    labels: ["method", "route"],
   }),
 
   httpRequestsErrors: metricsRegistry.register({
-    name: 'http_requests_errors_total',
+    name: "http_requests_errors_total",
     type: MetricType.COUNTER,
-    help: 'Total number of HTTP request errors',
-    labels: ['method', 'status_code', 'route'],
+    help: "Total number of HTTP request errors",
+    labels: ["method", "status_code", "route"],
   }),
 
   cacheHits: metricsRegistry.register({
-    name: 'cache_hits_total',
+    name: "cache_hits_total",
     type: MetricType.COUNTER,
-    help: 'Total number of cache hits',
-    labels: ['cache_type'],
+    help: "Total number of cache hits",
+    labels: ["cache_type"],
   }),
 
   cacheMisses: metricsRegistry.register({
-    name: 'cache_misses_total',
+    name: "cache_misses_total",
     type: MetricType.COUNTER,
-    help: 'Total number of cache misses',
-    labels: ['cache_type'],
+    help: "Total number of cache misses",
+    labels: ["cache_type"],
   }),
 
   cacheSize: metricsRegistry.register({
-    name: 'cache_size',
+    name: "cache_size",
     type: MetricType.GAUGE,
-    help: 'Current cache size in bytes',
-    labels: ['cache_type'],
+    help: "Current cache size in bytes",
+    labels: ["cache_type"],
   }),
 
   sentimentAnalysisTotal: metricsRegistry.register({
-    name: 'sentiment_analysis_total',
+    name: "sentiment_analysis_total",
     type: MetricType.COUNTER,
-    help: 'Total number of sentiment analyses performed',
-    labels: ['sentiment', 'language'],
+    help: "Total number of sentiment analyses performed",
+    labels: ["sentiment", "language"],
   }),
 
   sentimentAnalysisDuration: metricsRegistry.register({
-    name: 'sentiment_analysis_duration_ms',
+    name: "sentiment_analysis_duration_ms",
     type: MetricType.HISTOGRAM,
-    help: 'Sentiment analysis duration in milliseconds',
-    labels: ['language'],
+    help: "Sentiment analysis duration in milliseconds",
+    labels: ["language"],
   }),
 
   sentimentAnalysisErrors: metricsRegistry.register({
-    name: 'sentiment_analysis_errors_total',
+    name: "sentiment_analysis_errors_total",
     type: MetricType.COUNTER,
-    help: 'Total number of sentiment analysis errors',
-    labels: ['error_type'],
+    help: "Total number of sentiment analysis errors",
+    labels: ["error_type"],
   }),
 
   memoryUsage: metricsRegistry.register({
-    name: 'memory_usage_bytes',
+    name: "memory_usage_bytes",
     type: MetricType.GAUGE,
-    help: 'Memory usage in bytes',
-    labels: ['type'],
+    help: "Memory usage in bytes",
+    labels: ["type"],
   }),
 
   cpuUsage: metricsRegistry.register({
-    name: 'cpu_usage_percent',
+    name: "cpu_usage_percent",
     type: MetricType.GAUGE,
-    help: 'CPU usage percentage',
+    help: "CPU usage percentage",
   }),
 };
 
 // Update system metrics periodically
 setInterval(() => {
-  const process = require('process');
-  const os = require('os');
+  const process = require("process");
+  const os = require("os");
 
   const memUsage = process.memoryUsage();
-  defaultMetrics.memoryUsage.set(memUsage.heapUsed, { type: 'heap_used' });
-  defaultMetrics.memoryUsage.set(memUsage.heapTotal, { type: 'heap_total' });
-  defaultMetrics.memoryUsage.set(memUsage.external, { type: 'external' });
-  defaultMetrics.memoryUsage.set(os.freemem(), { type: 'free' });
-  defaultMetrics.memoryUsage.set(os.totalmem(), { type: 'total' });
+  defaultMetrics.memoryUsage.set(memUsage.heapUsed, { type: "heap_used" });
+  defaultMetrics.memoryUsage.set(memUsage.heapTotal, { type: "heap_total" });
+  defaultMetrics.memoryUsage.set(memUsage.external, { type: "external" });
+  defaultMetrics.memoryUsage.set(os.freemem(), { type: "free" });
+  defaultMetrics.memoryUsage.set(os.totalmem(), { type: "total" });
 
   // Basic CPU usage approximation
   const cpuUsage = process.cpuUsage();

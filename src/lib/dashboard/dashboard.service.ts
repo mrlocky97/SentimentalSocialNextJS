@@ -4,13 +4,13 @@
  * Phase 6.4: Observability APIs for External Frontend
  */
 
-import { systemLogger } from '../observability/logger';
-import { metricsRegistry } from '../observability/metrics';
+import { systemLogger } from "../observability/logger";
+import { metricsRegistry } from "../observability/metrics";
 
 export interface DashboardMetrics {
   timestamp: string;
   system: {
-    health: 'healthy' | 'warning' | 'critical';
+    health: "healthy" | "warning" | "critical";
     memory: {
       used: number;
       total: number;
@@ -54,7 +54,7 @@ export interface HistoricalMetrics {
 }
 
 export interface MetricsSummary {
-  status: 'healthy' | 'warning' | 'critical';
+  status: "healthy" | "warning" | "critical";
   uptime: number;
   totalRequests: number;
   totalSentimentAnalyses: number;
@@ -65,7 +65,10 @@ export interface MetricsSummary {
 
 export class DashboardService {
   private static instance: DashboardService;
-  private historicalData: Map<string, Array<{ timestamp: Date; value: number }>> = new Map();
+  private historicalData: Map<
+    string,
+    Array<{ timestamp: Date; value: number }>
+  > = new Map();
   private readonly maxHistoryPoints = 100; // Keep last 100 data points
   private updateInterval: NodeJS.Timeout | null = null;
 
@@ -89,7 +92,7 @@ export class DashboardService {
       this.collectHistoricalDataPoint();
     }, 30000);
 
-    systemLogger.info('Dashboard service initialized with historical tracking');
+    systemLogger.info("Dashboard service initialized with historical tracking");
   }
 
   /**
@@ -101,14 +104,19 @@ export class DashboardService {
       const systemMetrics = metricsRegistry.getSystemMetrics();
 
       // Collect key metrics
-      const httpRequestsMetric = metricsRegistry.getMetric('http_requests_total');
-      const memoryMetric = metricsRegistry.getMetric('memory_usage_bytes');
-      const cpuMetric = metricsRegistry.getMetric('cpu_usage_percent');
+      const httpRequestsMetric = metricsRegistry.getMetric(
+        "http_requests_total",
+      );
+      const memoryMetric = metricsRegistry.getMetric("memory_usage_bytes");
+      const cpuMetric = metricsRegistry.getMetric("cpu_usage_percent");
 
       const dataPoints = {
         requests: httpRequestsMetric?.getValue() || 0,
         responseTime: 0, // Will be calculated from histogram
-        memoryUsage: (systemMetrics.system.memory.used / systemMetrics.system.memory.total) * 100,
+        memoryUsage:
+          (systemMetrics.system.memory.used /
+            systemMetrics.system.memory.total) *
+          100,
         cpuUsage: systemMetrics.system.cpu.usage,
         cacheHitRate: 0, // Will be calculated from cache metrics
         sentimentAnalyses: 0, // Will be calculated from sentiment metrics
@@ -129,7 +137,10 @@ export class DashboardService {
         }
       });
     } catch (error) {
-      systemLogger.error('Error collecting historical data point', error as Error);
+      systemLogger.error(
+        "Error collecting historical data point",
+        error as Error,
+      );
     }
   }
 
@@ -143,18 +154,21 @@ export class DashboardService {
 
       // Calculate system health status
       const memoryPercentage =
-        (systemMetrics.system.memory.used / systemMetrics.system.memory.total) * 100;
+        (systemMetrics.system.memory.used / systemMetrics.system.memory.total) *
+        100;
       const cpuUsage = systemMetrics.system.cpu.usage;
 
-      let systemHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
+      let systemHealth: "healthy" | "warning" | "critical" = "healthy";
       if (memoryPercentage > 90 || cpuUsage > 90) {
-        systemHealth = 'critical';
+        systemHealth = "critical";
       } else if (memoryPercentage > 75 || cpuUsage > 75) {
-        systemHealth = 'warning';
+        systemHealth = "warning";
       }
 
       // Get HTTP metrics
-      const httpRequestsMetric = metricsRegistry.getMetric('http_requests_total');
+      const httpRequestsMetric = metricsRegistry.getMetric(
+        "http_requests_total",
+      );
       const totalRequests = httpRequestsMetric?.getValue() || 0;
 
       return {
@@ -191,7 +205,7 @@ export class DashboardService {
         },
       };
     } catch (error) {
-      systemLogger.error('Error getting current metrics', error as Error);
+      systemLogger.error("Error getting current metrics", error as Error);
       throw error;
     }
   }
@@ -199,19 +213,21 @@ export class DashboardService {
   /**
    * Get historical metrics for charts
    */
-  public getHistoricalMetrics(timeRange: '1h' | '6h' | '24h' = '1h'): HistoricalMetrics {
+  public getHistoricalMetrics(
+    timeRange: "1h" | "6h" | "24h" = "1h",
+  ): HistoricalMetrics {
     try {
       const now = new Date();
       let cutoffTime: Date;
 
       switch (timeRange) {
-        case '1h':
+        case "1h":
           cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
           break;
-        case '6h':
+        case "6h":
           cutoffTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
           break;
-        case '24h':
+        case "24h":
           cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
           break;
         default:
@@ -219,10 +235,15 @@ export class DashboardService {
       }
 
       // Filter data by time range
-      const filteredData: Record<string, Array<{ timestamp: Date; value: number }>> = {};
+      const filteredData: Record<
+        string,
+        Array<{ timestamp: Date; value: number }>
+      > = {};
 
       this.historicalData.forEach((series, key) => {
-        filteredData[key] = series.filter((point) => point.timestamp >= cutoffTime);
+        filteredData[key] = series.filter(
+          (point) => point.timestamp >= cutoffTime,
+        );
       });
 
       // Extract timestamps and values
@@ -267,7 +288,7 @@ export class DashboardService {
         },
       };
     } catch (error) {
-      systemLogger.error('Error getting historical metrics', error as Error);
+      systemLogger.error("Error getting historical metrics", error as Error);
       throw error;
     }
   }
@@ -279,11 +300,15 @@ export class DashboardService {
     try {
       const current = this.getCurrentMetrics();
 
-      let overallStatus: 'healthy' | 'warning' | 'critical' = current.system.health;
+      let overallStatus: "healthy" | "warning" | "critical" =
+        current.system.health;
 
       // Factor in error rate and response time
-      if (current.http.errorRate > 5 || current.http.averageResponseTime > 2000) {
-        overallStatus = overallStatus === 'healthy' ? 'warning' : 'critical';
+      if (
+        current.http.errorRate > 5 ||
+        current.http.averageResponseTime > 2000
+      ) {
+        overallStatus = overallStatus === "healthy" ? "warning" : "critical";
       }
 
       return {
@@ -292,22 +317,26 @@ export class DashboardService {
         totalRequests: current.http.totalRequests,
         totalSentimentAnalyses: current.sentiment.totalAnalyses,
         averageResponseTime: current.http.averageResponseTime,
-        systemLoad: Math.max(current.system.memory.percentage, current.system.cpu.usage),
+        systemLoad: Math.max(
+          current.system.memory.percentage,
+          current.system.cpu.usage,
+        ),
         lastUpdated: current.timestamp,
       };
     } catch (error) {
-      systemLogger.error('Error getting metrics summary', error as Error);
+      systemLogger.error("Error getting metrics summary", error as Error);
       throw error;
     }
   }
 
   // Helper methods for calculations
   private calculateRequestsPerMinute(): number {
-    const series = this.historicalData.get('requests') || [];
+    const series = this.historicalData.get("requests") || [];
     if (series.length < 2) return 0;
 
     const recent = series.slice(-2);
-    const timeDiff = (recent[1].timestamp.getTime() - recent[0].timestamp.getTime()) / 1000;
+    const timeDiff =
+      (recent[1].timestamp.getTime() - recent[0].timestamp.getTime()) / 1000;
     const requestDiff = recent[1].value - recent[0].value;
 
     return Math.round((requestDiff / timeDiff) * 60);
@@ -319,8 +348,10 @@ export class DashboardService {
   }
 
   private calculateErrorRate(): number {
-    const errorsMetric = metricsRegistry.getMetric('http_requests_errors_total');
-    const totalMetric = metricsRegistry.getMetric('http_requests_total');
+    const errorsMetric = metricsRegistry.getMetric(
+      "http_requests_errors_total",
+    );
+    const totalMetric = metricsRegistry.getMetric("http_requests_total");
 
     const errors = errorsMetric?.getValue() || 0;
     const total = totalMetric?.getValue() || 0;
@@ -329,8 +360,8 @@ export class DashboardService {
   }
 
   private calculateCacheHitRate(): number {
-    const hitsMetric = metricsRegistry.getMetric('cache_hits_total');
-    const missesMetric = metricsRegistry.getMetric('cache_misses_total');
+    const hitsMetric = metricsRegistry.getMetric("cache_hits_total");
+    const missesMetric = metricsRegistry.getMetric("cache_misses_total");
 
     const hits = hitsMetric?.getValue() || 0;
     const misses = missesMetric?.getValue() || 0;
@@ -340,19 +371,21 @@ export class DashboardService {
   }
 
   private getCacheHits(): number {
-    return metricsRegistry.getMetric('cache_hits_total')?.getValue() || 0;
+    return metricsRegistry.getMetric("cache_hits_total")?.getValue() || 0;
   }
 
   private getCacheMisses(): number {
-    return metricsRegistry.getMetric('cache_misses_total')?.getValue() || 0;
+    return metricsRegistry.getMetric("cache_misses_total")?.getValue() || 0;
   }
 
   private getCacheSize(): number {
-    return metricsRegistry.getMetric('cache_size')?.getValue() || 0;
+    return metricsRegistry.getMetric("cache_size")?.getValue() || 0;
   }
 
   private getSentimentAnalysesTotal(): number {
-    return metricsRegistry.getMetric('sentiment_analysis_total')?.getValue() || 0;
+    return (
+      metricsRegistry.getMetric("sentiment_analysis_total")?.getValue() || 0
+    );
   }
 
   private getSentimentAverageConfidence(): number {
@@ -366,11 +399,12 @@ export class DashboardService {
   }
 
   private calculateSentimentAnalysesPerMinute(): number {
-    const series = this.historicalData.get('sentimentAnalyses') || [];
+    const series = this.historicalData.get("sentimentAnalyses") || [];
     if (series.length < 2) return 0;
 
     const recent = series.slice(-2);
-    const timeDiff = (recent[1].timestamp.getTime() - recent[0].timestamp.getTime()) / 1000;
+    const timeDiff =
+      (recent[1].timestamp.getTime() - recent[0].timestamp.getTime()) / 1000;
     const analysesDiff = recent[1].value - recent[0].value;
 
     return Math.round((analysesDiff / timeDiff) * 60);
@@ -385,7 +419,7 @@ export class DashboardService {
       this.updateInterval = null;
     }
     this.historicalData.clear();
-    systemLogger.info('Dashboard service cleaned up');
+    systemLogger.info("Dashboard service cleaned up");
   }
 }
 

@@ -3,7 +3,7 @@
  * Fundamental data structures for tweets, users, and metrics
  */
 
-import { Label } from '../../enums/sentiment.enum';
+import { Label } from "../../enums/sentiment.enum";
 
 /**
  * Core Tweet interface - represents a single tweet

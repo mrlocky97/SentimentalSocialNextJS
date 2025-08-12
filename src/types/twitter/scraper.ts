@@ -3,8 +3,8 @@
  * Types for data scraping, raw data processing, and authentication
  */
 
-import { TweetCookieSameSite } from '../../enums/tweet.enum';
-import { Tweet } from './core';
+import { TweetCookieSameSite } from "../../enums/tweet.enum";
+import { Tweet } from "./core";
 
 /**
  * Scraped Tweet Data interface - raw data from scraping operations

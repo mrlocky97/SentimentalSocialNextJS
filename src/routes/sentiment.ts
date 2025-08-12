@@ -11,12 +11,12 @@
  * - Improved code organization and maintainability
  */
 
-import { Router } from 'express';
-import sentimentRoutes from './modules/sentiment';
+import { Router } from "express";
+import sentimentRoutes from "./modules/sentiment";
 
 const router = Router();
 
 // Mount the modular sentiment routes
-router.use('/', sentimentRoutes);
+router.use("/", sentimentRoutes);
 
 export default router;

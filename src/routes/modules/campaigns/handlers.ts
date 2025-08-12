@@ -3,17 +3,17 @@
  * Separated route handlers for campaign management endpoints
  */
 
-import { Request, Response } from 'express';
-import { Order } from '../../../enums/api.enum';
-import { CampaignType } from '../../../enums/campaign.enum';
-import { MongoCampaignRepository } from '../../../repositories/mongo-campaign.repository';
-import { TweetDatabaseService } from '../../../services/tweet-database.service';
+import { Request, Response } from "express";
+import { Order } from "../../../enums/api.enum";
+import { CampaignType } from "../../../enums/campaign.enum";
+import { MongoCampaignRepository } from "../../../repositories/mongo-campaign.repository";
+import { TweetDatabaseService } from "../../../services/tweet-database.service";
 import {
   CampaignFilter,
   CampaignStatus,
   CreateCampaignRequest,
   UpdateCampaignRequest,
-} from '../../../types/campaign';
+} from "../../../types/campaign";
 
 const campaignRepository = new MongoCampaignRepository();
 const tweetDatabaseService = new TweetDatabaseService();
@@ -163,7 +163,12 @@ export const createCampaignHandler = async (req: Request, res: Response) => {
     console.error("Error creating campaign:", error);
 
     // Handle duplicate name error
-    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 11000
+    ) {
       return res.status(409).json({
         success: false,
         error: {
@@ -269,7 +274,9 @@ export const updateCampaignHandler = async (req: Request, res: Response) => {
 
     // Validate date range if dates are being updated
     if (updateData.startDate || updateData.endDate) {
-      const startDate = new Date(updateData.startDate || existingCampaign.startDate);
+      const startDate = new Date(
+        updateData.startDate || existingCampaign.startDate,
+      );
       const endDate = new Date(updateData.endDate || existingCampaign.endDate);
 
       if (
@@ -304,7 +311,10 @@ export const updateCampaignHandler = async (req: Request, res: Response) => {
       updatedAt: new Date(),
     };
 
-    const updatedCampaign = await campaignRepository.update(id, updateWithMetadata);
+    const updatedCampaign = await campaignRepository.update(
+      id,
+      updateWithMetadata,
+    );
 
     res.json({
       success: true,
@@ -315,7 +325,12 @@ export const updateCampaignHandler = async (req: Request, res: Response) => {
     console.error("Error updating campaign:", error);
 
     // Handle duplicate name error
-    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 11000
+    ) {
       return res.status(409).json({
         success: false,
         error: {
@@ -371,7 +386,7 @@ export const deleteCampaignHandler = async (req: Request, res: Response) => {
 
     // Soft delete by updating status
     await campaignRepository.update(id, {
-      status: 'deleted' as any, // Using 'deleted' as string since it's not in enum
+      status: "deleted" as any, // Using 'deleted' as string since it's not in enum
       updatedAt: new Date(),
     } as any);
 
@@ -436,7 +451,7 @@ export const getCampaignTweetsHandler = async (req: Request, res: Response) => {
 
     const tweets = await tweetDatabaseService.getTweetsByCampaign(
       campaignId,
-      limitNum
+      limitNum,
     );
 
     res.json({
@@ -459,7 +474,10 @@ export const getCampaignTweetsHandler = async (req: Request, res: Response) => {
 /**
  * Get campaigns overview handler
  */
-export const getCampaignsOverviewHandler = async (req: Request, res: Response) => {
+export const getCampaignsOverviewHandler = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     // Get campaign statistics
     const totalCampaigns = await campaignRepository.count({});
@@ -474,11 +492,14 @@ export const getCampaignsOverviewHandler = async (req: Request, res: Response) =
     });
 
     // Get recent campaigns
-    const recentCampaigns = await campaignRepository.findMany({}, {
-      limit: 10,
-      sortBy: "createdAt",
-      sortOrder: Order.DESC,
-    });
+    const recentCampaigns = await campaignRepository.findMany(
+      {},
+      {
+        limit: 10,
+        sortBy: "createdAt",
+        sortOrder: Order.DESC,
+      },
+    );
 
     res.json({
       success: true,

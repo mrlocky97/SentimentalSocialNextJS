@@ -3,7 +3,7 @@
  * Manages resource cleanup for tests to prevent Jest from hanging
  */
 
-import { sentimentManager } from '../../src/lib/sentiment-manager';
+import { sentimentManager } from "../../src/lib/sentiment-manager";
 
 export class TestCleanup {
   private static instances: any[] = [];
@@ -15,7 +15,7 @@ export class TestCleanup {
   static async cleanup(): Promise<void> {
     // Cleanup sentiment orchestrator instances
     try {
-      if (sentimentManager && typeof sentimentManager.dispose === 'function') {
+      if (sentimentManager && typeof sentimentManager.dispose === "function") {
         sentimentManager.dispose();
       }
     } catch {

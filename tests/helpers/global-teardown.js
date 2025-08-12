@@ -23,7 +23,7 @@ module.exports = async () => {
     timeouts.forEach((timeout) => {
       try {
         clearTimeout(timeout);
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     });
@@ -43,7 +43,7 @@ module.exports = async () => {
     intervals.forEach((interval) => {
       try {
         clearInterval(interval);
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     });

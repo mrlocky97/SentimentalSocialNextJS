@@ -4,12 +4,12 @@
  * Includes intelligent invalidation, metrics, and distributed support
  */
 
-import { createHash } from 'crypto';
-import { EventEmitter } from 'events';
+import { createHash } from "crypto";
+import { EventEmitter } from "events";
 
 export interface CacheConfig {
   enabled: boolean;
-  strategy: 'memory' | 'redis' | 'hybrid';
+  strategy: "memory" | "redis" | "hybrid";
   memory: {
     maxSize: number;
     ttl: number; // seconds
@@ -52,7 +52,7 @@ export interface CacheMetrics {
 export interface CacheOperationOptions {
   ttl?: number;
   tags?: string[];
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
   compress?: boolean;
 }
 
@@ -72,7 +72,7 @@ export class AdvancedCacheSystem extends EventEmitter {
 
     this.config = {
       enabled: true,
-      strategy: 'memory',
+      strategy: "memory",
       memory: {
         maxSize: 10000,
         ttl: 3600, // 1 hour
@@ -109,18 +109,18 @@ export class AdvancedCacheSystem extends EventEmitter {
     // Start periodic cleanup
     this.cleanupTimer = setInterval(
       () => this.performCleanup(),
-      this.config.memory.cleanupInterval * 1000
+      this.config.memory.cleanupInterval * 1000,
     );
 
     // Start metrics calculation
     if (this.config.metrics.enabled) {
       this.metricsTimer = setInterval(
         () => this.updateMetrics(),
-        60000 // Update every minute
+        60000, // Update every minute
       );
     }
 
-    this.emit('initialized', { strategy: this.config.strategy });
+    this.emit("initialized", { strategy: this.config.strategy });
   }
 
   /**
@@ -129,11 +129,14 @@ export class AdvancedCacheSystem extends EventEmitter {
   private generateKey(base: string, options?: any): string {
     const keyData = {
       base: base.toLowerCase().trim(),
-      options: options ? JSON.stringify(options) : '',
+      options: options ? JSON.stringify(options) : "",
       timestamp: Math.floor(Date.now() / 1000 / 60), // Minute-level granularity
     };
 
-    return createHash('sha256').update(JSON.stringify(keyData)).digest('hex').substring(0, 32); // Shorter keys for memory efficiency
+    return createHash("sha256")
+      .update(JSON.stringify(keyData))
+      .digest("hex")
+      .substring(0, 32); // Shorter keys for memory efficiency
   }
 
   /**
@@ -168,11 +171,11 @@ export class AdvancedCacheSystem extends EventEmitter {
       this.recordHit();
       this.recordOperationTime(Date.now() - startTime);
 
-      this.emit('hit', { key: cacheKey, accessCount: entry.accessCount });
+      this.emit("hit", { key: cacheKey, accessCount: entry.accessCount });
 
       return entry.value;
     } catch (error) {
-      this.emit('error', { operation: 'get', key: cacheKey, error });
+      this.emit("error", { operation: "get", key: cacheKey, error });
       return null;
     }
   }
@@ -184,7 +187,7 @@ export class AdvancedCacheSystem extends EventEmitter {
     key: string,
     value: T,
     baseOptions?: any,
-    cacheOptions?: CacheOperationOptions
+    cacheOptions?: CacheOperationOptions,
   ): Promise<void> {
     if (!this.config.enabled) return;
 
@@ -215,14 +218,14 @@ export class AdvancedCacheSystem extends EventEmitter {
       this.recordSet();
       this.recordOperationTime(Date.now() - startTime);
 
-      this.emit('set', {
+      this.emit("set", {
         key: cacheKey,
         size: estimatedSize,
         ttl,
         tags: entry.tags,
       });
     } catch (error) {
-      this.emit('error', { operation: 'set', key: cacheKey, error });
+      this.emit("error", { operation: "set", key: cacheKey, error });
     }
   }
 
@@ -257,7 +260,7 @@ export class AdvancedCacheSystem extends EventEmitter {
       this.recordEviction();
     }
 
-    this.emit('eviction', { count: evictCount });
+    this.emit("eviction", { count: evictCount });
   }
 
   /**
@@ -274,7 +277,7 @@ export class AdvancedCacheSystem extends EventEmitter {
       }
     }
 
-    this.emit('invalidation', { tags, count: invalidated });
+    this.emit("invalidation", { tags, count: invalidated });
     return invalidated;
   }
 
@@ -285,8 +288,12 @@ export class AdvancedCacheSystem extends EventEmitter {
     return Promise.all(keys.map((key) => this.get<T>(key, options)));
   }
 
-  async mset<T>(items: Array<{ key: string; value: T; options?: any }>): Promise<void> {
-    await Promise.all(items.map((item) => this.set(item.key, item.value, item.options)));
+  async mset<T>(
+    items: Array<{ key: string; value: T; options?: any }>,
+  ): Promise<void> {
+    await Promise.all(
+      items.map((item) => this.set(item.key, item.value, item.options)),
+    );
   }
 
   /**
@@ -305,7 +312,7 @@ export class AdvancedCacheSystem extends EventEmitter {
     expiredKeys.forEach((key) => this.memoryCache.delete(key));
 
     if (expiredKeys.length > 0) {
-      this.emit('cleanup', { expired: expiredKeys.length });
+      this.emit("cleanup", { expired: expiredKeys.length });
     }
   }
 
@@ -319,7 +326,7 @@ export class AdvancedCacheSystem extends EventEmitter {
     this.metrics.memoryUsage = this.calculateMemoryUsage();
     this.metrics.avgAccessTime = this.calculateAvgAccessTime();
 
-    this.emit('metrics', this.metrics);
+    this.emit("metrics", this.metrics);
   }
 
   /**
@@ -327,7 +334,7 @@ export class AdvancedCacheSystem extends EventEmitter {
    */
   private estimateSize(obj: any): number {
     const str = JSON.stringify(obj);
-    return Buffer.byteLength(str, 'utf8');
+    return Buffer.byteLength(str, "utf8");
   }
 
   /**
@@ -387,19 +394,19 @@ export class AdvancedCacheSystem extends EventEmitter {
    * Health check for cache system
    */
   healthCheck(): {
-    status: 'healthy' | 'degraded' | 'unhealthy';
+    status: "healthy" | "degraded" | "unhealthy";
     details: any;
   } {
     const metrics = this.getMetrics();
     const memoryUsageMB = metrics.memoryUsage / 1024 / 1024;
 
     if (!this.config.enabled) {
-      return { status: 'unhealthy', details: { reason: 'disabled' } };
+      return { status: "unhealthy", details: { reason: "disabled" } };
     }
 
     if (memoryUsageMB > 100 || metrics.hitRate < 50) {
       return {
-        status: 'degraded',
+        status: "degraded",
         details: {
           memoryUsageMB,
           hitRate: metrics.hitRate,
@@ -409,7 +416,7 @@ export class AdvancedCacheSystem extends EventEmitter {
     }
 
     return {
-      status: 'healthy',
+      status: "healthy",
       details: {
         memoryUsageMB,
         hitRate: metrics.hitRate,
@@ -434,7 +441,7 @@ export class AdvancedCacheSystem extends EventEmitter {
       keyCount: 0,
       avgAccessTime: 0,
     };
-    this.emit('clear');
+    this.emit("clear");
   }
 
   /**
@@ -445,14 +452,14 @@ export class AdvancedCacheSystem extends EventEmitter {
     if (this.metricsTimer) clearInterval(this.metricsTimer);
     this.clear();
     this.removeAllListeners();
-    this.emit('destroyed');
+    this.emit("destroyed");
   }
 }
 
 // Global advanced cache instance
 export const advancedCache = new AdvancedCacheSystem({
   enabled: true,
-  strategy: 'memory',
+  strategy: "memory",
   memory: {
     maxSize: 15000,
     ttl: 3600, // 1 hour
@@ -468,13 +475,17 @@ export const advancedCache = new AdvancedCacheSystem({
  * Advanced cache decorator with intelligent features
  */
 export function AdvancedCached(options?: CacheOperationOptions) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
       const text = args[0]?.content || args[0]?.text || args[0];
 
-      if (typeof text === 'string') {
+      if (typeof text === "string") {
         const cacheKey = `${target.constructor.name}.${propertyName}:${text}`;
         const cached = await advancedCache.get(cacheKey, args.slice(1));
 
