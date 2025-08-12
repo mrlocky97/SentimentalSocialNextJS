@@ -3,6 +3,15 @@
  * Types for Twitter scraping with twikit and tweet analysis
  */
 
+import { CampaignStatus } from '@/enums/campaign.enum';
+import { Label } from '@/enums/sentiment.enum';
+import {
+  PriorityScrapingStrategy,
+  TweetCollectionJobStatus,
+  TweetCookieSameSite,
+  TwitterRateLimitStrategy,
+} from '@/enums/tweet.enum';
+
 // Core Twitter Types
 export interface Tweet {
   id: string;
@@ -74,7 +83,7 @@ export interface TweetMetrics {
 export interface SentimentAnalysis {
   score: number; // -1 to 1 (negative to positive)
   magnitude: number; // 0 to 1 (intensity)
-  label: 'positive' | 'negative' | 'neutral';
+  label: Label;
   confidence: number; // 0 to 1
   emotions?: {
     joy?: number;
@@ -98,7 +107,7 @@ export interface Campaign {
   users?: string[]; // Specific users to track
   startDate: Date;
   endDate?: Date;
-  status: 'active' | 'paused' | 'completed' | 'draft';
+  status: CampaignStatus;
   settings: CampaignSettings;
   createdBy: string; // User ID
   createdAt: Date;
@@ -161,7 +170,7 @@ export interface CampaignAnalytics {
 export interface TweetCollectionJob {
   id: string;
   campaignId: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+  status: TweetCollectionJobStatus;
   progress: {
     tweetsCollected: number;
     targetCount: number;
@@ -195,7 +204,7 @@ export interface TwitterCollectionConfig {
     startTime: Date;
     endTime: Date;
   };
-  rateLimitStrategy: 'conservative' | 'aggressive' | 'adaptive';
+  rateLimitStrategy: TwitterRateLimitStrategy;
 }
 
 // Data Processing Types
@@ -259,14 +268,14 @@ export interface UpdateCampaignRequest {
   hashtags?: string[];
   users?: string[];
   endDate?: Date;
-  status?: 'active' | 'paused' | 'completed' | 'draft';
+  status?: CampaignStatus;
   settings?: Partial<CampaignSettings>;
 }
 
 export interface StartScrapingRequest {
   campaignId: string;
   maxTweets?: number;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: PriorityScrapingStrategy;
 }
 
 // Twitter Scraper Service Types
@@ -381,7 +390,7 @@ export interface TwitterCookie {
   expires?: number;
   httpOnly?: boolean;
   secure?: boolean;
-  sameSite?: 'Strict' | 'Lax' | 'None';
+  sameSite?: TweetCookieSameSite;
 }
 
 export interface SessionData {

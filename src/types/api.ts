@@ -3,6 +3,8 @@
  * Shared types for API responses and requests
  */
 
+import { Order } from '@/enums/api.enum';
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -22,7 +24,7 @@ export interface PaginationParams {
   page: number;
   limit: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: Order;
 }
 
 export interface PaginatedResponse<T> {
@@ -42,9 +44,6 @@ export interface DatabaseEntity {
   createdAt: Date;
   updatedAt: Date;
 }
-
-// HTTP Methods
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 // API Route Handler Types
 export interface RouteContext {

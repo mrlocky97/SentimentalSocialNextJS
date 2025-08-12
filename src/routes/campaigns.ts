@@ -3,16 +3,17 @@
  * API routes for campaign management with comprehensive documentation
  */
 
+import { Order } from '@/enums/api.enum';
+import { CampaignType } from '@/enums/campaign.enum';
 import { Router } from 'express';
+import { authenticateToken, requireRole } from '../middleware/express-auth';
 import { MongoCampaignRepository } from '../repositories/mongo-campaign.repository';
 import { TweetDatabaseService } from '../services/tweet-database.service';
-import { authenticateToken, requireRole } from '../middleware/express-auth';
 import {
-  CreateCampaignRequest,
-  UpdateCampaignRequest,
   CampaignFilter,
   CampaignStatus,
-  CampaignType,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
 } from '../types/campaign';
 
 const router = Router();
@@ -122,7 +123,7 @@ router.get(
         offset,
         limit: limitNum,
         sortBy: 'createdAt',
-        sortOrder: 'desc',
+        sortOrder: Order.DESC,
       });
 
       // Get total count for pagination

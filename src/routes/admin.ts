@@ -4,6 +4,13 @@
  */
 
 import { Router } from 'express';
+import {
+  ErrorCode,
+  errorHandler,
+  InternalServerError,
+  NotFoundError,
+  ResponseHelper,
+} from '../core/errors';
 import { MongoUserRepository } from '../repositories/mongo-user.repository';
 
 const router = Router();
@@ -31,24 +38,20 @@ const userRepository = new MongoUserRepository();
  *                   items:
  *                     $ref: '#/components/schemas/User'
  */
-router.get('/users', async (req, res) => {
-  try {
+router.get(
+  '/users',
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const users = await userRepository.findMany();
-    res.json({
-      success: true,
-      data: users,
-      count: users.length,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch users',
-        code: 'FETCH_USERS_ERROR',
+    ResponseHelper.success(
+      res,
+      {
+        users,
+        count: users.length,
       },
-    });
-  }
-});
+      'Users retrieved successfully'
+    );
+  })
+);
 
 /**
  * @swagger
@@ -66,35 +69,22 @@ router.get('/users', async (req, res) => {
  *       200:
  *         description: User deleted successfully
  */
-router.delete('/users/:id', async (req, res) => {
-  try {
+router.delete(
+  '/users/:id',
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
     const deleted = await userRepository.delete(id);
 
     if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'USER_NOT_FOUND',
-        },
+      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+        operation: 'delete_user',
+        additionalData: { userId: id },
       });
     }
 
-    res.json({
-      success: true,
-      message: 'User deleted successfully',
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to delete user',
-        code: 'DELETE_USER_ERROR',
-      },
-    });
-  }
-});
+    ResponseHelper.success(res, null, 'User deleted successfully');
+  })
+);
 
 /**
  * @swagger
@@ -107,22 +97,19 @@ router.delete('/users/:id', async (req, res) => {
  *       200:
  *         description: All users cleared
  */
-router.post('/clear-users', async (req, res) => {
-  try {
+router.post(
+  '/clear-users',
+  errorHandler.expressAsyncWrapper(async () => {
     // This would need to be implemented in the repository
-    res.json({
-      success: true,
-      message: 'Clear users endpoint - implement if needed',
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to clear users',
-        code: 'CLEAR_USERS_ERROR',
-      },
-    });
-  }
-});
+    throw new InternalServerError(
+      'Clear users functionality not implemented',
+      ErrorCode.CONFIGURATION_ERROR,
+      {
+        operation: 'clear_users',
+        additionalData: { reason: 'Method not implemented in repository' },
+      }
+    );
+  })
+);
 
 export default router;

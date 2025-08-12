@@ -3,6 +3,16 @@
  * Defines interfaces for sentiment analysis functionality
  */
 
+import {
+  EntityType,
+  ImpactLevel,
+  InsightType,
+  Label,
+  Language,
+  Method,
+} from '@/enums/sentiment.enum';
+import { SentimentLabel } from '@/lib/sentiment/types';
+
 export interface SentimentResult {
   score: number; // -1 (very negative) to 1 (very positive)
   magnitude: number; // 0 to infinity (strength of emotion)
@@ -10,13 +20,6 @@ export interface SentimentResult {
   confidence: number; // 0 to 1 (confidence in the analysis)
   emotions?: EmotionAnalysis;
 }
-
-export type SentimentLabel =
-  | 'very_positive'
-  | 'positive'
-  | 'neutral'
-  | 'negative'
-  | 'very_negative';
 
 export interface EmotionAnalysis {
   joy: number;
@@ -31,7 +34,7 @@ export interface TextAnalysis {
   sentiment: SentimentResult;
   keywords: string[];
   entities: EntityAnalysis[];
-  language: string;
+  language: Language;
   readabilityScore?: number;
 }
 
@@ -41,15 +44,6 @@ export interface EntityAnalysis {
   salience: number; // 0 to 1 (importance in text)
   sentiment?: SentimentResult;
 }
-
-export type EntityType =
-  | 'PERSON'
-  | 'LOCATION'
-  | 'ORGANIZATION'
-  | 'EVENT'
-  | 'WORK_OF_ART'
-  | 'CONSUMER_GOOD'
-  | 'OTHER';
 
 export interface TweetSentimentAnalysis {
   tweetId: string;
@@ -82,16 +76,6 @@ export interface MarketingInsight {
   actionable: boolean;
   recommendation?: string;
 }
-
-export type InsightType =
-  | 'brand_perception'
-  | 'competitor_analysis'
-  | 'trend_identification'
-  | 'customer_feedback'
-  | 'influencer_impact'
-  | 'campaign_performance';
-
-export type ImpactLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface SentimentAnalysisConfig {
   enableEmotionAnalysis: boolean;
@@ -146,7 +130,7 @@ export interface SentimentAnalysisProvider {
 }
 export interface SentimentTestRequest {
   text: string;
-  method?: 'rule' | 'naive';
+  method?: Method;
 }
 
 export interface SentimentCompareRequest {
@@ -156,17 +140,9 @@ export interface SentimentCompareRequest {
 export interface ModelUpdateRequest {
   examples: Array<{
     text: string;
-    label: 'positive' | 'negative' | 'neutral';
+    label: Label;
   }>;
   saveModel?: boolean;
-}
-
-export interface LanguageInfo {
-  language: string;
-  negativeScore: number;
-  positiveScore: number;
-  textComplexity: number;
-  emotionalIntensity: number;
 }
 
 export interface UnifiedSentimentResult {
@@ -183,4 +159,36 @@ export interface UnifiedSentimentResult {
       complexity: number;
     };
   };
+}
+
+export interface LanguageAnalysis {
+  detectedLanguage: string;
+  emotionalIntensity: number;
+  textStats: TextStats;
+}
+
+export interface TextStats {
+  length: number;
+  complexity: number;
+}
+
+export interface SentimentCompareRequest {
+  text: string;
+}
+
+export interface TrainingExample {
+  text: string;
+  label: string;
+}
+
+export interface LanguageInfo {
+  language: Language;
+  negativeScore: number;
+  positiveScore: number;
+  emotionalIntensity: number;
+  textComplexity: number;
+  confidence: number;
+  tokenCount: number;
+  uniqueTokenRatio: number;
+  avgWordLength: number;
 }

@@ -6,14 +6,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface ESLintError {
-  file: string;
-  line: number;
-  column: number;
-  rule: string;
-  message: string;
-}
-
 /**
  * Patrones de limpieza automática
  */

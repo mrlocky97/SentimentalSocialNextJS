@@ -3,25 +3,16 @@
  * Defines all types related to social media campaign management and analysis
  */
 
-export type CampaignStatus =
-  | 'draft' // Campaign being created
-  | 'active' // Currently collecting data
-  | 'paused' // Temporarily stopped
-  | 'completed' // Finished collecting
-  | 'archived'; // Completed and archived
-
-export type CampaignType =
-  | 'hashtag' // Hashtag-based campaign (#JustDoIt)
-  | 'keyword' // Keyword-based campaign
-  | 'mention' // Mention-based campaign (@brand)
-  | 'competitor'; // Competitor analysis
-
-export type DataSource =
-  | 'twitter' // Twitter/X platform
-  | 'instagram' // Instagram platform
-  | 'facebook' // Facebook platform
-  | 'tiktok' // TikTok platform
-  | 'linkedin'; // LinkedIn platform
+import {
+  AssistantRecommendationType,
+  AssistantRecommendationUrgency,
+  CampaignCategory,
+  CampaignHealthScoreGrade,
+  CampaignRole,
+  CampaignStatus,
+  CampaignType,
+  DataSource,
+} from '@/enums/campaign.enum';
 
 export interface Campaign {
   id: string;
@@ -245,7 +236,7 @@ export interface CampaignTemplate {
   name: string;
   description: string;
   type: CampaignType;
-  category: 'marketing' | 'brand-monitoring' | 'competitor-analysis' | 'crisis-management';
+  category: CampaignCategory;
 
   // Default Configuration
   defaultDuration: number; // Days
@@ -267,8 +258,6 @@ export interface CampaignTemplate {
   isActive: boolean;
 }
 
-export type CampaignRole = 'owner' | 'editor' | 'viewer';
-
 export interface CampaignAccess {
   campaignId: string;
   userId: string;
@@ -287,8 +276,8 @@ export interface CampaignAccess {
 // AI Campaign Assistant Types
 export interface AssistantRecommendation {
   id: string;
-  type: 'quick_action' | 'strategic_advice' | 'learning_tip' | 'best_practice';
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+  type: AssistantRecommendationType;
+  urgency: AssistantRecommendationUrgency;
   title: string;
   message: string;
   learnMore?: string;
@@ -309,6 +298,8 @@ export interface CampaignHealthScore {
     optimization: number; // How well optimized
     risk: number; // Risk management
   };
-  grade: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'F';
+  grade: CampaignHealthScoreGrade;
   improvements: string[];
 }
+
+export { CampaignStatus };

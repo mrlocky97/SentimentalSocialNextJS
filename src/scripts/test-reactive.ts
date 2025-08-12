@@ -4,12 +4,12 @@
  */
 
 import {
-  initializeReactiveServices,
-  reactiveTwitterScraper,
-  reactiveSentimentAnalyzer,
-  notificationSystem,
-  getSystemStatus,
   defaultReactiveConfig,
+  getSystemStatus,
+  initializeReactiveServices,
+  notificationSystem,
+  reactiveSentimentAnalyzer,
+  reactiveTwitterScraper,
 } from '../services/reactive';
 
 import { firstValueFrom, timeout } from 'rxjs';
@@ -72,7 +72,7 @@ async function testReactiveServices() {
       );
       console.log(`   ✅ Reactive Sentiment: ${reactiveResults.length} tweets processed`);
     } catch (error) {
-      console.log('   ✅ Reactive Sentiment: Simulation completed');
+      console.error('   ❌ Reactive Sentiment Analysis failed:', error);
     }
 
     // Test 4: Reactive Twitter Scraper (Ultra Fast)
@@ -83,7 +83,7 @@ async function testReactiveServices() {
       );
       console.log(`   ✅ Reactive Scraper: ${scrapeResults.length} items processed`);
     } catch (error) {
-      console.log('   ✅ Reactive Scraper: Simulation completed');
+      console.error('   ❌ Reactive Twitter Scraper failed:', error);
     }
 
     // Test 5: Notification System (Instant)

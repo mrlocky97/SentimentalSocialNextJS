@@ -3,13 +3,13 @@
  * Separate authentication system for Twitter scraping
  */
 
-import { Router, Request, Response } from 'express';
+import { Response, Router } from 'express';
 // REMOVED: TwitterAuthHelper moved to backup (legacy manual auth)
 // import { TwitterAuthHelper } from '../utils/twitter-auth-helper';
-import { TwitterAuthManager } from '../services/twitter-auth-manager.service'; // Consolidated
-import { authenticateToken, AuthenticatedRequest } from '../middleware/express-auth';
 import fs from 'fs/promises';
 import path from 'path';
+import { AuthenticatedRequest, authenticateToken } from '../middleware/express-auth';
+import { TwitterAuthManager } from '../services/twitter-auth-manager.service'; // Consolidated
 
 const router = Router();
 
@@ -138,6 +138,7 @@ router.get('/status', authenticateToken, async (req: AuthenticatedRequest, res: 
     res.status(500).json({
       success: false,
       message: 'Failed to check authentication status',
+      error: error,
     });
   }
 });

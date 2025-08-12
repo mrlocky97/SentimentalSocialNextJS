@@ -3,10 +3,19 @@
  * API routes for user management with comprehensive documentation
  */
 
+import { Order } from '@/enums/api.enum';
 import { Router } from 'express';
-import { MongoUserRepository } from '../repositories/mongo-user.repository';
+import {
+  BusinessLogicError,
+  ErrorCode,
+  errorHandler,
+  NotFoundError,
+  ResponseHelper,
+  ValidationError,
+} from '../core/errors';
 import { authenticateToken, requireRole } from '../middleware/express-auth';
-import { CreateUserRequest, UpdateUserRequest, UserRole } from '../types/user';
+import { MongoUserRepository } from '../repositories/mongo-user.repository';
+import { CreateUserRequest, UpdateUserRequest } from '../types/user';
 
 const router = Router();
 const userRepository = new MongoUserRepository();
@@ -92,25 +101,48 @@ const userRepository = new MongoUserRepository();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
-  try {
+router.get(
+  '/',
+  authenticateToken,
+  requireRole(['admin', 'manager']),
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const { page = 1, limit = 20, role, organizationId, isActive } = req.query;
 
     // Build filter object with proper typing
-    interface UserFilter {
-      role?: UserRole;
-      organizationId?: string;
-      isActive?: boolean;
-    }
-
-    const filter: UserFilter = {};
-    if (role) filter.role = role as UserRole;
+    const filter: any = {};
+    if (role) filter.role = role as string;
     if (organizationId) filter.organizationId = organizationId as string;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
     // Convert pagination params
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
+
+    // Validate pagination parameters
+    if (isNaN(pageNum) || pageNum < 1) {
+      throw new ValidationError(
+        'Invalid page number',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'user_pagination',
+          additionalData: { page },
+        },
+        ['Page must be a positive integer']
+      );
+    }
+
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      throw new ValidationError(
+        'Invalid limit value',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'user_pagination',
+          additionalData: { limit },
+        },
+        ['Limit must be between 1 and 100']
+      );
+    }
+
     const offset = (pageNum - 1) * limitNum;
 
     // Get users with pagination
@@ -118,16 +150,15 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req
       offset,
       limit: limitNum,
       sortBy: 'createdAt',
-      sortOrder: 'desc',
+      sortOrder: Order.DESC,
     });
 
     // Get total count for pagination
     const total = await userRepository.count(filter);
     const totalPages = Math.ceil(total / limitNum);
 
-    res.json({
-      success: true,
-      data: users,
+    ResponseHelper.success(res, {
+      users,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -137,18 +168,8 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req
         hasPrev: pageNum > 1,
       },
     });
-  } catch (error: unknown) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch users',
-        code: 'FETCH_USERS_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  })
+);
 
 /**
  * @swagger
@@ -246,58 +267,49 @@ router.get('/', authenticateToken, requireRole(['admin', 'manager']), async (req
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => {
-  try {
+router.post(
+  '/',
+  authenticateToken,
+  requireRole(['admin']),
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const userData: CreateUserRequest = req.body;
 
     // Validate required fields
     if (!userData.email || !userData.password || !userData.displayName || !userData.username) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Missing required fields',
-          code: 'MISSING_REQUIRED_FIELDS',
-          details: {
+      throw new ValidationError(
+        'Missing required fields',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'create_user',
+          additionalData: {
             required: ['email', 'password', 'displayName', 'username'],
             provided: Object.keys(req.body),
           },
-          timestamp: new Date().toISOString(),
         },
-      });
+        ['Please provide all required fields: email, password, displayName, username']
+      );
     }
 
     // Create user
-    const newUser = await userRepository.create(userData);
-
-    res.status(201).json({
-      success: true,
-      data: newUser,
-      message: 'User created successfully',
-    });
-  } catch (error: unknown) {
-    console.error('Error creating user:', error);
-
-    if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-      return res.status(409).json({
-        success: false,
-        error: {
-          message: 'Email or username already exists',
-          code: 'EMAIL_OR_USERNAME_EXISTS',
-          timestamp: new Date().toISOString(),
-        },
-      });
+    try {
+      const newUser = await userRepository.create(userData);
+      ResponseHelper.created(res, newUser, 'User created successfully');
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+        throw new BusinessLogicError(
+          'Email or username already exists',
+          ErrorCode.BUSINESS_RULE_VIOLATION,
+          {
+            operation: 'create_user',
+            additionalData: { email: userData.email, username: userData.username },
+          },
+          ['Use a different email address', 'Use a different username']
+        );
+      }
+      throw error;
     }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to create user',
-        code: 'CREATE_USER_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  })
+);
 
 /**
  * @swagger
@@ -342,51 +354,38 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req, res) => 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
-  try {
+router.get(
+  '/:id',
+  authenticateToken,
+  requireRole(['admin', 'manager']),
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format (basic validation)
     if (!id || id.length !== 24) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Invalid user ID format',
-          code: 'INVALID_USER_ID',
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Invalid user ID format',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'get_user_by_id',
+          additionalData: { providedId: id },
         },
-      });
+        ['Please provide a valid 24-character MongoDB ObjectId']
+      );
     }
 
     const user = await userRepository.findById(id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'USER_NOT_FOUND',
-          timestamp: new Date().toISOString(),
-        },
+      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+        operation: 'get_user_by_id',
+        additionalData: { userId: id },
       });
     }
 
-    res.json({
-      success: true,
-      data: user,
-    });
-  } catch (error: unknown) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to fetch user',
-        code: 'FETCH_USER_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+    ResponseHelper.success(res, user);
+  })
+);
 
 /**
  * @swagger
@@ -467,21 +466,25 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'manager']), async (
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
-  try {
+router.put(
+  '/:id',
+  authenticateToken,
+  requireRole(['admin']),
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
     const updateData: UpdateUserRequest = req.body;
 
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Invalid user ID format',
-          code: 'INVALID_USER_ID',
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Invalid user ID format',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'update_user',
+          additionalData: { providedId: id },
         },
-      });
+        ['Please provide a valid 24-character MongoDB ObjectId']
+      );
     }
 
     // Remove password from update data (should use separate endpoint for password changes)
@@ -490,48 +493,33 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
     }
 
     // Update user
-    const updatedUser = await userRepository.update(id, updateData);
+    try {
+      const updatedUser = await userRepository.update(id, updateData);
 
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'USER_NOT_FOUND',
-          timestamp: new Date().toISOString(),
-        },
-      });
+      if (!updatedUser) {
+        throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+          operation: 'update_user',
+          additionalData: { userId: id },
+        });
+      }
+
+      ResponseHelper.success(res, updatedUser, 'User updated successfully');
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+        throw new BusinessLogicError(
+          'Email or username already exists',
+          ErrorCode.BUSINESS_RULE_VIOLATION,
+          {
+            operation: 'update_user',
+            additionalData: { userId: id, updateData },
+          },
+          ['Use a different email address', 'Use a different username']
+        );
+      }
+      throw error;
     }
-
-    res.json({
-      success: true,
-      data: updatedUser,
-      message: 'User updated successfully',
-    });
-  } catch (error: unknown) {
-    console.error('Error updating user:', error);
-
-    if (error instanceof Error && error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-      return res.status(409).json({
-        success: false,
-        error: {
-          message: 'Email or username already exists',
-          code: 'EMAIL_OR_USERNAME_EXISTS',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to update user',
-        code: 'UPDATE_USER_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  })
+);
 
 /**
  * @swagger
@@ -582,32 +570,32 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req, res) =
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  authenticateToken,
+  requireRole(['admin']),
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format
     if (!id || id.length !== 24) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Invalid user ID format',
-          code: 'INVALID_USER_ID',
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Invalid user ID format',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'delete_user',
+          additionalData: { providedId: id },
         },
-      });
+        ['Please provide a valid 24-character MongoDB ObjectId']
+      );
     }
 
     // Check if user exists before deletion
     const existingUser = await userRepository.findById(id);
     if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'User not found',
-          code: 'USER_NOT_FOUND',
-          timestamp: new Date().toISOString(),
-        },
+      throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
+        operation: 'delete_user',
+        additionalData: { userId: id },
       });
     }
 
@@ -617,32 +605,19 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res
     });
 
     if (!deactivatedUser) {
-      return res.status(500).json({
-        success: false,
-        error: {
-          message: 'Failed to deactivate user',
-          code: 'DEACTIVATE_USER_ERROR',
-          timestamp: new Date().toISOString(),
+      throw new BusinessLogicError(
+        'Failed to deactivate user',
+        ErrorCode.BUSINESS_RULE_VIOLATION,
+        {
+          operation: 'delete_user',
+          additionalData: { userId: id, reason: 'deactivation_failed' },
         },
-      });
+        ['Try again later', 'Contact system administrator if problem persists']
+      );
     }
 
-    res.json({
-      success: true,
-      message: 'User deactivated successfully',
-      data: { id, isActive: false },
-    });
-  } catch (error: unknown) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to delete user',
-        code: 'DELETE_USER_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+    ResponseHelper.success(res, { id, isActive: false }, 'User deactivated successfully');
+  })
+);
 
 export default router;

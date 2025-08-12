@@ -3,11 +3,13 @@
  * Shared types used across the application
  */
 
+import { Order } from '@/enums/api.enum';
+
 export interface PaginationOptions {
   offset?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: Order;
 }
 
 export interface PaginationResult<T> {

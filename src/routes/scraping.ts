@@ -3,6 +3,7 @@
  * Usa twikit para scraping sin API oficial
  */
 
+import { Label } from '@/enums/sentiment.enum';
 import { Request, Response, Router } from 'express';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
@@ -38,11 +39,11 @@ function processSentimentAnalysis(tweets: any[], analyses: any[]) {
     if (!analysis) return tweet;
 
     const sentiment = analysis.analysis.sentiment;
-    const label = ['very_positive', 'positive'].includes(sentiment.label)
-      ? 'positive'
-      : ['very_negative', 'negative'].includes(sentiment.label)
-        ? 'negative'
-        : 'neutral';
+    const label = [Label.VERY_POSITIVE, Label.POSITIVE].includes(sentiment.label)
+      ? Label.POSITIVE
+      : [Label.VERY_NEGATIVE, Label.NEGATIVE].includes(sentiment.label)
+        ? Label.NEGATIVE
+        : Label.NEUTRAL;
 
     return {
       ...tweet,

@@ -3,10 +3,19 @@
  * Data access layer for tweet operations and analytics
  */
 
+import { Label } from '@/enums/sentiment.enum';
 import { ITweetDocument, TweetModel } from '../models/Tweet.model';
-import { TwitterUser, TweetMetrics } from '../types/twitter';
+import { TweetMetrics, TwitterUser } from '../types/twitter';
 
-// Define interfaces locally to avoid dependency issues
+// Define polarity enum for simplified sentiment classification
+// Note: This differs from Label enum intentionally:
+// - Label (5 values): For detailed analysis, ML training, granular insights
+// - Polarity (3 values): For executive dashboards, simple UI/UX, business decisions
+export enum SentimentPolarity {
+  POSITIVE = 'positive', // Combines VERY_POSITIVE + POSITIVE
+  NEUTRAL = 'neutral', // Maps directly to NEUTRAL
+  NEGATIVE = 'negative', // Combines NEGATIVE + VERY_NEGATIVE
+} // Define interfaces locally to avoid dependency issues
 interface PaginationParams {
   page: number;
   limit: number;
@@ -25,7 +34,7 @@ interface PaginatedResponse<T> {
 export interface TweetFilters {
   campaignId?: string;
   hashtags?: string[];
-  sentimentLabel?: 'positive' | 'negative' | 'neutral';
+  sentimentLabel?: Label;
   language?: string;
   isRetweet?: boolean;
   isReply?: boolean;
@@ -48,9 +57,11 @@ export interface TweetAnalytics {
   totalEngagement: number;
   averageEngagement: number;
   sentimentDistribution: {
-    positive: number;
-    negative: number;
-    neutral: number;
+    [Label.VERY_POSITIVE]: number;
+    [Label.POSITIVE]: number;
+    [Label.NEUTRAL]: number;
+    [Label.NEGATIVE]: number;
+    [Label.VERY_NEGATIVE]: number;
   };
   topHashtags: Array<{ hashtag: string; count: number }>;
   topMentions: Array<{ mention: string; count: number }>;
@@ -59,15 +70,38 @@ export interface TweetAnalytics {
   topInfluencers: Array<{ user: TwitterUser; metrics: TweetMetrics; tweetCount: number }>;
 }
 
+export interface ExtendedTweetAnalytics extends TweetAnalytics {
+  sentimentGroupings: {
+    detailed: {
+      [Label.VERY_POSITIVE]: number;
+      [Label.POSITIVE]: number;
+      [Label.NEUTRAL]: number;
+      [Label.NEGATIVE]: number;
+      [Label.VERY_NEGATIVE]: number;
+    };
+    simplified: {
+      positive: number;
+      neutral: number;
+      negative: number;
+    };
+    binary: {
+      positive: number;
+      negative: number;
+    };
+  };
+}
+
 export interface HashtagTrends {
   hashtag: string;
   totalTweets: number;
   totalEngagement: number;
   averageEngagement: number;
   sentiment: {
-    positive: number;
-    negative: number;
-    neutral: number;
+    [Label.VERY_POSITIVE]: number;
+    [Label.POSITIVE]: number;
+    [Label.NEUTRAL]: number;
+    [Label.NEGATIVE]: number;
+    [Label.VERY_NEGATIVE]: number;
   };
   growth: {
     last24h: number;
@@ -91,6 +125,33 @@ export class MongoTweetRepository {
       }
       throw error;
     }
+  }
+
+  /**
+   * Helper method to group sentiment into broad categories
+   */
+  private groupSentimentStats(sentimentStats: {
+    [Label.VERY_POSITIVE]: number;
+    [Label.POSITIVE]: number;
+    [Label.NEUTRAL]: number;
+    [Label.NEGATIVE]: number;
+    [Label.VERY_NEGATIVE]: number;
+  }) {
+    return {
+      // Detailed (5 categories)
+      detailed: sentimentStats,
+      // Simplified (3 categories)
+      simplified: {
+        positive: sentimentStats[Label.VERY_POSITIVE] + sentimentStats[Label.POSITIVE],
+        neutral: sentimentStats[Label.NEUTRAL],
+        negative: sentimentStats[Label.NEGATIVE] + sentimentStats[Label.VERY_NEGATIVE],
+      },
+      // Binary (2 categories)
+      binary: {
+        positive: sentimentStats[Label.VERY_POSITIVE] + sentimentStats[Label.POSITIVE],
+        negative: sentimentStats[Label.NEGATIVE] + sentimentStats[Label.VERY_NEGATIVE],
+      },
+    };
   }
 
   /**
@@ -283,8 +344,71 @@ export class MongoTweetRepository {
   }
 
   /**
-   * Get hashtag trends
+   * Get extended analytics with different sentiment groupings
    */
+  async getExtendedAnalytics(filters: TweetFilters = {}): Promise<ExtendedTweetAnalytics> {
+    const basicAnalytics = await this.getAnalytics(filters);
+    const sentimentGroupings = this.groupSentimentStats(basicAnalytics.sentimentDistribution);
+
+    return {
+      ...basicAnalytics,
+      sentimentGroupings,
+    };
+  }
+
+  /**
+   * Get detailed sentiment metrics including percentages and scores
+   */
+  async getSentimentMetrics(filters: TweetFilters = {}) {
+    const query = this.buildQuery(filters);
+    const sentimentStats = await this.getSentimentStats(query);
+    const total = Object.values(sentimentStats).reduce((sum, count) => sum + count, 0);
+
+    if (total === 0) {
+      return {
+        counts: sentimentStats,
+        percentages: {
+          [Label.VERY_POSITIVE]: 0,
+          [Label.POSITIVE]: 0,
+          [Label.NEUTRAL]: 0,
+          [Label.NEGATIVE]: 0,
+          [Label.VERY_NEGATIVE]: 0,
+        },
+        overallScore: 0,
+        polarity: SentimentPolarity.NEUTRAL,
+      };
+    }
+
+    // Calculate percentages
+    const percentages = {
+      [Label.VERY_POSITIVE]: (sentimentStats[Label.VERY_POSITIVE] / total) * 100,
+      [Label.POSITIVE]: (sentimentStats[Label.POSITIVE] / total) * 100,
+      [Label.NEUTRAL]: (sentimentStats[Label.NEUTRAL] / total) * 100,
+      [Label.NEGATIVE]: (sentimentStats[Label.NEGATIVE] / total) * 100,
+      [Label.VERY_NEGATIVE]: (sentimentStats[Label.VERY_NEGATIVE] / total) * 100,
+    };
+
+    // Calculate overall sentiment score (-2 to +2)
+    const overallScore =
+      (sentimentStats[Label.VERY_POSITIVE] * 2 +
+        sentimentStats[Label.POSITIVE] * 1 +
+        sentimentStats[Label.NEUTRAL] * 0 +
+        sentimentStats[Label.NEGATIVE] * -1 +
+        sentimentStats[Label.VERY_NEGATIVE] * -2) /
+      total;
+
+    // Determine overall polarity
+    let polarity: SentimentPolarity = SentimentPolarity.NEUTRAL;
+    if (overallScore > 0.2) polarity = SentimentPolarity.POSITIVE;
+    else if (overallScore < -0.2) polarity = SentimentPolarity.NEGATIVE;
+
+    return {
+      counts: sentimentStats,
+      percentages,
+      overallScore,
+      polarity,
+    };
+  }
   async getHashtagTrends(hashtag: string, days: number = 30): Promise<HashtagTrends> {
     const cleanHashtag = hashtag.replace('#', '').toLowerCase();
     const startDate = new Date();
@@ -454,9 +578,21 @@ export class MongoTweetRepository {
       },
     ]);
 
-    const stats = { positive: 0, negative: 0, neutral: 0 };
+    // Initialize with all 5 sentiment options from the enum
+    const stats = {
+      [Label.VERY_POSITIVE]: 0,
+      [Label.POSITIVE]: 0,
+      [Label.NEUTRAL]: 0,
+      [Label.NEGATIVE]: 0,
+      [Label.VERY_NEGATIVE]: 0,
+    };
+
+    // Map the results to the stats object
     results.forEach((result) => {
-      stats[result._id as keyof typeof stats] = result.count;
+      const label = result._id as Label;
+      if (label in stats) {
+        stats[label] = result.count;
+      }
     });
 
     return stats;

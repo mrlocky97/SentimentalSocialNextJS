@@ -3,7 +3,8 @@
  * Mongoose schema for users collection
  */
 
-import mongoose, { Schema, Document } from 'mongoose';
+import { Permission, UserRole } from '@/enums/user.enum';
+import mongoose, { Document, Schema } from 'mongoose';
 
 // User document interface for MongoDB - Updated for marketing platform
 export interface IUserDocument extends Document {
@@ -59,8 +60,14 @@ const userSchema = new Schema<IUserDocument>(
     },
     role: {
       type: String,
-      enum: ['admin', 'manager', 'analyst', 'onlyView', 'client'],
-      default: 'client',
+      enum: [
+        UserRole.ADMIN,
+        UserRole.MANAGER,
+        UserRole.ANALYST,
+        UserRole.ONLY_VIEW,
+        UserRole.CLIENT,
+      ],
+      default: UserRole.CLIENT,
     },
     permissions: {
       type: [String],
@@ -172,33 +179,36 @@ userSchema.pre('save', function (this: IUserDocument, next) {
   // Set default permissions based on role
   if (this.isNew && this.permissions.length === 0) {
     switch (this.role) {
-      case 'admin':
+      case UserRole.ADMIN:
         this.permissions = [
-          'campaigns:create',
-          'campaigns:edit',
-          'campaigns:delete',
-          'campaigns:view',
-          'users:manage',
-          'analytics:view',
+          Permission.CAMPAIGNS_CREATE,
+          Permission.CAMPAIGNS_EDIT,
+          Permission.CAMPAIGNS_DELETE,
+          Permission.CAMPAIGNS_VIEW,
+          Permission.ANALYTICS_VIEW,
         ];
         break;
-      case 'manager':
+      case UserRole.MANAGER:
         this.permissions = [
-          'campaigns:create',
-          'campaigns:edit',
-          'campaigns:view',
-          'analytics:view',
+          Permission.CAMPAIGNS_CREATE,
+          Permission.CAMPAIGNS_EDIT,
+          Permission.CAMPAIGNS_VIEW,
+          Permission.ANALYTICS_VIEW,
         ];
         break;
-      case 'analyst':
-        this.permissions = ['campaigns:view', 'analytics:view', 'analytics:export'];
+      case UserRole.ANALYST:
+        this.permissions = [
+          Permission.CAMPAIGNS_VIEW,
+          Permission.ANALYTICS_VIEW,
+          Permission.ANALYTICS_EXPORT,
+        ];
         break;
-      case 'onlyView':
-        this.permissions = ['campaigns:view', 'analytics:view'];
+      case UserRole.ONLY_VIEW:
+        this.permissions = [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW];
         break;
-      case 'client':
+      case UserRole.CLIENT:
       default:
-        this.permissions = ['campaigns:view'];
+        this.permissions = [Permission.CAMPAIGNS_VIEW];
         break;
     }
   }

@@ -4,7 +4,7 @@
  */
 
 import mongoose, { Document, Schema } from 'mongoose';
-import { CampaignStatus, CampaignType, DataSource } from '../types/campaign';
+import { CampaignStatus, CampaignType, DataSource } from '../enums/campaign.enum';
 
 export interface ICampaignDocument extends Document {
   name: string;
@@ -139,7 +139,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
       type: String,
       required: [true, 'Campaign type is required'],
       enum: {
-        values: ['hashtag', 'keyword', 'mention', 'competitor'],
+        values: Object.values(CampaignType),
         message: 'Type must be one of: hashtag, keyword, mention, competitor',
       },
       index: true,
@@ -149,10 +149,10 @@ const campaignSchema = new Schema<ICampaignDocument>(
       type: String,
       required: [true, 'Campaign status is required'],
       enum: {
-        values: ['draft', 'active', 'paused', 'completed', 'archived'],
+        values: Object.values(CampaignStatus),
         message: 'Status must be one of: draft, active, paused, completed, archived',
       },
-      default: 'draft',
+      default: CampaignStatus.draft,
       index: true,
     },
 
@@ -160,7 +160,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
       {
         type: String,
         enum: {
-          values: ['twitter', 'instagram', 'facebook', 'tiktok', 'linkedin'],
+          values: Object.values(DataSource),
           message: 'Data source must be one of: twitter, instagram, facebook, tiktok, linkedin',
         },
       },
@@ -226,7 +226,9 @@ const campaignSchema = new Schema<ICampaignDocument>(
     languages: [
       {
         type: String,
-        length: 2,
+        maxlength: [2, 'Language code must be 2 characters'],
+        minlength: [2, 'Language code must be 2 characters'],
+        match: [/^[a-z]{2}$/, 'Language code must be a valid 2-letter ISO code'],
       },
     ],
 
@@ -267,7 +269,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
 );
 
 // Pre-save middleware
-campaignSchema.pre('save', function (next) {
+campaignSchema.pre('save', function (this: ICampaignDocument, next) {
   if (this.hashtags.length === 0 && this.keywords.length === 0 && this.mentions.length === 0) {
     next(new Error('At least one hashtag, keyword, or mention must be provided'));
     return;

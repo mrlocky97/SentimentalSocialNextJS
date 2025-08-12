@@ -5,7 +5,7 @@
 
 import { AnalysisResult, TweetSentimentAnalysis } from '../../lib/sentiment/types';
 import { SentimentResult } from '../../types/sentiment';
-import { Tweet } from '../../types/twitter';
+import { Tweet, TweetMetrics, TwitterUser } from '../../types/twitter';
 import { SentimentErrors } from '../errors';
 
 /**
@@ -544,6 +544,78 @@ export class SentimentStatsMapper extends BaseSentimentMapper {
       topKeywords,
       brandMentionStats,
       timeRange,
+    };
+  }
+}
+
+/**
+ * Métodos utilitarios para pruebas y mapeo unificado de resultados
+ */
+export class SentimentUtils {
+  /**
+   * Crea un Tweet de prueba para análisis
+   * @param text
+   * @param language
+   * @returns
+   */
+  static createMockTweet(text: string, language = 'en'): Tweet {
+    const author: TwitterUser = {
+      id: 'test_user',
+      username: 'test_user',
+      displayName: 'Test User',
+      verified: false,
+      followersCount: 100,
+      followingCount: 50,
+      tweetsCount: 10,
+      avatar: '',
+    };
+
+    const metrics: TweetMetrics = {
+      likes: 0,
+      retweets: 0,
+      replies: 0,
+      quotes: 0,
+      views: 0,
+      engagement: 0,
+    };
+
+    return {
+      id: 'test_tweet',
+      tweetId: 'test_tweet',
+      content: text,
+      author,
+      metrics,
+      hashtags: [],
+      mentions: [],
+      urls: [],
+      mediaUrls: [],
+      isRetweet: false,
+      isReply: false,
+      isQuote: false,
+      language,
+      createdAt: new Date(),
+      scrapedAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  /**
+   * Mapea resultado de análisis a formato unificado
+   */
+  static mapSentimentResult(analysis: any, naiveResult?: any, method = 'rule') {
+    return {
+      originalText: analysis.content,
+      method,
+      analysis: analysis.analysis,
+      naiveBayes: naiveResult,
+      brandMentions: analysis.brandMentions,
+      marketingInsights: analysis.marketingInsights,
+      summary: {
+        sentiment: analysis.analysis.sentiment.label,
+        score: analysis.analysis.sentiment.score,
+        confidence: analysis.analysis.sentiment.confidence,
+        keywords: analysis.analysis.keywords.slice(0, 5),
+      },
     };
   }
 }

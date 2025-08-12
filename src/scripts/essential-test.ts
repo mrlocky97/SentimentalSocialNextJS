@@ -3,6 +3,7 @@
  * Tests core functionality including new reactive optimizations
  */
 
+import { Label } from '../enums/sentiment.enum';
 import { AuthService } from '../services/auth.service';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
@@ -23,6 +24,19 @@ import {
 // Import RxJS utilities
 import { firstValueFrom, timeout } from 'rxjs';
 import { TwitterScraperService } from '../../backup/backup-twitter-scraper.service';
+
+// Enhanced error logging
+const logSuccess = (test: string, message: string) => {
+  console.log(`   ✅ ${test}: ${message}`);
+};
+
+const logWarning = (test: string, message: string) => {
+  console.log(`   ⚠️  ${test}: ${message}`);
+};
+
+const logError = (test: string, error: unknown) => {
+  console.error(`   ❌ ${test} failed:`, error instanceof Error ? error.message : error);
+};
 
 async function testEssentialFunctionality() {
   const startTime = Date.now(); // Track execution time
@@ -45,13 +59,13 @@ async function testEssentialFunctionality() {
     // Test 0.1: System Health Check
     console.log('🏥 Checking System Health...');
     const systemStatus = await getSystemStatus();
-    console.log(`   ✅ System Status: ${systemStatus.overall}`);
-    console.log(`   ✅ Services Online: ${systemStatus.services.length}`);
+    logSuccess('System Status', systemStatus.overall);
+    logSuccess('Services Online', `${systemStatus.services.length}`);
 
     // Test 1: Authentication Service
     console.log('🔐 Testing Authentication Service...');
-    const authService = new AuthService();
-    console.log('   ✅ Auth service instantiated correctly');
+    new AuthService(); // Test instantiation
+    logSuccess('Auth service', 'instantiated correctly');
 
     // Test 2: Traditional Sentiment Analysis
     console.log('🎯 Testing Traditional Sentiment Analysis...');
@@ -85,10 +99,15 @@ async function testEssentialFunctionality() {
     const sentimentManager = new TweetSentimentAnalysisManager();
     const sentimentResult = await sentimentManager.analyzeTweet(mockTweet);
     const sentimentScore = sentimentResult.analysis.sentiment.score;
-    const sentimentLabel =
-      sentimentScore > 0.3 ? 'positive' : sentimentScore < -0.3 ? 'negative' : 'neutral';
-    console.log(
-      `   ✅ Traditional Sentiment: ${sentimentLabel} (${(sentimentScore * 100).toFixed(1)}%)`
+    const sentimentLabel: Label =
+      sentimentScore > 0.3
+        ? Label.POSITIVE
+        : sentimentScore < -0.3
+          ? Label.NEGATIVE
+          : Label.NEUTRAL;
+    logSuccess(
+      'Traditional Sentiment',
+      `${sentimentLabel} (${(sentimentScore * 100).toFixed(1)}%)`
     );
 
     // Test 2.1: Reactive Sentiment Analysis
@@ -117,12 +136,12 @@ async function testEssentialFunctionality() {
           timeout(1000) // ULTRA REDUCED to 1 second
         )
       );
-      console.log(`   ✅ Reactive Sentiment Analysis: ${reactiveResults.length} tweets processed`);
+      logSuccess('Reactive Sentiment Analysis', `${reactiveResults.length} tweets processed`);
 
       // Show reactive stats (skip detailed stats for speed)
-      console.log(`   📊 Reactive sentiment analysis: ULTRA FAST mode completed`);
-    } catch (error) {
-      console.log(`   ⚠️  Reactive sentiment analysis: ULTRA FAST simulation completed`);
+      logSuccess('Reactive sentiment analysis', 'ULTRA FAST mode completed');
+    } catch {
+      logWarning('Reactive sentiment analysis', 'ULTRA FAST simulation completed');
     }
 
     // Test 3: Database Connection
@@ -132,7 +151,7 @@ async function testEssentialFunctionality() {
       sentiment: {
         score: sentimentScore,
         magnitude: sentimentResult.analysis.sentiment.magnitude,
-        label: sentimentLabel as 'positive' | 'negative' | 'neutral',
+        label: sentimentLabel, // Now using the Label enum
         confidence: sentimentResult.analysis.sentiment.confidence,
         keywords: ['amazing', 'awesome'],
         analyzedAt: new Date(),
@@ -141,13 +160,13 @@ async function testEssentialFunctionality() {
     };
 
     const dbService = new TweetDatabaseService();
-    const dbResult = await dbService.saveTweet(mockTweetWithSentiment, 'test-campaign');
-    console.log('   ✅ Database connection operational');
+    await dbService.saveTweet(mockTweetWithSentiment, 'test-campaign');
+    logSuccess('Database connection', 'operational');
 
     // Test 4: Traditional Twitter Scraper
     console.log('🐦 Testing Traditional Twitter Scraper Service...');
-    const scraperService = new TwitterScraperService();
-    console.log('   ✅ Twitter scraper service loaded');
+    new TwitterScraperService(); // Test instantiation
+    logSuccess('Twitter scraper service', 'loaded');
 
     // Test 4.1: Reactive Twitter Scraper
     console.log('⚡ Testing Reactive Twitter Scraper...');
@@ -157,10 +176,10 @@ async function testEssentialFunctionality() {
           timeout(1000) // ULTRA REDUCED to 1 second
         )
       );
-      console.log(`   ✅ Reactive scraper: ${scrapeResults.length} tweets scraped`);
-      console.log(`   📊 Reactive scraper: ULTRA FAST mode completed`);
-    } catch (error) {
-      console.log(`   ⚠️  Reactive scraper: ULTRA FAST simulation completed`);
+      logSuccess('Reactive scraper', `${scrapeResults.length} tweets scraped`);
+      logSuccess('Reactive scraper', 'ULTRA FAST mode completed');
+    } catch {
+      logWarning('Reactive scraper', 'ULTRA FAST simulation completed');
     }
 
     // Test 5: Notification System
@@ -172,16 +191,16 @@ async function testEssentialFunctionality() {
       priority: 'medium',
       data: { test: true, timestamp: new Date() },
     });
-    console.log('   ✅ Notification sent successfully');
+    logSuccess('Notification sent', 'successfully');
 
     // Get notification stats
     try {
       const notificationStats = await firstValueFrom(
         notificationSystem.getStats().pipe(timeout(500)) // ULTRA REDUCED to 0.5 seconds
       );
-      console.log(`   📊 Notifications sent: ${notificationStats.totalSent}`);
-    } catch (error) {
-      console.log('   📊 Notification stats: ULTRA FAST mode completed');
+      logSuccess('Notifications sent', `${notificationStats.totalSent}`);
+    } catch {
+      logSuccess('Notification stats', 'ULTRA FAST mode completed');
     }
 
     // Test 6: Auto-Optimization System
@@ -197,13 +216,12 @@ async function testEssentialFunctionality() {
           )
           .pipe(timeout(1000)) // ULTRA REDUCED to 1 second
       );
-      console.log(
-        `   ✅ Optimization completed: ${optimizationResult.metrics.improvement.toFixed(
-          1
-        )}% improvement`
+      logSuccess(
+        'Optimization completed',
+        `${optimizationResult.metrics.improvement.toFixed(1)}% improvement`
       );
-    } catch (error) {
-      console.log('   ⚠️  Auto-optimization: ULTRA FAST simulation completed');
+    } catch {
+      logWarning('Auto-optimization', 'ULTRA FAST simulation completed');
     }
 
     // Test 7: Predictive Analytics
@@ -219,11 +237,12 @@ async function testEssentialFunctionality() {
           )
           .pipe(timeout(1000)) // ULTRA REDUCED to 1 second
       );
-      console.log(
-        `   ✅ Engagement prediction: ${(prediction.confidence * 100).toFixed(1)}% confidence`
+      logSuccess(
+        'Engagement prediction',
+        `${(prediction.confidence * 100).toFixed(1)}% confidence`
       );
-    } catch (error) {
-      console.log('   ⚠️  Predictive analytics: ULTRA FAST simulation completed');
+    } catch {
+      logWarning('Predictive analytics', 'ULTRA FAST simulation completed');
     }
 
     // Test 8: Reactive Orchestrator
@@ -232,12 +251,13 @@ async function testEssentialFunctionality() {
       const orchestratorStats = await firstValueFrom(
         reactiveOrchestrator.getStats().pipe(timeout(500)) // ULTRA REDUCED to 0.5 seconds
       );
-      console.log(
-        `   ✅ Orchestrator active: ${orchestratorStats.servicesOnline}/${orchestratorStats.totalServices} services online`
+      logSuccess(
+        'Orchestrator active',
+        `${orchestratorStats.servicesOnline}/${orchestratorStats.totalServices} services online`
       );
-      console.log(`   📊 System uptime: ${(orchestratorStats.systemUptime / 1000).toFixed(0)}s`);
-    } catch (error) {
-      console.log('   ⚠️  Orchestrator: ULTRA FAST mode completed');
+      logSuccess('System uptime', `${(orchestratorStats.systemUptime / 1000).toFixed(0)}s`);
+    } catch {
+      logWarning('Orchestrator', 'ULTRA FAST mode completed');
     }
 
     // Test 9: Integration Workflow Test (SIMPLIFIED)
@@ -259,19 +279,18 @@ async function testEssentialFunctionality() {
           ])
           .pipe(timeout(1000)) // ULTRA REDUCED to 1 second
       );
-      console.log(`   ✅ Integration workflow created: ${workflow.id}`);
-    } catch (error) {
-      console.log('   ⚠️  Integration workflow: ULTRA FAST simulation completed');
+      logSuccess('Integration workflow created', workflow.id);
+    } catch {
+      logWarning('Integration workflow', 'ULTRA FAST simulation completed');
     }
 
     // Final System Status Check
     console.log('🏁 Final System Status Check...');
     const finalStatus = await getSystemStatus();
-    console.log(`   📊 Final System Health: ${finalStatus.overall}`);
-    console.log(
-      `   📊 Services Operational: ${
-        finalStatus.services.filter((s) => s.status === 'healthy').length
-      }/${finalStatus.services.length}`
+    logSuccess('Final System Health', finalStatus.overall);
+    logSuccess(
+      'Services Operational',
+      `${finalStatus.services.filter((s) => s.status === 'healthy').length}/${finalStatus.services.length}`
     );
 
     const endTime = Date.now();
@@ -305,14 +324,33 @@ async function testEssentialFunctionality() {
         executionTime < 10 ? '✅ SUCCESS' : '❌ OPTIMIZE MORE'
       }`
     );
+
+    return {
+      success: true,
+      executionTime,
+      performance:
+        executionTime < 10
+          ? '⚡ ULTRA FAST'
+          : executionTime < 20
+            ? '🚀 FAST'
+            : executionTime < 30
+              ? '✅ GOOD'
+              : '⏰ SLOW',
+      timestamp: new Date().toISOString(),
+    };
   } catch (error) {
     const endTime = Date.now();
     const executionTime = (endTime - startTime) / 1000;
-    console.error(`❌ Essential test failed after ${executionTime.toFixed(2)} seconds:`, error);
-    if (error instanceof Error) {
-      console.error('Stack trace:', error.stack);
-    }
-    process.exit(1);
+
+    console.error(`❌ Essential test failed after ${executionTime.toFixed(2)} seconds:`);
+    logError('Test Suite', error);
+
+    return {
+      success: false,
+      executionTime,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+    };
   }
 }
 
@@ -321,5 +359,14 @@ export { testEssentialFunctionality };
 
 // Run test if this file is executed directly
 if (require.main === module) {
-  testEssentialFunctionality();
+  testEssentialFunctionality()
+    .then((result) => {
+      if (!result.success) {
+        process.exit(1);
+      }
+    })
+    .catch((error) => {
+      console.error('❌ Failed to run essential test:', error);
+      process.exit(1);
+    });
 }

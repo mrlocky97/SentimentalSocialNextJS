@@ -3,8 +3,9 @@
  * Schema for storing collected tweets and their analysis
  */
 
+import { Label } from '@/enums/sentiment.enum';
 import mongoose, { Document, Schema } from 'mongoose';
-import { TwitterUser, TweetMetrics, SentimentAnalysis } from '../types/twitter';
+import { SentimentAnalysis, TweetMetrics, TwitterUser } from '../types/twitter';
 
 export interface ITweetDocument extends Document {
   tweetId: string;
@@ -83,7 +84,13 @@ const sentimentAnalysisSchema = new Schema(
     label: {
       type: String,
       required: true,
-      enum: ['positive', 'negative', 'neutral'],
+      enum: [
+        Label.VERY_POSITIVE,
+        Label.POSITIVE,
+        Label.NEUTRAL,
+        Label.NEGATIVE,
+        Label.VERY_NEGATIVE,
+      ],
     },
     confidence: { type: Number, required: true, min: 0, max: 1 },
     emotions: {
@@ -328,10 +335,7 @@ tweetSchema.statics.findByHashtag = function (hashtag: string, limit: number = 1
     .limit(limit);
 };
 
-tweetSchema.statics.findBySentiment = function (
-  sentiment: 'positive' | 'negative' | 'neutral',
-  limit: number = 100
-) {
+tweetSchema.statics.findBySentiment = function (sentiment: Label, limit: number = 100) {
   return this.find({ 'sentiment.label': sentiment }).sort({ tweetCreatedAt: -1 }).limit(limit);
 };
 

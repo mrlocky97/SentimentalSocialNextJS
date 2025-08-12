@@ -3,6 +3,7 @@
  * Mappers especializados para transformaciones de datos de tweets
  */
 
+import { Label } from '../../enums/sentiment.enum';
 import { TweetDTO } from '../../lib/sentiment/types';
 import { Tweet } from '../../types/twitter';
 import { SentimentErrors } from '../errors';
@@ -87,6 +88,50 @@ export class TweetToTweetDTOMapper extends BaseTweetMapper {
   static mapBatch(tweets: Tweet[]): TweetDTO[] {
     this.validateTweetBatch(tweets);
     return tweets.map((tweet) => this.map(tweet));
+  }
+
+  /**
+   * Crea un tweet mock para testing
+   */
+  static createMockTweet(text: string, language: 'en' | 'es' | 'fr' | 'de' = 'en'): Tweet {
+    const timestamp = new Date();
+    const mockId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    return {
+      id: mockId,
+      tweetId: mockId,
+      content: text,
+      text: text,
+      author: {
+        id: 'mock_user',
+        username: 'mockuser',
+        displayName: 'Mock User',
+        verified: false,
+        followersCount: 100,
+        followingCount: 50,
+        tweetsCount: 10,
+        avatar: '',
+      },
+      metrics: {
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        quotes: 0,
+        views: 0,
+        engagement: 0,
+      },
+      hashtags: [],
+      mentions: [],
+      urls: [],
+      mediaUrls: [],
+      isRetweet: false,
+      isReply: false,
+      isQuote: false,
+      language,
+      createdAt: timestamp,
+      scrapedAt: timestamp,
+      updatedAt: timestamp,
+    };
   }
 
   /**
@@ -323,15 +368,15 @@ export class TweetSentimentMapper extends BaseTweetMapper {
   /**
    * Normaliza etiquetas de sentimiento para compatibilidad
    */
-  private static normalizeSentimentLabel(label: string): 'positive' | 'negative' | 'neutral' {
+  private static normalizeSentimentLabel(label: string): Label {
     const lowerLabel = label.toLowerCase();
 
     if (lowerLabel.includes('positive')) {
-      return 'positive';
+      return Label.POSITIVE;
     } else if (lowerLabel.includes('negative')) {
-      return 'negative';
+      return Label.NEGATIVE;
     } else {
-      return 'neutral';
+      return Label.NEUTRAL;
     }
   }
 }

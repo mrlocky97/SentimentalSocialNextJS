@@ -4,6 +4,7 @@
  * Now with enhanced authentication and cookie support
  */
 
+import { Label } from '@/enums/sentiment.enum';
 import {
   AuthenticationStatus,
   ScrapedTweetData,
@@ -86,7 +87,7 @@ export class TwitterRealScraperService {
           this.updateAuthStatus(true);
           return this.scraper;
         } catch (cookieError) {
-          console.warn('Cookie authentication failed, falling back to credentials');
+          console.warn('Cookie authentication failed, falling back to credentials', cookieError);
         }
       }
 
@@ -351,7 +352,7 @@ export class TwitterRealScraperService {
     // Placeholder para análisis de sentimiento (ajustado al tipo SentimentAnalysis)
     const sentiment = {
       score: 0,
-      label: 'neutral' as const,
+      label: Label.NEUTRAL,
       magnitude: 0,
       confidence: 1,
       keywords: [],

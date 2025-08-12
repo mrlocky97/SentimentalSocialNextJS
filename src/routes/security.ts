@@ -4,8 +4,10 @@
  */
 
 import { Router } from 'express';
-import { authenticateToken, requireRole, AuthenticatedRequest } from '../middleware/express-auth';
+import { existsSync } from 'fs';
+import { errorHandler, ResponseHelper } from '../core/errors';
 import { tokenBlacklistService } from '../lib/security/token-blacklist';
+import { AuthenticatedRequest, authenticateToken, requireRole } from '../middleware/express-auth';
 
 const router = Router();
 
@@ -58,40 +60,28 @@ router.get(
   '/status',
   authenticateToken,
   requireRole(['admin']),
-  (req: AuthenticatedRequest, res) => {
-    try {
-      const blacklistStats = tokenBlacklistService.getStats();
+  errorHandler.expressAsyncWrapper(async (req, res) => {
+    const blacklistStats = tokenBlacklistService.getStats();
 
-      const securityStatus = {
-        tokenBlacklist: blacklistStats,
-        jwtSecurity: {
-          secretConfigured: !!process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32,
-          tokenExpiry: process.env.JWT_EXPIRES_IN || '1h',
-        },
-        credentialsEncryption: {
-          masterPasswordConfigured: !!process.env.TWITTER_MASTER_PASSWORD,
-          encryptedCredsAvailable: require('fs').existsSync('encrypted-twitter-creds.json'),
-        },
-        timestamp: new Date().toISOString(),
-      };
+    const securityStatus = {
+      tokenBlacklist: {
+        totalBlacklisted: blacklistStats.totalBlacklisted,
+        activeBlacklisted: blacklistStats.activeBlacklisted,
+        oldestEntry: blacklistStats.oldestEntry,
+      },
+      jwtSecurity: {
+        secretConfigured: !!process.env.JWT_SECRET,
+        tokenExpiry: process.env.JWT_EXPIRES_IN || '1h',
+      },
+      credentialsEncryption: {
+        masterPasswordConfigured: !!process.env.TWITTER_MASTER_PASSWORD,
+        encryptedCredsAvailable: existsSync('encrypted-twitter-creds.json'),
+      },
+      timestamp: new Date().toISOString(),
+    };
 
-      res.json({
-        success: true,
-        data: securityStatus,
-        message: 'Security status retrieved successfully',
-      });
-    } catch (error) {
-      console.error('Security status error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          message: 'Failed to retrieve security status',
-          code: 'SECURITY_STATUS_ERROR',
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-  }
+    ResponseHelper.success(res, securityStatus, 'Security status retrieved successfully');
+  })
 );
 
 /**

@@ -4,11 +4,19 @@
  */
 
 import { Router } from 'express';
-import { AuthService } from '../services/auth.service';
-import { RegisterRequest, LoginRequest } from '../types/auth';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/express-auth';
-import { tokenBlacklistService } from '../lib/security/token-blacklist';
 import jwt from 'jsonwebtoken';
+import {
+  AuthenticationError,
+  BusinessLogicError,
+  ErrorCode,
+  errorHandler,
+  ResponseHelper,
+  ValidationError,
+} from '../core/errors';
+import { tokenBlacklistService } from '../lib/security/token-blacklist';
+import { AuthenticatedRequest, authenticateToken } from '../middleware/express-auth';
+import { AuthService } from '../services/auth.service';
+import { LoginRequest, RegisterRequest } from '../types/auth';
 
 const router = Router();
 const authService = new AuthService();
@@ -157,101 +165,95 @@ const authService = new AuthService();
  *                     message: "User with this email already exists"
  *                     code: "USER_ALREADY_EXISTS"
  */
-router.post('/register', async (req, res) => {
-  try {
+router.post(
+  '/register',
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     // Validate request body
     const { email, password, displayName, username, role }: RegisterRequest = req.body;
 
     if (!email || !password || !displayName || !username) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Missing required fields',
-          code: 'MISSING_REQUIRED_FIELDS',
-          details: {
+      throw new ValidationError(
+        'Missing required fields',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'user_registration',
+          additionalData: {
             required: ['email', 'password', 'displayName', 'username'],
             provided: Object.keys(req.body),
           },
-          timestamp: new Date().toISOString(),
         },
-      });
+        ['Please provide all required fields: email, password, displayName, username']
+      );
     }
 
     // Validate email format
     if (!authService.validateEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Invalid email format',
-          code: 'INVALID_EMAIL_FORMAT',
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Invalid email format',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'email_validation',
+          additionalData: { email },
         },
-      });
+        ['Please provide a valid email address']
+      );
     }
 
     // Validate password strength
     const passwordValidation = authService.validatePassword(password);
     if (!passwordValidation.isValid) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Password does not meet requirements',
-          code: 'WEAK_PASSWORD',
-          details: passwordValidation.errors,
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Password does not meet requirements',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'password_validation',
+          additionalData: { validationErrors: passwordValidation.errors },
         },
-      });
+        passwordValidation.errors
+      );
     }
 
     // Register user
-    const result = await authService.register({
-      email,
-      password,
-      displayName,
-      username,
-      role,
-    });
+    try {
+      const result = await authService.register({
+        email,
+        password,
+        displayName,
+        username,
+        role,
+      });
 
-    res.status(201).json({
-      success: true,
-      data: result,
-      message: 'User registered successfully',
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === 'User with this email already exists') {
-        return res.status(409).json({
-          success: false,
-          error: {
-            message: error.message,
-            code: 'USER_ALREADY_EXISTS',
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+      ResponseHelper.created(res, result, 'User registered successfully');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'User with this email already exists') {
+          throw new BusinessLogicError(
+            'User with this email already exists',
+            ErrorCode.BUSINESS_RULE_VIOLATION,
+            {
+              operation: 'user_registration',
+              additionalData: { email },
+            },
+            ['Try logging in instead', 'Use a different email address']
+          );
+        }
 
-      if (error.message === 'EMAIL_OR_USERNAME_EXISTS') {
-        return res.status(409).json({
-          success: false,
-          error: {
-            message: 'Email or username already exists',
-            code: 'EMAIL_OR_USERNAME_EXISTS',
-            timestamp: new Date().toISOString(),
-          },
-        });
+        if (error.message === 'EMAIL_OR_USERNAME_EXISTS') {
+          throw new BusinessLogicError(
+            'Email or username already exists',
+            ErrorCode.BUSINESS_RULE_VIOLATION,
+            {
+              operation: 'user_registration',
+              additionalData: { email, username },
+            },
+            ['Try logging in instead', 'Use a different email or username']
+          );
+        }
       }
+      throw error;
     }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Internal server error during registration',
-        code: 'REGISTRATION_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  })
+);
 
 /**
  * @swagger
@@ -367,69 +369,57 @@ router.post('/register', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', async (req, res) => {
-  try {
+router.post(
+  '/login',
+  errorHandler.expressAsyncWrapper(async (req, res) => {
     // Validate request body
     const { email, password, rememberMe }: LoginRequest = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: 'Email and password are required',
-          code: 'MISSING_CREDENTIALS',
-          timestamp: new Date().toISOString(),
+      throw new ValidationError(
+        'Email and password are required',
+        ErrorCode.INVALID_INPUT,
+        {
+          operation: 'user_login',
+          additionalData: { hasEmail: !!email, hasPassword: !!password },
         },
-      });
+        ['Please provide both email and password']
+      );
     }
 
     // Attempt login
-    const result = await authService.login({
-      email,
-      password,
-      rememberMe,
-    });
+    try {
+      const result = await authService.login({
+        email,
+        password,
+        rememberMe,
+      });
 
-    res.json({
-      success: true,
-      data: result,
-      message: 'Login successful',
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === 'Invalid email or password') {
-        return res.status(401).json({
-          success: false,
-          error: {
-            message: error.message,
-            code: 'INVALID_CREDENTIALS',
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+      ResponseHelper.success(res, result, 'Login successful');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'Invalid email or password') {
+          throw new AuthenticationError('Invalid email or password', ErrorCode.UNAUTHORIZED, {
+            operation: 'user_login',
+            additionalData: { email },
+          });
+        }
 
-      if (error.message === 'Account is deactivated. Please contact support.') {
-        return res.status(401).json({
-          success: false,
-          error: {
-            message: error.message,
-            code: 'ACCOUNT_DEACTIVATED',
-            timestamp: new Date().toISOString(),
-          },
-        });
+        if (error.message === 'Account is deactivated. Please contact support.') {
+          throw new AuthenticationError(
+            'Account is deactivated. Please contact support.',
+            ErrorCode.UNAUTHORIZED,
+            {
+              operation: 'user_login',
+              additionalData: { email, reason: 'account_deactivated' },
+            }
+          );
+        }
       }
+      throw error;
     }
-
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Internal server error during login',
-        code: 'LOGIN_ERROR',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-});
+  })
+);
 
 /**
  * @swagger

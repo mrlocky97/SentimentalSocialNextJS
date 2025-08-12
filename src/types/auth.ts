@@ -3,12 +3,14 @@
  * Types for user authentication and authorization
  */
 
+import { Role } from '@/enums/auth.enum';
+
 export interface RegisterRequest {
   email: string;
   password: string;
   displayName: string;
   username: string;
-  role?: 'admin' | 'manager' | 'analyst' | 'onlyView' | 'client';
+  role?: Role;
 }
 
 export interface LoginRequest {

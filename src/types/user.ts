@@ -3,6 +3,8 @@
  * Updated for marketing analytics platform
  */
 
+import { Permission, UserRole } from '@/enums/user.enum';
+
 export interface User {
   id: string;
   email: string;
@@ -19,45 +21,6 @@ export interface User {
   updatedAt: Date;
 }
 
-export type UserRole =
-  | 'admin' // Full system access
-  | 'manager' // Can create/manage campaigns
-  | 'analyst' // Can view and analyze data
-  | 'onlyView' // Read-only access
-  | 'client'; // Limited client access
-
-export type Permission =
-  // Campaign permissions
-  | 'campaigns:create'
-  | 'campaigns:edit'
-  | 'campaigns:delete'
-  | 'campaigns:view'
-  | 'campaigns:start_scraping'
-  | 'campaigns:export_data'
-
-  // Analytics permissions
-  | 'analytics:view'
-  | 'analytics:export'
-  | 'analytics:advanced'
-
-  // User management
-  | 'users:create'
-  | 'users:edit'
-  | 'users:delete'
-  | 'users:view'
-  | 'users:assign_roles'
-
-  // System administration
-  | 'system:settings'
-  | 'system:logs'
-  | 'system:backup'
-  | 'system:monitoring'
-
-  // Data access
-  | 'data:export'
-  | 'data:delete'
-  | 'data:bulk_operations';
-
 export interface RoleDefinition {
   role: UserRole;
   name: string;
@@ -69,78 +32,78 @@ export interface RoleDefinition {
 // Default role definitions
 export const ROLE_DEFINITIONS: RoleDefinition[] = [
   {
-    role: 'admin',
+    role: UserRole.ADMIN,
     name: 'Administrator',
     description: 'Full system access and user management',
     level: 100,
     permissions: [
-      'campaigns:create',
-      'campaigns:edit',
-      'campaigns:delete',
-      'campaigns:view',
-      'campaigns:start_scraping',
-      'campaigns:export_data',
-      'analytics:view',
-      'analytics:export',
-      'analytics:advanced',
-      'users:create',
-      'users:edit',
-      'users:delete',
-      'users:view',
-      'users:assign_roles',
-      'system:settings',
-      'system:logs',
-      'system:backup',
-      'system:monitoring',
-      'data:export',
-      'data:delete',
-      'data:bulk_operations',
+      Permission.CAMPAIGNS_CREATE,
+      Permission.CAMPAIGNS_EDIT,
+      Permission.CAMPAIGNS_DELETE,
+      Permission.CAMPAIGNS_VIEW,
+      Permission.CAMPAIGNS_START_SCRAPING,
+      Permission.CAMPAIGNS_EXPORT_DATA,
+      Permission.ANALYTICS_VIEW,
+      Permission.ANALYTICS_EXPORT,
+      Permission.ANALYTICS_ADVANCED,
+      Permission.USERS_CREATE,
+      Permission.USERS_EDIT,
+      Permission.USERS_DELETE,
+      Permission.USERS_VIEW,
+      Permission.USERS_ASSIGN_ROLES,
+      Permission.SYSTEM_SETTINGS,
+      Permission.SYSTEM_LOGS,
+      Permission.SYSTEM_BACKUP,
+      Permission.SYSTEM_MONITORING,
+      Permission.DATA_EXPORT,
+      Permission.DATA_DELETE,
+      Permission.DATA_BULK_OPERATIONS,
     ],
   },
   {
-    role: 'manager',
+    role: UserRole.MANAGER,
     name: 'Campaign Manager',
     description: 'Can create and manage marketing campaigns',
     level: 75,
     permissions: [
-      'campaigns:create',
-      'campaigns:edit',
-      'campaigns:view',
-      'campaigns:start_scraping',
-      'campaigns:export_data',
-      'analytics:view',
-      'analytics:export',
-      'analytics:advanced',
-      'users:view',
-      'data:export',
+      Permission.CAMPAIGNS_CREATE,
+      Permission.CAMPAIGNS_EDIT,
+      Permission.CAMPAIGNS_VIEW,
+      Permission.CAMPAIGNS_START_SCRAPING,
+      Permission.CAMPAIGNS_EXPORT_DATA,
+      Permission.ANALYTICS_VIEW,
+      Permission.ANALYTICS_EXPORT,
+      Permission.ANALYTICS_ADVANCED,
+      Permission.USERS_VIEW,
+      Permission.DATA_EXPORT,
     ],
   },
   {
-    role: 'analyst',
+    role: UserRole.ANALYST,
     name: 'Data Analyst',
     description: 'Can analyze data and generate reports',
     level: 50,
     permissions: [
-      'campaigns:view',
-      'analytics:view',
-      'analytics:export',
-      'analytics:advanced',
-      'data:export',
+      Permission.CAMPAIGNS_VIEW,
+      Permission.ANALYTICS_VIEW,
+      Permission.ANALYTICS_EXPORT,
+      Permission.ANALYTICS_ADVANCED,
+      Permission.DATA_EXPORT,
     ],
   },
   {
-    role: 'onlyView',
+    role: UserRole.ONLY_VIEW,
     name: 'View Only',
     description: 'Read-only access to campaigns and basic analytics',
     level: 25,
-    permissions: ['campaigns:view', 'analytics:view'],
+    permissions: [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW],
   },
   {
-    role: 'client',
+    role: UserRole.CLIENT,
     name: 'Client',
     description: 'Limited access for external clients',
     level: 10,
-    permissions: ['campaigns:view', 'analytics:view'],
+    permissions: [Permission.CAMPAIGNS_VIEW, Permission.ANALYTICS_VIEW],
   },
 ];
 
