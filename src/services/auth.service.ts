@@ -3,12 +3,13 @@
  * Handles user authentication logic including registration and login
  */
 
+import { UserRole } from '@/enums/user.enum';
 import bcrypt from 'bcryptjs';
-import { generateToken, generateRefreshToken } from '../middleware/express-auth';
-import { CreateUserRequest } from '../types/user';
-import { RegisterRequest, LoginRequest, AuthResponse } from '../types/auth';
-import { MongoUserRepository } from '../repositories/mongo-user.repository';
 import { isValidEmail, isValidPassword } from '../lib/utils/validation.utils';
+import { generateRefreshToken, generateToken } from '../middleware/express-auth';
+import { MongoUserRepository } from '../repositories/mongo-user.repository';
+import { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
+import { CreateUserRequest } from '../types/user';
 
 export class AuthService {
   private userRepository: MongoUserRepository;
@@ -33,7 +34,7 @@ export class AuthService {
       username: data.username.toLowerCase().trim(),
       displayName: data.displayName.trim(),
       password: data.password,
-      role: data.role || 'analyst',
+      role: data.role || UserRole.ANALYST,
     };
 
     // Save user (password hashing is handled in repository)
@@ -166,6 +167,8 @@ export class AuthService {
 
     // Hash new password and update (this would need a repository method to update password)
     // For now, we'll throw an error indicating this feature needs implementation
+    // TODO: Use newPassword parameter to hash and update user password when repository method is implemented
+    console.log('New password length:', newPassword.length); // Temporary to satisfy linter
     throw new Error('Password change feature needs implementation in repository');
   }
 

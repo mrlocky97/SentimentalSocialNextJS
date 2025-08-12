@@ -4,25 +4,30 @@
  */
 
 import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
+import {
+  AssistantRecommendationType,
+  AssistantRecommendationUrgency,
+  CampaignHealthScoreGrade,
+} from '../enums/campaign.enum';
 
 export class AICampaignAssistantService {
   /**
    * Generate personalized recommendations based on user behavior and campaign data
    */
-  static generatePersonalizedRecommendations(
-    user: { id: string; role: string; experience: string },
-    campaign: any,
+  private static generateRecommendations(
     metrics: any,
-    userHistory: any[]
+    _userHistory: any[],
+    user?: any,
+    campaign?: any
   ): AssistantRecommendation[] {
     const recommendations: AssistantRecommendation[] = [];
 
     // Onboarding recommendations for new users
-    if (user.experience === 'beginner') {
+    if (user?.experience === 'beginner') {
       recommendations.push({
         id: 'beginner-hashtag-tip',
-        type: 'learning_tip',
-        urgency: 'low',
+        type: AssistantRecommendationType.learningTip,
+        urgency: AssistantRecommendationUrgency.low,
         title: '💡 Pro Tip: Hashtag Strategy',
         message:
           'Use 3-5 relevant hashtags per campaign. Too many can dilute your focus, too few limit your reach.',
@@ -37,32 +42,32 @@ export class AICampaignAssistantService {
     if (metrics.sentimentScore < 0) {
       recommendations.push({
         id: 'negative-sentiment-action',
-        type: 'quick_action',
-        urgency: 'high',
+        type: AssistantRecommendationType.quickAction,
+        urgency: AssistantRecommendationUrgency.high,
         title: '⚠️ Negative Sentiment Alert',
         message:
           'Your campaign sentiment is trending negative. Take immediate action to prevent crisis.',
         actionButton: {
           text: 'View Negative Mentions',
           action: 'navigate_to_negative_tweets',
-          parameters: { campaignId: campaign.id, sentiment: 'negative' },
+          parameters: { campaignId: campaign?.id, sentiment: 'negative' },
         },
         dismissible: false,
       });
     }
 
     // Optimization opportunities
-    if (!campaign.sentimentAnalysis) {
+    if (!campaign?.sentimentAnalysis) {
       recommendations.push({
         id: 'enable-sentiment-analysis',
-        type: 'strategic_advice',
-        urgency: 'medium',
+        type: AssistantRecommendationType.strategicAdvice,
+        urgency: AssistantRecommendationUrgency.medium,
         title: '📊 Unlock Deeper Insights',
         message: 'Enable sentiment analysis to understand how people really feel about your brand.',
         actionButton: {
           text: 'Enable Sentiment Analysis',
           action: 'update_campaign_settings',
-          parameters: { campaignId: campaign.id, sentimentAnalysis: true },
+          parameters: { campaignId: campaign?.id, sentimentAnalysis: true },
         },
         dismissible: true,
       });
@@ -71,8 +76,8 @@ export class AICampaignAssistantService {
     // Industry best practices
     recommendations.push({
       id: 'best-practice-timing',
-      type: 'best_practice',
-      urgency: 'low',
+      type: AssistantRecommendationType.bestPractice,
+      urgency: AssistantRecommendationUrgency.low,
       title: '🕐 Optimal Posting Times',
       message:
         'Your audience is most active on weekdays between 9-11 AM and 2-4 PM. Schedule important updates during these windows.',
@@ -89,7 +94,7 @@ export class AICampaignAssistantService {
   /**
    * Calculate comprehensive campaign health score
    */
-  static calculateCampaignHealth(campaign: any, metrics: any, tweets: any[]): CampaignHealthScore {
+  static calculateCampaignHealth(campaign: any, metrics: any): CampaignHealthScore {
     let setupScore = 0;
     let performanceScore = 0;
     let optimizationScore = 0;
@@ -180,14 +185,14 @@ export class AICampaignAssistantService {
     const overall = setupScore + performanceScore + optimizationScore + riskScore;
 
     let grade: CampaignHealthScore['grade'];
-    if (overall >= 90) grade = 'A+';
-    else if (overall >= 85) grade = 'A';
-    else if (overall >= 80) grade = 'B+';
-    else if (overall >= 75) grade = 'B';
-    else if (overall >= 70) grade = 'C+';
-    else if (overall >= 65) grade = 'C';
-    else if (overall >= 60) grade = 'D';
-    else grade = 'F';
+    if (overall >= 90) grade = CampaignHealthScoreGrade.APlus;
+    else if (overall >= 85) grade = CampaignHealthScoreGrade.A;
+    else if (overall >= 80) grade = CampaignHealthScoreGrade.BPlus;
+    else if (overall >= 75) grade = CampaignHealthScoreGrade.B;
+    else if (overall >= 70) grade = CampaignHealthScoreGrade.CPlus;
+    else if (overall >= 65) grade = CampaignHealthScoreGrade.C;
+    else if (overall >= 60) grade = CampaignHealthScoreGrade.D;
+    else grade = CampaignHealthScoreGrade.F;
 
     return {
       overall,
@@ -283,11 +288,7 @@ export class AICampaignAssistantService {
   /**
    * Contextual help system
    */
-  static getContextualHelp(
-    currentPage: string,
-    userRole: string,
-    userActions: string[]
-  ): {
+  static getContextualHelp(currentPage: string): {
     tips: string[];
     shortcuts: Array<{ key: string; action: string }>;
     relatedHelp: Array<{ title: string; url: string }>;

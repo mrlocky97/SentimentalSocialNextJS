@@ -4,8 +4,25 @@ module.exports = {
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          baseUrl: '.',
+          paths: {
+            '@/*': ['src/*'],
+          },
+        },
+      },
+    ],
   },
+  // Correct module name mapper for Jest
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  // Module resolution
+  modulePaths: ['<rootDir>/src'],
+  moduleDirectories: ['node_modules', '<rootDir>/src'],
   // Ensure env vars are set before any modules are loaded in tests
   setupFiles: ['<rootDir>/tests/setup-env.js'],
   collectCoverageFrom: [

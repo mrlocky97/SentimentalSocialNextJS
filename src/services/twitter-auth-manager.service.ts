@@ -57,7 +57,7 @@ export class TwitterAuthManager {
   // Integrated cookie management methods
   private loadCookies(): void {
     // Prefer encrypted store
-    const { session, rotate } = secureSessionStore.load();
+    const { session } = secureSessionStore.load();
     if (session) {
       this.sessionData = session;
       // Rotation flag can be used by caller to refresh session on next successful auth
@@ -67,7 +67,9 @@ export class TwitterAuthManager {
         if (fs.existsSync(this.cookiesPath)) {
           fs.unlinkSync(this.cookiesPath);
         }
-      } catch {}
+      } catch {
+        // Ignore errors when cleaning up legacy files
+      }
       this.sessionData = null;
     }
   }
@@ -82,7 +84,9 @@ export class TwitterAuthManager {
     // Remove legacy file and encrypted store
     try {
       if (fs.existsSync(this.cookiesPath)) fs.unlinkSync(this.cookiesPath);
-    } catch {}
+    } catch {
+      // Ignore cleanup errors
+    }
     secureSessionStore.clear();
   }
 
@@ -164,7 +168,7 @@ export class TwitterAuthManager {
             masterPassword
           );
           return decrypted;
-        } catch (error) {
+        } catch {
           // Fall back to environment variables
         }
       }
@@ -179,7 +183,7 @@ export class TwitterAuthManager {
       }
 
       return { email, username, password };
-    } catch (error) {
+    } catch {
       return null;
     }
   }

@@ -60,7 +60,7 @@ export class TweetDatabaseService {
 
       if (existingTweet) {
         // Update existing tweet with latest data
-        const updated = await this.updateTweet(existingTweet, tweet);
+        await this.updateTweet(existingTweet, tweet);
         return {
           success: true,
           tweetId: tweet.tweetId,

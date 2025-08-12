@@ -1,7 +1,8 @@
 import { TextAnalysis } from '../types/sentiment';
+import { Language } from '../enums/sentiment.enum';
 
 export class InternalSentimentAnalyzer {
-  analyze(text: string, config?: any): Promise<TextAnalysis> {
+  analyze(text: string): Promise<TextAnalysis> {
     return new Promise((resolve) => {
       // Simplified rule-based sentiment analysis
       const lowerText = text.toLowerCase();
@@ -168,7 +169,7 @@ export class InternalSentimentAnalyzer {
         },
         keywords,
         entities: [],
-        language: isSpanish ? 'es' : 'en',
+        language: isSpanish ? Language.SPANISH : Language.ENGLISH,
       };
       resolve(result);
     });

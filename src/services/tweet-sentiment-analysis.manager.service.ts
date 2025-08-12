@@ -16,10 +16,58 @@ export class TweetSentimentAnalysisManager {
   }
 
   /**
-   * Analiza el sentimiento de un tweet individual
+   * Analiza el sentimiento de un tweet individual con validación centralizada
    */
   async analyzeTweet(tweet: Tweet, config?: any): Promise<TweetSentimentAnalysis> {
-    // Validar entrada
+    // Manejo especial para tweets vacíos - retorna resultado neutral en lugar de lanzar error
+    const content = tweet.content || tweet.text || '';
+    if (!content.trim()) {
+      // Para tweets vacíos, devolvemos un análisis neutral básico
+      const neutralResult: TweetSentimentAnalysis = {
+        tweetId: tweet.id || tweet.tweetId || 'empty-tweet',
+        analysis: {
+          sentiment: {
+            score: 0,
+            label: 'neutral',
+            confidence: 1.0,
+            magnitude: 0,
+            emotions: {
+              joy: 0,
+              sadness: 0,
+              anger: 0,
+              fear: 0,
+              surprise: 0,
+              disgust: 0,
+            },
+          },
+          language: 'en', // Default language for empty tweets
+          keywords: [],
+          signals: {
+            tokens: [],
+            ngrams: {},
+            emojis: {},
+            negationFlips: 0,
+            intensifierBoost: 0,
+            sarcasmScore: 0,
+          },
+          version: '1.0.0',
+        },
+        brandMentions: [],
+        marketingInsights: {
+          engagementPotential: 0,
+          viralityIndicators: [],
+          targetDemographics: [],
+          competitorMentions: [],
+          trendAlignment: 0,
+          brandRisk: 'low',
+          opportunityScore: 0,
+        },
+        analyzedAt: new Date(),
+      };
+      return neutralResult;
+    }
+
+    // Validar entrada para tweets con contenido
     const validation = Core.Validators.Tweet.validate(tweet);
     Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');
 
