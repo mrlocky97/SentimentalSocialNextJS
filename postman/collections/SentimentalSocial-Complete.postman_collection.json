@@ -1,0 +1,1032 @@
+{
+  "info": {
+    "_postman_id": "complete-sentimentalsocial-api",
+    "name": "SentimentalSocial API - Complete Collection",
+    "description": "Complete API collection for SentimentalSocial platform with all endpoints including authentication, sentiment analysis, scraping, campaigns, security, and admin functions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('🚀 Making request to:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test('Response time is acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+          "});",
+          "",
+          "pm.test('Content-Type is JSON', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 AUTHENTICATION",
+      "description": "Authentication endpoints for user registration, login, logout, and token management",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registration successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('user');",
+                  "    console.log('✅ User registered successfully');",
+                  "});",
+                  "",
+                  "pm.test('User has correct role', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success) {",
+                  "        pm.expect(jsonData.data.user).to.have.property('role');",
+                  "        console.log('👤 User role:', jsonData.data.user.role);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin_user\",\n  \"email\": \"admin@test.com\",\n  \"password\": \"AdminPassword123!\",\n  \"confirmPassword\": \"AdminPassword123!\",\n  \"displayName\": \"Admin User\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "register"]
+            },
+            "description": "Register a new user with admin role"
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data.token) {",
+                  "        pm.environment.set('authToken', jsonData.data.token);",
+                  "        console.log('🔐 Auth token saved successfully');",
+                  "    }",
+                  "    if (jsonData.data.refreshToken) {",
+                  "        pm.environment.set('refreshToken', jsonData.data.refreshToken);",
+                  "        console.log('🔄 Refresh token saved successfully');",
+                  "    }",
+                  "    if (jsonData.data.user && jsonData.data.user.id) {",
+                  "        pm.environment.set('userId', jsonData.data.user.id);",
+                  "        console.log('👤 User ID saved:', jsonData.data.user.id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "login"]
+            },
+            "description": "Login user and get authentication token"
+          }
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "logout"]
+            },
+            "description": "Logout user and invalidate token"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "refresh"]
+            },
+            "description": "Refresh authentication token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 USER MANAGEMENT",
+      "description": "User profile management endpoints",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "profile"]
+            },
+            "description": "Get current user profile information"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Admin User\",\n  \"bio\": \"Updated user bio\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "profile"]
+            },
+            "description": "Update user profile information"
+          }
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "{{userId}}"]
+            },
+            "description": "Delete user account permanently"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔒 SECURITY",
+      "description": "Security monitoring and token management endpoints",
+      "item": [
+        {
+          "name": "Security Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/security/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "security", "status"]
+            },
+            "description": "Get security system status and token blacklist statistics"
+          }
+        },
+        {
+          "name": "Blacklist Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"jwt_token_to_blacklist\",\n  \"userId\": \"{{userId}}\",\n  \"expiresAt\": \"2025-12-31T23:59:59.999Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/security/blacklist-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "security", "blacklist-token"]
+            },
+            "description": "Manually blacklist a JWT token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎯 SENTIMENT ANALYSIS",
+      "description": "Sentiment analysis endpoints for text processing",
+      "item": [
+        {
+          "name": "Analyze Single Text",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"I love this amazing product! It's absolutely fantastic and works perfectly.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze"]
+            },
+            "description": "Analyze sentiment of a single text"
+          }
+        },
+        {
+          "name": "Analyze Multiple Texts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texts\": [\n    \"I love this product!\",\n    \"This is terrible, I hate it.\",\n    \"It's okay, nothing special.\",\n    \"Amazing quality and great service!\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-batch"]
+            },
+            "description": "Analyze sentiment of multiple texts in batch"
+          }
+        },
+        {
+          "name": "Model Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/model-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "model-status"]
+            },
+            "description": "Get sentiment analysis model status and information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🐦 TWITTER SCRAPING",
+      "description": "Twitter scraping and data collection endpoints",
+      "item": [
+        {
+          "name": "Scraping Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "status"]
+            },
+            "description": "Get current scraping system status"
+          }
+        },
+        {
+          "name": "Scrape by Hashtag",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hashtag\": \"{{testHashtag}}\",\n  \"maxTweets\": {{maxTweets}},\n  \"includeReplies\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/hashtag",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "hashtag"]
+            },
+            "description": "Scrape tweets by hashtag"
+          }
+        },
+        {
+          "name": "Scrape by User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"maxTweets\": {{maxTweets}},\n  \"includeReplies\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/user",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "user"]
+            },
+            "description": "Scrape tweets from a specific user"
+          }
+        },
+        {
+          "name": "Scrape by Search",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"artificial intelligence\",\n  \"maxTweets\": {{maxTweets}},\n  \"lang\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "search"]
+            },
+            "description": "Scrape tweets by search query"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔑 TWITTER AUTH",
+      "description": "Twitter authentication management endpoints",
+      "item": [
+        {
+          "name": "Twitter Auth Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "twitter-auth", "status"]
+            },
+            "description": "Check Twitter authentication status"
+          }
+        },
+        {
+          "name": "Validate Twitter Cookies",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "twitter-auth", "validate"]
+            },
+            "description": "Validate current Twitter cookies"
+          }
+        },
+        {
+          "name": "Twitter Session Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/session-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "twitter-auth", "session-info"]
+            },
+            "description": "Get Twitter session information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 CAMPAIGNS",
+      "description": "Campaign management endpoints for monitoring projects",
+      "item": [
+        {
+          "name": "Create Campaign",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Campaign\",\n  \"description\": \"Test campaign for monitoring\",\n  \"keywords\": [\"test\", \"campaign\"],\n  \"hashtags\": [\"test\"],\n  \"mentions\": [\"testuser\"],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns"]
+            },
+            "description": "Create a new monitoring campaign"
+          }
+        },
+        {
+          "name": "Get Campaigns",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns"]
+            },
+            "description": "Get all campaigns for the current user"
+          }
+        },
+        {
+          "name": "Get Campaign by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}"]
+            },
+            "description": "Get a specific campaign by ID"
+          }
+        },
+        {
+          "name": "Update Campaign",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Test Campaign\",\n  \"description\": \"Updated description\",\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}"]
+            },
+            "description": "Update an existing campaign"
+          }
+        },
+        {
+          "name": "Delete Campaign",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}"]
+            },
+            "description": "Delete a campaign"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 TEMPLATES",
+      "description": "Campaign template management endpoints",
+      "item": [
+        {
+          "name": "Get Templates",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates"]
+            },
+            "description": "Get all available campaign templates"
+          }
+        },
+        {
+          "name": "Create Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brand Monitoring Template\",\n  \"description\": \"Template for brand monitoring campaigns\",\n  \"category\": \"brand-monitoring\",\n  \"defaultKeywords\": [\"brand\", \"product\"],\n  \"defaultHashtags\": [\"brand\"],\n  \"isPublic\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates"]
+            },
+            "description": "Create a new campaign template"
+          }
+        },
+        {
+          "name": "Get Template by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates", "{{templateId}}"]
+            },
+            "description": "Get a specific template by ID"
+          }
+        },
+        {
+          "name": "Create Campaign from Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nike Brand Monitoring\",\n  \"description\": \"Nike brand monitoring campaign\",\n  \"customKeywords\": [\"nike\", \"swoosh\"],\n  \"customHashtags\": [\"nike\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates/{{templateId}}/create-campaign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates", "{{templateId}}", "create-campaign"]
+            },
+            "description": "Create a campaign from a template"
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ ADMIN",
+      "description": "Administrative endpoints for system management (admin only)",
+      "item": [
+        {
+          "name": "Database Health Check",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/database/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "database", "health"]
+            },
+            "description": "Check database health status (admin only)"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "users"]
+            },
+            "description": "Get all users in the system (admin only)"
+          }
+        },
+        {
+          "name": "Delete User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "users", "{{userId}}"]
+            },
+            "description": "Delete a user by ID (admin only)"
+          }
+        },
+        {
+          "name": "Clear All Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/clear-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "clear-users"]
+            },
+            "description": "Clear all users from database (admin only - DANGEROUS)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 SYSTEM HEALTH",
+      "description": "System health and monitoring endpoints",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Basic server health check (no authentication required)"
+          }
+        },
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "health"]
+            },
+            "description": "API health check endpoint"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "type": "string"
+    }
+  ]
+}
