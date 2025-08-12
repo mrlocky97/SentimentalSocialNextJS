@@ -1,5 +1,5 @@
 /**
- * Performance Monitoring Service
+ import { performanceCache } from '../lib/cache/cache-migration'; Performance Monitoring Service
  * Tracks and reports application performance metrics
  */
 

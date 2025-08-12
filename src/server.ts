@@ -1,5 +1,5 @@
 /**
- * Express Server with Swagger Documentation
+ * Express Server with Swaimport { cacheService } from './lib/cache/cache-migration';ger Documentation
  * Main server file that sets up Express with all routes and Swagger UI
  */
 
@@ -53,7 +53,10 @@ import path from "path";
 import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 // Import IoC Configuration
-import { configureServices, checkContainerHealth } from "./lib/dependency-injection/config";
+import {
+  configureServices,
+  checkContainerHealth,
+} from "./lib/dependency-injection/config";
 const modelPath = path.join(
   process.cwd(),
   "src",
@@ -268,7 +271,7 @@ async function startServer() {
 
     // Configure IoC Container
     configureServices();
-    
+
     // Verify container health
     const containerHealth = checkContainerHealth();
     console.log("📦 IoC Container Status:", containerHealth.status);

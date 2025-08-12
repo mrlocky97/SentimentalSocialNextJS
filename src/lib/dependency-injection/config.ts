@@ -3,10 +3,11 @@
  * Central place to configure all dependency injections
  */
 
-import { container, TOKENS } from './container';
-import { SentimentAnalysisEngine } from '../sentiment/engine';
-import { SentimentAnalysisOrchestrator } from '../sentiment/orchestrator';
-import { SentimentMappers } from '../sentiment/mappers';
+import { container, TOKENS } from "./container";
+import { SentimentAnalysisEngine } from "../sentiment/engine";
+import { SentimentAnalysisOrchestrator } from "../sentiment/orchestrator";
+import { SentimentMappers } from "../sentiment/mappers";
+import { advancedCache } from "../cache/advanced-cache";
 
 /**
  * Configure all service dependencies
@@ -24,14 +25,23 @@ export function configureServices(): void {
 
   container.registerSingleton(TOKENS.SENTIMENT_MAPPERS, () => SentimentMappers);
 
-  console.log('🔧 IoC Container configured with', container.getRegistrations().length, 'services');
+  // Advanced Cache System
+  container.registerSingleton(TOKENS.CACHE_SERVICE, () => advancedCache);
+
+  console.log(
+    "🔧 IoC Container configured with",
+    container.getRegistrations().length,
+    "services",
+  );
 }
 
 /**
  * Get pre-configured orchestrator instance
  */
 export function getOrchestrator(): SentimentAnalysisOrchestrator {
-  return container.resolve<SentimentAnalysisOrchestrator>(TOKENS.SENTIMENT_ORCHESTRATOR);
+  return container.resolve<SentimentAnalysisOrchestrator>(
+    TOKENS.SENTIMENT_ORCHESTRATOR,
+  );
 }
 
 /**
@@ -45,7 +55,7 @@ export function getSentimentEngine(): SentimentAnalysisEngine {
  * Health check for IoC container
  */
 export function checkContainerHealth(): {
-  status: 'healthy' | 'unhealthy';
+  status: "healthy" | "unhealthy";
   services: number;
   registrations: string[];
 } {
@@ -58,13 +68,13 @@ export function checkContainerHealth(): {
     container.resolve(TOKENS.SENTIMENT_ORCHESTRATOR);
 
     return {
-      status: 'healthy',
+      status: "healthy",
       services: registrations.length,
       registrations: registrationNames,
     };
   } catch {
     return {
-      status: 'unhealthy',
+      status: "unhealthy",
       services: 0,
       registrations: [],
     };

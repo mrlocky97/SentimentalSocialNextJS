@@ -5,25 +5,25 @@
  * It combines rule-based, machine learning (Naive Bayes), and hybrid analysis techniques.
  * Enhanced with multiple open-source models for superior accuracy.
  */
-import natural from 'natural';
+import natural from "natural";
 import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
-} from '../../services/advanced-hybrid-analyzer.service';
+} from "../../services/advanced-hybrid-analyzer.service";
 import {
   NaiveBayesSentimentService,
   NaiveBayesTrainingExample,
   SentimentLabel,
-} from '../../services/naive-bayes-sentiment.service';
-import { Language } from '../../enums/sentiment.enum';
-import { TextAnalysis } from '../../types/sentiment';
+} from "../../services/naive-bayes-sentiment.service";
+import { Language } from "../../enums/sentiment.enum";
+import { TextAnalysis } from "../../types/sentiment";
 import {
   AnalysisRequest,
   AnalysisResult,
   AnalyzerEngine,
   LanguageCode,
   SignalBreakdown,
-} from './types';
+} from "./types";
 
 /**
  * Consolidated internal rule-based analyzer

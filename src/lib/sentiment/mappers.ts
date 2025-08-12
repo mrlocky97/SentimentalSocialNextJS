@@ -1,6 +1,6 @@
 /**
  * Sentiment Analysis Mappers - PHASE 3
- * 
+ *
  * Centralized mappers for the orchestrator pattern integration.
  * Provides consistent data transformation between:
  * - Tweet/Text → AnalysisRequest (Engine Input)
@@ -8,15 +8,14 @@
  * - Legacy compatibility and validation
  */
 
-import { Tweet } from '../../types/twitter';
-import { 
-  AnalysisRequest, 
-  AnalysisResult, 
-  TweetDTO, 
-  LanguageCode, 
-  SentimentLabel 
-} from './types';
-
+import { Tweet } from "../../types/twitter";
+import {
+  AnalysisRequest,
+  AnalysisResult,
+  TweetDTO,
+  LanguageCode,
+  SentimentLabel,
+} from "./types";
 /**
  * Validation utilities for mapper inputs
  */
@@ -25,14 +24,14 @@ export class MapperValidation {
    * Validates text input for analysis
    */
   static validateText(text: string): void {
-    if (!text || typeof text !== 'string') {
-      throw new Error('Text must be a non-empty string');
+    if (!text || typeof text !== "string") {
+      throw new Error("Text must be a non-empty string");
     }
     if (text.trim().length === 0) {
-      throw new Error('Text cannot be only whitespace');
+      throw new Error("Text cannot be only whitespace");
     }
     if (text.length > 10000) {
-      throw new Error('Text exceeds maximum length of 10,000 characters');
+      throw new Error("Text exceeds maximum length of 10,000 characters");
     }
   }
 
@@ -41,13 +40,13 @@ export class MapperValidation {
    */
   static validateTweet(tweet: Tweet): void {
     if (!tweet) {
-      throw new Error('Tweet object is required');
+      throw new Error("Tweet object is required");
     }
     if (!tweet.id && !tweet.tweetId) {
-      throw new Error('Tweet must have an id or tweetId');
+      throw new Error("Tweet must have an id or tweetId");
     }
     if (!tweet.content && !tweet.text) {
-      throw new Error('Tweet must have content or text');
+      throw new Error("Tweet must have content or text");
     }
   }
 
@@ -56,13 +55,13 @@ export class MapperValidation {
    */
   static validateAnalysisResult(result: AnalysisResult): void {
     if (!result) {
-      throw new Error('Analysis result is required');
+      throw new Error("Analysis result is required");
     }
     if (!result.sentiment) {
-      throw new Error('Analysis result must contain sentiment data');
+      throw new Error("Analysis result must contain sentiment data");
     }
-    if (typeof result.sentiment.confidence !== 'number') {
-      throw new Error('Analysis result must contain valid confidence score');
+    if (typeof result.sentiment.confidence !== "number") {
+      throw new Error("Analysis result must contain valid confidence score");
     }
   }
 }
@@ -72,35 +71,107 @@ export class MapperValidation {
  */
 export class LanguageMapper {
   private static readonly SPANISH_WORDS = [
-    'el', 'la', 'de', 'que', 'y', 'en', 'un', 'es', 'se', 'no',
-    'te', 'lo', 'le', 'da', 'su', 'por', 'son', 'con', 'para', 'está'
+    "el",
+    "la",
+    "de",
+    "que",
+    "y",
+    "en",
+    "un",
+    "es",
+    "se",
+    "no",
+    "te",
+    "lo",
+    "le",
+    "da",
+    "su",
+    "por",
+    "son",
+    "con",
+    "para",
+    "está",
   ];
 
   private static readonly ENGLISH_WORDS = [
-    'the', 'of', 'and', 'to', 'in', 'is', 'you', 'that', 'it', 'he',
-    'was', 'for', 'on', 'are', 'as', 'with', 'his', 'they', 'i', 'at'
+    "the",
+    "of",
+    "and",
+    "to",
+    "in",
+    "is",
+    "you",
+    "that",
+    "it",
+    "he",
+    "was",
+    "for",
+    "on",
+    "are",
+    "as",
+    "with",
+    "his",
+    "they",
+    "i",
+    "at",
   ];
 
   private static readonly FRENCH_WORDS = [
-    'le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir',
-    'que', 'pour', 'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se'
+    "le",
+    "de",
+    "et",
+    "à",
+    "un",
+    "il",
+    "être",
+    "et",
+    "en",
+    "avoir",
+    "que",
+    "pour",
+    "dans",
+    "ce",
+    "son",
+    "une",
+    "sur",
+    "avec",
+    "ne",
+    "se",
   ];
 
   private static readonly GERMAN_WORDS = [
-    'der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich',
-    'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als'
+    "der",
+    "die",
+    "und",
+    "in",
+    "den",
+    "von",
+    "zu",
+    "das",
+    "mit",
+    "sich",
+    "des",
+    "auf",
+    "für",
+    "ist",
+    "im",
+    "dem",
+    "nicht",
+    "ein",
+    "eine",
+    "als",
   ];
 
   /**
    * Detects language from text content
    */
   static detectLanguage(text: string): LanguageCode {
-    if (!text) return 'unknown';
-    
+    if (!text) return "unknown";
+
     const lowerText = text.toLowerCase();
-    const words = lowerText.split(/\s+/).filter(word => word.length > 2);
-    
-    if (words.length === 0) return 'unknown';
+    const words = lowerText.split(/\s+/).filter((word) => word.length > 2);
+
+    if (words.length === 0) return "unknown";
 
     // Count matches for each language
     const scores = {
@@ -112,28 +183,33 @@ export class LanguageMapper {
 
     // Find language with highest score
     const maxScore = Math.max(...Object.values(scores));
-    if (maxScore === 0) return 'unknown';
+    if (maxScore === 0) return "unknown";
 
-    const detectedLang = Object.entries(scores).find(([, score]) => score === maxScore)?.[0];
-    return (detectedLang as LanguageCode) || 'unknown';
+    const detectedLang = Object.entries(scores).find(
+      ([, score]) => score === maxScore,
+    )?.[0];
+    return (detectedLang as LanguageCode) || "unknown";
   }
 
-  private static countLanguageMatches(words: string[], languageWords: string[]): number {
-    return words.filter(word => languageWords.includes(word)).length;
+  private static countLanguageMatches(
+    words: string[],
+    languageWords: string[],
+  ): number {
+    return words.filter((word) => languageWords.includes(word)).length;
   }
 
   /**
    * Normalizes language code to supported format
    */
   static normalizeLanguageCode(lang?: string): LanguageCode {
-    if (!lang) return 'unknown';
-    
+    if (!lang) return "unknown";
+
     const normalized = lang.toLowerCase().substring(0, 2);
-    if (['en', 'es', 'fr', 'de'].includes(normalized)) {
+    if (["en", "es", "fr", "de"].includes(normalized)) {
       return normalized as LanguageCode;
     }
-    
-    return 'unknown';
+
+    return "unknown";
   }
 }
 
@@ -147,14 +223,15 @@ export class InputMapper {
   static tweetToDTO(tweet: Tweet): TweetDTO {
     MapperValidation.validateTweet(tweet);
 
-    const text = tweet.content || tweet.text || '';
+    const text = tweet.content || tweet.text || "";
     MapperValidation.validateText(text);
 
     return {
       id: tweet.id || tweet.tweetId || `temp_${Date.now()}`,
       text: text.trim(),
-      language: LanguageMapper.normalizeLanguageCode(tweet.language) || 
-                LanguageMapper.detectLanguage(text),
+      language:
+        LanguageMapper.normalizeLanguageCode(tweet.language) ||
+        LanguageMapper.detectLanguage(text),
     };
   }
 
@@ -162,20 +239,21 @@ export class InputMapper {
    * Converts text input to AnalysisRequest for engine
    */
   static textToAnalysisRequest(
-    text: string, 
+    text: string,
     options: {
       language?: string;
       allowSarcasmDetection?: boolean;
       allowContextWindow?: boolean;
       maxTokens?: number;
-    } = {}
+    } = {},
   ): AnalysisRequest {
     MapperValidation.validateText(text);
 
     return {
       text: text.trim(),
-      language: LanguageMapper.normalizeLanguageCode(options.language) || 
-                LanguageMapper.detectLanguage(text),
+      language:
+        LanguageMapper.normalizeLanguageCode(options.language) ||
+        LanguageMapper.detectLanguage(text),
       allowSarcasmDetection: options.allowSarcasmDetection ?? true,
       allowContextWindow: options.allowContextWindow ?? true,
       maxTokens: options.maxTokens,
@@ -199,9 +277,9 @@ export class InputMapper {
    */
   static tweetsToDTO(tweets: Tweet[]): TweetDTO[] {
     if (!Array.isArray(tweets)) {
-      throw new Error('Tweets must be an array');
+      throw new Error("Tweets must be an array");
     }
-    return tweets.map(tweet => this.tweetToDTO(tweet));
+    return tweets.map((tweet) => this.tweetToDTO(tweet));
   }
 }
 
@@ -214,13 +292,13 @@ export class OutputMapper {
    */
   static createAPIResponse<T>(
     data: T,
-    message: string = 'Operation completed successfully',
+    message: string = "Operation completed successfully",
     meta?: {
       processingTime?: number;
       cacheHit?: boolean;
       version?: string;
       requestId?: string;
-    }
+    },
   ) {
     return {
       success: true,
@@ -230,8 +308,10 @@ export class OutputMapper {
       meta: {
         processingTime: meta?.processingTime || 0,
         cacheHit: meta?.cacheHit || false,
-        version: meta?.version || '1.0.0',
-        requestId: meta?.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        version: meta?.version || "1.0.0",
+        requestId:
+          meta?.requestId ||
+          `req_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         ...meta,
       },
     };
@@ -242,7 +322,7 @@ export class OutputMapper {
    */
   static analysisToSentimentResponse(
     result: AnalysisResult,
-    meta?: { processingTime?: number; cacheHit?: boolean }
+    meta?: { processingTime?: number; cacheHit?: boolean },
   ) {
     MapperValidation.validateAnalysisResult(result);
 
@@ -254,14 +334,19 @@ export class OutputMapper {
           confidence: this.formatNumber(result.sentiment.confidence, 3),
           magnitude: this.formatNumber(result.sentiment.magnitude, 3),
         },
-        emotions: result.sentiment.emotions ? {
-          joy: this.formatNumber(result.sentiment.emotions.joy, 3),
-          sadness: this.formatNumber(result.sentiment.emotions.sadness, 3),
-          anger: this.formatNumber(result.sentiment.emotions.anger, 3),
-          fear: this.formatNumber(result.sentiment.emotions.fear, 3),
-          surprise: this.formatNumber(result.sentiment.emotions.surprise, 3),
-          disgust: this.formatNumber(result.sentiment.emotions.disgust, 3),
-        } : undefined,
+        emotions: result.sentiment.emotions
+          ? {
+              joy: this.formatNumber(result.sentiment.emotions.joy, 3),
+              sadness: this.formatNumber(result.sentiment.emotions.sadness, 3),
+              anger: this.formatNumber(result.sentiment.emotions.anger, 3),
+              fear: this.formatNumber(result.sentiment.emotions.fear, 3),
+              surprise: this.formatNumber(
+                result.sentiment.emotions.surprise,
+                3,
+              ),
+              disgust: this.formatNumber(result.sentiment.emotions.disgust, 3),
+            }
+          : undefined,
         keywords: result.keywords?.slice(0, 10) || [],
         language: result.language,
         signals: {
@@ -272,8 +357,8 @@ export class OutputMapper {
         },
         version: result.version,
       },
-      'Sentiment analysis completed successfully',
-      meta
+      "Sentiment analysis completed successfully",
+      meta,
     );
   }
 
@@ -284,25 +369,31 @@ export class OutputMapper {
     tweetId: string,
     result: AnalysisResult,
     originalTweet?: Tweet,
-    meta?: { processingTime?: number; cacheHit?: boolean }
+    meta?: { processingTime?: number; cacheHit?: boolean },
   ) {
     const sentimentResponse = this.analysisToSentimentResponse(result, meta);
-    
+
     return {
       ...sentimentResponse,
       data: {
         ...sentimentResponse.data,
         tweetId,
-        tweet: originalTweet ? {
-          id: originalTweet.id || originalTweet.tweetId,
-          content: this.sanitizeText(originalTweet.content || originalTweet.text || ''),
-          author: originalTweet.author ? {
-            username: originalTweet.author.username,
-            displayName: originalTweet.author.displayName,
-            verified: originalTweet.author.verified,
-          } : undefined,
-          createdAt: originalTweet.createdAt?.toISOString(),
-        } : undefined,
+        tweet: originalTweet
+          ? {
+              id: originalTweet.id || originalTweet.tweetId,
+              content: this.sanitizeText(
+                originalTweet.content || originalTweet.text || "",
+              ),
+              author: originalTweet.author
+                ? {
+                    username: originalTweet.author.username,
+                    displayName: originalTweet.author.displayName,
+                    verified: originalTweet.author.verified,
+                  }
+                : undefined,
+              createdAt: originalTweet.createdAt?.toISOString(),
+            }
+          : undefined,
       },
     };
   }
@@ -312,13 +403,18 @@ export class OutputMapper {
    */
   static batchAnalysisToResponse(
     results: Array<{ tweetId: string; result: AnalysisResult; tweet?: Tweet }>,
-    meta?: { processingTime?: number; cacheHits?: number; totalRequests?: number }
+    meta?: {
+      processingTime?: number;
+      cacheHits?: number;
+      totalRequests?: number;
+    },
   ) {
-    const mappedResults = results.map(({ tweetId, result, tweet }) => 
-      this.tweetAnalysisToResponse(tweetId, result, tweet).data
+    const mappedResults = results.map(
+      ({ tweetId, result, tweet }) =>
+        this.tweetAnalysisToResponse(tweetId, result, tweet).data,
     );
 
-    const summary = this.calculateBatchSummary(results.map(r => r.result));
+    const summary = this.calculateBatchSummary(results.map((r) => r.result));
 
     return this.createAPIResponse(
       {
@@ -330,19 +426,21 @@ export class OutputMapper {
           languageDistribution: summary.languageDistribution,
         },
       },
-      'Batch analysis completed for ' + results.length + ' items',
-      meta
+      "Batch analysis completed for " + results.length + " items",
+      meta,
     );
   }
 
   /**
    * Normalizes sentiment labels to API standard
    */
-  private static normalizeSentimentLabel(label: SentimentLabel): 'positive' | 'negative' | 'neutral' {
+  private static normalizeSentimentLabel(
+    label: SentimentLabel,
+  ): "positive" | "negative" | "neutral" {
     const normalized = label.toLowerCase();
-    if (normalized.includes('positive')) return 'positive';
-    if (normalized.includes('negative')) return 'negative';
-    return 'neutral';
+    if (normalized.includes("positive")) return "positive";
+    if (normalized.includes("negative")) return "negative";
+    return "neutral";
   }
 
   /**
@@ -356,12 +454,13 @@ export class OutputMapper {
    * Sanitizes text for API responses
    */
   private static sanitizeText(text: string, maxLength: number = 500): string {
-    if (!text) return '';
-    
-    // Remove control characters
-    const cleaned = text.replace(/[\x00-\x1F\x7F]/g, '');
-    return cleaned.length > maxLength 
-      ? cleaned.substring(0, maxLength) + '...' 
+    if (!text) return "";
+
+    // Remove control characters safely
+    // eslint-disable-next-line no-control-regex
+    const cleaned = text.replace(/[\x00-\x1F\x7F]/g, "");
+    return cleaned.length > maxLength
+      ? cleaned.substring(0, maxLength) + "..."
       : cleaned;
   }
 
@@ -373,22 +472,23 @@ export class OutputMapper {
     const languageCounts: Record<string, number> = {};
     let totalConfidence = 0;
 
-    results.forEach(result => {
+    results.forEach((result) => {
       const label = this.normalizeSentimentLabel(result.sentiment.label);
       sentimentCounts[label]++;
-      
-      const lang = result.language || 'unknown';
+
+      const lang = result.language || "unknown";
       languageCounts[lang] = (languageCounts[lang] || 0) + 1;
-      
+
       totalConfidence += result.sentiment.confidence;
     });
 
     return {
       sentimentDistribution: sentimentCounts,
       languageDistribution: languageCounts,
-      averageConfidence: results.length > 0 
-        ? this.formatNumber(totalConfidence / results.length, 3) 
-        : 0,
+      averageConfidence:
+        results.length > 0
+          ? this.formatNumber(totalConfidence / results.length, 3)
+          : 0,
     };
   }
 }
@@ -404,7 +504,7 @@ export class LegacyMapper {
     return {
       score: result.sentiment.score,
       magnitude: result.sentiment.magnitude,
-      label: OutputMapper['normalizeSentimentLabel'](result.sentiment.label),
+      label: OutputMapper["normalizeSentimentLabel"](result.sentiment.label),
       confidence: result.sentiment.confidence,
       emotions: result.sentiment.emotions,
       keywords: result.keywords,

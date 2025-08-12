@@ -1,26 +1,26 @@
-// sentiment-service.ts
+// senimport { cacheService } from '../lib/cache/cache-migration';iment-service.ts
 
-import { Core, SentimentUtils } from '../core';
-import { sentimentManager } from '../lib/sentiment-manager';
-import { ModelUpdateRequest, SentimentTestRequest } from '../types';
-import { Tweet } from '../types/twitter';
-import { cacheService } from './cache.service';
+import { Core, SentimentUtils } from "../core";
+import { sentimentManager } from "../lib/sentiment-manager";
+import { ModelUpdateRequest, SentimentTestRequest } from "../types";
+import { Tweet } from "../types/twitter";
+import { cacheService } from "./cache.service";
 
 const DEMO_TWEETS: Tweet[] = [
   {
-    id: 'demo_1',
-    tweetId: 'demo_1',
+    id: "demo_1",
+    tweetId: "demo_1",
     content:
-      'I absolutely love my new Nike Air Max! Best running shoes ever! 😍 #Nike #Running #JustDoIt',
+      "I absolutely love my new Nike Air Max! Best running shoes ever! 😍 #Nike #Running #JustDoIt",
     author: {
-      id: 'demo_user_1',
-      username: 'runner_pro',
-      displayName: 'Pro Runner',
+      id: "demo_user_1",
+      username: "runner_pro",
+      displayName: "Pro Runner",
       verified: true,
       followersCount: 15000,
       followingCount: 500,
       tweetsCount: 2500,
-      avatar: 'https://example.com/avatar1.jpg',
+      avatar: "https://example.com/avatar1.jpg",
     },
     metrics: {
       likes: 245,
@@ -30,32 +30,32 @@ const DEMO_TWEETS: Tweet[] = [
       views: 5600,
       engagement: 380,
     },
-    hashtags: ['#Nike', '#Running', '#JustDoIt'],
+    hashtags: ["#Nike", "#Running", "#JustDoIt"],
     mentions: [],
     urls: [],
     mediaUrls: [],
     isRetweet: false,
     isReply: false,
     isQuote: false,
-    language: 'en',
-    createdAt: new Date('2025-07-15T10:30:00Z'),
+    language: "en",
+    createdAt: new Date("2025-07-15T10:30:00Z"),
     scrapedAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'demo_2',
-    tweetId: 'demo_2',
+    id: "demo_2",
+    tweetId: "demo_2",
     content:
-      'Terrible customer service from @nike. My order was delayed for 3 weeks and no one responds to my emails. Very disappointed! 😠',
+      "Terrible customer service from @nike. My order was delayed for 3 weeks and no one responds to my emails. Very disappointed! 😠",
     author: {
-      id: 'demo_user_2',
-      username: 'customer_123',
-      displayName: 'Disappointed Customer',
+      id: "demo_user_2",
+      username: "customer_123",
+      displayName: "Disappointed Customer",
       verified: false,
       followersCount: 350,
       followingCount: 800,
       tweetsCount: 1200,
-      avatar: 'https://example.com/avatar2.jpg',
+      avatar: "https://example.com/avatar2.jpg",
     },
     metrics: {
       likes: 23,
@@ -66,31 +66,31 @@ const DEMO_TWEETS: Tweet[] = [
       engagement: 243,
     },
     hashtags: [],
-    mentions: ['@nike'],
+    mentions: ["@nike"],
     urls: [],
     mediaUrls: [],
     isRetweet: false,
     isReply: false,
     isQuote: false,
-    language: 'en',
-    createdAt: new Date('2025-07-15T14:45:00Z'),
+    language: "en",
+    createdAt: new Date("2025-07-15T14:45:00Z"),
     scrapedAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'demo_3',
-    tweetId: 'demo_3',
+    id: "demo_3",
+    tweetId: "demo_3",
     content:
-      'Nike vs Adidas - the eternal debate! Both have their strengths. Nike for innovation, Adidas for comfort. What do you think? 🤔',
+      "Nike vs Adidas - the eternal debate! Both have their strengths. Nike for innovation, Adidas for comfort. What do you think? 🤔",
     author: {
-      id: 'demo_user_3',
-      username: 'sneaker_expert',
-      displayName: 'Sneaker Expert',
+      id: "demo_user_3",
+      username: "sneaker_expert",
+      displayName: "Sneaker Expert",
       verified: true,
       followersCount: 45000,
       followingCount: 1200,
       tweetsCount: 8900,
-      avatar: 'https://example.com/avatar3.jpg',
+      avatar: "https://example.com/avatar3.jpg",
     },
     metrics: {
       likes: 412,
@@ -107,25 +107,25 @@ const DEMO_TWEETS: Tweet[] = [
     isRetweet: false,
     isReply: false,
     isQuote: false,
-    language: 'en',
-    createdAt: new Date('2025-07-15T16:20:00Z'),
+    language: "en",
+    createdAt: new Date("2025-07-15T16:20:00Z"),
     scrapedAt: new Date(),
     updatedAt: new Date(),
   },
 ];
 
 const TEST_EXAMPLES = [
-  { text: 'I love this product!', expected: 'positive' },
-  { text: 'This is terrible', expected: 'negative' },
-  { text: 'The box was delivered', expected: 'neutral' },
-  { text: 'Me encanta este servicio', expected: 'positive' },
-  { text: 'No me gusta para nada', expected: 'negative' },
+  { text: "I love this product!", expected: "positive" },
+  { text: "This is terrible", expected: "negative" },
+  { text: "The box was delivered", expected: "neutral" },
+  { text: "Me encanta este servicio", expected: "positive" },
+  { text: "No me gusta para nada", expected: "negative" },
 ];
 
 export class SentimentService {
   async analyzeTweet(tweet: Tweet, config?: any) {
     const validation = Core.Validators.Tweet.validate(tweet);
-    Core.Validators.Utils.validateOrThrow(validation, 'tweet analysis');
+    Core.Validators.Utils.validateOrThrow(validation, "tweet analysis");
 
     const result = await sentimentManager.analyzeTweet(tweet, config);
 
@@ -140,18 +140,22 @@ export class SentimentService {
 
   async analyzeTweetsBatch(tweets: Tweet[], config?: any, includeStats = true) {
     const validation = Core.Validators.Tweet.validateBatch(tweets);
-    Core.Validators.Utils.validateOrThrow(validation, 'batch analysis');
+    Core.Validators.Utils.validateOrThrow(validation, "batch analysis");
 
     const startTime = Date.now();
     const analyses = await sentimentManager.analyzeTweetsBatch(tweets, config);
     const processingTime = Date.now() - startTime;
 
-    const statistics = includeStats ? sentimentManager.generateStatistics(analyses) : null;
+    const statistics = includeStats
+      ? sentimentManager.generateStatistics(analyses)
+      : null;
 
     const averageSentiment =
       analyses.length > 0
-        ? analyses.reduce((sum, analysis) => sum + analysis.analysis.sentiment.score, 0) /
-          analyses.length
+        ? analyses.reduce(
+            (sum, analysis) => sum + analysis.analysis.sentiment.score,
+            0,
+          ) / analyses.length
         : 0;
 
     return {
@@ -167,17 +171,22 @@ export class SentimentService {
   }
 
   generateStatistics(analyses: any[]) {
-    const validation = Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
+    const validation =
+      Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
     if (!validation.isValid) throw Core.Errors.invalidAnalysisArray();
 
     return sentimentManager.generateStatistics(analyses);
   }
 
   generateSentimentTrends(analyses: any[], intervalHours = 1) {
-    const validation = Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
+    const validation =
+      Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
     if (!validation.isValid) throw Core.Errors.invalidAnalysisArray();
 
-    const trends = sentimentManager.generateSentimentTrends(analyses, intervalHours);
+    const trends = sentimentManager.generateSentimentTrends(
+      analyses,
+      intervalHours,
+    );
 
     return {
       trends: trends.trends || [],
@@ -200,23 +209,23 @@ export class SentimentService {
       insights: {
         summary: `Analyzed ${analyses.length} demo tweets with average sentiment of ${statistics.averageSentiment.toFixed(3)}`,
         keyFindings: [
-          'Mix of positive and negative brand sentiment detected',
-          'High-influence users engaged with brand content',
-          'Customer service issues identified requiring attention',
-          'Brand comparison discussions present in conversations',
+          "Mix of positive and negative brand sentiment detected",
+          "High-influence users engaged with brand content",
+          "Customer service issues identified requiring attention",
+          "Brand comparison discussions present in conversations",
         ],
         recommendations: [
-          'Monitor and respond to customer service complaints',
-          'Engage with positive brand advocates',
-          'Track competitor comparison discussions',
-          'Leverage high-engagement content for amplification',
+          "Monitor and respond to customer service complaints",
+          "Engage with positive brand advocates",
+          "Track competitor comparison discussions",
+          "Leverage high-engagement content for amplification",
         ],
       },
     };
   }
 
   async testSentimentAnalysis({ text, method }: SentimentTestRequest) {
-    if (!text) throw new Error('Text string is required');
+    if (!text) throw new Error("Text string is required");
 
     // Try to get from cache first
     const cached = cacheService.get(text, { method });
@@ -227,8 +236,13 @@ export class SentimentService {
     const mockTweet = SentimentUtils.createMockTweet(text);
     const analysis = await sentimentManager.analyzeTweet(mockTweet, undefined);
 
-    const naiveBayesResult = method === 'naive' ? sentimentManager.predictNaiveBayes(text) : null;
-    const result = SentimentUtils.mapSentimentResult(analysis, naiveBayesResult, method);
+    const naiveBayesResult =
+      method === "naive" ? sentimentManager.predictNaiveBayes(text) : null;
+    const result = SentimentUtils.mapSentimentResult(
+      analysis,
+      naiveBayesResult,
+      method,
+    );
 
     // Cache the result for 1 hour
     cacheService.set(text, result, { method }, 3600);
@@ -241,32 +255,66 @@ export class SentimentService {
    * REFACTORED: Now uses the consolidated SentimentAnalysisOrchestrator
    */
   async analyzeMultiLanguageText(text: string, language?: string) {
-    if (!text?.trim()) throw new Error('Text is required');
+    if (!text?.trim()) throw new Error("Text is required");
 
     // Import the orchestrator for direct analysis
-    const { SentimentAnalysisOrchestrator } = await import('../lib/sentiment/orchestrator');
+    const { SentimentAnalysisOrchestrator } = await import(
+      "../lib/sentiment/orchestrator"
+    );
     const orchestrator = new SentimentAnalysisOrchestrator();
 
     // Simple language detection based on common words
     const detectSimpleLanguage = (text: string): string => {
       const lowerText = text.toLowerCase();
-      const spanishWords = ['el', 'la', 'que', 'de', 'es', 'y', 'pero', 'con', 'por'];
-      const frenchWords = ['le', 'la', 'que', 'de', 'est', 'et', 'mais', 'avec', 'pour'];
-      const germanWords = ['der', 'die', 'das', 'und', 'ist', 'aber', 'mit', 'für'];
-      
-      if (spanishWords.some(word => lowerText.includes(word))) return 'es';
-      if (frenchWords.some(word => lowerText.includes(word))) return 'fr'; 
-      if (germanWords.some(word => lowerText.includes(word))) return 'de';
-      return 'en';
+      const spanishWords = [
+        "el",
+        "la",
+        "que",
+        "de",
+        "es",
+        "y",
+        "pero",
+        "con",
+        "por",
+      ];
+      const frenchWords = [
+        "le",
+        "la",
+        "que",
+        "de",
+        "est",
+        "et",
+        "mais",
+        "avec",
+        "pour",
+      ];
+      const germanWords = [
+        "der",
+        "die",
+        "das",
+        "und",
+        "ist",
+        "aber",
+        "mit",
+        "für",
+      ];
+
+      if (spanishWords.some((word) => lowerText.includes(word))) return "es";
+      if (frenchWords.some((word) => lowerText.includes(word))) return "fr";
+      if (germanWords.some((word) => lowerText.includes(word))) return "de";
+      return "en";
     };
 
     // Map detected language to LanguageCode type
     const detectedLanguage = language || detectSimpleLanguage(text);
-    const mappedLanguage: 'en' | 'es' | 'fr' | 'de' | 'unknown' = ['en', 'es', 'fr', 'de'].includes(
-      detectedLanguage
-    )
-      ? (detectedLanguage as 'en' | 'es' | 'fr' | 'de')
-      : 'unknown';
+    const mappedLanguage: "en" | "es" | "fr" | "de" | "unknown" = [
+      "en",
+      "es",
+      "fr",
+      "de",
+    ].includes(detectedLanguage)
+      ? (detectedLanguage as "en" | "es" | "fr" | "de")
+      : "unknown";
 
     // Use orchestrator for multi-language analysis
     const multiLangResult = await orchestrator.analyzeText({
@@ -277,13 +325,13 @@ export class SentimentService {
     // Also get standard analysis for comparison using orchestrator
     const standardAnalysis = await orchestrator.analyzeText({
       text,
-      language: 'en', // Standard comparison in English
+      language: "en", // Standard comparison in English
     });
 
     return {
       text,
       detectedLanguage,
-      supportedLanguages: ['en', 'es', 'fr', 'de'],
+      supportedLanguages: ["en", "es", "fr", "de"],
       analysis: {
         multiLanguage: {
           sentiment: multiLangResult.sentiment.label,
@@ -297,38 +345,49 @@ export class SentimentService {
           score: standardAnalysis.sentiment.score,
         },
         comparison: {
-          agreement: multiLangResult.sentiment.label === standardAnalysis.sentiment.label,
+          agreement:
+            multiLangResult.sentiment.label ===
+            standardAnalysis.sentiment.label,
           confidenceDiff: Math.abs(
-            multiLangResult.sentiment.confidence - standardAnalysis.sentiment.confidence
+            multiLangResult.sentiment.confidence -
+              standardAnalysis.sentiment.confidence,
           ),
-          method: 'orchestrator vs orchestrator',
+          method: "orchestrator vs orchestrator",
         },
       },
     };
   }
 
   async updateModel({ examples, saveModel = true }: ModelUpdateRequest) {
-    if (!examples?.length) throw new Error('Array of training examples is required');
+    if (!examples?.length)
+      throw new Error("Array of training examples is required");
 
     const validExamples = examples.filter(
-      (ex) => ex.text?.trim() && ['positive', 'negative', 'neutral'].includes(ex.label)
+      (ex) =>
+        ex.text?.trim() &&
+        ["positive", "negative", "neutral"].includes(ex.label),
     );
 
-    if (!validExamples.length) throw new Error('No valid training examples provided');
+    if (!validExamples.length)
+      throw new Error("No valid training examples provided");
 
-    const { enhancedTrainingDataV3 } = await import('../data/enhanced-training-data-v3');
+    const { enhancedTrainingDataV3 } = await import(
+      "../data/enhanced-training-data-v3"
+    );
     const trainingData = [...enhancedTrainingDataV3, ...validExamples];
 
-    console.log(`🔄 Training model with ${validExamples.length} new examples...`);
+    console.log(
+      `🔄 Training model with ${validExamples.length} new examples...`,
+    );
     const startTime = Date.now();
     await sentimentManager.trainNaiveBayes(trainingData);
     const trainingTime = Date.now() - startTime;
     console.log(`✅ Model trained in ${trainingTime}ms`);
 
     if (saveModel) {
-      console.log('💾 Saving updated model...');
+      console.log("💾 Saving updated model...");
       // Actual saving logic would go here
-      console.log('💾 Model saved successfully.');
+      console.log("💾 Model saved successfully.");
     }
 
     const testResults = TEST_EXAMPLES.map((ex) => {
@@ -342,7 +401,8 @@ export class SentimentService {
       };
     });
 
-    const accuracy = (testResults.filter((r) => r.correct).length / testResults.length) * 100;
+    const accuracy =
+      (testResults.filter((r) => r.correct).length / testResults.length) * 100;
 
     return {
       trainingStats: {
@@ -364,9 +424,12 @@ export class SentimentService {
         const naiveResult = sentimentManager.predictNaiveBayes(example.text);
         const mockTweet = SentimentUtils.createMockTweet(
           example.text,
-          example.text.includes('encanta') ? 'es' : 'en'
+          example.text.includes("encanta") ? "es" : "en",
         );
-        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+        const ruleResult = await sentimentManager.analyzeTweet(
+          mockTweet,
+          undefined,
+        );
 
         return {
           text: example.text,
@@ -383,7 +446,7 @@ export class SentimentService {
             correct: ruleResult.analysis.sentiment.label === example.expected,
           },
         };
-      })
+      }),
     );
 
     const naiveCorrect = results.filter((r) => r.naive.correct).length;
@@ -411,7 +474,10 @@ export class SentimentService {
     const mockTweet = SentimentUtils.createMockTweet(text);
 
     // Get rule-based analysis
-    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+    const ruleResult = await sentimentManager.analyzeTweet(
+      mockTweet,
+      undefined,
+    );
 
     // Get naive bayes analysis
     const naiveResult = sentimentManager.predictNaiveBayes(text);
@@ -431,7 +497,9 @@ export class SentimentService {
       },
       comparison: {
         agreement: ruleResult.analysis.sentiment.label === naiveResult.label,
-        confidenceDiff: Math.abs(ruleResult.analysis.sentiment.confidence - naiveResult.confidence),
+        confidenceDiff: Math.abs(
+          ruleResult.analysis.sentiment.confidence - naiveResult.confidence,
+        ),
       },
     };
   }
@@ -446,7 +514,10 @@ export class SentimentService {
     const results = await Promise.all(
       testCases.map(async (testCase) => {
         const mockTweet = SentimentUtils.createMockTweet(testCase.text);
-        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+        const ruleResult = await sentimentManager.analyzeTweet(
+          mockTweet,
+          undefined,
+        );
 
         const result: any = {
           text: testCase.text,
@@ -454,7 +525,9 @@ export class SentimentService {
           rule: {
             predicted: ruleResult.analysis.sentiment.label,
             confidence: ruleResult.analysis.sentiment.confidence,
-            correct: ruleResult.analysis.sentiment.label === testCase.expectedSentiment,
+            correct:
+              ruleResult.analysis.sentiment.label ===
+              testCase.expectedSentiment,
           },
         };
 
@@ -468,7 +541,7 @@ export class SentimentService {
         }
 
         return result;
-      })
+      }),
     );
 
     const ruleCorrect = results.filter((r) => r.rule.correct).length;
@@ -490,7 +563,9 @@ export class SentimentService {
       response.comparison = {
         rule: { accuracy: ruleAccuracy, correct: ruleCorrect },
         naive: { accuracy: naiveAccuracy, correct: naiveCorrect },
-        agreement: results.filter((r) => r.rule.predicted === r.naive?.predicted).length,
+        agreement: results.filter(
+          (r) => r.rule.predicted === r.naive?.predicted,
+        ).length,
       };
     }
 
@@ -501,12 +576,17 @@ export class SentimentService {
     const mockTweet = SentimentUtils.createMockTweet(text);
 
     // Get comprehensive analysis
-    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+    const ruleResult = await sentimentManager.analyzeTweet(
+      mockTweet,
+      undefined,
+    );
     const naiveResult = sentimentManager.predictNaiveBayes(text);
 
     // Simulate advanced features
-    const hasNegation = /\b(not|no|never|don't|won't|can't|isn't|aren't)\b/i.test(text);
-    const hasIntensifiers = /\b(very|really|extremely|absolutely|totally)\b/i.test(text);
+    const hasNegation =
+      /\b(not|no|never|don't|won't|can't|isn't|aren't)\b/i.test(text);
+    const hasIntensifiers =
+      /\b(very|really|extremely|absolutely|totally)\b/i.test(text);
     const hasSarcasm = /\b(yeah right|sure|obviously|great job)\b/i.test(text);
 
     return {
@@ -533,10 +613,12 @@ export class SentimentService {
       },
       analysis: {
         agreement: ruleResult.analysis.sentiment.label === naiveResult.label,
-        confidenceDiff: Math.abs(ruleResult.analysis.sentiment.confidence - naiveResult.confidence),
+        confidenceDiff: Math.abs(
+          ruleResult.analysis.sentiment.confidence - naiveResult.confidence,
+        ),
         textFeatures: {
           length: text.length,
-          wordCount: text.split(' ').length,
+          wordCount: text.split(" ").length,
           hasNegation,
           hasIntensifiers,
           hasSarcasm,

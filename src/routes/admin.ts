@@ -1,5 +1,5 @@
 /**
- * Admin Routes - System monitoring and management endpoints
+ * Admin import { cacheService } from '../lib/cache/cache-migration';outes - System monitoring and management endpoints
  */
 
 import { Router } from "express";

@@ -1,5 +1,5 @@
 /**
- * Query Optimization Service
+ import { performanceCache } from '../lib/cache/cache-migration'; Query Optimization Service
  * Optimizes database queries and API calls for better performance
  */
 

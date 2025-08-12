@@ -65,17 +65,17 @@ const orchestrator = new SentimentAnalysisOrchestrator();
  *         description: Invalid text input
  */
 router.post(
-  '/analyze-text',
+  "/analyze-text",
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
 
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw SentimentAnalysisError.invalidText();
     }
 
     // PHASE 3: Use orchestrator with standardized mappers
     const result = await orchestrator.analyzeTextWithResponse(text);
-    
+
     // Return standardized API response
     res.json(result);
   }),
@@ -743,7 +743,7 @@ router.post(
 
     // Use the enhanced orchestrator with advanced analysis
     const analysis = await orchestrator.analyzeTextWithResponse(text, {
-      language: language as 'en' | 'es' | 'fr' | 'de' | 'unknown',
+      language: language as "en" | "es" | "fr" | "de" | "unknown",
       allowSarcasmDetection: true,
       allowContextWindow: true,
     });

@@ -50,6 +50,12 @@ export interface AnalyzerEngine {
   analyze(input: AnalysisRequest): Promise<AnalysisResult>;
 }
 
+export interface SentimentOrchestrator {
+  analyzeText(input: AnalysisRequest): Promise<AnalysisResult>;
+  analyzeTweet(tweet: any): Promise<AnalysisResult>;
+  analyzeBatch(tweets: any[]): Promise<AnalysisResult[]>;
+}
+
 export interface TweetDTO {
   id: string;
   text: string;
