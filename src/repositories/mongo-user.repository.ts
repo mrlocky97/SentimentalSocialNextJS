@@ -8,7 +8,13 @@ import mongoose from 'mongoose';
 import { Permission, UserRole } from '../enums/user.enum';
 import FollowModel from '../models/Follow.model';
 import UserModel, { IUserDocument } from '../models/User.model';
-import { CreateUserRequest, UpdateUserRequest, User, UserAuth } from '../types/user';
+import {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+  UserAuth,
+  getPermissionsForRole,
+} from '../types/user';
 import { QueryOptions } from './base.repository';
 import { UserRepository } from './user.repository';
 
@@ -18,11 +24,17 @@ export class MongoUserRepository implements UserRepository {
       // Hash password
       const passwordHash = await bcrypt.hash(data.password, 12);
 
+      // Determine role and permissions
+      const role = data.role || UserRole.CLIENT;
+      const permissions = getPermissionsForRole(role);
+
       const userData = {
         email: data.email,
         username: data.username,
         displayName: data.displayName,
         passwordHash,
+        role: role,
+        permissions: permissions, // Assign appropriate permissions for the role
       };
 
       const user = new UserModel(userData);

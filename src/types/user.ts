@@ -185,3 +185,18 @@ export interface OrganizationSettings {
     customReports: boolean;
   };
 }
+
+/**
+ * Helper function to get permissions for a specific role
+ */
+export function getPermissionsForRole(role: UserRole): Permission[] {
+  const roleDefinition = ROLE_DEFINITIONS.find((rd) => rd.role === role);
+  return roleDefinition ? roleDefinition.permissions : [];
+}
+
+/**
+ * Helper function to get role definition
+ */
+export function getRoleDefinition(role: UserRole): RoleDefinition | undefined {
+  return ROLE_DEFINITIONS.find((rd) => rd.role === role);
+}
