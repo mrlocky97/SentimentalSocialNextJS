@@ -392,9 +392,9 @@ router.get(
   authenticateToken,
   errorHandler.expressAsyncWrapper(async (req, res) => {
     const userId = (req as any).user.id;
-    
+
     const user = await userRepository.findById(userId);
-    
+
     if (!user) {
       throw new NotFoundError('User not found', ErrorCode.USER_NOT_FOUND, {
         operation: 'get_user_profile',
