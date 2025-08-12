@@ -52,6 +52,8 @@ import { TwitterAuthManager } from "./services/twitter-auth-manager.service";
 import path from "path";
 import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
+// Import IoC Configuration
+import { configureServices, checkContainerHealth } from "./lib/dependency-injection/config";
 const modelPath = path.join(
   process.cwd(),
   "src",
@@ -263,6 +265,13 @@ async function startServer() {
 
     // Initialize and train sentiment analysis model with enhanced dataset
     console.log("🧠 Initializing Enhanced Sentiment Analysis System...");
+
+    // Configure IoC Container
+    configureServices();
+    
+    // Verify container health
+    const containerHealth = checkContainerHealth();
+    console.log("📦 IoC Container Status:", containerHealth.status);
 
     const sentimentManager = new TweetSentimentAnalysisManager();
 
