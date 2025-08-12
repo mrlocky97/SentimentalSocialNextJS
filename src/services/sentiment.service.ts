@@ -1,6 +1,7 @@
 // sentiment-service.ts
 
 import { ModelUpdateRequest, SentimentTestRequest } from '@/types';
+import { Method } from '@/enums/sentiment.enum';
 import { Core, SentimentUtils } from '../core';
 import { sentimentManager } from '../lib/sentiment-manager';
 import { Tweet } from '../types/twitter';
@@ -206,7 +207,7 @@ export class SentimentService {
     };
   }
 
-  async testSentimentAnalysis({ text, method = 'rule' }: SentimentTestRequest) {
+  async testSentimentAnalysis({ text, method = Method.rule }: SentimentTestRequest) {
     if (!text) throw new Error('Text string is required');
 
     const mockTweet = SentimentUtils.createMockTweet(text);
@@ -317,8 +318,143 @@ export class SentimentService {
     };
   }
 
-  // Resto de métodos (compareSentimentMethods, evaluateAccuracy, etc.)
-  // mantendrían la misma estructura optimizada
+  async compareSentimentMethods({ text }: { text: string }) {
+    const mockTweet = SentimentUtils.createMockTweet(text);
+
+    // Get rule-based analysis
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+
+    // Get naive bayes analysis
+    const naiveResult = sentimentManager.predictNaiveBayes(text);
+
+    return {
+      text,
+      methods: {
+        rule: {
+          sentiment: ruleResult.analysis.sentiment.label,
+          score: ruleResult.analysis.sentiment.score,
+          confidence: ruleResult.analysis.sentiment.confidence,
+        },
+        naive: {
+          sentiment: naiveResult.label,
+          confidence: naiveResult.confidence,
+        },
+      },
+      comparison: {
+        agreement: ruleResult.analysis.sentiment.label === naiveResult.label,
+        confidenceDiff: Math.abs(ruleResult.analysis.sentiment.confidence - naiveResult.confidence),
+      },
+    };
+  }
+
+  async evaluateAccuracy({
+    testCases,
+    includeComparison = true,
+  }: {
+    testCases: Array<{ text: string; expectedSentiment: string }>;
+    includeComparison?: boolean;
+  }) {
+    const results = await Promise.all(
+      testCases.map(async (testCase) => {
+        const mockTweet = SentimentUtils.createMockTweet(testCase.text);
+        const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+
+        const result: any = {
+          text: testCase.text,
+          expected: testCase.expectedSentiment,
+          rule: {
+            predicted: ruleResult.analysis.sentiment.label,
+            confidence: ruleResult.analysis.sentiment.confidence,
+            correct: ruleResult.analysis.sentiment.label === testCase.expectedSentiment,
+          },
+        };
+
+        if (includeComparison) {
+          const naiveResult = sentimentManager.predictNaiveBayes(testCase.text);
+          result.naive = {
+            predicted: naiveResult.label,
+            confidence: naiveResult.confidence,
+            correct: naiveResult.label === testCase.expectedSentiment,
+          };
+        }
+
+        return result;
+      })
+    );
+
+    const ruleCorrect = results.filter((r) => r.rule.correct).length;
+    const ruleAccuracy = (ruleCorrect / results.length) * 100;
+
+    const response: any = {
+      overall: {
+        total: results.length,
+        accuracy: ruleAccuracy,
+        correct: ruleCorrect,
+      },
+      results,
+    };
+
+    if (includeComparison) {
+      const naiveCorrect = results.filter((r) => r.naive?.correct).length;
+      const naiveAccuracy = (naiveCorrect / results.length) * 100;
+
+      response.comparison = {
+        rule: { accuracy: ruleAccuracy, correct: ruleCorrect },
+        naive: { accuracy: naiveAccuracy, correct: naiveCorrect },
+        agreement: results.filter((r) => r.rule.predicted === r.naive?.predicted).length,
+      };
+    }
+
+    return response;
+  }
+
+  async advancedCompareSentimentMethods({ text }: { text: string }) {
+    const mockTweet = SentimentUtils.createMockTweet(text);
+
+    // Get comprehensive analysis
+    const ruleResult = await sentimentManager.analyzeTweet(mockTweet, undefined);
+    const naiveResult = sentimentManager.predictNaiveBayes(text);
+
+    // Simulate advanced features
+    const hasNegation = /\b(not|no|never|don't|won't|can't|isn't|aren't)\b/i.test(text);
+    const hasIntensifiers = /\b(very|really|extremely|absolutely|totally)\b/i.test(text);
+    const hasSarcasm = /\b(yeah right|sure|obviously|great job)\b/i.test(text);
+
+    return {
+      text,
+      methods: {
+        rule: {
+          sentiment: ruleResult.analysis.sentiment.label,
+          score: ruleResult.analysis.sentiment.score,
+          confidence: ruleResult.analysis.sentiment.confidence,
+        },
+        naive: {
+          sentiment: naiveResult.label,
+          confidence: naiveResult.confidence,
+        },
+        advanced: {
+          sentiment: ruleResult.analysis.sentiment.label, // Use rule as base for advanced
+          confidence: ruleResult.analysis.sentiment.confidence,
+          adjustments: {
+            negation: hasNegation,
+            intensifiers: hasIntensifiers,
+            sarcasm: hasSarcasm,
+          },
+        },
+      },
+      analysis: {
+        agreement: ruleResult.analysis.sentiment.label === naiveResult.label,
+        confidenceDiff: Math.abs(ruleResult.analysis.sentiment.confidence - naiveResult.confidence),
+        textFeatures: {
+          length: text.length,
+          wordCount: text.split(' ').length,
+          hasNegation,
+          hasIntensifiers,
+          hasSarcasm,
+        },
+      },
+    };
+  }
 }
 
 export const sentimentService = new SentimentService();

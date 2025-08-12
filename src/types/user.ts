@@ -5,6 +5,9 @@
 
 import { Permission, UserRole } from '@/enums/user.enum';
 
+// Re-export enums for easier access
+export { Permission, UserRole };
+
 export interface User {
   id: string;
   email: string;

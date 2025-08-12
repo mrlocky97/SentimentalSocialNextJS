@@ -14,6 +14,18 @@ import {
   DataSource,
 } from '@/enums/campaign.enum';
 
+// Re-export enums for easier access
+export {
+  AssistantRecommendationType,
+  AssistantRecommendationUrgency,
+  CampaignCategory,
+  CampaignHealthScoreGrade,
+  CampaignRole,
+  CampaignStatus,
+  CampaignType,
+  DataSource,
+};
+
 export interface Campaign {
   id: string;
   name: string;
@@ -301,5 +313,3 @@ export interface CampaignHealthScore {
   grade: CampaignHealthScoreGrade;
   improvements: string[];
 }
-
-export { CampaignStatus };

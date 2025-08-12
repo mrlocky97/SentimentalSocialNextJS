@@ -3,12 +3,12 @@
  * Intelligent assistant that guides users through campaign optimization
  */
 
-import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
 import {
   AssistantRecommendationType,
   AssistantRecommendationUrgency,
   CampaignHealthScoreGrade,
 } from '../enums/campaign.enum';
+import { AssistantRecommendation, CampaignHealthScore } from '../types/campaign';
 
 export class AICampaignAssistantService {
   /**

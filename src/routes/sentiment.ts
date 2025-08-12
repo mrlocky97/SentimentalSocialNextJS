@@ -377,7 +377,7 @@ router.post(
 router.get(
   '/quick-eval',
   asyncHandler(async (req: Request, res: Response) => {
-    const { dataset = 'general', advanced } = req.query as { dataset?: string; advanced?: string };
+    const { dataset = 'general' } = req.query as { dataset?: string };
 
     // Import test datasets
     const {
@@ -406,13 +406,9 @@ router.get(
         testCases = sentimentTestDataset;
     }
 
-    const useAdvancedHybrid =
-      advanced === 'true' || dataset === 'sarcasm' || dataset === 'multilingual';
-
     const results = await sentimentService.evaluateAccuracy({
       testCases,
       includeComparison: true,
-      useAdvancedHybrid,
     });
 
     return successResponse(
@@ -420,7 +416,7 @@ router.get(
       results,
       `Quick evaluation completed: ${results.overall.accuracy.toFixed(
         2
-      )}% accuracy on ${dataset} dataset${useAdvancedHybrid ? ' (advanced-hybrid)' : ''}`
+      )}% accuracy on ${dataset} dataset`
     );
   })
 );

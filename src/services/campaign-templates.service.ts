@@ -4,6 +4,7 @@
  */
 
 import { CampaignTemplate, CampaignType, DataSource } from '../types/campaign';
+import { CampaignCategory } from '../enums/campaign.enum';
 
 export class CampaignTemplatesService {
   /**
@@ -16,7 +17,7 @@ export class CampaignTemplatesService {
         name: 'Brand Monitoring',
         description: 'Monitor your brand mentions and sentiment across social media',
         type: 'mention' as CampaignType,
-        category: 'brand-monitoring',
+        category: CampaignCategory.brandMonitoring,
         defaultDuration: 30, // 30 days
         defaultMaxTweets: 50000,
         defaultDataSources: ['twitter', 'instagram'] as DataSource[],
@@ -37,7 +38,7 @@ export class CampaignTemplatesService {
         name: 'Product Launch Analysis',
         description: 'Analyze reception and sentiment around your product launch',
         type: 'hashtag' as CampaignType,
-        category: 'marketing',
+        category: CampaignCategory.marketing,
         defaultDuration: 14,
         defaultMaxTweets: 25000,
         defaultDataSources: ['twitter', 'instagram', 'tiktok'] as DataSource[],
@@ -58,7 +59,7 @@ export class CampaignTemplatesService {
         name: 'Competitor Analysis',
         description: 'Monitor competitor activity and market positioning',
         type: 'competitor' as CampaignType,
-        category: 'competitor-analysis',
+        category: CampaignCategory.competitorAnalysis,
         defaultDuration: 60,
         defaultMaxTweets: 100000,
         defaultDataSources: ['twitter', 'linkedin'] as DataSource[],
@@ -79,7 +80,7 @@ export class CampaignTemplatesService {
         name: 'Crisis Management',
         description: 'Real-time monitoring during PR crises or negative events',
         type: 'keyword' as CampaignType,
-        category: 'crisis-management',
+        category: CampaignCategory.crisisManagement,
         defaultDuration: 7,
         defaultMaxTweets: 10000,
         defaultDataSources: ['twitter'] as DataSource[],
@@ -100,7 +101,7 @@ export class CampaignTemplatesService {
         name: 'Marketing Campaign Performance',
         description: 'Track performance of specific marketing campaigns',
         type: 'hashtag' as CampaignType,
-        category: 'marketing',
+        category: CampaignCategory.marketing,
         defaultDuration: 21,
         defaultMaxTweets: 75000,
         defaultDataSources: ['twitter', 'instagram', 'tiktok'] as DataSource[],

@@ -1,5 +1,5 @@
-import { TextAnalysis } from '../types/sentiment';
 import { Language } from '../enums/sentiment.enum';
+import { TextAnalysis } from '../types/sentiment';
 
 export class InternalSentimentAnalyzer {
   analyze(text: string): Promise<TextAnalysis> {

@@ -4,6 +4,10 @@
  */
 
 import { CampaignType, DataSource } from '../../types/campaign';
+import {
+  CampaignType as CampaignTypeEnum,
+  DataSource as DataSourceEnum,
+} from '../../enums/campaign.enum';
 
 /**
  * Validate email format
@@ -34,7 +38,12 @@ export function isValidObjectId(id: string): boolean {
  * Validate campaign type
  */
 export function isValidCampaignType(type: string): type is CampaignType {
-  const validTypes: CampaignType[] = ['hashtag', 'keyword', 'mention', 'competitor'];
+  const validTypes: CampaignType[] = [
+    CampaignTypeEnum.hashtag,
+    CampaignTypeEnum.keyword,
+    CampaignTypeEnum.mention,
+    CampaignTypeEnum.competitor,
+  ];
   return validTypes.includes(type as CampaignType);
 }
 
@@ -42,7 +51,13 @@ export function isValidCampaignType(type: string): type is CampaignType {
  * Validate data source
  */
 export function isValidDataSource(source: string): source is DataSource {
-  const validSources: DataSource[] = ['twitter', 'instagram', 'facebook', 'tiktok', 'linkedin'];
+  const validSources: DataSource[] = [
+    DataSourceEnum.twitter,
+    DataSourceEnum.instagram,
+    DataSourceEnum.facebook,
+    DataSourceEnum.tiktok,
+    DataSourceEnum.linkedin,
+  ];
   return validSources.includes(source as DataSource);
 }
 

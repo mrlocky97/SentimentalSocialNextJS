@@ -1,45 +1,219 @@
-name: CI
+name: 🚀 CI/CD Pipeline
 
 on:
   push:
-    branches: ['main', 'master']
+    branches: ['main', 'develop']
   pull_request:
-    branches: ['main', 'master']
+    branches: ['main', 'develop']
+
+env:
+  NODE_VERSION: '20'
+  MONGODB_URI: ${{ secrets.MONGODB_URI }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
 jobs:
-  build-and-test:
+  # ==================== QUALITY CHECKS ====================
+  quality:
+    name: 🔍 Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: 🧹 Lint Check
+        run: npm run lint
+
+      - name: 🔧 TypeScript Check
+        run: npm run build
+
+      - name: 📊 Generate Lint Report
+        run: npm run lint -- --format=json --output-file=lint-results.json || true
+
+      - name: 📊 Upload Lint Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: lint-results.json
+
+  # ==================== TESTING ====================
+  test:
+    name: 🧪 Tests & Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CI: true
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       PUPPETEER_SKIP_DOWNLOAD: 'true'
+
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📥 Install Dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: 🧪 Run Tests with Coverage
+        run: npm test -- --coverage --watchAll=false
 
-      - name: TypeScript build
-        run: npm run build
-
-      - name: Run tests with coverage
-        run: npm test -- --coverage
-
-      - name: Upload coverage artifact
+      - name: 📊 Upload Coverage Reports
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage-reports
           path: coverage/
 
-      - name: Security audit (non-blocking)
-        run: npm audit --audit-level=critical || echo "audit issues found"
+      - name: 📈 Coverage Summary
+        run: |
+          echo "## 📊 Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          npx nyc report --reporter=text-summary >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ==================== SECURITY SCAN ====================
+  security:
+    name: 🔒 Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: 🔍 Security Audit
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
+          npm audit --audit-level=moderate
+
+      - name: 📊 Upload Security Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit
+          path: audit-results.json
+
+  # ==================== PERFORMANCE CHECK ====================
+  performance:
+    name: ⚡ Performance Check
+    runs-on: ubuntu-latest
+    needs: [quality]
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build for Performance Test
+        run: npm run build
+
+      - name: ⚡ Bundle Size Analysis
+        run: |
+          echo "## 📦 Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          find dist/ -name "*.js" -exec du -h {} \; | head -10 >> $GITHUB_STEP_SUMMARY
+
+  # ==================== DOCKER BUILD ====================
+  docker:
+    name: 🐳 Docker Build
+    runs-on: ubuntu-latest
+    needs: [quality, test, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏷️ Extract Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: sentimentalsocial/app
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==================== DEPLOYMENT READY ====================
+  deployment-ready:
+    name: ✅ Deployment Ready
+    runs-on: ubuntu-latest
+    needs: [quality, test, security, performance]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: ✅ All Checks Passed
+        run: |
+          echo "🎉 All quality gates passed!"
+          echo "✅ Code Quality: Passed"
+          echo "✅ Tests: Passed"
+          echo "✅ Security: Passed"
+          echo "✅ Performance: Passed"
+          echo ""
+          echo "🚀 Ready for deployment!"
+
+  # ==================== NOTIFICATIONS ====================
+  notify:
+    name: 📢 Notify Results
+    runs-on: ubuntu-latest
+    needs: [quality, test, security, performance]
+    if: always()
+
+    steps:
+      - name: 📊 Pipeline Summary
+        run: |
+          echo "## 🚀 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Quality | ${{ needs.quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Performance | ${{ needs.performance.result }} |" >> $GITHUB_STEP_SUMMARY
