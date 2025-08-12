@@ -3,10 +3,10 @@
  * Aseguran que el core del sistema funciona correctamente
  */
 
-import { TweetSentimentAnalysisManager } from '../../src/services/tweet-sentiment-analysis.manager.service';
-import { createTestTweet, createTestUser } from '../utils/test-helpers';
+import { TweetSentimentAnalysisManager } from "../../src/services/tweet-sentiment-analysis.manager.service";
+import { createTestTweet, createTestUser } from "../utils/test-helpers";
 
-describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
+describe("TweetSentimentAnalysisManager - CRÍTICO", () => {
   let manager: TweetSentimentAnalysisManager;
 
   beforeEach(() => {
@@ -19,25 +19,26 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
     jest.useRealTimers();
   });
 
-  describe('Análisis de Sentimientos Core', () => {
-    it('debe analizar sentimiento positivo correctamente', async () => {
+  describe("Análisis de Sentimientos Core", () => {
+    it("debe analizar sentimiento positivo correctamente", async () => {
       const tweet = createTestTweet({
-        content: 'I love this amazing product! It is fantastic and wonderful!',
-        hashtags: ['#great'],
+        content: "I love this amazing product! It is fantastic and wonderful!",
+        hashtags: ["#great"],
       });
 
       const result = await manager.analyzeTweet(tweet);
 
       expect(result).toBeDefined();
-      expect(result.analysis.sentiment.label).toBe('positive');
+      expect(result.analysis.sentiment.label).toBe("positive");
       expect(result.analysis.sentiment.confidence).toBeGreaterThan(0.1); // Adjusted threshold
       expect(result.analysis.sentiment.score).toBeGreaterThan(0);
     });
 
-    it('debe analizar sentimiento negativo correctamente', async () => {
+    it("debe analizar sentimiento negativo correctamente", async () => {
       const tweet = createTestTweet({
-        content: 'This is terrible! I hate this awful product. Worst experience ever!',
-        hashtags: ['#bad'],
+        content:
+          "This is terrible! I hate this awful product. Worst experience ever!",
+        hashtags: ["#bad"],
         metrics: {
           likes: 1,
           retweets: 0,
@@ -50,14 +51,14 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
       const result = await manager.analyzeTweet(tweet);
 
       expect(result).toBeDefined();
-      expect(result.analysis.sentiment.label).toBe('negative');
+      expect(result.analysis.sentiment.label).toBe("negative");
       expect(result.analysis.sentiment.confidence).toBeGreaterThan(0.1); // Adjusted threshold
       expect(result.analysis.sentiment.score).toBeLessThan(0);
     });
 
-    it('debe analizar sentimiento neutral correctamente', async () => {
+    it("debe analizar sentimiento neutral correctamente", async () => {
       const tweet = createTestTweet({
-        content: 'This is a product. It exists. Some information about it.',
+        content: "This is a product. It exists. Some information about it.",
         metrics: {
           likes: 5,
           retweets: 1,
@@ -70,15 +71,15 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
       const result = await manager.analyzeTweet(tweet);
 
       expect(result).toBeDefined();
-      expect(result.analysis.sentiment.label).toBe('neutral');
+      expect(result.analysis.sentiment.label).toBe("neutral");
       expect(result.analysis.sentiment.score).toBeCloseTo(0, 1);
     });
 
-    it('debe manejar texto en español', async () => {
+    it("debe manejar texto en español", async () => {
       const tweet = createTestTweet({
-        content: 'Este producto es increíble y fantástico! Me encanta!',
-        author: createTestUser({ username: 'testuser_es', followersCount: 50 }),
-        hashtags: ['#increible'],
+        content: "Este producto es increíble y fantástico! Me encanta!",
+        author: createTestUser({ username: "testuser_es", followersCount: 50 }),
+        hashtags: ["#increible"],
         metrics: {
           likes: 15,
           retweets: 3,
@@ -92,19 +93,21 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
 
       expect(result).toBeDefined();
       // Be flexible with sentiment detection as it may vary
-      expect(['positive', 'neutral']).toContain(result.analysis.sentiment.label);
+      expect(["positive", "neutral"]).toContain(
+        result.analysis.sentiment.label,
+      );
       // El test de idioma puede ser flexible ya que la detección de idioma puede variar
-      expect(['es', 'en']).toContain(result.analysis.language);
+      expect(["es", "en"]).toContain(result.analysis.language);
     });
   });
 
-  describe('Extracción de Insights', () => {
-    it('debe extraer insights de marketing', async () => {
+  describe("Extracción de Insights", () => {
+    it("debe extraer insights de marketing", async () => {
       const tweet = createTestTweet({
-        content: 'Nike shoes are amazing! @nike #justdoit #sports',
+        content: "Nike shoes are amazing! @nike #justdoit #sports",
         author: createTestUser({ verified: true, followersCount: 1000 }),
-        hashtags: ['#justdoit', '#sports'],
-        mentions: ['@nike'],
+        hashtags: ["#justdoit", "#sports"],
+        mentions: ["@nike"],
         metrics: {
           likes: 50,
           retweets: 10,
@@ -121,11 +124,11 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
     });
   });
 
-  describe('Manejo de Errores', () => {
-    it('debe manejar tweets vacíos', async () => {
+  describe("Manejo de Errores", () => {
+    it("debe manejar tweets vacíos", async () => {
       const tweet = createTestTweet({
-        content: '',
-        author: { username: 'emptyuser', followersCount: 0 } as any,
+        content: "",
+        author: { username: "emptyuser", followersCount: 0 } as any,
         metrics: {
           likes: 0,
           retweets: 0,
@@ -138,13 +141,13 @@ describe('TweetSentimentAnalysisManager - CRÍTICO', () => {
       const result = await manager.analyzeTweet(tweet);
 
       expect(result).toBeDefined();
-      expect(result.analysis.sentiment.label).toBe('neutral');
+      expect(result.analysis.sentiment.label).toBe("neutral");
     });
 
-    it('debe manejar tweets con caracteres especiales', async () => {
+    it("debe manejar tweets con caracteres especiales", async () => {
       const tweet = createTestTweet({
-        content: '🎉🎊 ¡Excelente! 💯 @#$%^&*()_+ 测试 العربية',
-        author: { username: 'specialuser', followersCount: 200 } as any,
+        content: "🎉🎊 ¡Excelente! 💯 @#$%^&*()_+ 测试 العربية",
+        author: { username: "specialuser", followersCount: 200 } as any,
         metrics: {
           likes: 5,
           retweets: 1,

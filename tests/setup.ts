@@ -4,12 +4,12 @@
  */
 
 // Mock environment variables for testing
-process.env.NODE_ENV = 'test';
-process.env.MONGODB_URI = 'mongodb://localhost:27017/sentimentalsocial_test';
+process.env.NODE_ENV = "test";
+process.env.MONGODB_URI = "mongodb://localhost:27017/sentimentalsocial_test";
 // JWT_SECRET is set in setup-env.js (must be >= 32 chars)
-process.env.TWITTER_USERNAME = 'test_user';
-process.env.TWITTER_PASSWORD = 'test_password';
-process.env.TWITTER_EMAIL = 'test@example.com';
+process.env.TWITTER_USERNAME = "test_user";
+process.env.TWITTER_PASSWORD = "test_password";
+process.env.TWITTER_EMAIL = "test@example.com";
 
 // Global test timeout
 jest.setTimeout(10000);
@@ -25,12 +25,12 @@ global.console = {
 };
 
 // Mock dotenv to prevent server startup issues
-jest.mock('dotenv', () => ({
+jest.mock("dotenv", () => ({
   config: jest.fn(),
 }));
 
 // Mock cache service to prevent intervals
-jest.mock('../src/services/cache.service', () => ({
+jest.mock("../src/services/cache.service", () => ({
   cacheService: {
     get: jest.fn(),
     set: jest.fn(),
@@ -48,7 +48,7 @@ jest.mock('../src/services/cache.service', () => ({
 }));
 
 // Mock performance monitor to prevent intervals
-jest.mock('../src/services/performance-monitor.service', () => ({
+jest.mock("../src/services/performance-monitor.service", () => ({
   performanceMonitor: {
     recordRequest: jest.fn(),
     recordResponse: jest.fn(),
@@ -68,7 +68,7 @@ jest.mock('../src/services/performance-monitor.service', () => ({
 }));
 
 // Mock database connection
-jest.mock('../src/lib/database/connection', () => ({
+jest.mock("../src/lib/database/connection", () => ({
   __esModule: true,
   default: {
     connect: jest.fn().mockResolvedValue(undefined),
@@ -77,16 +77,16 @@ jest.mock('../src/lib/database/connection', () => ({
     getConnection: jest.fn().mockReturnValue({
       connection: {
         readyState: 1,
-        db: { databaseName: 'test_db' },
+        db: { databaseName: "test_db" },
       },
     }),
     healthCheck: jest.fn().mockResolvedValue({
       connected: true,
       readyState: 1,
-      readyStateText: 'connected',
-      host: 'localhost',
+      readyStateText: "connected",
+      host: "localhost",
       port: 27017,
-      database: 'sentimentalsocial_test',
+      database: "sentimentalsocial_test",
     }),
     testConnection: jest.fn().mockResolvedValue(true),
   },

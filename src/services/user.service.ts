@@ -7,9 +7,14 @@
     _followingId: string
   ): Promise<boolean> {*/
 
-import { UserRepository } from '../repositories/user.repository';
-import { PaginatedResponse, PaginationParams } from '../types/api';
-import { CreateUserRequest, UpdateUserRequest, User, UserProfile } from '../types/user';
+import { UserRepository } from "../repositories/user.repository";
+import { PaginatedResponse, PaginationParams } from "../types/api";
+import {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+  UserProfile,
+} from "../types/user";
 
 export class UserService {
   constructor(private userRepository: UserRepository) {}
@@ -61,10 +66,13 @@ export class UserService {
   /**
    * Update user profile
    */
-  async updateUser(userId: string, updateData: UpdateUserRequest): Promise<User | null> {
+  async updateUser(
+    userId: string,
+    updateData: UpdateUserRequest,
+  ): Promise<User | null> {
     const existingUser = await this.userRepository.findById(userId);
     if (!existingUser) {
-      throw new ApiError('USER_NOT_FOUND', 'User not found');
+      throw new ApiError("USER_NOT_FOUND", "User not found");
     }
 
     return await this.userRepository.update(userId, updateData);
@@ -78,12 +86,12 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _followerId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followingId: string
+    _followingId: string,
   ): Promise<boolean> {
     // This functionality might not be needed for marketing analytics platform
     throw new ApiError(
-      'NOT_IMPLEMENTED',
-      'Follow functionality not implemented for marketing platform'
+      "NOT_IMPLEMENTED",
+      "Follow functionality not implemented for marketing platform",
     );
   }
 
@@ -94,19 +102,22 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _followerId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followingId: string
+    _followingId: string,
   ): Promise<boolean> {
     // This functionality might not be needed for marketing analytics platform
     throw new ApiError(
-      'NOT_IMPLEMENTED',
-      'Unfollow functionality not implemented for marketing platform'
+      "NOT_IMPLEMENTED",
+      "Unfollow functionality not implemented for marketing platform",
     );
   }
 
   /**
    * Search users
    */
-  async searchUsers(query: string, pagination: PaginationParams): Promise<PaginatedResponse<User>> {
+  async searchUsers(
+    query: string,
+    pagination: PaginationParams,
+  ): Promise<PaginatedResponse<User>> {
     const users = await this.userRepository.searchUsers(query, {
       limit: pagination.limit,
       offset: (pagination.page - 1) * pagination.limit,
@@ -122,7 +133,7 @@ export class UserService {
    */
   async getUserCampaigns(
     userId: string,
-    pagination: PaginationParams
+    pagination: PaginationParams,
   ): Promise<PaginatedResponse<Record<string, unknown>>> {
     // TODO: Implement getUserCampaigns to return user's marketing campaigns
     const campaigns: Record<string, unknown>[] = []; // await this.campaignRepository.findByUserId(userId, pagination);
@@ -136,7 +147,7 @@ export class UserService {
    */
   async getOrganizationUsers(
     organizationId: string,
-    pagination: PaginationParams
+    pagination: PaginationParams,
   ): Promise<PaginatedResponse<User>> {
     // TODO: Implement organization-based user listing
     const users: User[] = []; // await this.userRepository.findByOrganization(organizationId, pagination);
@@ -149,14 +160,14 @@ export class UserService {
   private async validateUniqueEmail(email: string): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
-      throw new ApiError('EMAIL_EXISTS', 'Email already exists');
+      throw new ApiError("EMAIL_EXISTS", "Email already exists");
     }
   }
 
   private async validateUniqueUsername(username: string): Promise<void> {
     const existingUser = await this.userRepository.findByUsername(username);
     if (existingUser) {
-      throw new ApiError('USERNAME_EXISTS', 'Username already exists');
+      throw new ApiError("USERNAME_EXISTS", "Username already exists");
     }
   }
 
@@ -169,7 +180,7 @@ export class UserService {
   private formatPaginatedResponse<T>(
     items: T[],
     pagination: PaginationParams,
-    total: number
+    total: number,
   ): PaginatedResponse<T> {
     const totalPages = Math.ceil(total / pagination.limit);
 
@@ -191,9 +202,9 @@ export class UserService {
 class ApiError extends Error {
   constructor(
     public code: string,
-    message: string
+    message: string,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }

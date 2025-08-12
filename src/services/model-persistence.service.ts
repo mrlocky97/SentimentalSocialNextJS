@@ -3,9 +3,9 @@
  * Handles saving, loading, and validation of trained sentiment models
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { NaiveBayesSentimentService } from './naive-bayes-sentiment.service';
+import fs from "fs/promises";
+import path from "path";
+import { NaiveBayesSentimentService } from "./naive-bayes-sentiment.service";
 
 export interface ModelMetadata {
   version: string;
@@ -13,7 +13,7 @@ export interface ModelMetadata {
   datasetSize: number;
   accuracy?: number;
   features: string[];
-  modelType: 'naive_bayes' | 'enhanced' | 'hybrid';
+  modelType: "naive_bayes" | "enhanced" | "hybrid";
   checksumMD5?: string;
 }
 
@@ -33,8 +33,13 @@ export class ModelPersistenceManager {
   private metadataFile: string;
 
   constructor() {
-    this.modelsDir = path.join(process.cwd(), 'src', 'data', 'models');
-    this.metadataFile = path.join(process.cwd(), 'src', 'data', 'model-metadata.json');
+    this.modelsDir = path.join(process.cwd(), "src", "data", "models");
+    this.metadataFile = path.join(
+      process.cwd(),
+      "src",
+      "data",
+      "model-metadata.json",
+    );
   }
 
   /**
@@ -53,14 +58,14 @@ export class ModelPersistenceManager {
    */
   async saveNaiveBayesModel(
     service: NaiveBayesSentimentService,
-    metadata: Omit<ModelMetadata, 'modelType' | 'trainingDate'>
+    metadata: Omit<ModelMetadata, "modelType" | "trainingDate">,
   ): Promise<void> {
     await this.ensureModelsDirectory();
 
-    const modelPath = path.join(this.modelsDir, 'naive_bayes_classifier.json');
+    const modelPath = path.join(this.modelsDir, "naive_bayes_classifier.json");
     const fullMetadata: ModelMetadata = {
       ...metadata,
-      modelType: 'naive_bayes',
+      modelType: "naive_bayes",
       trainingDate: new Date().toISOString(),
     };
 
@@ -78,7 +83,7 @@ export class ModelPersistenceManager {
 
       console.log(`✅ Model saved successfully: ${modelPath}`);
     } catch (error) {
-      console.error('❌ Error saving model:', error);
+      console.error("❌ Error saving model:", error);
       throw error;
     }
   }
@@ -86,8 +91,10 @@ export class ModelPersistenceManager {
   /**
    * Load a trained Naive Bayes model
    */
-  async loadNaiveBayesModel(service: NaiveBayesSentimentService): Promise<ModelMetadata | null> {
-    const modelPath = path.join(this.modelsDir, 'naive_bayes_classifier.json');
+  async loadNaiveBayesModel(
+    service: NaiveBayesSentimentService,
+  ): Promise<ModelMetadata | null> {
+    const modelPath = path.join(this.modelsDir, "naive_bayes_classifier.json");
 
     try {
       // Check if model file exists
@@ -96,22 +103,28 @@ export class ModelPersistenceManager {
       // Load the classifier
       await new Promise<void>((resolve, reject) => {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const natural = require('natural');
-        natural.BayesClassifier.load(modelPath, null, (err: Error | null, classifier: any) => {
-          if (err || !classifier) {
-            reject(err || new Error('Failed to load classifier'));
-          } else {
-            (service as any).classifier = classifier;
-            resolve();
-          }
-        });
+        const natural = require("natural");
+        natural.BayesClassifier.load(
+          modelPath,
+          null,
+          (err: Error | null, classifier: any) => {
+            if (err || !classifier) {
+              reject(err || new Error("Failed to load classifier"));
+            } else {
+              (service as any).classifier = classifier;
+              resolve();
+            }
+          },
+        );
       });
 
       // Load metadata
       const metadata = await this.loadMetadata();
 
       console.log(`✅ Model loaded successfully from: ${modelPath}`);
-      console.log(`📊 Model info: ${metadata?.datasetSize} examples, version ${metadata?.version}`);
+      console.log(
+        `📊 Model info: ${metadata?.datasetSize} examples, version ${metadata?.version}`,
+      );
 
       return metadata;
     } catch (error) {
@@ -129,7 +142,11 @@ export class ModelPersistenceManager {
       lastUpdated: new Date().toISOString(),
     };
 
-    await fs.writeFile(this.metadataFile, JSON.stringify(metadataWithTimestamp, null, 2), 'utf-8');
+    await fs.writeFile(
+      this.metadataFile,
+      JSON.stringify(metadataWithTimestamp, null, 2),
+      "utf-8",
+    );
   }
 
   /**
@@ -137,10 +154,10 @@ export class ModelPersistenceManager {
    */
   async loadMetadata(): Promise<ModelMetadata | null> {
     try {
-      const metadataContent = await fs.readFile(this.metadataFile, 'utf-8');
+      const metadataContent = await fs.readFile(this.metadataFile, "utf-8");
       return JSON.parse(metadataContent) as ModelMetadata;
     } catch (error) {
-      console.warn('⚠️ Could not load metadata:', error);
+      console.warn("⚠️ Could not load metadata:", error);
       return null;
     }
   }
@@ -150,7 +167,7 @@ export class ModelPersistenceManager {
    */
   async validateModel(
     service: NaiveBayesSentimentService,
-    testCases: Array<{ text: string; expectedSentiment: string }>
+    testCases: Array<{ text: string; expectedSentiment: string }>,
   ): Promise<{
     accuracy: number;
     precision: number;
@@ -169,11 +186,20 @@ export class ModelPersistenceManager {
       if (isCorrect) correct++;
 
       // Calculate precision/recall for positive sentiment
-      if (testCase.expectedSentiment === 'positive' && prediction.label === 'positive') {
+      if (
+        testCase.expectedSentiment === "positive" &&
+        prediction.label === "positive"
+      ) {
         truePositives++;
-      } else if (testCase.expectedSentiment !== 'positive' && prediction.label === 'positive') {
+      } else if (
+        testCase.expectedSentiment !== "positive" &&
+        prediction.label === "positive"
+      ) {
         falsePositives++;
-      } else if (testCase.expectedSentiment === 'positive' && prediction.label !== 'positive') {
+      } else if (
+        testCase.expectedSentiment === "positive" &&
+        prediction.label !== "positive"
+      ) {
         falseNegatives++;
       }
 
@@ -213,7 +239,10 @@ export class ModelPersistenceManager {
    */
   async hasValidModel(): Promise<boolean> {
     try {
-      const modelPath = path.join(this.modelsDir, 'naive_bayes_classifier.json');
+      const modelPath = path.join(
+        this.modelsDir,
+        "naive_bayes_classifier.json",
+      );
       await fs.access(modelPath);
 
       const metadata = await this.loadMetadata();
@@ -239,7 +268,10 @@ export class ModelPersistenceManager {
     lastModified: Date | null;
   }> {
     try {
-      const modelPath = path.join(this.modelsDir, 'naive_bayes_classifier.json');
+      const modelPath = path.join(
+        this.modelsDir,
+        "naive_bayes_classifier.json",
+      );
       const stats = await fs.stat(modelPath);
       const metadata = await this.loadMetadata();
 
