@@ -5,7 +5,6 @@ import { sentimentManager } from '../lib/sentiment-manager';
 import { ModelUpdateRequest, SentimentTestRequest } from '../types';
 import { Tweet } from '../types/twitter';
 import { cacheService } from './cache.service';
-import { multiLanguageAnalyzer } from './multi-language-analyzer.service';
 
 const DEMO_TWEETS: Tweet[] = [
   {
@@ -248,8 +247,21 @@ export class SentimentService {
     const { SentimentAnalysisOrchestrator } = await import('../lib/sentiment/orchestrator');
     const orchestrator = new SentimentAnalysisOrchestrator();
 
+    // Simple language detection based on common words
+    const detectSimpleLanguage = (text: string): string => {
+      const lowerText = text.toLowerCase();
+      const spanishWords = ['el', 'la', 'que', 'de', 'es', 'y', 'pero', 'con', 'por'];
+      const frenchWords = ['le', 'la', 'que', 'de', 'est', 'et', 'mais', 'avec', 'pour'];
+      const germanWords = ['der', 'die', 'das', 'und', 'ist', 'aber', 'mit', 'für'];
+      
+      if (spanishWords.some(word => lowerText.includes(word))) return 'es';
+      if (frenchWords.some(word => lowerText.includes(word))) return 'fr'; 
+      if (germanWords.some(word => lowerText.includes(word))) return 'de';
+      return 'en';
+    };
+
     // Map detected language to LanguageCode type
-    const detectedLanguage = language || multiLanguageAnalyzer.detectLanguage(text);
+    const detectedLanguage = language || detectSimpleLanguage(text);
     const mappedLanguage: 'en' | 'es' | 'fr' | 'de' | 'unknown' = ['en', 'es', 'fr', 'de'].includes(
       detectedLanguage
     )
@@ -271,7 +283,7 @@ export class SentimentService {
     return {
       text,
       detectedLanguage,
-      supportedLanguages: multiLanguageAnalyzer.getSupportedLanguages(),
+      supportedLanguages: ['en', 'es', 'fr', 'de'],
       analysis: {
         multiLanguage: {
           sentiment: multiLangResult.sentiment.label,

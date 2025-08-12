@@ -15,6 +15,20 @@
 import { NaiveBayesTrainingExample } from '../../services/naive-bayes-sentiment.service';
 import { SentimentAnalysisEngine } from './engine';
 import { AnalysisRequest, AnalysisResult, SentimentOrchestrator, TweetDTO } from './types';
+import { Tweet } from '../../types/twitter';
+
+// Import the mappers for Phase 3 integration
+interface MapperInputInterface {
+  textToAnalysisRequest(text: string, options?: any): AnalysisRequest;
+  tweetToDTO(tweet: Tweet): TweetDTO;
+  tweetsToDTO(tweets: Tweet[]): TweetDTO[];
+}
+
+interface MapperOutputInterface {
+  analysisToSentimentResponse(result: AnalysisResult, meta?: any): any;
+  tweetAnalysisToResponse(tweetId: string, result: AnalysisResult, tweet?: Tweet, meta?: any): any;
+  batchAnalysisToResponse(results: Array<{tweetId: string, result: AnalysisResult, tweet?: Tweet}>, meta?: any): any;
+}
 
 // Enhanced cache with TTL and metadata
 interface CacheEntry {
@@ -309,5 +323,150 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
     const results = await Promise.all(tweets.map((tweet) => this.analyzeTweet(tweet)));
     console.log('[Orchestrator] Batch analysis complete.');
     return results;
+  }
+
+  // =============================================================================
+  // PHASE 3: MAPPER-INTEGRATED METHODS
+  // =============================================================================
+
+  /**
+   * Analyzes plain text with standardized API response format
+   * @param text - Text to analyze
+   * @param options - Analysis options
+   * @returns Standardized API response
+   */
+  async analyzeTextWithResponse(
+    text: string,
+    options: {
+      language?: string;
+      allowSarcasmDetection?: boolean;
+      allowContextWindow?: boolean;
+    } = {}
+  ) {
+    const startTime = Date.now();
+    
+    // Use dynamic import to avoid circular dependencies
+    const { SentimentMappers } = await import('./mappers');
+    
+    // Convert text to analysis request using mapper
+    const request = SentimentMappers.Input.textToAnalysisRequest(text, options);
+    
+    // Perform analysis
+    const result = await this.analyzeText(request);
+    
+    // Convert to standardized API response
+    const processingTime = Date.now() - startTime;
+    return SentimentMappers.Output.analysisToSentimentResponse(result, {
+      processingTime,
+      cacheHit: false, // This will be determined by the underlying method
+    });
+  }
+
+  /**
+   * Analyzes a tweet with standardized API response format
+   * @param tweet - Tweet object or TweetDTO
+   * @param includeOriginalTweet - Whether to include original tweet data in response
+   * @returns Standardized API response
+   */
+  async analyzeTweetWithResponse(
+    tweet: Tweet | TweetDTO,
+    includeOriginalTweet: boolean = true
+  ) {
+    const startTime = Date.now();
+    
+    // Use dynamic import to avoid circular dependencies
+    const { SentimentMappers } = await import('./mappers');
+    
+    let tweetDTO: TweetDTO;
+    let originalTweet: Tweet | undefined;
+
+    // Convert Tweet to TweetDTO if needed
+    if ('content' in tweet || 'author' in tweet) {
+      // It's a Tweet object
+      originalTweet = tweet as Tweet;
+      tweetDTO = SentimentMappers.Input.tweetToDTO(originalTweet);
+    } else {
+      // It's already a TweetDTO
+      tweetDTO = tweet as TweetDTO;
+    }
+    
+    // Perform analysis
+    const result = await this.analyzeTweet(tweetDTO);
+    
+    // Convert to standardized API response
+    const processingTime = Date.now() - startTime;
+    return SentimentMappers.Output.tweetAnalysisToResponse(
+      result.tweetId,
+      result,
+      includeOriginalTweet ? originalTweet : undefined,
+      {
+        processingTime,
+        cacheHit: false, // This will be determined by the underlying method
+      }
+    );
+  }
+
+  /**
+   * Analyzes multiple tweets with standardized batch API response
+   * @param tweets - Array of Tweet objects
+   * @param includeOriginalTweets - Whether to include original tweet data in responses
+   * @returns Standardized batch API response
+   */
+  async analyzeTweetsBatchWithResponse(
+    tweets: Tweet[],
+    includeOriginalTweets: boolean = true
+  ) {
+    const startTime = Date.now();
+    
+    // Use dynamic import to avoid circular dependencies
+    const { SentimentMappers } = await import('./mappers');
+    
+    // Convert tweets to DTOs
+    const tweetDTOs = SentimentMappers.Input.tweetsToDTO(tweets);
+    
+    // Track cache metrics
+    const initialCacheHits = this.metrics.cacheHits;
+    
+    // Perform batch analysis
+    const results = await this.analyzeTweetsBatch(tweetDTOs);
+    
+    // Calculate cache metrics
+    const cacheHits = this.metrics.cacheHits - initialCacheHits;
+    const totalRequests = tweets.length;
+    
+    // Prepare results for mapper
+    const mappedResults = results.map((result, index) => ({
+      tweetId: result.tweetId,
+      result: result,
+      tweet: includeOriginalTweets ? tweets[index] : undefined,
+    }));
+    
+    // Convert to standardized API response
+    const processingTime = Date.now() - startTime;
+    return SentimentMappers.Output.batchAnalysisToResponse(mappedResults, {
+      processingTime,
+      cacheHits,
+      totalRequests,
+    });
+  }
+
+  /**
+   * Convenience method for legacy compatibility
+   * @param text - Text to analyze
+   * @param method - Analysis method (for compatibility)
+   * @returns Legacy format response
+   */
+  async analyzeTextLegacy(text: string, method: string = 'hybrid') {
+    // Get raw analysis result instead of API response
+    const { SentimentMappers } = await import('./mappers');
+    const request = SentimentMappers.Input.textToAnalysisRequest(text);
+    const result = await this.analyzeText(request);
+    
+    return {
+      ...SentimentMappers.Legacy.analysisToLegacyResult(result),
+      method,
+      processingTime: 0, // TODO: track this properly
+      version: result.version,
+    };
   }
 }

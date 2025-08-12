@@ -50,7 +50,6 @@ import { metricsService } from "./lib/monitoring/metrics";
 import { TwitterAuthManager } from "./services/twitter-auth-manager.service";
 // Import sentiment analysis manager and training data
 import path from "path";
-import { enhancedSentimentEngine } from "./services/enhanced-sentiment-engine.service";
 import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 const modelPath = path.join(
@@ -264,9 +263,6 @@ async function startServer() {
 
     // Initialize and train sentiment analysis model with enhanced dataset
     console.log("🧠 Initializing Enhanced Sentiment Analysis System...");
-
-    // Initialize the enhanced sentiment engine
-    await enhancedSentimentEngine.loadAndTrain();
 
     const sentimentManager = new TweetSentimentAnalysisManager();
 

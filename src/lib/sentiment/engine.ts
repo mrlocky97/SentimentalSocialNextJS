@@ -5,34 +5,191 @@
  * It combines rule-based, machine learning (Naive Bayes), and hybrid analysis techniques.
  * Enhanced with multiple open-source models for superior accuracy.
  */
-import natural from "natural";
+import natural from 'natural';
 import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
-} from "../../services/advanced-hybrid-analyzer.service";
-import { enhancedSentimentEngine } from "../../services/enhanced-sentiment-engine.service";
-import { InternalSentimentAnalyzer } from "../../services/internal-sentiment-analyzer.service";
+} from '../../services/advanced-hybrid-analyzer.service';
 import {
   NaiveBayesSentimentService,
   NaiveBayesTrainingExample,
   SentimentLabel,
-} from "../../services/naive-bayes-sentiment.service";
+} from '../../services/naive-bayes-sentiment.service';
+import { Language } from '../../enums/sentiment.enum';
+import { TextAnalysis } from '../../types/sentiment';
 import {
   AnalysisRequest,
   AnalysisResult,
   AnalyzerEngine,
   LanguageCode,
   SignalBreakdown,
-} from "./types";
+} from './types';
+
+/**
+ * Consolidated internal rule-based analyzer
+ * Integrated directly into the engine to eliminate dependencies
+ */
+class ConsolidatedRuleAnalyzer {
+  analyze(text: string): Promise<TextAnalysis> {
+    return new Promise((resolve) => {
+      const lowerText = text.toLowerCase();
+
+      // Consolidated lexicons from internal analyzer
+      const positiveWords = [
+        "good",
+        "great",
+        "excellent",
+        "amazing",
+        "love",
+        "fantastic",
+        "awesome",
+        "perfect",
+        "wonderful",
+        "best",
+        "bueno",
+        "excelente",
+        "increíble",
+        "fantástico",
+        "perfecto",
+        "maravilloso",
+        "mejor",
+      ];
+
+      const negativeWords = [
+        "bad",
+        "terrible",
+        "horrible",
+        "hate",
+        "worst",
+        "awful",
+        "disgusting",
+        "pathetic",
+        "useless",
+        "fail",
+        "malo",
+        "terrible",
+        "horrible",
+        "odio",
+        "peor",
+        "fatal",
+        "desastre",
+      ];
+
+      // Simplified emoji sentiment mapping
+      const emojiSentiment: Record<string, number> = {
+        "😀": 1,
+        "😃": 1,
+        "😄": 1,
+        "😁": 1,
+        "😊": 0.8,
+        "😍": 1,
+        "🥰": 1,
+        "👍": 0.7,
+        "❤️": 1,
+        "😢": -1,
+        "😭": -1,
+        "😞": -0.8,
+        "😔": -0.8,
+        "😡": -1,
+        "😠": -1,
+        "👎": -0.7,
+        "💔": -1,
+      };
+
+      let positiveScore = 0,
+        negativeScore = 0,
+        emojiScore = 0,
+        emojiCount = 0;
+
+      positiveWords.forEach((word) => {
+        if (lowerText.includes(word)) positiveScore++;
+      });
+      negativeWords.forEach((word) => {
+        if (lowerText.includes(word)) negativeScore++;
+      });
+
+      // Process emojis
+      const emojiMatches = Array.from(
+        text.matchAll(
+          /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]/gu,
+        ),
+      );
+
+      if (emojiMatches.length > 0) {
+        for (const match of emojiMatches) {
+          const emoji = match[0];
+          emojiCount++;
+          if (emojiSentiment[emoji] !== undefined) {
+            emojiScore += emojiSentiment[emoji];
+          }
+        }
+      }
+
+      let score = positiveScore * 0.2 - negativeScore * 0.2;
+      if (emojiCount > 0) {
+        score += (emojiScore / emojiCount) * Math.min(1, emojiCount * 0.5);
+      }
+
+      let label: "positive" | "negative" | "neutral" = "neutral";
+      let confidence = 0.5;
+
+      if (score > 0.15) {
+        label = "positive";
+        confidence = Math.min(0.99, 0.6 + Math.abs(score));
+      } else if (score < -0.15) {
+        label = "negative";
+        confidence = Math.min(0.99, 0.6 + Math.abs(score));
+      }
+
+      const words = text.split(/\s+/).filter((word) => word.length > 3);
+      const keywords = words.slice(0, 5);
+
+      const spanishWords = [
+        "el",
+        "la",
+        "que",
+        "de",
+        "es",
+        "y",
+        "pero",
+        "con",
+        "por",
+      ];
+      const isSpanish = spanishWords.some((word) => lowerText.includes(word));
+
+      const result: TextAnalysis = {
+        sentiment: {
+          score: Math.max(-1, Math.min(1, score)),
+          magnitude: Math.abs(score),
+          label,
+          confidence,
+          emotions: {
+            joy: label === "positive" ? confidence : 0,
+            sadness: label === "negative" ? confidence * 0.7 : 0,
+            anger: label === "negative" ? confidence * 0.8 : 0,
+            fear: label === "negative" ? confidence * 0.5 : 0,
+            surprise: 0.1,
+            disgust: label === "negative" ? confidence * 0.6 : 0,
+          },
+        },
+        keywords,
+        entities: [],
+        language: isSpanish ? Language.SPANISH : Language.ENGLISH,
+      };
+
+      resolve(result);
+    });
+  }
+}
 
 export class SentimentAnalysisEngine implements AnalyzerEngine {
-  private ruleBasedAnalyzer: InternalSentimentAnalyzer;
+  private ruleBasedAnalyzer: ConsolidatedRuleAnalyzer;
   private naiveBayesAnalyzer: NaiveBayesSentimentService;
   private hybridAnalyzer: AdvancedHybridAnalyzer;
   private engineVersion = "1.0.0";
 
   constructor() {
-    this.ruleBasedAnalyzer = new InternalSentimentAnalyzer();
+    this.ruleBasedAnalyzer = new ConsolidatedRuleAnalyzer();
     this.naiveBayesAnalyzer = new NaiveBayesSentimentService();
     this.hybridAnalyzer = new AdvancedHybridAnalyzer();
   }
@@ -71,81 +228,8 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
    * @returns An object with the detailed analysis result.
    */
   public async analyze(request: AnalysisRequest): Promise<AnalysisResult> {
-    const { text, language = "en" } = request;
-
-    // Use enhanced sentiment engine for better accuracy
-    try {
-      const enhancedResult = await enhancedSentimentEngine.analyzeEnhanced(
-        text,
-        language,
-      );
-
-      // Map enhanced result to our AnalysisResult format
-      const lang = language;
-      const detectedLanguage: LanguageCode = [
-        "en",
-        "es",
-        "fr",
-        "de",
-        "unknown",
-      ].includes(lang)
-        ? (lang as LanguageCode)
-        : "unknown";
-
-      const signals: SignalBreakdown = {
-        tokens: [], // Would be populated from enhanced analysis
-        ngrams: {},
-        emojis: {},
-        negationFlips: 0,
-        intensifierBoost: enhancedResult.features.emotionalIntensity,
-        sarcasmScore: enhancedResult.features.sarcasmScore,
-      };
-
-      return {
-        sentiment: {
-          label: enhancedResult.finalPrediction.label as SentimentLabel,
-          score: enhancedResult.finalPrediction.score,
-          magnitude: Math.abs(enhancedResult.finalPrediction.score),
-          confidence: enhancedResult.finalPrediction.confidence,
-          emotions: {
-            joy:
-              enhancedResult.finalPrediction.score > 0.5
-                ? enhancedResult.finalPrediction.confidence
-                : 0,
-            sadness:
-              enhancedResult.finalPrediction.score < -0.5
-                ? enhancedResult.finalPrediction.confidence * 0.7
-                : 0,
-            anger:
-              enhancedResult.finalPrediction.score < -0.5
-                ? enhancedResult.finalPrediction.confidence * 0.8
-                : 0,
-            fear:
-              enhancedResult.finalPrediction.score < -0.3
-                ? enhancedResult.finalPrediction.confidence * 0.5
-                : 0,
-            surprise:
-              Math.abs(enhancedResult.finalPrediction.score) > 0.8
-                ? enhancedResult.finalPrediction.confidence * 0.3
-                : 0,
-            disgust:
-              enhancedResult.finalPrediction.score < -0.6
-                ? enhancedResult.finalPrediction.confidence * 0.6
-                : 0,
-          },
-        },
-        keywords: [], // Would be extracted from enhanced analysis
-        language: detectedLanguage,
-        signals,
-        version: "2.0.0-enhanced",
-      };
-    } catch (error) {
-      console.warn(
-        "Enhanced engine failed, falling back to basic hybrid analysis:",
-        error,
-      );
-      return this.analyzeBasic(request);
-    }
+    // Use the basic hybrid analysis since we consolidated everything
+    return this.analyzeBasic(request);
   }
 
   /**

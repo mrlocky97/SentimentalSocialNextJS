@@ -1,6 +1,6 @@
 /**
- * Sentiment Analysis Routes
- * API endpoints for tweet sentiment analysis and marketing insights
+ * Sentiment Analysis Routes - PHASE 3 ENHANCED
+ * API endpoints with standardized mappers and consistent responses
  */
 
 import { Request, Response, Router } from "express";
@@ -13,7 +13,13 @@ import {
   successResponse,
 } from "../utils/error-handler";
 
+// Import the enhanced orchestrator for Phase 3
+import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
+
 const router = Router();
+
+// Create orchestrator instance for standardized responses
+const orchestrator = new SentimentAnalysisOrchestrator();
 
 /**
  * @swagger
@@ -59,24 +65,19 @@ const router = Router();
  *         description: Invalid text input
  */
 router.post(
-  "/analyze-text",
+  '/analyze-text',
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
 
-    if (!text || typeof text !== "string") {
+    if (!text || typeof text !== 'string') {
       throw SentimentAnalysisError.invalidText();
     }
 
-    // Use the hybrid method for best precision (default in the engine)
-    const result = await sentimentService.testSentimentAnalysis({
-      text,
-      method: Method.hybrid,
-    });
-    return successResponse(
-      res,
-      result,
-      "Text sentiment analysis completed successfully",
-    );
+    // PHASE 3: Use orchestrator with standardized mappers
+    const result = await orchestrator.analyzeTextWithResponse(text);
+    
+    // Return standardized API response
+    res.json(result);
   }),
 );
 
@@ -740,18 +741,16 @@ router.post(
       throw SentimentAnalysisError.invalidText();
     }
 
-    // Use the enhanced sentiment engine
-    const { enhancedSentimentEngine } = await import(
-      "../services/enhanced-sentiment-engine.service"
-    );
-    const result = await enhancedSentimentEngine.analyzeEnhanced(
-      text,
-      language,
-    );
+    // Use the enhanced orchestrator with advanced analysis
+    const analysis = await orchestrator.analyzeTextWithResponse(text, {
+      language: language as 'en' | 'es' | 'fr' | 'de' | 'unknown',
+      allowSarcasmDetection: true,
+      allowContextWindow: true,
+    });
 
     return successResponse(
       res,
-      result,
+      analysis,
       "Enhanced sentiment analysis completed successfully",
     );
   }),
