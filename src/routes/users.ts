@@ -1,9 +1,8 @@
 /**
- * User Routes with Swagger Documentation
- * API routes for user management with comprehensive documentation
+ * User Management Routes
+ * API endpoints for user CRUD operations and management
  */
 
-import { Order } from '@/enums/api.enum';
 import { Router } from 'express';
 import {
   BusinessLogicError,
@@ -13,6 +12,7 @@ import {
   ResponseHelper,
   ValidationError,
 } from '../core/errors';
+import { Order } from '../enums/api.enum';
 import { authenticateToken, requireRole } from '../middleware/express-auth';
 import { MongoUserRepository } from '../repositories/mongo-user.repository';
 import { CreateUserRequest, UpdateUserRequest } from '../types/user';

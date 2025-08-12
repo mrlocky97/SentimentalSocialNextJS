@@ -3,7 +3,7 @@
  * Data access layer for tweet operations and analytics
  */
 
-import { Label } from '@/enums/sentiment.enum';
+import { Label } from '../enums/sentiment.enum';
 import { ITweetDocument, TweetModel } from '../models/Tweet.model';
 import { TweetMetrics, TwitterUser } from '../types/twitter';
 

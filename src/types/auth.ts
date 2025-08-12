@@ -1,9 +1,9 @@
 /**
- * Authentication Types
- * Types for user authentication and authorization
+ * Authentication-related types and interfaces
+ * Defines data structures for auth operations
  */
 
-import { UserRole } from '@/enums/user.enum';
+import { UserRole } from '../enums/user.enum';
 
 export interface RegisterRequest {
   email: string;

@@ -1,9 +1,9 @@
 // sentiment-service.ts
 
-import { Method } from '@/enums/sentiment.enum';
-import { ModelUpdateRequest, SentimentTestRequest } from '@/types';
 import { Core, SentimentUtils } from '../core';
+import { Method } from '../enums/sentiment.enum';
 import { sentimentManager } from '../lib/sentiment-manager';
+import { ModelUpdateRequest, SentimentTestRequest } from '../types';
 import { Tweet } from '../types/twitter';
 
 const DEMO_TWEETS: Tweet[] = [

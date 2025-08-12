@@ -1,9 +1,9 @@
 /**
- * User Types with Role-Based Access Control
- * Updated for marketing analytics platform
+ * User-related types and interfaces
+ * Defines data structures for user management
  */
 
-import { Permission, UserRole } from '@/enums/user.enum';
+import { Permission, UserRole } from '../enums/user.enum';
 
 // Re-export enums for easier access
 export { Permission, UserRole };

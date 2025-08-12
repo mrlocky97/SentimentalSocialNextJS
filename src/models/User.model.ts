@@ -3,8 +3,8 @@
  * Mongoose schema for users collection
  */
 
-import { Permission, UserRole } from '@/enums/user.enum';
 import mongoose, { Document, Schema } from 'mongoose';
+import { Permission, UserRole } from '../enums/user.enum';
 
 // User document interface for MongoDB - Updated for marketing platform
 export interface IUserDocument extends Document {

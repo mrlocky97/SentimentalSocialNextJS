@@ -1,11 +1,11 @@
 /**
- * Campaign Routes with Swagger Documentation
- * API routes for campaign management with comprehensive documentation
+ * Campaign Management Routes
+ * API endpoints for social media campaign operations
  */
 
-import { Order } from '@/enums/api.enum';
-import { CampaignType } from '@/enums/campaign.enum';
 import { Router } from 'express';
+import { Order } from '../enums/api.enum';
+import { CampaignType } from '../enums/campaign.enum';
 import { authenticateToken, requireRole } from '../middleware/express-auth';
 import { MongoCampaignRepository } from '../repositories/mongo-campaign.repository';
 import { TweetDatabaseService } from '../services/tweet-database.service';

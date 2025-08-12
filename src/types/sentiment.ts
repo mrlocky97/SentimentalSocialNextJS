@@ -10,8 +10,8 @@ import {
   Label,
   Language,
   Method,
-} from '@/enums/sentiment.enum';
-import { SentimentLabel } from '@/lib/sentiment/types';
+} from '../enums/sentiment.enum';
+import { SentimentLabel } from '../lib/sentiment/types';
 
 export interface SentimentResult {
   score: number; // -1 (very negative) to 1 (very positive)

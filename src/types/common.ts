@@ -1,9 +1,9 @@
 /**
- * Common Types
- * Shared types used across the application
+ * Common types and interfaces
+ * Shared data structures used across the application
  */
 
-import { Order } from '@/enums/api.enum';
+import { Order } from '../enums/api.enum';
 
 export interface PaginationOptions {
   offset?: number;

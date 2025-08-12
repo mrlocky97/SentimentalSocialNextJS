@@ -3,8 +3,8 @@
  * Usa twikit para scraping sin API oficial
  */
 
-import { Label } from '@/enums/sentiment.enum';
 import { Request, Response, Router } from 'express';
+import { Label } from '../enums/sentiment.enum';
 import { TweetDatabaseService } from '../services/tweet-database.service';
 import { TweetSentimentAnalysisManager } from '../services/tweet-sentiment-analysis.manager.service';
 import { TwitterAuthManager } from '../services/twitter-auth-manager.service';

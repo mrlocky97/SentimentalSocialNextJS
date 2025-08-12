@@ -1,9 +1,9 @@
 /**
- * Common API Types
- * Shared types for API responses and requests
+ * API-related types and interfaces
+ * Defines data structures for API requests and responses
  */
 
-import { Order } from '@/enums/api.enum';
+import { Order } from '../enums/api.enum';
 
 export interface ApiResponse<T = any> {
   success: boolean;

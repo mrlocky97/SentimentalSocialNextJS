@@ -12,7 +12,7 @@ import {
   CampaignStatus,
   CampaignType,
   DataSource,
-} from '@/enums/campaign.enum';
+} from '../enums/campaign.enum';
 
 // Re-export enums for easier access
 export {

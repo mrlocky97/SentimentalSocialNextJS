@@ -3,8 +3,8 @@
  * Handles user authentication logic including registration and login
  */
 
-import { UserRole } from '@/enums/user.enum';
 import bcrypt from 'bcryptjs';
+import { UserRole } from '../enums/user.enum';
 import { isValidEmail, isValidPassword } from '../lib/utils/validation.utils';
 import { generateRefreshToken, generateToken } from '../middleware/express-auth';
 import { MongoUserRepository } from '../repositories/mongo-user.repository';

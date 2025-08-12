@@ -3,8 +3,8 @@
  * Schema for storing collected tweets and their analysis
  */
 
-import { Label } from '@/enums/sentiment.enum';
 import mongoose, { Document, Schema } from 'mongoose';
+import { Label } from '../enums/sentiment.enum';
 import { SentimentAnalysis, TweetMetrics, TwitterUser } from '../types/twitter';
 
 export interface ITweetDocument extends Document {

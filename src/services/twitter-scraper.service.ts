@@ -1,10 +1,9 @@
 /**
  * Twitter Real Scraper Service
- * Uses @the-convocation/twitter-scraper for real Twitter data collection
- * Now with enhanced authentication and cookie support
+ * Real implementation using twikit for scraping without official API
  */
 
-import { Label } from '@/enums/sentiment.enum';
+import { Label } from '../enums/sentiment.enum';
 import {
   AuthenticationStatus,
   ScrapedTweetData,

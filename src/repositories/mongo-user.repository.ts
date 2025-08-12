@@ -3,9 +3,9 @@
  * Real implementation of UserRepository using Mongoose
  */
 
-import { Permission, UserRole } from '@/enums/user.enum';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import { Permission, UserRole } from '../enums/user.enum';
 import FollowModel from '../models/Follow.model';
 import UserModel, { IUserDocument } from '../models/User.model';
 import { CreateUserRequest, UpdateUserRequest, User, UserAuth } from '../types/user';
