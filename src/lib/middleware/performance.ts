@@ -8,7 +8,7 @@ import compression from "compression";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { appConfig } from "../config/app";
 import { appCache } from "../cache";
-import { metricsService } from "../monitoring/metrics";
+import { metricsRegistry } from "../observability/metrics";
 
 /**
  * Compression middleware with optimization
@@ -116,7 +116,8 @@ export const performanceMiddleware = (
     }
 
     // Record metrics
-    metricsService.recordRequest(duration, isSuccess);
+    // TODO: Fix metrics service integration
+    // metricsRegistry.recordRequest(duration, isSuccess);
 
     // Log slow requests (> 1 second)
     if (duration > 1000) {

@@ -6,45 +6,41 @@
 import { NextFunction, Request, Response } from "express";
 import {
   BaseError,
+  BusinessLogicError,
+  ErrorHandlerConfig,
+  ErrorResponse,
   ErrorSeverity,
   InternalServerError,
+  KnownError,
   ValidationError,
 } from "./error-types";
 
 /**
- * Configuración del manejador de errores
+ * Express route handler tipado
  */
-interface ErrorHandlerConfig {
-  enableDetailedErrors: boolean;
-  enableStackTrace: boolean;
-  enableErrorLogging: boolean;
-  logLevel: "error" | "warn" | "info" | "debug";
-}
+export type ExpressHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => Promise<void> | void;
 
 /**
- * Respuesta de error estandardizada
+ * Express async handler tipado
  */
-interface ErrorResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    category: string;
-    severity: string;
-    timestamp: string;
-    requestId?: string;
-    suggestions?: string[];
-    details?: any;
-    stack?: string;
-  };
-}
+export type AsyncExpressHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => Promise<void>;
+
+// ==================== ERROR HANDLER CLASS ====================
 
 /**
  * Manejador centralizado de errores
  */
 export class CentralizedErrorHandler {
   private config: ErrorHandlerConfig;
-  private logger: any; // Replace with your logger interface
+  private logger: Console;
 
   constructor(config: Partial<ErrorHandlerConfig> = {}) {
     this.config = {
@@ -55,7 +51,6 @@ export class CentralizedErrorHandler {
       ...config,
     };
 
-    // Initialize logger (replace with your preferred logging library)
     this.logger = console;
   }
 
@@ -63,12 +58,11 @@ export class CentralizedErrorHandler {
    * Middleware principal para Express
    */
   expressHandler = (
-    err: any,
+    err: unknown,
     req: Request,
     res: Response,
     next: NextFunction,
   ): void => {
-    // Evitar doble procesamiento
     if (res.headersSent) {
       return next(err);
     }
@@ -76,54 +70,58 @@ export class CentralizedErrorHandler {
     const processedError = this.processError(err, req);
     const response = this.createErrorResponse(processedError, req);
 
-    // Log del error
     this.logError(processedError, req);
-
-    // Enviar respuesta
     res.status(processedError.metadata.statusCode).json(response);
   };
 
   /**
    * Procesa y normaliza errores
    */
-  private processError(error: any, req?: Request): BaseError {
-    // Si ya es un BaseError, lo retornamos tal como está
+  private processError(error: unknown, req?: Request): BaseError {
     if (error instanceof BaseError) {
       return error;
     }
 
-    // Convertir errores conocidos
-    if (error.name === "ValidationError" && error.errors) {
+    const knownError = error as KnownError;
+
+    // Errores de validación de Mongoose/Express
+    if (knownError.name === "ValidationError" && knownError.errors) {
       return new ValidationError("Validation failed", undefined, {
         operation: req?.path,
-        additionalData: { validationErrors: error.errors },
+        additionalData: { validationErrors: knownError.errors },
       });
     }
 
-    if (error.name === "MongoError" || error.name === "MongooseError") {
+    // Errores de MongoDB
+    if (
+      knownError.name === "MongoError" ||
+      knownError.name === "MongooseError"
+    ) {
       return new InternalServerError("Database operation failed", undefined, {
         operation: req?.path,
-        additionalData: { mongoError: error.code },
+        additionalData: { mongoError: knownError.code },
       });
     }
 
+    // Errores de JSON parsing
     if (error instanceof SyntaxError && "body" in error) {
       return new ValidationError("Invalid JSON format in request body");
     }
 
-    // Error desconocido - convertir a InternalServerError
+    // Error genérico
+    const genericError = error as Error;
     return new InternalServerError(
       this.config.enableDetailedErrors
-        ? error.message || "Internal server error"
+        ? genericError.message || "Internal server error"
         : "An unexpected error occurred",
       undefined,
       {
         operation: req?.path,
         additionalData: this.config.enableDetailedErrors
-          ? { originalError: error }
+          ? { originalError: genericError.message }
           : undefined,
       },
-      error,
+      genericError,
     );
   }
 
@@ -355,3 +353,206 @@ export function setupGlobalErrorHandlers(): void {
   process.on("unhandledRejection", errorHandler.handleUnhandledRejection);
   process.on("uncaughtException", errorHandler.handleUncaughtException);
 }
+
+type ErrorDetails = Record<string, unknown>;
+
+const MAX_BATCH_SIZE = 100;
+
+/**
+ * Sentiment Analysis specific error handlers
+ */
+export class SentimentAnalysisError {
+  private static baseError(
+    message: string,
+    details?: ErrorDetails,
+  ): ValidationError {
+    return new ValidationError(message, undefined, { additionalData: details });
+  }
+
+  /**
+   * Handle tweet validation errors
+   */
+  static invalidTweet(details?: ErrorDetails): ValidationError {
+    return this.baseError("Tweet object with content is required", {
+      expected: {
+        tweet: {
+          tweetId: "string",
+          content: "string (required)",
+          author: {
+            username: "string",
+            verified: "boolean",
+            followersCount: "number",
+          },
+          metrics: { likes: "number", retweets: "number", replies: "number" },
+        },
+      },
+      ...details,
+    });
+  }
+
+  /**
+   * Handle text validation errors
+   */
+  static invalidText(details?: ErrorDetails): ValidationError {
+    return this.baseError("Text string is required", {
+      example: {
+        text: "I love this product! It's amazing and works perfectly.",
+      },
+      ...details,
+    });
+  }
+
+  /**
+   * Handle batch processing errors
+   */
+  static invalidBatch(receivedCount?: number): ValidationError {
+    const message =
+      receivedCount && receivedCount > MAX_BATCH_SIZE
+        ? `Maximum ${MAX_BATCH_SIZE} tweets allowed per batch request. Received: ${receivedCount}`
+        : "Array of tweets is required";
+
+    return this.baseError(message, {
+      maxItems: MAX_BATCH_SIZE,
+      receivedCount,
+      example: {
+        tweets: [
+          {
+            tweetId: "1",
+            content: "I love this product!",
+            author: { username: "user1" },
+          },
+          {
+            tweetId: "2",
+            content: "Not satisfied with the service",
+            author: { username: "user2" },
+          },
+        ],
+      },
+    });
+  }
+
+  /**
+   * Handle model training errors
+   */
+  static invalidTrainingData(details?: ErrorDetails): ValidationError {
+    return this.baseError("Array of training examples is required", {
+      example: {
+        examples: [
+          { text: "I love this product!", label: "positive" },
+          { text: "This is terrible service", label: "negative" },
+          { text: "The package arrived yesterday", label: "neutral" },
+        ],
+      },
+      ...details,
+    });
+  }
+
+  /**
+   * Handle invalid training examples
+   */
+  static noValidTrainingExamples(): ValidationError {
+    return this.baseError("No valid training examples provided", {
+      requirements: {
+        text: "Must be a non-empty string",
+        label: "Must be one of: positive, negative, neutral",
+      },
+    });
+  }
+
+  /**
+   * Handle analysis array validation errors
+   */
+  static invalidAnalysisArray(): ValidationError {
+    return this.baseError("Array of sentiment analyses is required");
+  }
+
+  /**
+   * Handle model processing errors
+   */
+  static modelProcessingError(
+    operation: string,
+    error: Error,
+  ): BusinessLogicError {
+    return new BusinessLogicError(`Failed to ${operation}`, undefined, {
+      operation,
+      additionalData: {
+        originalError: error.message,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  /**
+   * Handle sentiment method errors
+   */
+  static invalidSentimentMethod(method: string): ValidationError {
+    return this.baseError(`Invalid sentiment analysis method: ${method}`, {
+      validMethods: ["rule", "naive"],
+      received: method,
+    });
+  }
+}
+
+/**
+ * Custom error class for API errors
+ */
+export class ApiError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
+  public details?: any;
+
+  constructor(message: string, statusCode: number = 500, details?: any) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+    this.details = details;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+/**
+ * Async handler wrapper for Express routes
+ */
+export const asyncHandler = (fn: Function) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+/**
+ * Helper para respuestas exitosas (backward compatibility)
+ */
+export const successResponse = (
+  res: Response,
+  data: any,
+  message: string = "Operation successful",
+  statusCode: number = 200,
+): void => {
+  ResponseHelper.success(res, data, message, statusCode);
+};
+
+/**
+ * Helper para respuestas de error (backward compatibility)
+ */
+export const errorResponse = (res: Response, error: any): void => {
+  const statusCode = error.statusCode || 500;
+
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      message: error.message || "Internal server error",
+      code: error.code || "INTERNAL_ERROR",
+      ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
+    },
+  });
+};
+
+/**
+ * Handler principal de errores (backward compatibility)
+ */
+export const mainErrorHandler = errorHandler.expressHandler;
+
+/**
+ * Handler para rutas no encontradas (backward compatibility)
+ */
+export const notFoundHandler = errorHandler.notFoundHandler;

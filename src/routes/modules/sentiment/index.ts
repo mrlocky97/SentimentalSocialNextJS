@@ -3,8 +3,8 @@
  * Unified route definitions with middleware and handlers
  */
 
-import { Router } from "express";
-import { asyncHandler } from "../../../utils/error-handler";
+import { Router } from 'express';
+import { asyncHandler } from '../../../core/errors/error-handler';
 
 // Import handlers
 import {
@@ -21,7 +21,7 @@ import {
   getModelStatusHandler,
   getTestHandler,
   trainModelHandler,
-} from "./handlers";
+} from './handlers';
 
 // Import middleware
 import {
@@ -37,7 +37,7 @@ import {
   validateTextInput,
   validateTrainingInput,
   validateTweetInput,
-} from "./middleware";
+} from './middleware';
 
 const router = Router();
 
@@ -172,7 +172,7 @@ router.use(sentimentRateLimit);
  *                   items:
  *                     type: string
  */
-router.get("/test", asyncHandler(getTestHandler));
+router.get('/test', asyncHandler(getTestHandler));
 
 /**
  * @swagger
@@ -221,11 +221,7 @@ router.get("/test", asyncHandler(getTestHandler));
  *       429:
  *         description: Rate limit exceeded
  */
-router.post(
-  "/analyze-text",
-  validateTextInput,
-  asyncHandler(analyzeTextHandler),
-);
+router.post('/analyze-text', validateTextInput, asyncHandler(analyzeTextHandler));
 
 /**
  * @swagger
@@ -280,11 +276,7 @@ router.post(
  *                 message:
  *                   type: string
  */
-router.post(
-  "/analyze-multilang",
-  validateMultiLangInput,
-  asyncHandler(analyzeMultiLangHandler),
-);
+router.post('/analyze-multilang', validateMultiLangInput, asyncHandler(analyzeMultiLangHandler));
 
 /**
  * @swagger
@@ -348,11 +340,7 @@ router.post(
  *                 message:
  *                   type: string
  */
-router.post(
-  "/analyze-tweet",
-  validateTweetInput,
-  asyncHandler(analyzeTweetHandler),
-);
+router.post('/analyze-tweet', validateTweetInput, asyncHandler(analyzeTweetHandler));
 
 /**
  * @swagger
@@ -402,11 +390,7 @@ router.post(
  *                 message:
  *                   type: string
  */
-router.post(
-  "/analyze-batch",
-  validateBatchInput,
-  asyncHandler(batchAnalyzeHandler),
-);
+router.post('/analyze-batch', validateBatchInput, asyncHandler(batchAnalyzeHandler));
 
 /**
  * @swagger
@@ -463,11 +447,7 @@ router.post(
  *                 message:
  *                   type: string
  */
-router.post(
-  "/compare-methods",
-  validateTextInput,
-  asyncHandler(compareMethodsHandler),
-);
+router.post('/compare-methods', validateTextInput, asyncHandler(compareMethodsHandler));
 
 /**
  * @swagger
@@ -477,11 +457,7 @@ router.post(
  *     summary: Advanced method comparison
  *     description: Advanced comparison with detailed metrics and analysis
  */
-router.post(
-  "/advanced-compare",
-  validateTextInput,
-  asyncHandler(advancedCompareHandler),
-);
+router.post('/advanced-compare', validateTextInput, asyncHandler(advancedCompareHandler));
 
 /**
  * @swagger
@@ -513,11 +489,7 @@ router.post(
  *       200:
  *         description: Analysis with specific method completed
  */
-router.post(
-  "/analyze-method",
-  validateMethodInput,
-  asyncHandler(analyzeWithMethodHandler),
-);
+router.post('/analyze-method', validateMethodInput, asyncHandler(analyzeWithMethodHandler));
 
 /**
  * @swagger
@@ -543,7 +515,7 @@ router.post(
  *                 message:
  *                   type: string
  */
-router.get("/demo", asyncHandler(getDemoHandler));
+router.get('/demo', asyncHandler(getDemoHandler));
 
 /**
  * @swagger
@@ -586,7 +558,7 @@ router.get("/demo", asyncHandler(getDemoHandler));
  *       200:
  *         description: Model training completed
  */
-router.post("/train", validateTrainingInput, asyncHandler(trainModelHandler));
+router.post('/train', validateTrainingInput, asyncHandler(trainModelHandler));
 
 /**
  * @swagger
@@ -620,7 +592,7 @@ router.post("/train", validateTrainingInput, asyncHandler(trainModelHandler));
  *                 message:
  *                   type: string
  */
-router.get("/model-status", asyncHandler(getModelStatusHandler));
+router.get('/model-status', asyncHandler(getModelStatusHandler));
 
 /**
  * @swagger
@@ -630,7 +602,7 @@ router.get("/model-status", asyncHandler(getModelStatusHandler));
  *     summary: Get performance benchmarks
  *     description: Get performance benchmarks and metrics
  */
-router.get("/benchmarks", asyncHandler(getBenchmarksHandler));
+router.get('/benchmarks', asyncHandler(getBenchmarksHandler));
 
 /**
  * @swagger
@@ -640,6 +612,6 @@ router.get("/benchmarks", asyncHandler(getBenchmarksHandler));
  *     summary: Get analysis metrics
  *     description: Get comprehensive analysis metrics and statistics
  */
-router.get("/metrics", asyncHandler(getMetricsHandler));
+router.get('/metrics', asyncHandler(getMetricsHandler));
 
 export default router;

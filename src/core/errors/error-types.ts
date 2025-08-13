@@ -102,6 +102,64 @@ export interface ErrorMetadata {
 }
 
 /**
+ * Configuración del manejador de errores
+ */
+export interface ErrorHandlerConfig {
+  enableDetailedErrors: boolean;
+  enableStackTrace: boolean;
+  enableErrorLogging: boolean;
+  logLevel: "error" | "warn" | "info" | "debug";
+}
+
+/**
+ * Logger interface tipado
+ */
+export interface Logger {
+  error: (message: string, data?: unknown) => void;
+  warn: (message: string, data?: unknown) => void;
+  info: (message: string, data?: unknown) => void;
+  debug: (message: string, data?: unknown) => void;
+}
+
+/**
+ * Respuesta de error estandardizada
+ */
+export interface ErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    category: string;
+    severity: string;
+    timestamp: string;
+    requestId?: string;
+    suggestions?: string[];
+    details?: Record<string, unknown>;
+    stack?: string;
+  };
+}
+
+/**
+ * Respuesta exitosa tipada
+ */
+export interface SuccessResponse<T = unknown> {
+  success: true;
+  data: T;
+  message: string;
+  timestamp: string;
+}
+
+/**
+ * Tipos de errores conocidos
+ */
+export interface KnownError {
+  name: string;
+  code?: string | number;
+  message: string;
+  errors?: Record<string, unknown>;
+}
+
+/**
  * Clase base para errores de aplicación
  */
 export abstract class BaseError extends Error {
