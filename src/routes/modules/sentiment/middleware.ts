@@ -67,36 +67,85 @@ export const validateMultiLangInput = (
 };
 
 /**
- * Validate tweet input middleware
+ * Validate tweet input middleware - ROBUST VERSION
  */
 export const validateTweetInput = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const { tweet } = req.body;
+  try {
+    const { tweet } = req.body;
 
-  if (!tweet || typeof tweet !== "object") {
-    throw new ValidationError("Tweet is required and must be an object");
+    // Validar que tweet existe y es un objeto
+    if (!tweet || typeof tweet !== "object" || Array.isArray(tweet)) {
+      return res.status(400).json({
+        success: false,
+        error: "Tweet is required and must be an object",
+        code: "INVALID_TWEET_FORMAT",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Validar contenido del tweet
+    if (!tweet.content || typeof tweet.content !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Tweet content is required and must be a string",
+        code: "MISSING_CONTENT",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const content = tweet.content.trim();
+    if (content.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Tweet content cannot be empty",
+        code: "EMPTY_CONTENT",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (content.length > 500) { // Más flexible que 280
+      return res.status(400).json({
+        success: false,
+        error: "Tweet content must be less than 500 characters",
+        code: "CONTENT_TOO_LONG",
+        received: content.length,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Normalizar ID: aceptar tanto 'id' como 'tweetId'
+    const rawId = tweet.tweetId || tweet.id;
+    if (!rawId || typeof rawId !== "string" || rawId.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        error: "Tweet must include 'id' or 'tweetId' as a non-empty string",
+        code: "MISSING_ID",
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Normalizar: asegurar que tweetId existe
+    if (!tweet.tweetId) {
+      req.body.tweet.tweetId = rawId;
+    }
+
+    // Normalizar contenido
+    req.body.tweet.content = content;
+
+    next();
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: "Internal validation error",
+      code: "VALIDATION_ERROR",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
-
-  if (!tweet.content || typeof tweet.content !== "string") {
-    throw new ValidationError("Tweet content is required and must be a string");
-  }
-
-  if (tweet.content.trim().length === 0) {
-    throw new ValidationError("Tweet content cannot be empty");
-  }
-
-  if (tweet.content.length > 280) {
-    throw new ValidationError("Tweet content must be less than 280 characters");
-  }
-
-  if (!tweet.tweetId || typeof tweet.tweetId !== "string") {
-    throw new ValidationError("Tweet ID is required and must be a string");
-  }
-
-  next();
 };
 
 /**
@@ -305,20 +354,30 @@ export const sentimentRateLimit = asyncHandler(
 );
 
 /**
- * Content type validation middleware
+ * Content type validation middleware - FIXED VERSION
  */
 export const validateContentType = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  if (req.method === "POST" && !req.is("application/json")) {
+  // Only validate POST/PUT/PATCH requests
+  if (!["POST", "PUT", "PATCH"].includes(req.method)) {
+    return next();
+  }
+
+  const contentType = req.get("Content-Type") || "";
+  const isJson = contentType.toLowerCase().includes("application/json");
+  
+  if (!isJson) {
     return res.status(400).json({
       success: false,
       error: "Content-Type must be application/json",
-      received: req.get("Content-Type") || "none",
+      received: contentType || "none",
+      timestamp: new Date().toISOString()
     });
   }
+  
   next();
 };
 
