@@ -1,6 +1,6 @@
 {
   "trained": true,
-  "trainingDate": "2025-08-14T20:39:03.348Z",
+  "trainingDate": "2025-08-14T21:17:55.771Z",
   "datasetSize": 1274,
   "stats": {
     "trained": true,
@@ -13,5 +13,5 @@
       "sarcasm": 48
     }
   },
-  "trainingTime": 17
+  "trainingTime": 15
 }

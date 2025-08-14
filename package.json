@@ -24,6 +24,7 @@
     "test:essential": "tsx src/scripts/essential-test.ts",
     "test:basic": "tsx src/scripts/test-basic.ts",
     "sentiment:train": "tsx src/scripts/train-sentiment-model.ts",
+    "sentiment:evaluate": "tsx src/scripts/evaluate-accuracy.ts",
     "sentiment:save": "tsx src/scripts/save-model.ts",
     "test:reactive": "tsx src/scripts/test-reactive.ts",
     "test:advanced": "tsx src/scripts/test-advanced.ts",

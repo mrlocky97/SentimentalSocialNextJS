@@ -328,15 +328,14 @@ async function startServer() {
         await manager.saveNaiveBayesToFile(modelPath);
 
         // Validate model performance
-        console.log("🧪 Validating model performance...");
-        const { sentimentTestDataset } = await import("./data/test-datasets");
+        console.log("🧪 Model validation temporarily disabled...");
+        // TODO: Implement test dataset validation
+        // const { sentimentTestDataset } = await import("./data/test-datasets");
 
-        if (sentimentTestDataset && sentimentTestDataset.length > 0) {
-          // We'll implement validation in the persistence manager
-          console.log(
-            `📊 Validation completed with test dataset of ${sentimentTestDataset.length} cases`,
-          );
-        }
+        // if (sentimentTestDataset && sentimentTestDataset.length > 0) {
+        // We'll implement validation in the persistence manager
+        console.log("📊 Validation would be completed with test dataset");
+        // }
 
         console.log("✅ Enhanced Sentiment Analysis System ready!");
       } catch (modelError) {

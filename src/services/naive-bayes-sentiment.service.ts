@@ -1,4 +1,4 @@
-import { trainingDataBlock1 } from "../data/enhanced-training-data-v3";
+import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
 
 export type SentimentLabel = "positive" | "negative" | "neutral";
 
@@ -40,13 +40,12 @@ export class NaiveBayesSentimentService {
   }
 
   private trainWithEnhancedData(): void {
-    // Convert enhanced training data to proper format
-    const trainingData: NaiveBayesTrainingExample[] = trainingDataBlock1.map(
-      (item) => ({
+    // Convert enhanced training data to proper format - USANDO TODO EL DATASET
+    const trainingData: NaiveBayesTrainingExample[] =
+      enhancedTrainingDataV3Complete.map((item: any) => ({
         text: item.text,
         label: item.label as SentimentLabel,
-      }),
-    );
+      }));
 
     this.train(trainingData);
   }

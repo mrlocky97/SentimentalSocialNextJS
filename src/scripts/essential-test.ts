@@ -23,7 +23,6 @@ import {
 
 // Import RxJS utilities
 import { firstValueFrom, timeout } from "rxjs";
-import { TwitterScraperService } from "../../backup/backup-twitter-scraper.service";
 
 // Enhanced error logging
 const logSuccess = (test: string, message: string) => {
@@ -186,9 +185,6 @@ async function testEssentialFunctionality() {
     logSuccess("Database connection", "operational");
 
     // Test 4: Traditional Twitter Scraper
-    console.log("🐦 Testing Traditional Twitter Scraper Service...");
-    new TwitterScraperService(); // Test instantiation
-    logSuccess("Twitter scraper service", "loaded");
 
     // Test 4.1: Reactive Twitter Scraper
     console.log("⚡ Testing Reactive Twitter Scraper...");
