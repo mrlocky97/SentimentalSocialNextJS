@@ -26,7 +26,7 @@ import {
   scrapingRateLimit,
 } from "./lib/middleware/performance";
 
-// Import new performance and monitoring services
+// Import performance services
 import { generalRateLimitMiddleware } from "./middleware/intelligent-rate-limit";
 import { performanceMonitor } from "./services/performance-monitor.service";
 
@@ -88,13 +88,13 @@ app.use(requestLoggingMiddleware);
 // Metrics collection middleware (after logging)
 app.use(createMetricsMiddleware());
 
-// Performance monitoring for slow requests
+// Performance middleware for slow requests
 app.use(performanceLoggingMiddleware(1000)); // 1 second threshold
 
 // Compression middleware
 app.use(compressionMiddleware);
 
-// Performance monitoring
+// Performance optimization
 app.use(performanceMiddleware);
 
 // Request sanitization
@@ -109,7 +109,7 @@ app.use(morgan("combined"));
 // Global rate limiting with intelligent rate limiter
 app.use(generalRateLimitMiddleware);
 
-// Performance monitoring middleware
+// Performance middleware
 app.use(performanceMonitor.middleware());
 
 // Body parsing middleware - optimized limits

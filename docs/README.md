@@ -275,7 +275,7 @@ const results = await queryOptimizer.executeBatch([
 ### Performance Monitoring
 
 ```typescript
-import { performanceMonitor } from '@/services/performance-monitoring.service';
+import { performanceMonitor } from '@/services/performance-monitor.service';
 
 // Track endpoint performance
 performanceMonitor.trackEndpoint('GET', '/api/campaigns', 200, 150);
