@@ -129,7 +129,7 @@ if (features.ENABLE_SCRAPING) {
 }
 
 // Swagger UI setup (disabled by default in production)
-if (appConfig.docs.enableSwaggerUI) {
+if (features.ENABLE_SWAGGER_UI) {
   // Optional basic auth for Swagger
   const swaggerAuth = (
     req: express.Request,
