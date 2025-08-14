@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import { enhancedTrainingDataV3Complete as TRAIN } from "../data/enhanced-training-data-v3";
 import { TweetSentimentAnalysisManager } from "../services/tweet-sentiment-analysis.manager.service";
 
@@ -409,4 +411,116 @@ function printDetailedResults(results: EvaluationResults) {
   }
 
   console.log("✅ Evaluación completada!");
+
+  // 💾 GUARDAR METADATOS DEL MODELO
+  console.log("\n💾 Guardando metadatos del modelo...");
+
+  const metadata = {
+    version: "v3.0",
+    created_at: new Date().toISOString(),
+    model_type: "naive_bayes_enhanced",
+    dataset: {
+      source: "enhanced-training-data-v3.ts",
+      total_samples: TRAIN.length,
+      distribution: {
+        positive: TRAIN.filter((d) => d.label === "positive").length,
+        negative: TRAIN.filter((d) => d.label === "negative").length,
+        neutral: TRAIN.filter(
+          (d) => d.label === "neutral" || d.label === "sarcasm",
+        ).length,
+      },
+      languages: ["en", "es", "fr", "de"],
+      features: [
+        "social_media_content",
+        "sarcasm_detection",
+        "multilingual_support",
+        "technical_contexts",
+        "regional_expressions",
+      ],
+    },
+    training: {
+      vocabulary_size: 2996, // From training output
+      training_time_ms: 15,
+      algorithm: "naive_bayes_with_laplace_smoothing",
+      smoothing_factor: 1,
+    },
+    performance: {
+      accuracy: results.accuracy,
+      macro_f1: results.macroF1,
+      weighted_f1: results.weightedF1,
+      test_samples: totalSamples,
+      metrics_by_class: {
+        positive: {
+          precision: results.perClassMetrics.positive.precision,
+          recall: results.perClassMetrics.positive.recall,
+          f1_score: results.perClassMetrics.positive.f1Score,
+          support: results.perClassMetrics.positive.support,
+        },
+        negative: {
+          precision: results.perClassMetrics.negative.precision,
+          recall: results.perClassMetrics.negative.recall,
+          f1_score: results.perClassMetrics.negative.f1Score,
+          support: results.perClassMetrics.negative.support,
+        },
+        neutral: {
+          precision: results.perClassMetrics.neutral.precision,
+          recall: results.perClassMetrics.neutral.recall,
+          f1_score: results.perClassMetrics.neutral.f1Score,
+          support: results.perClassMetrics.neutral.support,
+        },
+      },
+      confusion_matrix: {
+        positive: {
+          positive: confusionMatrix.positive.positive,
+          negative: confusionMatrix.positive.negative,
+          neutral: confusionMatrix.positive.neutral,
+        },
+        negative: {
+          positive: confusionMatrix.negative.positive,
+          negative: confusionMatrix.negative.negative,
+          neutral: confusionMatrix.negative.neutral,
+        },
+        neutral: {
+          positive: confusionMatrix.neutral.positive,
+          negative: confusionMatrix.neutral.negative,
+          neutral: confusionMatrix.neutral.neutral,
+        },
+      },
+    },
+    configuration: {
+      neutral_delta: parseFloat(process.env.NEUTRAL_DELTA || "0.07"),
+      pos_bias: parseFloat(process.env.POS_BIAS || "0.10"),
+      neg_bias: parseFloat(process.env.NEG_BIAS || "0.10"),
+      emoji_weight: parseFloat(process.env.EMOJI_WEIGHT || "0.20"),
+      exclamation_weight: parseFloat(process.env.EXCLAMATION_WEIGHT || "0.05"),
+      negation_invert: process.env.NEGATION_INVERT === "true",
+      confidence_threshold: parseFloat(
+        process.env.SENTIMENT_CONFIDENCE_THRESHOLD || "0.6",
+      ),
+    },
+    production_ready: results.accuracy >= 0.85, // Mark as production ready if >85%
+    notes: [
+      `Model evaluation completed with ${(results.accuracy * 100).toFixed(2)}% accuracy`,
+      "Optimized for social media and professional contexts",
+      "Includes sarcasm and irony detection",
+      "Suitable for real-time sentiment analysis",
+      results.accuracy >= 0.9
+        ? "EXCELLENT performance - Production ready"
+        : results.accuracy >= 0.85
+          ? "GOOD performance - Production candidate"
+          : "NEEDS IMPROVEMENT - Not recommended for production",
+    ],
+  };
+
+  // Escribir metadatos
+  const metadataPath = path.join(process.cwd(), "data", "model-metadata.json");
+  fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf8");
+
+  console.log(`✅ Metadatos guardados en: ${metadataPath}`);
+  console.log(
+    `📊 Performance: ${(results.accuracy * 100).toFixed(2)}% accuracy | ${(results.macroF1 * 100).toFixed(2)}% Macro-F1`,
+  );
+  console.log(
+    `🎯 Estado: ${metadata.production_ready ? "LISTO PARA PRODUCCIÓN" : "REQUIERE MEJORAS"}`,
+  );
 })().catch(console.error);
