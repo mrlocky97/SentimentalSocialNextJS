@@ -3,16 +3,16 @@
  * RxJS optimization wrapper using only the main TwitterRealScraperService
  */
 
-import { Observable, BehaviorSubject, from } from 'rxjs';
-import { map, catchError, shareReplay, retry, timeout } from 'rxjs/operators';
-import { TwitterRealScraperService } from '../twitter-scraper.service';
-import { Tweet } from '../../types/twitter';
+import { Observable, BehaviorSubject, from } from "rxjs";
+import { map, catchError, shareReplay, retry, timeout } from "rxjs/operators";
+import { TwitterRealScraperService } from "../twitter-scraper.service";
+import { Tweet } from "../../types/twitter";
 
 export interface ScrapingRequest {
   id: string;
   query: string;
   options: any;
-  priority: 'urgent' | 'high' | 'medium' | 'low';
+  priority: "urgent" | "high" | "medium" | "low";
   timestamp: Date;
   retryCount: number;
 }
@@ -48,7 +48,7 @@ class ReactiveTwitterScraperWrapper {
   submitRequest(
     query: string,
     options: any = {},
-    priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'
+    priority: "urgent" | "high" | "medium" | "low" = "medium",
   ): Observable<Tweet[]> {
     return from(this.processSingleRequest(query, options)).pipe(
       timeout(30000), // 30 second timeout
@@ -56,11 +56,14 @@ class ReactiveTwitterScraperWrapper {
       catchError((error) => {
         return from([]);
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
   }
 
-  private async processSingleRequest(query: string, options: any): Promise<Tweet[]> {
+  private async processSingleRequest(
+    query: string,
+    options: any,
+  ): Promise<Tweet[]> {
     const startTime = Date.now();
 
     // Check cache first
@@ -88,16 +91,18 @@ class ReactiveTwitterScraperWrapper {
   batchScrape(
     queries: string[],
     options: any = {},
-    priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium'
+    priority: "urgent" | "high" | "medium" | "low" = "medium",
   ): Observable<Tweet[]> {
     return from(
-      Promise.all(queries.map((query) => this.processSingleRequest(query, options)))
+      Promise.all(
+        queries.map((query) => this.processSingleRequest(query, options)),
+      ),
     ).pipe(
       map((results) => results.flat()),
       catchError((error) => {
         return from([]);
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
   }
 
@@ -119,7 +124,7 @@ class ReactiveTwitterScraperWrapper {
         queueLength: 0,
         cacheSize: this.cache.size,
         stats,
-      }))
+      })),
     );
   }
 

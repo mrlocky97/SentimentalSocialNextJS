@@ -4,13 +4,13 @@
  */
 
 // Import services first
-import { reactiveTwitterScraper } from './twitter-scraper-reactive.wrapper';
-import { reactiveSentimentAnalyzer } from './sentiment-analysis-reactive.wrapper';
-import { notificationSystem } from './notification-system';
-import { autoOptimizationSystem } from './auto-optimization-system';
-import { predictiveAnalyticsSystem } from './predictive-analytics-system';
-import { reactiveOrchestrator } from './reactive-orchestrator';
-import { switchMap } from 'rxjs/operators';
+import { reactiveTwitterScraper } from "./twitter-scraper-reactive.wrapper";
+import { reactiveSentimentAnalyzer } from "./sentiment-analysis-reactive.wrapper";
+import { notificationSystem } from "./notification-system";
+import { autoOptimizationSystem } from "./auto-optimization-system";
+import { predictiveAnalyticsSystem } from "./predictive-analytics-system";
+import { reactiveOrchestrator } from "./reactive-orchestrator";
+import { switchMap } from "rxjs/operators";
 
 // Export reactive services
 export {
@@ -27,14 +27,14 @@ export type {
   OptimizationTask,
   OptimizationResult,
   OptimizationStats,
-} from './auto-optimization-system';
+} from "./auto-optimization-system";
 
 export type {
   PredictionRequest,
   PredictionResult,
   TrendAnalysis,
   PredictiveStats,
-} from './predictive-analytics-system';
+} from "./predictive-analytics-system";
 
 export type {
   Workflow,
@@ -42,7 +42,7 @@ export type {
   SystemHealth,
   ServiceStatus,
   OrchestratorStats,
-} from './reactive-orchestrator';
+} from "./reactive-orchestrator";
 
 /**
  * Reactive Services Configuration
@@ -71,19 +71,21 @@ export const defaultReactiveConfig: ReactiveConfig = {
 /**
  * Initialize all reactive services with configuration
  */
-export function initializeReactiveServices(config: Partial<ReactiveConfig> = {}): void {
+export function initializeReactiveServices(
+  config: Partial<ReactiveConfig> = {},
+): void {
   const finalConfig = { ...defaultReactiveConfig, ...config };
 
-  console.log('🚀 Initializing Reactive Services Suite');
-  console.log('📊 Configuration:', finalConfig);
+  console.log("🚀 Initializing Reactive Services Suite");
+  console.log("📊 Configuration:", finalConfig);
 
-  console.log('✅ Twitter Scraper Reactive Wrapper - Ready');
-  console.log('✅ Sentiment Analysis Reactive Wrapper - Ready');
-  console.log('✅ Notification System - Ready');
-  console.log('✅ Auto Optimization System - Ready');
-  console.log('✅ Predictive Analytics System - Ready');
-  console.log('✅ Reactive Orchestrator - Ready');
-  console.log('🎉 All Reactive Services Initialized Successfully!');
+  console.log("✅ Twitter Scraper Reactive Wrapper - Ready");
+  console.log("✅ Sentiment Analysis Reactive Wrapper - Ready");
+  console.log("✅ Notification System - Ready");
+  console.log("✅ Auto Optimization System - Ready");
+  console.log("✅ Predictive Analytics System - Ready");
+  console.log("✅ Reactive Orchestrator - Ready");
+  console.log("🎉 All Reactive Services Initialized Successfully!");
 }
 
 /**
@@ -112,11 +114,15 @@ export async function getSystemStatus(): Promise<{
 /**
  * Utility function to create a complete social media optimization workflow
  */
-export function createSocialMediaWorkflow(campaignId: string, hashtags: string[], content: string) {
+export function createSocialMediaWorkflow(
+  campaignId: string,
+  hashtags: string[],
+  content: string,
+) {
   return reactiveOrchestrator.createOptimizationWorkflow(campaignId, {
     hashtags,
     content,
-    optimizationTargets: ['engagement', 'reach', 'sentiment'],
+    optimizationTargets: ["engagement", "reach", "sentiment"],
   });
 }
 
@@ -125,21 +131,29 @@ export function createSocialMediaWorkflow(campaignId: string, hashtags: string[]
  */
 export function startSentimentMonitoring(keywords: string[]) {
   // Scrape tweets for keywords
-  const scrapeResult$ = reactiveTwitterScraper.batchScrape(keywords, {}, 'medium');
+  const scrapeResult$ = reactiveTwitterScraper.batchScrape(
+    keywords,
+    {},
+    "medium",
+  );
 
   // Analyze sentiment
   const sentimentResult$ = scrapeResult$.pipe(
-    switchMap((tweets: any) => reactiveSentimentAnalyzer.analyzeTweetsBatch(tweets))
+    switchMap((tweets: any) =>
+      reactiveSentimentAnalyzer.analyzeTweetsBatch(tweets),
+    ),
   );
 
   // Send notifications for negative sentiment
   sentimentResult$.subscribe((results: any) => {
-    const negativeResults = results.filter((r: any) => r.sentiment && r.sentiment.score < -0.5);
+    const negativeResults = results.filter(
+      (r: any) => r.sentiment && r.sentiment.score < -0.5,
+    );
     if (negativeResults.length > 0) {
       notificationSystem.sendWarning(
-        'Negative Sentiment Alert',
+        "Negative Sentiment Alert",
         `Found ${negativeResults.length} negative mentions`,
-        { keywords, negativeCount: negativeResults.length }
+        { keywords, negativeCount: negativeResults.length },
       );
     }
   });
@@ -158,6 +172,13 @@ export {
   debounceTime,
   distinctUntilChanged,
   shareReplay,
-} from 'rxjs/operators';
+} from "rxjs/operators";
 
-export { Observable, Subject, BehaviorSubject, combineLatest, merge, timer } from 'rxjs';
+export {
+  Observable,
+  Subject,
+  BehaviorSubject,
+  combineLatest,
+  merge,
+  timer,
+} from "rxjs";

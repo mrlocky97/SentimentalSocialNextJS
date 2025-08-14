@@ -3,8 +3,8 @@
  * Helps users import Twitter cookies more easily
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 export class CookieImporter {
   /**
@@ -14,83 +14,92 @@ export class CookieImporter {
     const template = {
       cookies: [
         {
-          name: 'auth_token',
-          value: 'REPLACE_WITH_YOUR_AUTH_TOKEN',
-          domain: '.twitter.com',
-          path: '/',
+          name: "auth_token",
+          value: "REPLACE_WITH_YOUR_AUTH_TOKEN",
+          domain: ".twitter.com",
+          path: "/",
           httpOnly: true,
           secure: true,
-          sameSite: 'None',
+          sameSite: "None",
         },
         {
-          name: 'ct0',
-          value: 'REPLACE_WITH_YOUR_CT0_TOKEN',
-          domain: '.twitter.com',
-          path: '/',
+          name: "ct0",
+          value: "REPLACE_WITH_YOUR_CT0_TOKEN",
+          domain: ".twitter.com",
+          path: "/",
           httpOnly: false,
           secure: true,
-          sameSite: 'Lax',
+          sameSite: "Lax",
         },
         {
-          name: 'twid',
-          value: 'REPLACE_WITH_YOUR_TWID',
-          domain: '.twitter.com',
-          path: '/',
+          name: "twid",
+          value: "REPLACE_WITH_YOUR_TWID",
+          domain: ".twitter.com",
+          path: "/",
           httpOnly: true,
           secure: true,
-          sameSite: 'None',
+          sameSite: "None",
         },
         {
-          name: '_twitter_sess',
-          value: 'REPLACE_WITH_YOUR_TWITTER_SESS',
-          domain: '.twitter.com',
-          path: '/',
+          name: "_twitter_sess",
+          value: "REPLACE_WITH_YOUR_TWITTER_SESS",
+          domain: ".twitter.com",
+          path: "/",
           httpOnly: true,
           secure: true,
-          sameSite: 'None',
+          sameSite: "None",
         },
       ],
       timestamp: Date.now(),
       userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       isValid: true,
       expirationTime: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     };
 
-    const templatePath = path.join(process.cwd(), 'cookies-template.json');
+    const templatePath = path.join(process.cwd(), "cookies-template.json");
     fs.writeFileSync(templatePath, JSON.stringify(template, null, 2));
   }
 
   /**
    * Validate a cookies file
    */
-  static validateCookieFile(filePath: string): { valid: boolean; message: string; details?: any } {
+  static validateCookieFile(filePath: string): {
+    valid: boolean;
+    message: string;
+    details?: any;
+  } {
     try {
       if (!fs.existsSync(filePath)) {
         return { valid: false, message: `File not found: ${filePath}` };
       }
 
-      const content = fs.readFileSync(filePath, 'utf8');
+      const content = fs.readFileSync(filePath, "utf8");
       const data = JSON.parse(content);
 
       // Check basic structure
       if (!data.cookies || !Array.isArray(data.cookies)) {
-        return { valid: false, message: 'Invalid format: missing cookies array' };
+        return {
+          valid: false,
+          message: "Invalid format: missing cookies array",
+        };
       }
 
       if (data.cookies.length === 0) {
-        return { valid: false, message: 'No cookies found in file' };
+        return { valid: false, message: "No cookies found in file" };
       }
 
       // Check for essential cookies
       const cookieNames = data.cookies.map((c: any) => c.name);
-      const requiredCookies = ['auth_token', 'ct0'];
-      const missingRequired = requiredCookies.filter((name) => !cookieNames.includes(name));
+      const requiredCookies = ["auth_token", "ct0"];
+      const missingRequired = requiredCookies.filter(
+        (name) => !cookieNames.includes(name),
+      );
 
       if (missingRequired.length > 0) {
         return {
           valid: false,
-          message: `Missing required cookies: ${missingRequired.join(', ')}`,
+          message: `Missing required cookies: ${missingRequired.join(", ")}`,
           details: { found: cookieNames, missing: missingRequired },
         };
       }
@@ -98,13 +107,15 @@ export class CookieImporter {
       // Check for placeholder values
       const placeholderCookies = data.cookies.filter(
         (c: any) =>
-          c.value.includes('REPLACE_WITH') || c.value.includes('YOUR_') || c.value.length < 10
+          c.value.includes("REPLACE_WITH") ||
+          c.value.includes("YOUR_") ||
+          c.value.length < 10,
       );
 
       if (placeholderCookies.length > 0) {
         return {
           valid: false,
-          message: `Found placeholder values in: ${placeholderCookies.map((c: any) => c.name).join(', ')}`,
+          message: `Found placeholder values in: ${placeholderCookies.map((c: any) => c.name).join(", ")}`,
           details: { placeholders: placeholderCookies.map((c: any) => c.name) },
         };
       }
@@ -114,7 +125,7 @@ export class CookieImporter {
       if (data.expirationTime && data.expirationTime < now) {
         return {
           valid: false,
-          message: 'Cookies have expired',
+          message: "Cookies have expired",
           details: { expired: new Date(data.expirationTime).toLocaleString() },
         };
       }
@@ -128,13 +139,13 @@ export class CookieImporter {
           timestamp: new Date(data.timestamp).toLocaleString(),
           expiration: data.expirationTime
             ? new Date(data.expirationTime).toLocaleString()
-            : 'No expiration',
+            : "No expiration",
         },
       };
     } catch (error) {
       return {
         valid: false,
-        message: `Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Error reading file: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
   }
@@ -144,17 +155,17 @@ export class CookieImporter {
    */
   static convertBrowserCookies(
     browserCookiesPath: string,
-    outputPath?: string
+    outputPath?: string,
   ): { success: boolean; message: string } {
     try {
-      const content = fs.readFileSync(browserCookiesPath, 'utf8');
+      const content = fs.readFileSync(browserCookiesPath, "utf8");
       let browserData;
 
       // Try to parse different formats
       try {
         browserData = JSON.parse(content);
       } catch {
-        return { success: false, message: 'Invalid JSON format' };
+        return { success: false, message: "Invalid JSON format" };
       }
 
       // Handle different browser export formats
@@ -163,20 +174,25 @@ export class CookieImporter {
       // Chrome Cookie Editor format
       if (Array.isArray(browserData)) {
         cookies = browserData.filter(
-          (cookie: any) => cookie.domain && cookie.domain.includes('twitter.com')
+          (cookie: any) =>
+            cookie.domain && cookie.domain.includes("twitter.com"),
         );
       }
       // Other formats
       else if (browserData.cookies && Array.isArray(browserData.cookies)) {
         cookies = browserData.cookies.filter(
-          (cookie: any) => cookie.domain && cookie.domain.includes('twitter.com')
+          (cookie: any) =>
+            cookie.domain && cookie.domain.includes("twitter.com"),
         );
       } else {
-        return { success: false, message: 'Unrecognized cookie format' };
+        return { success: false, message: "Unrecognized cookie format" };
       }
 
       if (cookies.length === 0) {
-        return { success: false, message: 'No Twitter cookies found in the file' };
+        return {
+          success: false,
+          message: "No Twitter cookies found in the file",
+        };
       }
 
       // Convert to our format
@@ -185,19 +201,19 @@ export class CookieImporter {
           name: cookie.name,
           value: cookie.value,
           domain: cookie.domain,
-          path: cookie.path || '/',
+          path: cookie.path || "/",
           httpOnly: cookie.httpOnly || false,
           secure: cookie.secure || false,
-          sameSite: cookie.sameSite || 'Lax',
+          sameSite: cookie.sameSite || "Lax",
         })),
         timestamp: Date.now(),
         userAgent:
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         isValid: true,
         expirationTime: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       };
 
-      const finalPath = outputPath || path.join(process.cwd(), 'cookies.json');
+      const finalPath = outputPath || path.join(process.cwd(), "cookies.json");
       fs.writeFileSync(finalPath, JSON.stringify(convertedData, null, 2));
 
       return {
@@ -207,7 +223,7 @@ export class CookieImporter {
     } catch (error) {
       return {
         success: false,
-        message: `Error converting cookies: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Error converting cookies: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
   }
@@ -216,7 +232,7 @@ export class CookieImporter {
    * Quick setup wizard
    */
   static setupWizard(): void {
-    console.log('4. ❌ Exit\n');
+    console.log("4. ❌ Exit\n");
   }
 }
 
@@ -226,33 +242,33 @@ if (require.main === module) {
   const filePath = process.argv[3];
 
   switch (command) {
-    case 'template':
+    case "template":
       CookieImporter.createTemplate();
       break;
 
-    case 'validate':
+    case "validate":
       if (!filePath) {
-        console.log('❌ Please provide a file path');
+        console.log("❌ Please provide a file path");
         process.exit(1);
       }
       const validation = CookieImporter.validateCookieFile(filePath);
-      console.log(validation.valid ? '✅' : '❌', validation.message);
+      console.log(validation.valid ? "✅" : "❌", validation.message);
       if (validation.details) {
       }
       process.exit(validation.valid ? 0 : 1);
       break;
 
-    case 'convert':
+    case "convert":
       if (!filePath) {
-        console.log('❌ Please provide a file path');
+        console.log("❌ Please provide a file path");
         process.exit(1);
       }
       const conversion = CookieImporter.convertBrowserCookies(filePath);
-      console.log(conversion.success ? '✅' : '❌', conversion.message);
+      console.log(conversion.success ? "✅" : "❌", conversion.message);
       process.exit(conversion.success ? 0 : 1);
       break;
 
-    case 'wizard':
+    case "wizard":
       CookieImporter.setupWizard();
       break;
 

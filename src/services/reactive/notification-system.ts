@@ -3,22 +3,30 @@
  * Lightweight notification system with multiple channels
  */
 
-import { Observable, Subject, BehaviorSubject, timer } from 'rxjs';
-import { map, filter, mergeMap, catchError, retry, throttleTime, tap } from 'rxjs/operators';
+import { Observable, Subject, BehaviorSubject, timer } from "rxjs";
+import {
+  map,
+  filter,
+  mergeMap,
+  catchError,
+  retry,
+  throttleTime,
+  tap,
+} from "rxjs/operators";
 
 export interface NotificationPayload {
   id: string;
-  type: 'info' | 'warning' | 'error' | 'success' | 'crisis';
+  type: "info" | "warning" | "error" | "success" | "crisis";
   title: string;
   message: string;
   data?: any;
   timestamp: Date;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface NotificationChannel {
   id: string;
-  type: 'console' | 'webhook' | 'email' | 'file';
+  type: "console" | "webhook" | "email" | "file";
   name: string;
   endpoint?: string;
   enabled: boolean;
@@ -45,17 +53,17 @@ class SimpleNotificationSystem {
 
   private channels: NotificationChannel[] = [
     {
-      id: 'console',
-      type: 'console',
-      name: 'Console Logger',
+      id: "console",
+      type: "console",
+      name: "Console Logger",
       enabled: true,
     },
     {
-      id: 'file',
-      type: 'file',
-      name: 'File Logger',
+      id: "file",
+      type: "file",
+      name: "File Logger",
       enabled: true,
-      config: { logPath: './logs/notifications.log' },
+      config: { logPath: "./logs/notifications.log" },
     },
   ];
 
@@ -75,9 +83,9 @@ class SimpleNotificationSystem {
         mergeMap((notification) => this.processNotification(notification), 5),
         // Handle errors gracefully
         catchError((error) => {
-          console.error('Notification processing error:', error);
+          console.error("Notification processing error:", error);
           return [];
-        })
+        }),
       )
       .subscribe();
   }
@@ -85,7 +93,9 @@ class SimpleNotificationSystem {
   /**
    * Send notification to all enabled channels
    */
-  notify(payload: Omit<NotificationPayload, 'id' | 'timestamp'>): Observable<boolean> {
+  notify(
+    payload: Omit<NotificationPayload, "id" | "timestamp">,
+  ): Observable<boolean> {
     const notification: NotificationPayload = {
       ...payload,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -110,13 +120,17 @@ class SimpleNotificationSystem {
   /**
    * Send crisis alert (high priority)
    */
-  sendCrisisAlert(title: string, message: string, data?: any): Observable<boolean> {
+  sendCrisisAlert(
+    title: string,
+    message: string,
+    data?: any,
+  ): Observable<boolean> {
     return this.notify({
-      type: 'crisis',
+      type: "crisis",
       title: `🚨 CRISIS ALERT: ${title}`,
       message,
       data,
-      priority: 'high',
+      priority: "high",
     });
   }
 
@@ -125,11 +139,11 @@ class SimpleNotificationSystem {
    */
   sendSuccess(title: string, message: string, data?: any): Observable<boolean> {
     return this.notify({
-      type: 'success',
+      type: "success",
       title: `✅ ${title}`,
       message,
       data,
-      priority: 'medium',
+      priority: "medium",
     });
   }
 
@@ -138,11 +152,11 @@ class SimpleNotificationSystem {
    */
   sendWarning(title: string, message: string, data?: any): Observable<boolean> {
     return this.notify({
-      type: 'warning',
+      type: "warning",
       title: `⚠️ ${title}`,
       message,
       data,
-      priority: 'medium',
+      priority: "medium",
     });
   }
 
@@ -151,11 +165,11 @@ class SimpleNotificationSystem {
    */
   sendError(title: string, message: string, data?: any): Observable<boolean> {
     return this.notify({
-      type: 'error',
+      type: "error",
       title: `❌ ${title}`,
       message,
       data,
-      priority: 'high',
+      priority: "high",
     });
   }
 
@@ -183,7 +197,9 @@ class SimpleNotificationSystem {
   /**
    * Process single notification
    */
-  private processNotification(notification: NotificationPayload): Observable<boolean> {
+  private processNotification(
+    notification: NotificationPayload,
+  ): Observable<boolean> {
     const enabledChannels = this.channels.filter((ch) => ch.enabled);
     let successCount = 0;
 
@@ -197,7 +213,7 @@ class SimpleNotificationSystem {
         .catch(() => {
           this.updateChannelStats(channel.id, false);
           return false;
-        })
+        }),
     );
 
     return new Observable<boolean>((subscriber) => {
@@ -220,20 +236,20 @@ class SimpleNotificationSystem {
    */
   private async sendToChannel(
     notification: NotificationPayload,
-    channel: NotificationChannel
+    channel: NotificationChannel,
   ): Promise<boolean> {
     try {
       switch (channel.type) {
-        case 'console':
+        case "console":
           return this.sendToConsole(notification);
 
-        case 'file':
+        case "file":
           return this.sendToFile(notification, channel.config?.logPath);
 
-        case 'webhook':
+        case "webhook":
           return this.sendToWebhook(notification, channel.endpoint);
 
-        case 'email':
+        case "email":
           return this.sendToEmail(notification, channel.config);
 
         default:
@@ -268,7 +284,7 @@ class SimpleNotificationSystem {
    */
   private sendToFile(
     notification: NotificationPayload,
-    logPath: string = './logs/notifications.log'
+    logPath: string = "./logs/notifications.log",
   ): Promise<boolean> {
     // In a real implementation, you would write to file using fs
     console.log(`[FILE LOG] Would write to ${logPath}:`, notification);
@@ -278,7 +294,10 @@ class SimpleNotificationSystem {
   /**
    * Send to webhook (simplified)
    */
-  private sendToWebhook(notification: NotificationPayload, endpoint?: string): Promise<boolean> {
+  private sendToWebhook(
+    notification: NotificationPayload,
+    endpoint?: string,
+  ): Promise<boolean> {
     if (!endpoint) return Promise.resolve(false);
 
     // In a real implementation, you would make HTTP request
@@ -289,7 +308,10 @@ class SimpleNotificationSystem {
   /**
    * Send to email (simplified)
    */
-  private sendToEmail(notification: NotificationPayload, config: any): Promise<boolean> {
+  private sendToEmail(
+    notification: NotificationPayload,
+    config: any,
+  ): Promise<boolean> {
     // In a real implementation, you would send email
     console.log(`[EMAIL] Would send email:`, notification);
     return Promise.resolve(true);
@@ -300,19 +322,22 @@ class SimpleNotificationSystem {
    */
   private getLogPrefix(type: string): string {
     const prefixes: Record<string, string> = {
-      info: 'ℹ️  INFO',
-      warning: '⚠️  WARNING',
-      error: '❌ ERROR',
-      success: '✅ SUCCESS',
-      crisis: '🚨 CRISIS',
+      info: "ℹ️  INFO",
+      warning: "⚠️  WARNING",
+      error: "❌ ERROR",
+      success: "✅ SUCCESS",
+      crisis: "🚨 CRISIS",
     };
-    return prefixes[type] || 'ℹ️  INFO';
+    return prefixes[type] || "ℹ️  INFO";
   }
 
   /**
    * Update notification statistics
    */
-  private updateStats(notification: NotificationPayload, success: boolean): void {
+  private updateStats(
+    notification: NotificationPayload,
+    success: boolean,
+  ): void {
     const current = this.stats$.value;
 
     this.stats$.next({

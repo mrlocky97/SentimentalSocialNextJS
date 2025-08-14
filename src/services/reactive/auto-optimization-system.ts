@@ -3,7 +3,13 @@
  * Intelligent system for campaign optimization with ML insights
  */
 
-import { Observable, Subject, BehaviorSubject, timer, combineLatest } from 'rxjs';
+import {
+  Observable,
+  Subject,
+  BehaviorSubject,
+  timer,
+  combineLatest,
+} from "rxjs";
 import {
   map,
   filter,
@@ -13,22 +19,22 @@ import {
   shareReplay,
   debounceTime,
   distinctUntilChanged,
-} from 'rxjs/operators';
-import { notificationSystem } from './notification-system';
+} from "rxjs/operators";
+import { notificationSystem } from "./notification-system";
 
 export interface OptimizationTask {
   id: string;
   type:
-    | 'hashtag_optimization'
-    | 'timing_optimization'
-    | 'content_optimization'
-    | 'audience_optimization';
+    | "hashtag_optimization"
+    | "timing_optimization"
+    | "content_optimization"
+    | "audience_optimization";
   campaignId: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   data: any;
   createdAt: Date;
   scheduledAt?: Date;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
 }
 
 export interface OptimizationResult {
@@ -98,11 +104,11 @@ class SmartAutoOptimizationSystem {
         filter(() => this.checkResourceAvailability()),
         // Process with concurrency control
         mergeMap((task) => this.processTask(task), this.MAX_CONCURRENT_TASKS),
-        shareReplay(1)
+        shareReplay(1),
       )
       .subscribe({
         next: (result) => this.handleTaskResult(result),
-        error: (error) => console.error('Task processing error:', error),
+        error: (error) => console.error("Task processing error:", error),
       });
   }
 
@@ -114,8 +120,10 @@ class SmartAutoOptimizationSystem {
     timer(0, 5000)
       .pipe(
         map(() => this.getCurrentSystemMetrics()),
-        distinctUntilChanged((prev, curr) => Math.abs(prev.cpuUsage - curr.cpuUsage) < 5),
-        tap((metrics) => this.updateSystemLoad(metrics))
+        distinctUntilChanged(
+          (prev, curr) => Math.abs(prev.cpuUsage - curr.cpuUsage) < 5,
+        ),
+        tap((metrics) => this.updateSystemLoad(metrics)),
       )
       .subscribe((metrics) => this.systemMetrics$.next(metrics));
   }
@@ -124,11 +132,11 @@ class SmartAutoOptimizationSystem {
    * Schedule optimization task
    */
   scheduleOptimization(
-    type: OptimizationTask['type'],
+    type: OptimizationTask["type"],
     campaignId: string,
     data: any,
-    priority: OptimizationTask['priority'] = 'medium',
-    scheduledAt?: Date
+    priority: OptimizationTask["priority"] = "medium",
+    scheduledAt?: Date,
   ): Observable<OptimizationResult> {
     const task: OptimizationTask = {
       id: `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -138,7 +146,7 @@ class SmartAutoOptimizationSystem {
       data,
       createdAt: new Date(),
       scheduledAt,
-      status: 'pending',
+      status: "pending",
     };
 
     // Queue task
@@ -146,11 +154,11 @@ class SmartAutoOptimizationSystem {
 
     // Send notification
     notificationSystem.notify({
-      type: 'info',
-      title: 'Optimization Scheduled',
+      type: "info",
+      title: "Optimization Scheduled",
       message: `${type} optimization scheduled for campaign ${campaignId}`,
       data: { taskId: task.id },
-      priority: 'low',
+      priority: "low",
     });
 
     return new Observable<OptimizationResult>((subscriber) => {
@@ -208,7 +216,7 @@ class SmartAutoOptimizationSystem {
         metrics,
         activeTasks: this.runningTasks.size,
         queueLength: 0, // Would track in real implementation
-      }))
+      })),
     );
   }
 
@@ -216,7 +224,7 @@ class SmartAutoOptimizationSystem {
    * Process optimization task
    */
   private processTask(task: OptimizationTask): Observable<OptimizationResult> {
-    this.runningTasks.set(task.id, { ...task, status: 'running' });
+    this.runningTasks.set(task.id, { ...task, status: "running" });
 
     return new Observable<OptimizationResult>((subscriber) => {
       // Simulate optimization processing
@@ -239,17 +247,19 @@ class SmartAutoOptimizationSystem {
             success: false,
             improvements: [],
             metrics: { before: {}, after: {}, improvement: 0 },
-            recommendations: ['Task failed - please retry'],
+            recommendations: ["Task failed - please retry"],
           },
         ];
-      })
+      }),
     );
   }
 
   /**
    * Perform optimization based on task type
    */
-  private async performOptimization(task: OptimizationTask): Promise<OptimizationResult> {
+  private async performOptimization(
+    task: OptimizationTask,
+  ): Promise<OptimizationResult> {
     // Simulate processing time
     await this.delay(2000 + Math.random() * 3000);
 
@@ -270,15 +280,15 @@ class SmartAutoOptimizationSystem {
     // Send notification based on result
     if (result.success) {
       notificationSystem.sendSuccess(
-        'Optimization Completed',
+        "Optimization Completed",
         `${task.type} optimization improved performance by ${result.metrics.improvement.toFixed(1)}%`,
-        { taskId: task.id, campaignId: task.campaignId }
+        { taskId: task.id, campaignId: task.campaignId },
       );
     } else {
       notificationSystem.sendError(
-        'Optimization Failed',
+        "Optimization Failed",
         `${task.type} optimization failed for campaign ${task.campaignId}`,
-        { taskId: task.id, error: 'Processing error' }
+        { taskId: task.id, error: "Processing error" },
       );
     }
 
@@ -315,28 +325,28 @@ class SmartAutoOptimizationSystem {
   private generateImprovements(type: string): string[] {
     const improvements: Record<string, string[]> = {
       hashtag_optimization: [
-        'Identified trending hashtags',
-        'Removed low-performing hashtags',
-        'Added niche-specific hashtags',
+        "Identified trending hashtags",
+        "Removed low-performing hashtags",
+        "Added niche-specific hashtags",
       ],
       timing_optimization: [
-        'Optimized posting schedule',
-        'Identified peak engagement hours',
-        'Adjusted frequency based on audience activity',
+        "Optimized posting schedule",
+        "Identified peak engagement hours",
+        "Adjusted frequency based on audience activity",
       ],
       content_optimization: [
-        'Improved sentiment score',
-        'Enhanced keyword relevance',
-        'Optimized content length',
+        "Improved sentiment score",
+        "Enhanced keyword relevance",
+        "Optimized content length",
       ],
       audience_optimization: [
-        'Refined target demographics',
-        'Identified high-value segments',
-        'Improved engagement targeting',
+        "Refined target demographics",
+        "Identified high-value segments",
+        "Improved engagement targeting",
       ],
     };
 
-    return improvements[type] || ['General optimization applied'];
+    return improvements[type] || ["General optimization applied"];
   }
 
   /**
@@ -344,11 +354,11 @@ class SmartAutoOptimizationSystem {
    */
   private generateRecommendations(data: any): string[] {
     const recommendations = [
-      'Consider A/B testing different content styles',
-      'Monitor competitor hashtag performance',
-      'Increase posting frequency during peak hours',
-      'Focus on high-engagement content types',
-      'Analyze audience feedback for content optimization',
+      "Consider A/B testing different content styles",
+      "Monitor competitor hashtag performance",
+      "Increase posting frequency during peak hours",
+      "Focus on high-engagement content types",
+      "Analyze audience feedback for content optimization",
     ];
 
     return recommendations.slice(0, Math.floor(Math.random() * 3) + 2);
@@ -387,7 +397,8 @@ class SmartAutoOptimizationSystem {
     const totalTasks = current.totalTasks + 1;
 
     const newAvgImprovement = result.success
-      ? (current.averageImprovement * current.completedTasks + result.metrics.improvement) /
+      ? (current.averageImprovement * current.completedTasks +
+          result.metrics.improvement) /
         newCompleted
       : current.averageImprovement;
 

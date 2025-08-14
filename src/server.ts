@@ -3,17 +3,17 @@
  * Main server file that sets up Express with all routes and Swagger UI
  */
 
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 // Load environment variables first - prioritize .env over .env.local
-dotenv.config({ path: ['.env.local', '.env'] });
+dotenv.config({ path: [".env.local", ".env"] });
 
-import cors from 'cors';
-import express from 'express';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import swaggerUi from 'swagger-ui-express';
-import { appConfig } from './lib/config/app';
-import specs from './lib/swagger';
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+import { appConfig } from "./lib/config/app";
+import specs from "./lib/swagger";
 
 // Import performance middleware
 import {
@@ -24,46 +24,57 @@ import {
   performanceMiddleware,
   sanitizeMiddleware,
   scrapingRateLimit,
-} from './lib/middleware/performance';
+} from "./lib/middleware/performance";
 
 // Import new performance and monitoring services
-import { generalRateLimitMiddleware } from './middleware/intelligent-rate-limit';
-import { performanceMonitor } from './services/performance-monitor.service';
+import { generalRateLimitMiddleware } from "./middleware/intelligent-rate-limit";
+import { performanceMonitor } from "./services/performance-monitor.service";
 
 // Import database connection
-import DatabaseConnection from './lib/database/connection';
+import DatabaseConnection from "./lib/database/connection";
 
 // Import route modules - consolidated imports
-import adminRoutes from './routes/admin';
-import authRoutes from './routes/auth';
-import campaignRoutes from './routes/campaigns';
-import configureDashboardRoutes from './routes/dashboard.routes';
-import configureHealthRoutes from './routes/health.routes';
-import configureMetricsRoutes from './routes/metrics.routes';
-import { scrapingRoutes } from './routes/scraping';
-import securityRoutes from './routes/security';
-import sentimentRoutes from './routes/sentiment';
-import templateRoutes from './routes/templates';
-import twitterAuthRoutes from './routes/twitter-auth';
-import userRoutes from './routes/users';
+import adminRoutes from "./routes/admin";
+import authRoutes from "./routes/auth";
+import campaignRoutes from "./routes/campaigns";
+import configureDashboardRoutes from "./routes/dashboard.routes";
+import configureHealthRoutes from "./routes/health.routes";
+import configureMetricsRoutes from "./routes/metrics.routes";
+import { scrapingRoutes } from "./routes/scraping";
+import securityRoutes from "./routes/security";
+import sentimentRoutes from "./routes/sentiment";
+import templateRoutes from "./routes/templates";
+import twitterAuthRoutes from "./routes/twitter-auth";
+import userRoutes from "./routes/users";
 
 // Import Twitter authentication manager
-import { createMetricsMiddleware } from './middleware/metrics.middleware';
-import { TwitterAuthManager } from './services/twitter-auth-manager.service';
+import { createMetricsMiddleware } from "./middleware/metrics.middleware";
+import { TwitterAuthManager } from "./services/twitter-auth-manager.service";
 // Import sentiment analysis manager and training data
-import path from 'path';
-import { modelPersistenceManager } from './services/model-persistence.service';
-import { TweetSentimentAnalysisManager } from './services/tweet-sentiment-analysis.manager.service';
+import path from "path";
+import { modelPersistenceManager } from "./services/model-persistence.service";
+import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 // Import IoC Configuration
-import { checkContainerHealth, configureServices } from './lib/dependency-injection/config';
+import {
+  checkContainerHealth,
+  configureServices,
+} from "./lib/dependency-injection/config";
 // Import observability middleware
-import { systemLogger } from './lib/observability/logger';
+import { systemLogger } from "./lib/observability/logger";
 import {
   errorLoggingMiddleware,
   performanceLoggingMiddleware,
   requestLoggingMiddleware,
-} from './middleware/request-logging';
-const modelPath = path.join(process.cwd(), 'src', 'data', 'trained-classifier.json');
+} from "./middleware/request-logging";
+
+import { features } from "./lib/config/feature-flags";
+
+const modelPath = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "trained-classifier.json",
+);
 
 const app = express();
 const PORT = appConfig.app.port || 3001;
@@ -93,7 +104,7 @@ app.use(sanitizeMiddleware);
 app.use(cors(appConfig.api.cors));
 
 // Request logging
-app.use(morgan('combined'));
+app.use(morgan("combined"));
 
 // Global rate limiting with intelligent rate limiter
 app.use(generalRateLimitMiddleware);
@@ -103,31 +114,48 @@ app.use(performanceMonitor.middleware());
 
 // Body parsing middleware - optimized limits
 app.use(express.json({ limit: appConfig.uploads.maxFileSize }));
-app.use(express.urlencoded({ extended: true, limit: appConfig.uploads.maxFileSize }));
+app.use(
+  express.urlencoded({ extended: true, limit: appConfig.uploads.maxFileSize }),
+);
 
 // Health check endpoint
-app.use('/health', configureHealthRoutes());
+app.use("/health", configureHealthRoutes());
 
 // Metrics endpoints
-app.use('/metrics', configureMetricsRoutes());
+app.use("/metrics", configureMetricsRoutes());
+
+if (features.ENABLE_SCRAPING) {
+  app.use("/api/v1/scraping", scrapingRateLimit, scrapingRoutes);
+}
 
 // Swagger UI setup (disabled by default in production)
 if (appConfig.docs.enableSwaggerUI) {
   // Optional basic auth for Swagger
-  const swaggerAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const swaggerAuth = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
     const user = appConfig.docs.basicAuthUser;
     const pass = appConfig.docs.basicAuthPass;
     if (!user || !pass) return next();
-    const hdr = req.headers.authorization || '';
+    const hdr = req.headers.authorization || "";
     const m = hdr.match(/^Basic (.+)$/);
-    if (!m) return res.status(401).set('WWW-Authenticate', 'Basic realm="API Docs"').end();
-    const [u, p] = Buffer.from(m[1], 'base64').toString('utf8').split(':');
+    if (!m)
+      return res
+        .status(401)
+        .set("WWW-Authenticate", 'Basic realm="API Docs"')
+        .end();
+    const [u, p] = Buffer.from(m[1], "base64").toString("utf8").split(":");
     if (u === user && p === pass) return next();
-    return res.status(401).set('WWW-Authenticate', 'Basic realm="API Docs"').end();
+    return res
+      .status(401)
+      .set("WWW-Authenticate", 'Basic realm="API Docs"')
+      .end();
   };
 
   app.use(
-    '/api-docs',
+    "/api-docs",
     swaggerAuth,
     swaggerUi.serve,
     swaggerUi.setup(specs, {
@@ -136,70 +164,75 @@ if (appConfig.docs.enableSwaggerUI) {
       .swagger-ui .topbar { display: none }
       .swagger-ui .info .title { color: #1976d2 }
     `,
-      customSiteTitle: 'SentimentalSocial API Documentation',
+      customSiteTitle: "SentimentalSocial API Documentation",
       swaggerOptions: {
-        docExpansion: 'none',
+        docExpansion: "none",
         filter: true,
         showRequestDuration: true,
         tryItOutEnabled: true,
       },
-    })
+    }),
   );
 }
 
 // API Routes with specific rate limiting
-app.use('/api/v1/auth', authRateLimit, authRoutes);
-app.use('/api/v1/users', analyticsRateLimit, userRoutes);
-app.use('/api/v1/campaigns', analyticsRateLimit, campaignRoutes);
-app.use('/api/v1/templates', analyticsRateLimit, templateRoutes);
-app.use('/api/v1/scraping', scrapingRateLimit, scrapingRoutes);
-app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
-app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
-app.use('/api/v1/security', authRateLimit, securityRoutes);
-app.use('/api/v1/admin', authRateLimit, adminRoutes);
-app.use('/api/v1/dashboard', analyticsRateLimit, configureDashboardRoutes());
+app.use("/api/v1/auth", authRateLimit, authRoutes);
+app.use("/api/v1/users", analyticsRateLimit, userRoutes);
+app.use("/api/v1/campaigns", analyticsRateLimit, campaignRoutes);
+app.use("/api/v1/templates", analyticsRateLimit, templateRoutes);
+app.use("/api/v1/scraping", scrapingRateLimit, scrapingRoutes);
+app.use("/api/v1/twitter-auth", authRateLimit, twitterAuthRoutes);
+app.use(
+  "/api/v1/sentiment",
+  analyticsRateLimit,
+  cacheControlMiddleware(300),
+  sentimentRoutes,
+);
+app.use("/api/v1/security", authRateLimit, securityRoutes);
+app.use("/api/v1/admin", authRateLimit, adminRoutes);
+app.use("/api/v1/dashboard", analyticsRateLimit, configureDashboardRoutes());
 
 // API info endpoint
-app.get('/api/v1', (req, res) => {
+app.get("/api/v1", (req, res) => {
   res.json({
-    name: 'SentimentalSocial API',
-    version: '1.0.0',
-    description: 'Twitter Sentiment Analysis API for Marketing Analytics',
-    documentation: '/api-docs',
+    name: "SentimentalSocial API",
+    version: "1.0.0",
+    description: "Twitter Sentiment Analysis API for Marketing Analytics",
+    documentation: "/api-docs",
     endpoints: {
-      auth: '/api/v1/auth',
-      users: '/api/v1/users',
-      campaigns: '/api/v1/campaigns',
-      templates: '/api/v1/templates',
-      scraping: '/api/v1/scraping',
-      sentiment: '/api/v1/sentiment',
-      security: '/api/v1/security',
-      admin: '/api/v1/admin',
-      dashboard: '/api/v1/dashboard',
-      health: '/health',
-      metrics: '/metrics',
+      auth: "/api/v1/auth",
+      users: "/api/v1/users",
+      campaigns: "/api/v1/campaigns",
+      templates: "/api/v1/templates",
+      scraping: "/api/v1/scraping",
+      sentiment: "/api/v1/sentiment",
+      security: "/api/v1/security",
+      admin: "/api/v1/admin",
+      dashboard: "/api/v1/dashboard",
+      health: "/health",
+      metrics: "/metrics",
     },
     features: [
-      'User Authentication & Authorization',
-      'Campaign Management',
-      'Twitter Data Scraping with Twikit (Unlimited)',
-      'Real-time Sentiment Analysis',
-      'Advanced Analytics & Reporting',
-      'Data Export Capabilities',
-      'Real-time Observability Dashboard',
-      'Comprehensive Health Monitoring',
-      'Performance Metrics & Alerting',
+      "User Authentication & Authorization",
+      "Campaign Management",
+      "Twitter Data Scraping with Twikit (Unlimited)",
+      "Real-time Sentiment Analysis",
+      "Advanced Analytics & Reporting",
+      "Data Export Capabilities",
+      "Real-time Observability Dashboard",
+      "Comprehensive Health Monitoring",
+      "Performance Metrics & Alerting",
     ],
   });
 });
 
 // 404 handler for API routes
-app.use('/api/*', (req, res) => {
+app.use("/api/*", (req, res) => {
   res.status(404).json({
     success: false,
     error: {
-      message: 'API endpoint not found',
-      code: 'ENDPOINT_NOT_FOUND',
+      message: "API endpoint not found",
+      code: "ENDPOINT_NOT_FOUND",
       path: req.path,
       method: req.method,
     },
@@ -207,10 +240,10 @@ app.use('/api/*', (req, res) => {
 });
 
 // Import and use our improved error handler
-import { mainErrorHandler, notFoundHandler } from './core/errors/error-handler';
+import { mainErrorHandler, notFoundHandler } from "./core/errors/error-handler";
 
 // 404 handler for unmatched routes
-app.use('*', notFoundHandler);
+app.use("*", notFoundHandler);
 
 // Global error handler
 app.use(mainErrorHandler);
@@ -226,51 +259,64 @@ async function startServer() {
     await twitterAuth.initializeOnStartup();
 
     // Initialize and train sentiment analysis model with enhanced dataset
-    console.log('🧠 Initializing Enhanced Sentiment Analysis System...');
+    if (features.TRAIN_MODEL_ON_START) {
+      // ... el bloque de entrenamiento que ya tienes
+      console.log("🧠 Initializing Enhanced Sentiment Analysis System...");
+      const sentimentManager = new TweetSentimentAnalysisManager();
+
+      // Try to load existing model first
+      const modelInfo = await modelPersistenceManager.getModelInfo();
+      console.log(
+        `📊 Model Status: ${modelInfo.exists ? "Found" : "Not found"}`,
+      );
+
+      if (modelInfo.exists && modelInfo.metadata) {
+        console.log(
+          `📋 Existing model: ${modelInfo.metadata.datasetSize} examples, version ${modelInfo.metadata.version}`,
+        );
+
+        // Validate model age (retrain if older than 7 days)
+        const modelAge =
+          Date.now() - new Date(modelInfo.metadata.trainingDate).getTime();
+        const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+
+        if (modelAge > sevenDaysInMs) {
+          console.log("🔄 Model is outdated, retraining with latest data...");
+          await trainNewModel(sentimentManager);
+        } else {
+          console.log("✅ Using existing trained model");
+        }
+      } else {
+        console.log("🔄 No existing model found, training new model...");
+        await trainNewModel(sentimentManager);
+      }
+    } else {
+      console.log(
+        "⏭️  TRAIN_MODEL_ON_START=false → omito entrenamiento en el arranque",
+      );
+    }
 
     // Configure IoC Container
     configureServices();
 
     // Verify container health
     const containerHealth = checkContainerHealth();
-    console.log('📦 IoC Container Status:', containerHealth.status);
-
-    const sentimentManager = new TweetSentimentAnalysisManager();
-
-    // Try to load existing model first
-    const modelInfo = await modelPersistenceManager.getModelInfo();
-    console.log(`📊 Model Status: ${modelInfo.exists ? 'Found' : 'Not found'}`);
-
-    if (modelInfo.exists && modelInfo.metadata) {
-      console.log(
-        `📋 Existing model: ${modelInfo.metadata.datasetSize} examples, version ${modelInfo.metadata.version}`
-      );
-
-      // Validate model age (retrain if older than 7 days)
-      const modelAge = Date.now() - new Date(modelInfo.metadata.trainingDate).getTime();
-      const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-
-      if (modelAge > sevenDaysInMs) {
-        console.log('🔄 Model is outdated, retraining with latest data...');
-        await trainNewModel(sentimentManager);
-      } else {
-        console.log('✅ Using existing trained model');
-      }
-    } else {
-      console.log('🔄 No existing model found, training new model...');
-      await trainNewModel(sentimentManager);
-    }
+    console.log("📦 IoC Container Status:", containerHealth.status);
 
     async function trainNewModel(manager: TweetSentimentAnalysisManager) {
       try {
         // Load the most comprehensive training dataset available
-        const datasetName = 'enhanced-v3-production';
+        const datasetName = "enhanced-v3-production";
 
         // Load the enhanced training dataset V3
-        const { enhancedTrainingDataV3Complete } = await import('./data/enhanced-training-data-v3');
+        const { enhancedTrainingDataV3Complete } = await import(
+          "./data/enhanced-training-data-v3"
+        );
         const trainingData = enhancedTrainingDataV3Complete;
 
-        console.log(`� Training with ${trainingData.length} examples from ${datasetName} dataset`);
+        console.log(
+          `� Training with ${trainingData.length} examples from ${datasetName} dataset`,
+        );
 
         const startTime = Date.now();
         await manager.trainNaiveBayes(trainingData);
@@ -279,29 +325,33 @@ async function startServer() {
         console.log(`✅ Model trained in ${trainingTime}ms`);
 
         // Save the trained model with metadata
-        console.log('💾 Saving trained model...');
+        console.log("💾 Saving trained model...");
         await manager.saveNaiveBayesToFile(modelPath);
 
         // Validate model performance
-        console.log('🧪 Validating model performance...');
-        const { sentimentTestDataset } = await import('./data/test-datasets');
+        console.log("🧪 Validating model performance...");
+        const { sentimentTestDataset } = await import("./data/test-datasets");
 
         if (sentimentTestDataset && sentimentTestDataset.length > 0) {
           // We'll implement validation in the persistence manager
           console.log(
-            `📊 Validation completed with test dataset of ${sentimentTestDataset.length} cases`
+            `📊 Validation completed with test dataset of ${sentimentTestDataset.length} cases`,
           );
         }
 
-        console.log('✅ Enhanced Sentiment Analysis System ready!');
+        console.log("✅ Enhanced Sentiment Analysis System ready!");
       } catch (modelError) {
-        console.error('❌ Error training sentiment model:', modelError);
-        console.log('🔄 Falling back to basic model...');
+        console.error("❌ Error training sentiment model:", modelError);
+        console.log("🔄 Falling back to basic model...");
 
         // Fallback training with enhanced dataset
-        const { enhancedTrainingDataV3Complete } = await import('./data/enhanced-training-data-v3');
-        await manager.trainNaiveBayes(enhancedTrainingDataV3Complete.slice(0, 800)); // Use more samples from V3
-        console.log('⚠️ Using fallback model with reduced dataset');
+        const { enhancedTrainingDataV3Complete } = await import(
+          "./data/enhanced-training-data-v3"
+        );
+        await manager.trainNaiveBayes(
+          enhancedTrainingDataV3Complete.slice(0, 800),
+        ); // Use more samples from V3
+        console.log("⚠️ Using fallback model with reduced dataset");
       }
     }
 
@@ -310,16 +360,16 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, () => {
-      systemLogger.info('Server started successfully', {
+      systemLogger.info("Server started successfully", {
         port: PORT,
-        environment: process.env.NODE_ENV || 'development',
+        environment: process.env.NODE_ENV || "development",
         apiDocs: `http://localhost:${PORT}/api-docs`,
       });
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 }

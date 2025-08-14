@@ -3,16 +3,23 @@
  * RxJS optimization wrapper using only the main TweetSentimentAnalysisManager
  */
 
-import { Observable, BehaviorSubject, from } from 'rxjs';
-import { map, catchError, shareReplay, tap, retry, timeout } from 'rxjs/operators';
-import { TweetSentimentAnalysisManager } from '../tweet-sentiment-analysis.manager.service';
-import { Tweet } from '../../types/twitter';
+import { Observable, BehaviorSubject, from } from "rxjs";
+import {
+  map,
+  catchError,
+  shareReplay,
+  tap,
+  retry,
+  timeout,
+} from "rxjs/operators";
+import { TweetSentimentAnalysisManager } from "../tweet-sentiment-analysis.manager.service";
+import { Tweet } from "../../types/twitter";
 
 export interface SentimentAnalysisRequest {
   id: string;
   tweet: Tweet;
   timestamp: Date;
-  priority: 'high' | 'normal' | 'low';
+  priority: "high" | "normal" | "low";
 }
 
 export interface SentimentStats {
@@ -45,9 +52,9 @@ class ReactiveSentimentAnalysisWrapper {
       timeout(10000), // 10 second timeout
       retry(2),
       catchError((error) => {
-        return from([{ error: 'Analysis failed', tweetId: tweet.id }]);
+        return from([{ error: "Analysis failed", tweetId: tweet.id }]);
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
   }
 
@@ -75,11 +82,13 @@ class ReactiveSentimentAnalysisWrapper {
 
   // Analyze multiple tweets
   analyzeTweetsBatch(tweets: Tweet[]): Observable<any[]> {
-    return from(Promise.all(tweets.map((tweet) => this.processSingleTweet(tweet)))).pipe(
+    return from(
+      Promise.all(tweets.map((tweet) => this.processSingleTweet(tweet))),
+    ).pipe(
       catchError((error) => {
         return from([]);
       }),
-      shareReplay(1)
+      shareReplay(1),
     );
   }
 
@@ -119,7 +128,8 @@ class ReactiveSentimentAnalysisWrapper {
     this.stats$.next({
       ...current,
       totalAnalyzed: newTotal,
-      averageProcessingTime: (current.averageProcessingTime + processingTime) / 2,
+      averageProcessingTime:
+        (current.averageProcessingTime + processingTime) / 2,
       tweetsPerSecond: newTotal / ((Date.now() - this.startTime) / 1000),
     });
   }
