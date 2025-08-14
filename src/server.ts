@@ -180,7 +180,6 @@ app.use("/api/v1/auth", authRateLimit, authRoutes);
 app.use("/api/v1/users", analyticsRateLimit, userRoutes);
 app.use("/api/v1/campaigns", analyticsRateLimit, campaignRoutes);
 app.use("/api/v1/templates", analyticsRateLimit, templateRoutes);
-app.use("/api/v1/scraping", scrapingRateLimit, scrapingRoutes);
 app.use("/api/v1/twitter-auth", authRateLimit, twitterAuthRoutes);
 app.use(
   "/api/v1/sentiment",
