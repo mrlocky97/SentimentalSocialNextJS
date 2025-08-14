@@ -518,4 +518,143 @@ Consulta la guía actualizada en `docs/twitter-auth.md`, con:
 - Flujo de credenciales cifradas (recomendado)
 - Importación manual de cookies para desarrollo
 - Variables de entorno (deprecadas)
+
+## 🔒 Modo Estable
+
+**SentimentalSocial v1.0.0** está configurado para producción con feature flags inteligentes y optimizaciones de rendimiento.
+
+### 🚀 Configuración de Producción
+
+```bash
+# Feature flags recomendadas para producción
+ENABLE_SCRAPING=false          # Solo habilitar si necesitas scraping
+TRAIN_MODEL_ON_START=false     # NUNCA entrenar en arranque en producción
+ENABLE_SWAGGER_UI=false        # NUNCA exponer docs sin autenticación
+
+# Variables críticas de seguridad  
+NODE_ENV=production
+JWT_SECRET=<32-bytes-random-base64>
+CORS_ORIGIN=https://tu-dominio.com
+MONGODB_URI=mongodb://host:27017/sentimentalsocial
+```
+
+### 📊 Sistema de Métricas
+
+Endpoints disponibles para monitoreo:
+
+```bash
+# Métricas Prometheus (para Grafana)
+GET /metrics
+
+# Métricas en JSON (dashboards internos)
+GET /metrics/json
+
+# Métricas específicas
+GET /metrics/system      # CPU, memoria
+GET /metrics/performance # Rendimiento HTTP
+GET /metrics/sentiment   # Análisis de sentimientos
+GET /metrics/summary     # Resumen ejecutivo
+```
+
+### 🤖 Entrenamiento de Modelo
+
+```bash
+# Entrenar modelo bajo demanda (NO en producción caliente)
+npm run sentiment:train
+
+# El modelo se guarda automáticamente en:
+# src/data/trained-sentiment-model-v3.json
+```
+
+En producción:
+- ✅ **Siempre cargar modelo pre-entrenado**
+- ❌ **Nunca entrenar en caliente** 
+- 🔄 **Entrenar offline y desplegar**
+
+### 🕷️ Scraping Controlado
+
+```bash
+# Solo si ENABLE_SCRAPING=true
+POST /api/v1/scraping/hashtag
+POST /api/v1/scraping/user  
+POST /api/v1/scraping/search
+```
+
+**Validaciones incluidas:**
+- ✅ Rate limiting inteligente por IP
+- ✅ Validación de credenciales Twitter
+- ✅ Sanitización de parámetros
+- ✅ Control de concurrencia
+- ✅ Limits configurables
+
+### 🏗️ Diagrama de Arquitectura Estable
+
+```mermaid
+graph TB
+    Client[Cliente] --> LB[Load Balancer]
+    LB --> API[API Server]
+    
+    subgraph "Feature Flags"
+        FF[Feature Flags]
+        FF --> |ENABLE_SCRAPING=false| SC[Scraping OFF]
+        FF --> |TRAIN_MODEL_ON_START=false| TR[Training OFF]
+        FF --> |ENABLE_SWAGGER_UI=false| SW[Swagger OFF]
+    end
+    
+    subgraph "Core API"
+        API --> AUTH[Auth Middleware]
+        AUTH --> RL[Rate Limiting]
+        RL --> SENT[Sentiment Analysis]
+        RL --> HEALTH[Health Check]
+        RL --> METRICS[Metrics]
+    end
+    
+    subgraph "Sentiment Engine"
+        SENT --> MODEL[Pre-trained Model]
+        MODEL --> CACHE[Response Cache]
+    end
+    
+    subgraph "Optional Modules" 
+        SCRAPING[Twitter Scraper]
+        TRAINING[Model Training]
+        DOCS[API Docs]
+    end
+    
+    API --> DB[(MongoDB)]
+    METRICS --> PROM[Prometheus/Grafana]
+    
+    style FF fill:#e1f5fe
+    style SCRAPING fill:#ffebee,stroke:#f44336,stroke-dasharray: 5 5
+    style TRAINING fill:#ffebee,stroke:#f44336,stroke-dasharray: 5 5
+    style DOCS fill:#ffebee,stroke:#f44336,stroke-dasharray: 5 5
+```
+
+### ✅ Tests de Humo
+
+```bash
+# Pipeline de validación
+npm i
+npm run build
+npm start
+
+# Tests básicos
+curl http://localhost:3001/health
+curl http://localhost:3001/metrics
+curl -X POST http://localhost:3001/api/v1/sentiment/analyze-text \
+  -H "Content-Type: application/json" \
+  -d '{"text":"I love this!"}'
+
+# Verificar que scraping esté OFF (debe devolver 404)
+curl http://localhost:3001/api/v1/scraping
+```
+
+### 🚀 Deployment
+
+1. **Preparación**: `npm run build`
+2. **Tests**: Ejecutar tests de humo
+3. **Configuración**: Variables de producción
+4. **Deploy**: Docker o PM2
+5. **Monitoreo**: Métricas en `/metrics`
+
+**Listo para producción v1.0.0** ✨
 - Notas operativas: rotación y TTL de sesiones, CORS, Swagger
