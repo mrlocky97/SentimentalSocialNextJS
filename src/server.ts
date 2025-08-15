@@ -7,6 +7,10 @@ import dotenv from "dotenv";
 // Load environment variables first - prioritize .env over .env.local
 dotenv.config({ path: [".env.local", ".env"] });
 
+// Validate required environment variables
+import { validateEnv } from "./lib/config/validate-env";
+validateEnv();
+
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -17,13 +21,13 @@ import specs from "./lib/swagger";
 
 // Import performance middleware
 import {
-  analyticsRateLimit,
-  authRateLimit,
-  cacheControlMiddleware,
-  compressionMiddleware,
-  performanceMiddleware,
-  sanitizeMiddleware,
-  scrapingRateLimit,
+    analyticsRateLimit,
+    authRateLimit,
+    cacheControlMiddleware,
+    compressionMiddleware,
+    performanceMiddleware,
+    sanitizeMiddleware,
+    scrapingRateLimit,
 } from "./lib/middleware/performance";
 
 // Import performance services
@@ -56,15 +60,15 @@ import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 // Import IoC Configuration
 import {
-  checkContainerHealth,
-  configureServices,
+    checkContainerHealth,
+    configureServices,
 } from "./lib/dependency-injection/config";
 // Import observability middleware
 import { systemLogger } from "./lib/observability/logger";
 import {
-  errorLoggingMiddleware,
-  performanceLoggingMiddleware,
-  requestLoggingMiddleware,
+    errorLoggingMiddleware,
+    performanceLoggingMiddleware,
+    requestLoggingMiddleware,
 } from "./middleware/request-logging";
 
 import { features } from "./lib/config/feature-flags";
@@ -129,7 +133,7 @@ if (features.ENABLE_SCRAPING) {
 }
 
 // Swagger UI setup (disabled by default in production)
-if (features.ENABLE_SWAGGER_UI) {
+if (process.env.ENABLE_SWAGGER_UI === "true") {
   // Optional basic auth for Swagger
   const swaggerAuth = (
     req: express.Request,
