@@ -83,6 +83,30 @@ const modelPath = path.join(
 const app = express();
 const PORT = appConfig.app.port || 3001;
 
+// Initialize MongoDB connection before mounting routes
+async function initializeDatabase() {
+  try {
+    await DatabaseConnection.connect();
+    console.log("✅ MongoDB connection established");
+  } catch (error) {
+    console.error("❌ Failed to connect to MongoDB:", error);
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown handlers
+process.on("SIGINT", async () => {
+  console.log("\n🔄 Received SIGINT, shutting down gracefully...");
+  await DatabaseConnection.disconnect();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("\n🔄 Received SIGTERM, shutting down gracefully...");
+  await DatabaseConnection.disconnect();
+  process.exit(0);
+});
+
 // Security middleware
 app.use(helmet());
 
@@ -254,8 +278,8 @@ app.use(mainErrorHandler);
 // Start server
 async function startServer() {
   try {
-    // Initialize database connection
-    await DatabaseConnection.connect();
+    // Initialize database connection first
+    await initializeDatabase();
 
     // Initialize Twitter authentication
     const twitterAuth = TwitterAuthManager.getInstance();
@@ -376,6 +400,20 @@ async function startServer() {
   }
 }
 
-startServer();
+// Main initialization function
+async function initializeApplication() {
+  try {
+    // Step 1: Initialize database connection before anything else
+    await initializeDatabase();
+    
+    // Step 2: Start the server with all other initializations
+    await startServer();
+  } catch (error) {
+    console.error("❌ Failed to initialize application:", error);
+    process.exit(1);
+  }
+}
+
+initializeApplication();
 
 export default app;
