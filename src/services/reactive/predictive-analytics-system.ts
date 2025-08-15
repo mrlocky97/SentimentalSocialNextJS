@@ -3,17 +3,16 @@
  * ML-powered prediction engine for social media optimization
  */
 
-import { Observable, Subject, BehaviorSubject, timer, from } from "rxjs";
+import { BehaviorSubject, from, Observable, Subject, timer } from "rxjs";
 import {
-  map,
-  filter,
-  switchMap,
-  catchError,
-  tap,
-  shareReplay,
-  debounceTime,
-  scan,
+    catchError,
+    debounceTime,
+    map,
+    shareReplay,
+    switchMap,
+    tap
 } from "rxjs/operators";
+import { logger } from "../../lib/observability/logger";
 import { notificationSystem } from "./notification-system";
 
 export interface PredictionRequest {
@@ -114,7 +113,7 @@ class PredictiveAnalyticsSystem {
       )
       .subscribe({
         next: (result) => this.handlePredictionResult(result),
-        error: (error) => console.error("Prediction processing error:", error),
+  error: (error) => logger.error("Prediction processing error", { error }),
       });
   }
 
@@ -231,7 +230,7 @@ class PredictiveAnalyticsSystem {
   ): Observable<PredictionResult> {
     return from(this.performPrediction(request)).pipe(
       catchError((error) => {
-        console.error(`Prediction ${request.id} failed:`, error);
+  logger.error(`Prediction ${request.id} failed`, { error });
         return [
           {
             requestId: request.id,

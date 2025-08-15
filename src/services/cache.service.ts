@@ -11,14 +11,20 @@ export interface CacheConfig {
   maxKeys: number;
 }
 
-export interface CachedResult {
-  data: any;
+export interface CachedResult<T = unknown> {
+  data: T;
   timestamp: number;
-  ttl: number;
+  ttl: number; // seconds
+}
+
+export interface CacheKeyParams {
+  method?: string;
+  args?: unknown[];
+  [key: string]: unknown;
 }
 
 export class MemoryCacheService {
-  private cache = new Map<string, CachedResult>();
+  private cache = new Map<string, CachedResult<unknown>>();
   private config: CacheConfig;
 
   constructor(
@@ -37,7 +43,7 @@ export class MemoryCacheService {
   /**
    * Generate cache key from text and analysis parameters
    */
-  private generateKey(text: string, params?: any): string {
+  private generateKey(text: string, params?: CacheKeyParams): string {
     const normalizedText = text.toLowerCase().trim();
     const paramsString = params ? JSON.stringify(params) : "";
     return crypto
@@ -49,7 +55,7 @@ export class MemoryCacheService {
   /**
    * Get cached sentiment analysis result
    */
-  get(text: string, params?: any): any | null {
+  get<T = unknown>(text: string, params?: CacheKeyParams): T | null {
     if (!this.config.enabled) return null;
 
     const key = this.generateKey(text, params);
@@ -63,13 +69,18 @@ export class MemoryCacheService {
       return null;
     }
 
-    return cached.data;
+    return cached.data as T;
   }
 
   /**
    * Store sentiment analysis result in cache
    */
-  set(text: string, result: any, params?: any, customTtl?: number): void {
+  set<T = unknown>(
+    text: string,
+    result: T,
+    params?: CacheKeyParams,
+    customTtl?: number,
+  ): void {
     if (!this.config.enabled) return;
 
     // Check cache size limit
@@ -81,7 +92,7 @@ export class MemoryCacheService {
     const ttl = customTtl || this.config.ttl;
 
     this.cache.set(key, {
-      data: result,
+      data: result as unknown,
       timestamp: Date.now(),
       ttl,
     });
@@ -151,14 +162,14 @@ export class MemoryCacheService {
   async withCache<T>(
     text: string,
     analysisFunction: () => Promise<T>,
-    params?: any,
+    params?: CacheKeyParams,
     customTtl?: number,
   ): Promise<T> {
     // Try to get from cache first
-    const cached = this.get(text, params);
-    if (cached) {
+    const cached = this.get<T>(text, params);
+    if (cached !== null) {
       this.hitCount++;
-      return cached;
+      return cached as T;
     }
 
     // Not in cache, perform analysis
@@ -183,29 +194,33 @@ export const cacheService = new MemoryCacheService({
  * Cache decorator for sentiment analysis methods
  */
 export function Cached(ttl: number = 3600) {
-  return function (
-    target: any,
+  return function <
+    T extends (...args: unknown[]) => Promise<unknown> | unknown,
+  >(
+    _target: unknown,
     propertyName: string,
-    descriptor: PropertyDescriptor,
+    descriptor: TypedPropertyDescriptor<T>,
   ) {
-    const method = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
-      const text = args[0]?.content || args[0]?.text || args[0];
-
+    const original = descriptor.value!;
+    descriptor.value = async function cachedWrapper(
+      this: unknown,
+      ...args: unknown[]
+    ) {
+      const first = args[0] as unknown;
+      const text =
+        (first as { content?: string; text?: string })?.content ||
+        (first as { content?: string; text?: string })?.text ||
+        first;
       if (typeof text === "string") {
         return cacheService.withCache(
           text,
-          () => method.apply(this, args),
+          () => Promise.resolve(original.apply(this, args)) as Promise<unknown>,
           { method: propertyName, args: args.slice(1) },
           ttl,
         );
       }
-
-      // If not cacheable, call original method
-      return method.apply(this, args);
-    };
-
+      return original.apply(this, args);
+    } as T;
     return descriptor;
   };
 }

@@ -1,7 +1,9 @@
 // senimport { cacheService } from '../lib/cache/cache-migration';iment-service.ts
 
 import { Core, SentimentUtils } from "../core";
+import { logger } from "../lib/observability/logger";
 import { sentimentManager } from "../lib/sentiment-manager";
+import { TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { ModelUpdateRequest, SentimentTestRequest } from "../types";
 import { Tweet } from "../types/twitter";
 import { cacheService } from "./cache.service";
@@ -123,7 +125,7 @@ const TEST_EXAMPLES = [
 ];
 
 export class SentimentService {
-  async analyzeTweet(tweet: Tweet, config?: any) {
+  async analyzeTweet(tweet: Tweet, config?: Record<string, unknown>) {
     const validation = Core.Validators.Tweet.validate(tweet);
     Core.Validators.Utils.validateOrThrow(validation, "tweet analysis");
 
@@ -138,7 +140,11 @@ export class SentimentService {
     return result;
   }
 
-  async analyzeTweetsBatch(tweets: Tweet[], config?: any, includeStats = true) {
+  async analyzeTweetsBatch(
+    tweets: Tweet[],
+    config?: Record<string, unknown>,
+    includeStats = true,
+  ) {
     const validation = Core.Validators.Tweet.validateBatch(tweets);
     Core.Validators.Utils.validateOrThrow(validation, "batch analysis");
 
@@ -170,7 +176,7 @@ export class SentimentService {
     };
   }
 
-  generateStatistics(analyses: any[]) {
+  generateStatistics(analyses: TweetSentimentAnalysis[]) {
     const validation =
       Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
     if (!validation.isValid) throw Core.Errors.invalidAnalysisArray();
@@ -178,7 +184,10 @@ export class SentimentService {
     return sentimentManager.generateStatistics(analyses);
   }
 
-  generateSentimentTrends(analyses: any[], intervalHours = 1) {
+  generateSentimentTrends(
+    analyses: TweetSentimentAnalysis[],
+    intervalHours = 1,
+  ) {
     const validation =
       Core.Validators.SentimentAnalysis.validateTrainingData(analyses);
     if (!validation.isValid) throw Core.Errors.invalidAnalysisArray();
@@ -376,18 +385,16 @@ export class SentimentService {
     );
     const trainingData = [...enhancedTrainingDataV3Complete, ...validExamples];
 
-    console.log(
-      `🔄 Training model with ${validExamples.length} new examples...`,
-    );
+    logger.info(`Training model with ${validExamples.length} new examples...`);
     const startTime = Date.now();
     await sentimentManager.trainNaiveBayes(trainingData);
     const trainingTime = Date.now() - startTime;
-    console.log(`✅ Model trained in ${trainingTime}ms`);
+    logger.info(`Model trained in ${trainingTime}ms`);
 
     if (saveModel) {
-      console.log("💾 Saving updated model...");
-      // Actual saving logic would go here
-      console.log("💾 Model saved successfully.");
+      logger.info("Saving updated model...");
+      // TODO: Implement real model persistence
+      logger.info("Model saved successfully");
     }
 
     const testResults = TEST_EXAMPLES.map((ex) => {
@@ -519,6 +526,7 @@ export class SentimentService {
           undefined,
         );
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: refine evaluation result typing
         const result: any = {
           text: testCase.text,
           expected: testCase.expectedSentiment,
@@ -547,6 +555,7 @@ export class SentimentService {
     const ruleCorrect = results.filter((r) => r.rule.correct).length;
     const ruleAccuracy = (ruleCorrect / results.length) * 100;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: define structured EvaluationResponse type
     const response: any = {
       overall: {
         total: results.length,

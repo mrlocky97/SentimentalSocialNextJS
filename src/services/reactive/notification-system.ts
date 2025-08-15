@@ -3,16 +3,13 @@
  * Lightweight notification system with multiple channels
  */
 
-import { Observable, Subject, BehaviorSubject, timer } from "rxjs";
+import { BehaviorSubject, Observable, Subject } from "rxjs";
 import {
-  map,
-  filter,
-  mergeMap,
-  catchError,
-  retry,
-  throttleTime,
-  tap,
+    catchError,
+    mergeMap,
+    throttleTime
 } from "rxjs/operators";
+import { logger } from "../../lib/observability/logger";
 
 export interface NotificationPayload {
   id: string;
@@ -83,7 +80,7 @@ class SimpleNotificationSystem {
         mergeMap((notification) => this.processNotification(notification), 5),
         // Handle errors gracefully
         catchError((error) => {
-          console.error("Notification processing error:", error);
+          logger.error("Notification processing error", { error });
           return [];
         }),
       )
@@ -253,11 +250,11 @@ class SimpleNotificationSystem {
           return this.sendToEmail(notification, channel.config);
 
         default:
-          console.warn(`Unknown channel type: ${channel.type}`);
+      logger.warn(`Unknown channel type: ${channel.type}`);
           return false;
       }
     } catch (error) {
-      console.error(`Error sending to channel ${channel.id}:`, error);
+    logger.error(`Error sending to channel ${channel.id}`, { error });
       return false;
     }
   }
@@ -269,11 +266,15 @@ class SimpleNotificationSystem {
     const timestamp = notification.timestamp.toISOString();
     const prefix = this.getLogPrefix(notification.type);
 
-    console.log(`[${timestamp}] ${prefix} ${notification.title}`);
-    console.log(`  Message: ${notification.message}`);
+    logger.info(`Notification: ${notification.title}`, {
+      timestamp,
+      message: notification.message,
+      type: notification.type,
+      priority: notification.priority,
+    });
 
     if (notification.data) {
-      console.log(`  Data:`, notification.data);
+      logger.debug("Notification data", { data: notification.data });
     }
 
     return Promise.resolve(true);
@@ -287,7 +288,7 @@ class SimpleNotificationSystem {
     logPath: string = "./logs/notifications.log",
   ): Promise<boolean> {
     // In a real implementation, you would write to file using fs
-    console.log(`[FILE LOG] Would write to ${logPath}:`, notification);
+  logger.debug(`File log simulation to ${logPath}`, { notification });
     return Promise.resolve(true);
   }
 
@@ -301,7 +302,7 @@ class SimpleNotificationSystem {
     if (!endpoint) return Promise.resolve(false);
 
     // In a real implementation, you would make HTTP request
-    console.log(`[WEBHOOK] Would send to ${endpoint}:`, notification);
+  logger.debug(`Webhook simulation to ${endpoint}`, { notification });
     return Promise.resolve(true);
   }
 
@@ -313,7 +314,7 @@ class SimpleNotificationSystem {
     config: any,
   ): Promise<boolean> {
     // In a real implementation, you would send email
-    console.log(`[EMAIL] Would send email:`, notification);
+  logger.debug("Email simulation send", { notification });
     return Promise.resolve(true);
   }
 

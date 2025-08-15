@@ -3,12 +3,12 @@
  * Optimized middleware for compression, rate limiting, and performance monitoring
  */
 
-import { Request, Response, NextFunction } from "express";
 import compression from "compression";
+import { NextFunction, Request, Response } from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
-import { appConfig } from "../config/app";
 import { appCache } from "../cache";
-import { metricsRegistry } from "../observability/metrics";
+import { appConfig } from "../config/app";
+import { logger } from "../observability/logger";
 
 /**
  * Compression middleware with optimization
@@ -46,7 +46,7 @@ export const createRateLimit = (options?: {
       // Use proper IPv6-compatible key generation
       const rawIp = req.ip || req.connection.remoteAddress || "unknown";
       const ip = ipKeyGenerator(rawIp);
-      const userId = (req as any).user?.id;
+      const userId = (req as unknown as { user?: { id?: string } }).user?.id;
       return userId ? `${ip}-${userId}` : ip;
     },
     handler: (req: Request, res: Response) => {
@@ -103,12 +103,11 @@ export const performanceMiddleware = (
 
   // Store original send method
   const originalSend = res.send;
-  res.send = function (body: any) {
+  res.send = function (body: unknown) {
     const duration = Date.now() - start;
     const status = res.statusCode;
     const method = req.method;
     const url = req.originalUrl;
-    const isSuccess = status < 400;
 
     // Set response time header before sending
     if (!res.headersSent) {
@@ -116,20 +115,31 @@ export const performanceMiddleware = (
     }
 
     // Record metrics
-    // TODO: Fix metrics service integration
-    // metricsRegistry.recordRequest(duration, isSuccess);
+    // TODO: Integrate metricsRegistry.recordRequest when implementation ready
 
     // Log slow requests (> 1 second)
     if (duration > 1000) {
-      console.warn(
-        `Slow request: ${method} ${url} - ${duration}ms - ${status}`,
-      );
+      logger.warn("Slow request", {
+        method,
+        url,
+        durationMs: duration,
+        status,
+      });
     }
 
     // Cache performance metrics asynchronously
     setImmediate(() => {
       const metricsKey = `perf_${method}_${url.split("?")[0]}`;
-      const existingMetrics = appCache.get<any>(metricsKey) || {
+      interface PerfMetrics {
+        count: number;
+        totalDuration: number;
+        averageDuration: number;
+        maxDuration: number;
+        errors: number;
+      }
+      const existingMetrics = (appCache.get<PerfMetrics>(
+        metricsKey,
+      ) as PerfMetrics) || {
         count: 0,
         totalDuration: 0,
         averageDuration: 0,
@@ -151,7 +161,7 @@ export const performanceMiddleware = (
       }
 
       // Cache metrics for 1 hour
-      appCache.set(metricsKey, existingMetrics, 3600000);
+      appCache.set<PerfMetrics>(metricsKey, existingMetrics, 3600000);
     });
 
     // Call original send method

@@ -1,11 +1,11 @@
 import { Router } from "express";
 import {
-    forceReauth,
-    getScrapingStatus,
-    listTweets,
-    scrapeHashtag,
-    scrapeSearch,
-    scrapeUser,
+  forceReauth,
+  getScrapingStatus,
+  listTweets,
+  scrapeHashtag,
+  scrapeSearch,
+  scrapeUser,
 } from "./handlers";
 
 const router = Router();

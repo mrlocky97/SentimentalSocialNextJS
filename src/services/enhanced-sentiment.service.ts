@@ -4,6 +4,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
+import { logger } from "../lib/observability/logger";
 import { FixedNaiveBayesService } from "./fixed-naive-bayes.service";
 
 // Helpers para leer .env sin re-importar dotenv aquí
@@ -167,10 +168,16 @@ function decideWithHeuristics(
   };
 }
 
+interface EnhancedModelMetadata {
+  datasetSize?: number;
+  trainingDate?: string;
+  [key: string]: unknown; // Future fields
+}
+
 export class EnhancedSentimentService {
   private model: FixedNaiveBayesService;
   private isModelLoaded: boolean = false;
-  private modelMetadata: any = null;
+  private modelMetadata: EnhancedModelMetadata | null = null;
 
   constructor() {
     this.model = new FixedNaiveBayesService();
@@ -181,7 +188,7 @@ export class EnhancedSentimentService {
    */
   public async initialize(): Promise<void> {
     try {
-      console.log("🚀 Inicializando Enhanced Sentiment Service...");
+      logger.info("Inicializando Enhanced Sentiment Service...");
 
       // Intentar cargar modelo guardado
       const modelPath = path.join(
@@ -190,15 +197,16 @@ export class EnhancedSentimentService {
       );
 
       if (fs.existsSync(modelPath)) {
-        console.log("📁 Cargando modelo pre-entrenado...");
+        logger.info("Cargando modelo pre-entrenado...");
         const modelData = JSON.parse(fs.readFileSync(modelPath, "utf8"));
         this.modelMetadata = modelData;
-        console.log(
-          `✅ Modelo cargado: ${modelData.datasetSize} ejemplos, entrenado el ${new Date(modelData.trainingDate).toLocaleDateString()}`,
-        );
+        logger.info("Modelo cargado", {
+          datasetSize: modelData.datasetSize,
+          trainingDate: modelData.trainingDate,
+        });
       } else {
-        console.log(
-          "⚠️ Modelo pre-entrenado no encontrado, entrenando nuevo modelo...",
+        logger.warn(
+          "Modelo pre-entrenado no encontrado, entrenando nuevo modelo...",
         );
       }
 
@@ -206,12 +214,9 @@ export class EnhancedSentimentService {
       await this.trainModel();
 
       this.isModelLoaded = true;
-      console.log("✅ Enhanced Sentiment Service inicializado correctamente");
+      logger.info("Enhanced Sentiment Service inicializado correctamente");
     } catch (error) {
-      console.error(
-        "❌ Error al inicializar Enhanced Sentiment Service:",
-        error,
-      );
+      logger.error("Error al inicializar Enhanced Sentiment Service", error);
       throw error;
     }
   }
@@ -220,7 +225,7 @@ export class EnhancedSentimentService {
    * Entrena el modelo con el dataset mejorado
    */
   private async trainModel(): Promise<void> {
-    console.log("🔄 Entrenando modelo con dataset mejorado...");
+    logger.info("Entrenando modelo con dataset mejorado...");
 
     // Convertir datos para compatibilidad
     const trainingData = enhancedTrainingDataV3Complete.map((item) => ({
@@ -232,9 +237,10 @@ export class EnhancedSentimentService {
     this.model.train(trainingData);
     const trainingTime = Date.now() - startTime;
 
-    console.log(
-      `✅ Modelo entrenado en ${trainingTime}ms con ${trainingData.length} ejemplos`,
-    );
+    logger.info("Modelo entrenado", {
+      trainingTimeMs: trainingTime,
+      examples: trainingData.length,
+    });
   }
 
   /**
@@ -244,7 +250,12 @@ export class EnhancedSentimentService {
     label: "positive" | "negative" | "neutral";
     confidence: number;
     scores: Record<string, number>;
-    metadata?: any;
+    metadata?: {
+      textLength: number;
+      modelVersion: string;
+      trainingDate?: string;
+      vocabularySize: number;
+    };
   } {
     const result = this.model.predict(text.trim());
     if (!this.isModelLoaded) {
@@ -265,6 +276,7 @@ export class EnhancedSentimentService {
       neutral: result.scores.neutral ?? result.scores["neutral"] ?? 0,
     });
 
+    const stats = this.getStats();
     return {
       label: decision.label,
       confidence: decision.confidence,
@@ -273,7 +285,8 @@ export class EnhancedSentimentService {
         textLength: text.length,
         modelVersion: "enhanced-v3",
         trainingDate: this.modelMetadata?.trainingDate,
-        vocabularySize: this.getStats().vocabularySize,
+        vocabularySize:
+          (stats as { vocabularySize?: number }).vocabularySize || 0,
       },
     };
   }
@@ -298,7 +311,7 @@ export class EnhancedSentimentService {
   /**
    * Obtiene estadísticas del modelo
    */
-  public getStats(): any {
+  public getStats(): Record<string, unknown> {
     if (!this.isModelLoaded) {
       return { error: "Modelo no inicializado" };
     }

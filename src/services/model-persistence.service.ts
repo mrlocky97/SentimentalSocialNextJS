@@ -5,6 +5,7 @@
 
 import fs from "fs/promises";
 import path from "path";
+import { logger } from "../lib/observability/logger";
 import { NaiveBayesSentimentService } from "./naive-bayes-sentiment.service";
 
 export interface ModelMetadata {
@@ -17,9 +18,17 @@ export interface ModelMetadata {
   checksumMD5?: string;
 }
 
+export interface SerializedNaiveBayesModel {
+  vocabulary: string[];
+  classWordCounts: Record<string, Record<string, number>>;
+  classCounts: Record<string, number>;
+  totalDocuments: number;
+  smoothingFactor: number;
+}
+
 export interface SavedModel {
   metadata: ModelMetadata;
-  modelData: any;
+  modelData: SerializedNaiveBayesModel;
   validationResults?: {
     accuracy: number;
     precision: number;
@@ -86,9 +95,9 @@ export class ModelPersistenceManager {
       // Save metadata
       await this.saveMetadata(fullMetadata);
 
-      console.log(`✅ Model saved successfully: ${modelPath}`);
+      logger.info(`Model saved successfully: ${modelPath}`);
     } catch (error) {
-      console.error("❌ Error saving model:", error);
+      logger.error("Error saving model", error);
       throw error;
     }
   }
@@ -112,14 +121,14 @@ export class ModelPersistenceManager {
       // Deserialize the model into the service
       service.deserialize(modelData.model);
 
-      console.log(`✅ Model loaded successfully from: ${modelPath}`);
-      console.log(
-        `📊 Model info: ${modelData.metadata?.datasetSize} examples, version ${modelData.metadata?.version}`,
+      logger.info(`Model loaded successfully from: ${modelPath}`);
+      logger.debug(
+        `Model info: ${modelData.metadata?.datasetSize} examples, version ${modelData.metadata?.version}`,
       );
 
       return modelData.metadata || null;
     } catch (error) {
-      console.warn(`⚠️ Could not load model from ${modelPath}:`, error);
+      logger.warn(`Could not load model from ${modelPath}`, error as Error);
       return null;
     }
   }
@@ -148,7 +157,7 @@ export class ModelPersistenceManager {
       const metadataContent = await fs.readFile(this.metadataFile, "utf-8");
       return JSON.parse(metadataContent) as ModelMetadata;
     } catch (error) {
-      console.warn("⚠️ Could not load metadata:", error);
+      logger.warn("Could not load metadata", error as Error);
       return null;
     }
   }
@@ -216,11 +225,12 @@ export class ModelPersistenceManager {
       testResults: results, // Include the detailed results
     };
 
-    console.log(`📊 Model Validation Results:`);
-    console.log(`   Accuracy: ${accuracy.toFixed(2)}%`);
-    console.log(`   Precision: ${validationResults.precision.toFixed(2)}%`);
-    console.log(`   Recall: ${validationResults.recall.toFixed(2)}%`);
-    console.log(`   F1-Score: ${validationResults.f1Score.toFixed(2)}%`);
+    logger.info("Model validation results", {
+      accuracy: Number(accuracy.toFixed(2)),
+      precision: Number(validationResults.precision.toFixed(2)),
+      recall: Number(validationResults.recall.toFixed(2)),
+      f1Score: Number(validationResults.f1Score.toFixed(2)),
+    });
 
     return validationResults;
   }

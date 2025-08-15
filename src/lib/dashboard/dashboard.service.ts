@@ -107,8 +107,7 @@ export class DashboardService {
       const httpRequestsMetric = metricsRegistry.getMetric(
         "http_requests_total",
       );
-      const memoryMetric = metricsRegistry.getMetric("memory_usage_bytes");
-      const cpuMetric = metricsRegistry.getMetric("cpu_usage_percent");
+      // memory & cpu metrics available via systemMetrics snapshot
 
       const dataPoints = {
         requests: httpRequestsMetric?.getValue() || 0,
@@ -150,7 +149,7 @@ export class DashboardService {
   public getCurrentMetrics(): DashboardMetrics {
     try {
       const systemMetrics = metricsRegistry.getSystemMetrics();
-      const snapshot = metricsRegistry.getSnapshot();
+      // const snapshot = metricsRegistry.getSnapshot(); // Not currently used
 
       // Calculate system health status
       const memoryPercentage =

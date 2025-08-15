@@ -4,6 +4,7 @@
  */
 
 import { Core } from "../core";
+import { logger } from "../lib/observability/logger";
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
 import { TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { Tweet } from "../types/twitter";
@@ -20,7 +21,7 @@ export class TweetSentimentAnalysisManager {
    */
   async analyzeTweet(
     tweet: Tweet,
-    config?: any,
+    config?: { brandKeywords?: string[] },
   ): Promise<TweetSentimentAnalysis> {
     // Manejo especial para tweets vacíos - retorna resultado neutral en lugar de lanzar error
     const content = tweet.content || tweet.text || "";
@@ -99,7 +100,7 @@ export class TweetSentimentAnalysisManager {
    */
   async analyzeTweetsBatch(
     tweets: Tweet[],
-    config?: any,
+    config?: { brandKeywords?: string[] },
   ): Promise<TweetSentimentAnalysis[]> {
     // Validar entrada del lote
     const validation = Core.Validators.Tweet.validateBatch(tweets);
@@ -227,8 +228,8 @@ export class TweetSentimentAnalysisManager {
    * Entrena el modelo Naive Bayes
    */
   async trainNaiveBayes(trainingData: Array<{ text: string; label: string }>) {
-    // Implementación futura
-    console.log("Training with", trainingData.length, "examples");
+    // TODO: type model training result when implemented
+    logger.info(`Training with ${trainingData.length} examples`);
     return Promise.resolve();
   }
 
@@ -236,8 +237,8 @@ export class TweetSentimentAnalysisManager {
    * Guarda el modelo Naive Bayes en archivo
    */
   async saveNaiveBayesToFile(filePath: string) {
-    // Implementación futura
-    console.log("Saving model to", filePath);
+    // TODO: implement serialization logic
+    logger.info(`Saving model to ${filePath}`);
     return Promise.resolve();
   }
 

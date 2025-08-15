@@ -6,6 +6,7 @@
 // Define our own simplified sentiment types for the fixed model
 export type SimpleSentimentLabel = "positive" | "negative" | "neutral";
 
+import { logger } from "../lib/observability/logger"; // adjust path if needed
 export interface TrainingExample {
   text: string;
   label: SimpleSentimentLabel;
@@ -118,7 +119,9 @@ export class FixedNaiveBayesService {
    * CRITICAL FIX: Proper training implementation
    */
   train(examples: TrainingExample[]): void {
-    console.log(`🔧 Training with ${examples.length} examples...`);
+    logger.info(
+      `Training fixed naive bayes with ${examples.length} examples...`,
+    );
 
     // Reset training state
     this.vocabulary.clear();
@@ -138,13 +141,13 @@ export class FixedNaiveBayesService {
     // Process each example
     for (const example of examples) {
       if (!example.text || !example.label) {
-        console.warn("⚠️ Skipping invalid example:", example);
+        logger.warn("Skipping invalid example", { example });
         continue;
       }
 
       const words = this.preprocessText(example.text);
       if (words.length === 0) {
-        console.warn("⚠️ No words after preprocessing:", example.text);
+        logger.warn("No words after preprocessing", { text: example.text });
         continue;
       }
 
@@ -169,12 +172,13 @@ export class FixedNaiveBayesService {
     this.trained = true;
 
     // Log training results
-    console.log("📊 Training completed:");
-    console.log(`   Vocabulary size: ${this.vocabulary.size}`);
-    console.log(`   Positive examples: ${this.classCounts.get("positive")}`);
-    console.log(`   Negative examples: ${this.classCounts.get("negative")}`);
-    console.log(`   Neutral examples: ${this.classCounts.get("neutral")}`);
-    console.log(`   Total documents: ${this.totalDocuments}`);
+    logger.info("Training completed", {
+      vocabularySize: this.vocabulary.size,
+      positiveExamples: this.classCounts.get("positive"),
+      negativeExamples: this.classCounts.get("negative"),
+      neutralExamples: this.classCounts.get("neutral"),
+      totalDocuments: this.totalDocuments,
+    });
   }
 
   /**

@@ -2,8 +2,8 @@ import { SCRAPING_CONFIG } from "@/config/scraping.config";
 import { Label } from "@/enums/sentiment.enum";
 import type { TweetSentimentAnalysis } from "@/lib/sentiment/types";
 import {
-    processSentimentAnalysis,
-    validateRequestParams,
+  processSentimentAnalysis,
+  validateRequestParams,
 } from "@/routes/modules/scraping/helpers";
 import type { Tweet } from "@/types/twitter";
 

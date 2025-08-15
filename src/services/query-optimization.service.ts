@@ -3,6 +3,7 @@
  * Optimizes database queries and API calls for better performance
  */
 
+import { logger } from "../lib/observability/logger";
 import { performanceCache } from "./performance-cache.service";
 
 export interface QueryMetrics {
@@ -21,10 +22,14 @@ export interface OptimizationConfig {
   enableMetrics: boolean;
 }
 
+interface AggregationStage {
+  [key: string]: unknown;
+}
+
 export class QueryOptimizationService {
   private metrics: QueryMetrics[] = [];
   private activeQueries = new Set<string>();
-  private queryQueue: Array<() => Promise<any>> = [];
+  private queryQueue: Array<() => Promise<unknown>> = [];
   private config: OptimizationConfig = {
     enableCaching: true,
     cacheTTL: 5 * 60 * 1000, // 5 minutes
@@ -125,7 +130,7 @@ export class QueryOptimizationService {
         if (result.status === "fulfilled") {
           results.push(result.value);
         } else {
-          console.error("Batch query failed:", result.reason);
+          logger.error("Batch query failed", { reason: result.reason });
         }
       });
     }
@@ -138,7 +143,7 @@ export class QueryOptimizationService {
    */
   async optimizeAggregation<T>(
     collection: string,
-    pipeline: any[],
+    pipeline: AggregationStage[],
     options?: { allowDiskUse?: boolean; maxTimeMS?: number },
   ): Promise<T[]> {
     const queryKey = performanceCache.generateKey(
@@ -154,7 +159,7 @@ export class QueryOptimizationService {
         const optimizedPipeline = this.optimizePipeline(pipeline);
 
         // Simulate aggregation execution (replace with actual MongoDB call)
-        console.log("Executing optimized aggregation:", {
+        logger.debug("Executing optimized aggregation", {
           collection,
           pipeline: optimizedPipeline,
           options,
@@ -214,7 +219,7 @@ export class QueryOptimizationService {
    */
   invalidateCache(pattern: string): void {
     // This would need access to cache internals
-    console.log(`Invalidating cache for pattern: ${pattern}`);
+    logger.info(`Invalidating cache for pattern: ${pattern}`);
   }
 
   /**
@@ -262,7 +267,7 @@ export class QueryOptimizationService {
   /**
    * Optimize MongoDB aggregation pipeline
    */
-  private optimizePipeline(pipeline: any[]): any[] {
+  private optimizePipeline(pipeline: AggregationStage[]): AggregationStage[] {
     // Add $match stages early to reduce document count
     // Add $project stages to limit fields
     // Add $sort with $limit for better performance
@@ -291,12 +296,17 @@ export class QueryOptimizationService {
   /**
    * Get result count from query result
    */
-  private getResultCount(result: any): number {
+  private getResultCount(result: unknown): number {
     if (Array.isArray(result)) {
       return result.length;
     }
-    if (result && typeof result === "object" && "count" in result) {
-      return result.count;
+    if (
+      result &&
+      typeof result === "object" &&
+      "count" in result &&
+      typeof (result as { count: unknown }).count === "number"
+    ) {
+      return (result as { count: number }).count;
     }
     return 1;
   }

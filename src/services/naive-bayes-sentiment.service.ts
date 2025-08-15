@@ -1,4 +1,5 @@
 import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
+import { logger } from "../lib/observability/logger";
 
 export type SentimentLabel = "positive" | "negative" | "neutral";
 
@@ -42,7 +43,7 @@ export class NaiveBayesSentimentService {
   private trainWithEnhancedData(): void {
     // Convert enhanced training data to proper format - USANDO TODO EL DATASET
     const trainingData: NaiveBayesTrainingExample[] =
-      enhancedTrainingDataV3Complete.map((item: any) => ({
+      enhancedTrainingDataV3Complete.map((item) => ({
         text: item.text,
         label: item.label as SentimentLabel,
       }));
@@ -121,7 +122,7 @@ export class NaiveBayesSentimentService {
    * Train the model with examples
    */
   train(examples: NaiveBayesTrainingExample[]): void {
-    console.log(`🔧 Training with ${examples.length} examples...`);
+    logger.info(`Training Naive Bayes with ${examples.length} examples...`);
 
     // Reset training state
     this.vocabulary.clear();
@@ -164,12 +165,13 @@ export class NaiveBayesSentimentService {
       }
     }
 
-    console.log(`📊 Training completed:`);
-    console.log(`   Vocabulary size: ${this.vocabulary.size}`);
-    console.log(`   Positive examples: ${this.classCounts.get("positive")}`);
-    console.log(`   Negative examples: ${this.classCounts.get("negative")}`);
-    console.log(`   Neutral examples: ${this.classCounts.get("neutral")}`);
-    console.log(`   Total documents: ${this.totalDocuments}`);
+    logger.info("Training completed", {
+      vocabularySize: this.vocabulary.size,
+      positiveExamples: this.classCounts.get("positive"),
+      negativeExamples: this.classCounts.get("negative"),
+      neutralExamples: this.classCounts.get("neutral"),
+      totalDocuments: this.totalDocuments,
+    });
   }
 
   /**
@@ -270,7 +272,13 @@ export class NaiveBayesSentimentService {
   /**
    * Serialize the model to JSON for persistence
    */
-  serialize(): any {
+  serialize(): {
+    vocabulary: string[];
+    classWordCounts: Record<string, Record<string, number>>;
+    classCounts: Record<string, number>;
+    totalDocuments: number;
+    smoothingFactor: number;
+  } {
     return {
       vocabulary: Array.from(this.vocabulary),
       classWordCounts: Object.fromEntries(
@@ -288,7 +296,13 @@ export class NaiveBayesSentimentService {
   /**
    * Load model from serialized data
    */
-  deserialize(data: any): void {
+  deserialize(data: {
+    vocabulary: string[];
+    classWordCounts: Record<string, Record<string, number>>;
+    classCounts: Record<string, number>;
+    totalDocuments: number;
+    smoothingFactor: number;
+  }): void {
     this.vocabulary = new Set(data.vocabulary);
     this.classWordCounts = new Map(
       Object.entries(data.classWordCounts).map(([label, wordCounts]) => [

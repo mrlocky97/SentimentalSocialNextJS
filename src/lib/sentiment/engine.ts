@@ -8,21 +8,21 @@
 import natural from "natural";
 import { Language } from "../../enums/sentiment.enum";
 import {
-    AdvancedHybridAnalyzer,
-    ContextualFeatures,
+  AdvancedHybridAnalyzer,
+  ContextualFeatures,
 } from "../../services/advanced-hybrid-analyzer.service";
 import {
-    NaiveBayesSentimentService,
-    NaiveBayesTrainingExample,
-    SentimentLabel,
+  NaiveBayesSentimentService,
+  NaiveBayesTrainingExample,
+  SentimentLabel,
 } from "../../services/naive-bayes-sentiment.service";
 import { TextAnalysis } from "../../types/sentiment";
 import {
-    AnalysisRequest,
-    AnalysisResult,
-    AnalyzerEngine,
-    LanguageCode,
-    SignalBreakdown,
+  AnalysisRequest,
+  AnalysisResult,
+  AnalyzerEngine,
+  LanguageCode,
+  SignalBreakdown,
 } from "./types";
 
 /**

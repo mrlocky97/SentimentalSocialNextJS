@@ -7,8 +7,8 @@ import { NextFunction, Request, Response } from "express";
 import { CampaignType } from "../../../enums/campaign.enum";
 import { logger } from "../../../lib/observability/logger";
 import {
-    CreateCampaignRequest,
-    UpdateCampaignRequest,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
 } from "../../../types/campaign";
 
 /**

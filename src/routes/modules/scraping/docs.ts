@@ -193,5 +193,4 @@
  *       200:
  *         description: Tweets retrieved successfully
  */
-export { };
-
+export {};

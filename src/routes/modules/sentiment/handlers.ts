@@ -5,8 +5,8 @@
 
 import { Request, Response } from "express";
 import {
-    SentimentAnalysisError,
-    successResponse,
+  SentimentAnalysisError,
+  successResponse,
 } from "../../../core/errors/error-handler";
 import { ValidationError } from "../../../core/errors/error-types";
 import { Method } from "../../../enums/sentiment.enum";

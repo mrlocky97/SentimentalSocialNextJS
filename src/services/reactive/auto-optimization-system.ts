@@ -4,22 +4,23 @@
  */
 
 import {
-  Observable,
-  Subject,
-  BehaviorSubject,
-  timer,
-  combineLatest,
+    BehaviorSubject,
+    combineLatest,
+    Observable,
+    Subject,
+    timer,
 } from "rxjs";
 import {
-  map,
-  filter,
-  mergeMap,
-  catchError,
-  tap,
-  shareReplay,
-  debounceTime,
-  distinctUntilChanged,
+    catchError,
+    debounceTime,
+    distinctUntilChanged,
+    filter,
+    map,
+    mergeMap,
+    shareReplay,
+    tap,
 } from "rxjs/operators";
+import { logger } from "../../lib/observability/logger";
 import { notificationSystem } from "./notification-system";
 
 export interface OptimizationTask {
@@ -108,7 +109,7 @@ class SmartAutoOptimizationSystem {
       )
       .subscribe({
         next: (result) => this.handleTaskResult(result),
-        error: (error) => console.error("Task processing error:", error),
+  error: (error) => logger.error("Task processing error", { error }),
       });
   }
 
@@ -240,7 +241,7 @@ class SmartAutoOptimizationSystem {
         });
     }).pipe(
       catchError((error) => {
-        console.error(`Task ${task.id} failed:`, error);
+  logger.error(`Task ${task.id} failed`, { error });
         return [
           {
             taskId: task.id,

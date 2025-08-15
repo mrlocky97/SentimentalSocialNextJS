@@ -19,7 +19,12 @@ function shouldLog(level: Level): boolean {
   return levelOrder[level] <= levelOrder[currentLevel];
 }
 
-function formatMessage(level: Level, msg: string, meta?: LogMeta, name?: string): [string, ...unknown[]] {
+function formatMessage(
+  level: Level,
+  msg: string,
+  meta?: LogMeta,
+  name?: string,
+): [string, ...unknown[]] {
   const timestamp = new Date().toISOString();
   const namePart = name ? ` [${name}]` : "";
   const baseLog = `${timestamp}${namePart} [${level.toUpperCase()}] ${msg}`;
@@ -56,7 +61,8 @@ export const logger = {
     if (!shouldLog("warn")) return;
     let finalMeta: LogMeta | undefined;
     if (errOrMeta instanceof Error) finalMeta = { error: errOrMeta.message };
-    else if (typeof errOrMeta === "object" && errOrMeta !== null) finalMeta = errOrMeta as LogMeta;
+    else if (typeof errOrMeta === "object" && errOrMeta !== null)
+      finalMeta = errOrMeta as LogMeta;
     else finalMeta = meta;
     console.warn(...formatMessage("warn", msg, finalMeta, name));
   },
@@ -64,7 +70,8 @@ export const logger = {
     if (!shouldLog("info")) return;
     let finalMeta: LogMeta | undefined;
     if (errOrMeta instanceof Error) finalMeta = { error: errOrMeta.message };
-    else if (typeof errOrMeta === "object" && errOrMeta !== null) finalMeta = errOrMeta as LogMeta;
+    else if (typeof errOrMeta === "object" && errOrMeta !== null)
+      finalMeta = errOrMeta as LogMeta;
     else finalMeta = meta;
     console.log(...formatMessage("info", msg, finalMeta, name));
   },
@@ -72,7 +79,8 @@ export const logger = {
     if (!shouldLog("debug")) return;
     let finalMeta: LogMeta | undefined;
     if (errOrMeta instanceof Error) finalMeta = { error: errOrMeta.message };
-    else if (typeof errOrMeta === "object" && errOrMeta !== null) finalMeta = errOrMeta as LogMeta;
+    else if (typeof errOrMeta === "object" && errOrMeta !== null)
+      finalMeta = errOrMeta as LogMeta;
     else finalMeta = meta;
     console.debug(...formatMessage("debug", msg, finalMeta, name));
   },
@@ -89,10 +97,12 @@ export const LoggerFactory = {
     // Return a wrapper that binds the provided name into logs
     if (!name) return logger;
     return {
-      error: (m: string, a?: unknown, b?: LogMeta) => logger.error(m, a, b, name),
+      error: (m: string, a?: unknown, b?: LogMeta) =>
+        logger.error(m, a, b, name),
       warn: (m: string, a?: unknown, b?: LogMeta) => logger.warn(m, a, b, name),
       info: (m: string, a?: unknown, b?: LogMeta) => logger.info(m, a, b, name),
-      debug: (m: string, a?: unknown, b?: LogMeta) => logger.debug(m, a, b, name),
+      debug: (m: string, a?: unknown, b?: LogMeta) =>
+        logger.debug(m, a, b, name),
     } as Logger;
   },
   getLogger(name?: string) {
