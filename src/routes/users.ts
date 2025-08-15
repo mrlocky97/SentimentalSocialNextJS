@@ -5,9 +5,9 @@
 
 import { Router } from "express";
 import {
+  asyncHandler,
   BusinessLogicError,
   ErrorCode,
-  errorHandler,
   NotFoundError,
   ResponseHelper,
   ValidationError,
@@ -105,7 +105,7 @@ router.get(
   "/",
   authenticateToken,
   requireRole(["admin", "manager"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const { page = 1, limit = 20, role, organizationId, isActive } = req.query;
 
     // Build filter object with proper typing
@@ -271,7 +271,7 @@ router.post(
   "/",
   authenticateToken,
   requireRole(["admin"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const userData: CreateUserRequest = req.body;
 
     // Validate required fields
@@ -403,7 +403,7 @@ router.post(
 router.get(
   "/profile",
   authenticateToken,
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const userId = (req as any).user.id;
 
     const user = await userRepository.findById(userId);
@@ -482,7 +482,7 @@ router.get(
 router.put(
   "/profile",
   authenticateToken,
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const userId = (req as any).user.id;
     const updateData: Partial<UpdateUserRequest> = req.body;
 
@@ -511,7 +511,7 @@ router.get(
   "/:id",
   authenticateToken,
   requireRole(["admin", "manager"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format (basic validation)
@@ -623,7 +623,7 @@ router.put(
   "/:id",
   authenticateToken,
   requireRole(["admin"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const { id } = req.params;
     const updateData: UpdateUserRequest = req.body;
 
@@ -730,7 +730,7 @@ router.delete(
   "/:id",
   authenticateToken,
   requireRole(["admin"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const { id } = req.params;
 
     // Validate MongoDB ObjectId format

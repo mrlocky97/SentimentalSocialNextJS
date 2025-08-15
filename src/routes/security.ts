@@ -5,7 +5,7 @@
 
 import { Router } from "express";
 import { existsSync } from "fs";
-import { errorHandler, ResponseHelper } from "../core/errors";
+import { asyncHandler, ResponseHelper } from "../core/errors";
 import { tokenBlacklistService } from "../lib/security/token-blacklist";
 import {
   AuthenticatedRequest,
@@ -64,7 +64,7 @@ router.get(
   "/status",
   authenticateToken,
   requireRole(["admin"]),
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const blacklistStats = tokenBlacklistService.getStats();
 
     const securityStatus = {

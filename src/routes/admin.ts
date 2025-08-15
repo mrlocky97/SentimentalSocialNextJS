@@ -4,8 +4,8 @@
 
 import { Router } from "express";
 import {
+  asyncHandler,
   ErrorCode,
-  errorHandler,
   InternalServerError,
   NotFoundError,
   ResponseHelper,
@@ -41,7 +41,7 @@ const userRepository = new MongoUserRepository();
  */
 router.get(
   "/users",
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const users = await userRepository.findMany();
     ResponseHelper.success(
       res,
@@ -72,7 +72,7 @@ router.get(
  */
 router.delete(
   "/users/:id",
-  errorHandler.expressAsyncWrapper(async (req, res) => {
+  asyncHandler(async (req: any, res: any) => {
     const { id } = req.params;
     const deleted = await userRepository.delete(id);
 
@@ -100,7 +100,7 @@ router.delete(
  */
 router.post(
   "/clear-users",
-  errorHandler.expressAsyncWrapper(async () => {
+  asyncHandler(async () => {
     // This would need to be implemented in the repository
     throw new InternalServerError(
       "Clear users functionality not implemented",
