@@ -51,9 +51,9 @@ export interface AnalyzerEngine {
 }
 
 export interface SentimentOrchestrator {
-  analyzeText(input: AnalysisRequest): Promise<AnalysisResult>;
-  analyzeTweet(tweet: any): Promise<AnalysisResult>;
-  analyzeBatch(tweets: any[]): Promise<AnalysisResult[]>;
+  analyzeText(input: AnalysisRequest | string): Promise<AnalysisResult>;
+  analyzeTweet(tweet: TweetDTO): Promise<AnalysisResult & { tweetId: string }>;
+  analyzeBatch(tweets: TweetDTO[]): Promise<AnalysisResult[]>;
 }
 
 export interface TweetDTO {
@@ -62,10 +62,7 @@ export interface TweetDTO {
   language?: LanguageCode;
 }
 
-export interface SentimentOrchestrator {
-  analyzeText(input: AnalysisRequest): Promise<AnalysisResult>;
-  analyzeTweet(tweet: TweetDTO): Promise<AnalysisResult & { tweetId: string }>;
-}
+// (interface merged above)
 
 // Análisis de sentimiento específico para tweets
 export interface TweetSentimentAnalysis {

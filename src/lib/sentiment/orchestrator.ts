@@ -1,28 +1,18 @@
 /**
- * Sentiment Analysis Orchestrator - ENHANCED VERSION
- *
- * This class acts as the integration point for the sentiment analysis engine.
- * It handles I/O-bound tasks like caching, logging, data mapping (DTOs),
- * error handling, timeouts, metrics, and observability.
- *
- * PHASE 2 IMPROVEMENTS:
- * - Advanced granular caching with TTL
- * - Centralized error handling with circuit breaker
- * - Performance metrics and observability
- * - Timeout management and request priority
- * - Batch processing optimization
+ * Sentiment Orchestrator
+ * Author: Luis Flores (TFG 2025) – Caching, circuit breaker, metrics around engine.
  */
 import { NaiveBayesTrainingExample } from "../../services/naive-bayes-sentiment.service";
 import { Tweet } from "../../types/twitter";
 import { SentimentAnalysisEngine } from "./engine";
 import {
-    AnalysisRequest,
-    AnalysisResult,
-    SentimentOrchestrator,
-    TweetDTO,
+  AnalysisRequest,
+  AnalysisResult,
+  SentimentOrchestrator,
+  TweetDTO,
 } from "./types";
 
-// Import the mappers for Phase 3 integration
+// (Mappers imported lazily elsewhere if needed)
 
 // Enhanced cache with TTL and metadata
 interface CacheEntry {
@@ -89,13 +79,11 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       5 * 60 * 1000,
     ); // Every 5 minutes
   }
-  analyzeBatch(tweets: any[]): Promise<AnalysisResult[]> {
-    throw new Error("Method not implemented." + tweets);
+  analyzeBatch(tweets: TweetDTO[]): Promise<AnalysisResult[]> {
+    return Promise.all(tweets.map((t) => this.analyzeText({ text: t.text })));
   }
 
-  /**
-   * Advanced cache management with TTL and metrics
-   */
+  // Remove expired cache entries
   private cleanupExpiredCache(): void {
     const now = Date.now();
     const expiredKeys: string[] = [];
@@ -112,9 +100,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
     );
   }
 
-  /**
-   * Check if cache needs eviction (LRU-style)
-   */
+  // Basic LRU-style eviction when size limit exceeded
   private evictCacheIfNeeded(): void {
     if (this.cache.size > this.MAX_CACHE_SIZE) {
       // Simple LRU: sort by hits (least used first) and remove 20%
