@@ -266,4 +266,40 @@ export class NaiveBayesSentimentService {
       classCounts: Object.fromEntries(this.classCounts),
     };
   }
+
+  /**
+   * Serialize the model to JSON for persistence
+   */
+  serialize(): any {
+    return {
+      vocabulary: Array.from(this.vocabulary),
+      classWordCounts: Object.fromEntries(
+        Array.from(this.classWordCounts.entries()).map(([label, wordMap]) => [
+          label,
+          Object.fromEntries(wordMap),
+        ]),
+      ),
+      classCounts: Object.fromEntries(this.classCounts),
+      totalDocuments: this.totalDocuments,
+      smoothingFactor: this.smoothingFactor,
+    };
+  }
+
+  /**
+   * Load model from serialized data
+   */
+  deserialize(data: any): void {
+    this.vocabulary = new Set(data.vocabulary);
+    this.classWordCounts = new Map(
+      Object.entries(data.classWordCounts).map(([label, wordCounts]) => [
+        label as SentimentLabel,
+        new Map(Object.entries(wordCounts as Record<string, number>)),
+      ]),
+    );
+    this.classCounts = new Map(
+      Object.entries(data.classCounts) as [SentimentLabel, number][],
+    );
+    this.totalDocuments = data.totalDocuments;
+    this.smoothingFactor = data.smoothingFactor;
+  }
 }

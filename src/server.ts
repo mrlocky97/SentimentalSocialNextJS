@@ -21,13 +21,13 @@ import specs from "./lib/swagger";
 
 // Import performance middleware
 import {
-    analyticsRateLimit,
-    authRateLimit,
-    cacheControlMiddleware,
-    compressionMiddleware,
-    performanceMiddleware,
-    sanitizeMiddleware,
-    scrapingRateLimit,
+  analyticsRateLimit,
+  authRateLimit,
+  cacheControlMiddleware,
+  compressionMiddleware,
+  performanceMiddleware,
+  sanitizeMiddleware,
+  scrapingRateLimit,
 } from "./lib/middleware/performance";
 
 // Import performance services
@@ -60,15 +60,15 @@ import { modelPersistenceManager } from "./services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "./services/tweet-sentiment-analysis.manager.service";
 // Import IoC Configuration
 import {
-    checkContainerHealth,
-    configureServices,
+  checkContainerHealth,
+  configureServices,
 } from "./lib/dependency-injection/config";
 // Import observability middleware
 import { systemLogger } from "./lib/observability/logger";
 import {
-    errorLoggingMiddleware,
-    performanceLoggingMiddleware,
-    requestLoggingMiddleware,
+  errorLoggingMiddleware,
+  performanceLoggingMiddleware,
+  requestLoggingMiddleware,
 } from "./middleware/request-logging";
 
 import { features } from "./lib/config/feature-flags";
@@ -323,6 +323,18 @@ async function startServer() {
       );
     }
 
+    // Initialize sentiment manager and preload model (always, regardless of training flag)
+    console.log("🧠 Initializing Sentiment Analysis System...");
+    const sentimentManager = new TweetSentimentAnalysisManager();
+
+    // Try to load the latest saved model
+    const ok = await sentimentManager.tryLoadLatestModel?.();
+    console.log(
+      ok
+        ? "🧠 Modelo cargado"
+        : "ℹ️ Sin modelo preentrenado, se usará heurística",
+    );
+
     // Configure IoC Container
     configureServices();
 
@@ -405,7 +417,7 @@ async function initializeApplication() {
   try {
     // Step 1: Initialize database connection before anything else
     await initializeDatabase();
-    
+
     // Step 2: Start the server with all other initializations
     await startServer();
   } catch (error) {

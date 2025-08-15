@@ -6,23 +6,23 @@
  * Enhanced with multiple open-source models for superior accuracy.
  */
 import natural from "natural";
+import { Language } from "../../enums/sentiment.enum";
 import {
-  AdvancedHybridAnalyzer,
-  ContextualFeatures,
+    AdvancedHybridAnalyzer,
+    ContextualFeatures,
 } from "../../services/advanced-hybrid-analyzer.service";
 import {
-  NaiveBayesSentimentService,
-  NaiveBayesTrainingExample,
-  SentimentLabel,
+    NaiveBayesSentimentService,
+    NaiveBayesTrainingExample,
+    SentimentLabel,
 } from "../../services/naive-bayes-sentiment.service";
-import { Language } from "../../enums/sentiment.enum";
 import { TextAnalysis } from "../../types/sentiment";
 import {
-  AnalysisRequest,
-  AnalysisResult,
-  AnalyzerEngine,
-  LanguageCode,
-  SignalBreakdown,
+    AnalysisRequest,
+    AnalysisResult,
+    AnalyzerEngine,
+    LanguageCode,
+    SignalBreakdown,
 } from "./types";
 
 /**
@@ -326,5 +326,12 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
       intensifierBoost: features.emotionalWords,
       sarcasmScore: features.sarcasmIndicators,
     };
+  }
+
+  /**
+   * Get access to the Naive Bayes analyzer for model loading
+   */
+  public getNaiveBayesAnalyzer(): NaiveBayesSentimentService {
+    return this.naiveBayesAnalyzer;
   }
 }

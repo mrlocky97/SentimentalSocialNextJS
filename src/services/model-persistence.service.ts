@@ -70,13 +70,18 @@ export class ModelPersistenceManager {
     };
 
     try {
-      // Save the classifier using natural's built-in serialization
-      await new Promise<void>((resolve, reject) => {
-        (service as any).classifier.save(modelPath, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      // Serialize the custom model implementation
+      const modelData = {
+        model: service.serialize(),
+        metadata: fullMetadata,
+      };
+
+      // Save to file
+      await fs.writeFile(
+        modelPath,
+        JSON.stringify(modelData, null, 2),
+        "utf-8",
+      );
 
       // Save metadata
       await this.saveMetadata(fullMetadata);
@@ -100,33 +105,19 @@ export class ModelPersistenceManager {
       // Check if model file exists
       await fs.access(modelPath);
 
-      // Load the classifier
-      await new Promise<void>((resolve, reject) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const natural = require("natural");
-        natural.BayesClassifier.load(
-          modelPath,
-          null,
-          (err: Error | null, classifier: any) => {
-            if (err || !classifier) {
-              reject(err || new Error("Failed to load classifier"));
-            } else {
-              (service as any).classifier = classifier;
-              resolve();
-            }
-          },
-        );
-      });
+      // Load the serialized model data
+      const fileContent = await fs.readFile(modelPath, "utf-8");
+      const modelData = JSON.parse(fileContent);
 
-      // Load metadata
-      const metadata = await this.loadMetadata();
+      // Deserialize the model into the service
+      service.deserialize(modelData.model);
 
       console.log(`✅ Model loaded successfully from: ${modelPath}`);
       console.log(
-        `📊 Model info: ${metadata?.datasetSize} examples, version ${metadata?.version}`,
+        `📊 Model info: ${modelData.metadata?.datasetSize} examples, version ${modelData.metadata?.version}`,
       );
 
-      return metadata;
+      return modelData.metadata || null;
     } catch (error) {
       console.warn(`⚠️ Could not load model from ${modelPath}:`, error);
       return null;

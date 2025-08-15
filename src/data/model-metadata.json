@@ -1,6 +1,12 @@
 {
-  "version": "2.0.0",
-  "trainingDate": "2025-08-11T21:13:14.457Z",
-  "datasetSize": 4005,
-  "features": ["Social media", "Emojis", "Sarcasm", "Multilingual"]
+  "version": "v3.0",
+  "datasetSize": 1274,
+  "accuracy": 90.51,
+  "features": [
+    "naive_bayes",
+    "enhanced"
+  ],
+  "modelType": "naive_bayes",
+  "trainingDate": "2025-08-15T16:31:57.417Z",
+  "lastUpdated": "2025-08-15T16:31:57.432Z"
 }

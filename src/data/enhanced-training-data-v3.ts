@@ -328,7 +328,7 @@ export const trainingDataBlock1 = [
     label: "sarcasm",
   },
   {
-    text: "I’m so happy to find another bug in the software.",
+    text: "I'm so happy to find another bug in the software.",
     label: "sarcasm",
   },
   {
@@ -348,7 +348,7 @@ export const trainingDataBlock1 = [
     label: "sarcasm",
   },
   {
-    text: "Love the new interface that’s impossible to navigate.",
+    text: "Love the new interface that's impossible to navigate.",
     label: "sarcasm",
   },
   {
@@ -410,7 +410,7 @@ export const trainingDataBlock1 = [
     label: "sarcasm",
   },
   {
-    text: "Great, another error message I don’t understand.",
+    text: "Great, another error message I don't understand.",
     label: "sarcasm",
   },
   {
@@ -419,7 +419,7 @@ export const trainingDataBlock1 = [
   },
   { text: "Perfect, the app deleted my unsaved changes.", label: "sarcasm" },
   {
-    text: "Love the “new and improved” version that’s worse than before.",
+    text: "Love the “new and improved” version that's worse than before.",
     label: "sarcasm",
   },
   {
@@ -443,10 +443,10 @@ export const trainingDataBlock1 = [
     label: "sarcasm",
   },
   {
-    text: "Just perfect, the app won’t open after the update.",
+    text: "Just perfect, the app won't open after the update.",
     label: "sarcasm",
   },
-  { text: "I’m thrilled by the endless loading spinner.", label: "sarcasm" },
+  { text: "I'm thrilled by the endless loading spinner.", label: "sarcasm" },
   { text: "Oh joy, another password reset required.", label: "sarcasm" },
   { text: "Perfect, the software erased my files.", label: "sarcasm" },
   { text: "Love how the update removed my favorite tools.", label: "sarcasm" },
@@ -592,7 +592,7 @@ export const datasetBlock2 = [
   { text: "Reliable and consistent performance every time", label: "positive" },
   { text: "Helpful tutorials made the process simple", label: "positive" },
   {
-    text: "The app’s features are very useful for daily tasks",
+    text: "The app's features are very useful for daily tasks",
     label: "positive",
   },
   { text: "The checkout process was smooth and secure", label: "positive" },
@@ -749,9 +749,9 @@ export const datasetBlock3 = [
   { text: "The product is lightweight and durable", label: "positive" },
   { text: "The interface is responsive and fast", label: "positive" },
   { text: "I had no issues installing the software", label: "positive" },
-  { text: "The product’s features are innovative", label: "positive" },
+  { text: "The product's features are innovative", label: "positive" },
   { text: "Customer service was very knowledgeable", label: "positive" },
-  { text: "The app’s notifications are helpful and timely", label: "positive" },
+  { text: "The app's notifications are helpful and timely", label: "positive" },
   {
     text: "The product fits perfectly and feels comfortable",
     label: "positive",
@@ -822,7 +822,7 @@ export const datasetBlock3 = [
   { text: "The app logs me out unexpectedly", label: "negative" },
   { text: "Slow response times from the support team", label: "negative" },
   { text: "Notifications cannot be turned off", label: "negative" },
-  { text: "The product doesn’t perform as advertised", label: "negative" },
+  { text: "The product doesn't perform as advertised", label: "negative" },
   { text: "App freezes during video calls", label: "negative" },
   { text: "Limited customization options", label: "negative" },
   { text: "Website navigation is confusing and cluttered", label: "negative" },
@@ -856,7 +856,7 @@ export const datasetBlock3 = [
   { text: "The interface is neither good nor bad", label: "neutral" },
   { text: "The app offers basic functionality", label: "neutral" },
   { text: "I have no strong feelings about this product", label: "neutral" },
-  { text: "The update didn’t change much for me", label: "neutral" },
+  { text: "The update didn't change much for me", label: "neutral" },
   { text: "Delivery service met the estimated timeframe", label: "neutral" },
   { text: "The app is functional but not exciting", label: "neutral" },
   { text: "Product packaging was standard", label: "neutral" },
@@ -901,7 +901,7 @@ export const datasetBlock3 = [
     label: "negative",
   },
   {
-    text: "The app’s new look is so confusing, it’s like a puzzle",
+    text: "The app's new look is so confusing, it's like a puzzle",
     label: "negative",
   },
   {
@@ -909,7 +909,7 @@ export const datasetBlock3 = [
     label: "negative",
   },
   {
-    text: "I’m thrilled that the app freezes during my meetings",
+    text: "I'm thrilled that the app freezes during my meetings",
     label: "negative",
   },
   { text: "Oh joy, more ads than content now", label: "negative" },
@@ -917,9 +917,9 @@ export const datasetBlock3 = [
     text: "Nothing says user-friendly like a pop-up every two seconds",
     label: "negative",
   },
-  { text: "I’m so impressed by how often this app crashes", label: "negative" },
+  { text: "I'm so impressed by how often this app crashes", label: "negative" },
   {
-    text: "Because who doesn’t want their phone to heat up like a toaster?",
+    text: "Because who doesn't want their phone to heat up like a toaster?",
     label: "negative",
   },
   { text: "Love how this app keeps logging me out for fun", label: "negative" },
@@ -932,20 +932,20 @@ export const datasetBlock3 = [
     label: "negative",
   },
   {
-    text: "Can’t wait for the next update to mess things up more",
+    text: "Can't wait for the next update to mess things up more",
     label: "negative",
   },
   {
-    text: "The app’s support is as helpful as a screen door on a submarine",
+    text: "The app's support is as helpful as a screen door on a submarine",
     label: "negative",
   },
-  { text: "I’m so glad the update made the app slower", label: "negative" },
+  { text: "I'm so glad the update made the app slower", label: "negative" },
   {
     text: "Because crashing during video calls is totally acceptable",
     label: "negative",
   },
   {
-    text: "The app’s design is so “intuitive” it hides all the buttons",
+    text: "The app's design is so “intuitive” it hides all the buttons",
     label: "negative",
   },
   { text: "Oh perfect, the app forgot my password again", label: "negative" },
@@ -962,7 +962,7 @@ export const datasetBlock3 = [
     label: "negative",
   },
   {
-    text: "The app’s security is so tight, even I can’t access it",
+    text: "The app's security is so tight, even I can't access it",
     label: "negative",
   },
   { text: "Because who needs reliable software anyway?", label: "negative" },
@@ -971,7 +971,7 @@ export const datasetBlock3 = [
     label: "negative",
   },
   {
-    text: "The “easy” setup took me hours, but sure, it’s user-friendly",
+    text: "The “easy” setup took me hours, but sure, it's user-friendly",
     label: "negative",
   },
 ];
@@ -1823,12 +1823,12 @@ export const frenchTrainingPart1 = [
     label: "positive",
   },
   {
-    text: "Performance remarquable, exactement ce dont j’avais besoin.",
+    text: "Performance remarquable, exactement ce dont j'avais besoin.",
     label: "positive",
   },
   { text: "Qualité premium à prix abordable.", label: "positive" },
   {
-    text: "Technologie révolutionnaire, j’achèterai encore.",
+    text: "Technologie révolutionnaire, j'achèterai encore.",
     label: "positive",
   },
   {
@@ -1862,7 +1862,7 @@ export const frenchTrainingPart1 = [
   { text: "Livraison retardée sans notification.", label: "negative" },
   { text: "Produit défectueux, argent gaspillé.", label: "negative" },
   {
-    text: "Processus d’installation compliqué, documentation pauvre.",
+    text: "Processus d'installation compliqué, documentation pauvre.",
     label: "negative",
   },
   { text: "Service client non réactif.", label: "negative" },
@@ -1872,20 +1872,20 @@ export const frenchTrainingPart1 = [
     text: "Oh super, encore une mise à jour qui casse tout.",
     label: "negative",
   },
-  { text: "Juste ce dont j’avais besoin, plus de spams.", label: "negative" },
+  { text: "Juste ce dont j'avais besoin, plus de spams.", label: "negative" },
   { text: "Parfait, le serveur plante encore.", label: "negative" },
   {
-    text: "J’adore quand mon téléphone s’éteint avant les appels importants.",
+    text: "J'adore quand mon téléphone s'éteint avant les appels importants.",
     label: "negative",
   },
   { text: "Fantastique, coincé dans les embouteillages.", label: "negative" },
   { text: "Génial, mon vol a été annulé.", label: "negative" },
   {
-    text: "Incroyable comment ils n’ont jamais ce dont j’ai besoin.",
+    text: "Incroyable comment ils n'ont jamais ce dont j'ai besoin.",
     label: "negative",
   },
   {
-    text: "Tellement agréable d’attendre deux heures en ligne.",
+    text: "Tellement agréable d'attendre deux heures en ligne.",
     label: "negative",
   },
   {
@@ -1949,9 +1949,9 @@ export const frenchTrainingPart1 = [
     text: "Configuration complexe, cauchemar à mettre en place.",
     label: "negative",
   },
-  { text: "Temps d’arrêt fréquents, service peu fiable.", label: "negative" },
+  { text: "Temps d'arrêt fréquents, service peu fiable.", label: "negative" },
   { text: "Dépendances obsolètes, risques de sécurité.", label: "negative" },
-  { text: "Messages d’erreur peu clairs.", label: "negative" },
+  { text: "Messages d'erreur peu clairs.", label: "negative" },
   {
     text: "Pas de contrôle de version, développement chaotique.",
     label: "negative",
@@ -1971,7 +1971,7 @@ export const frenchTrainingPart1 = [
     text: "Bonnes performances mais documentation insuffisante.",
     label: "neutral",
   },
-  { text: "Support utile mais temps d’attente long.", label: "neutral" },
+  { text: "Support utile mais temps d'attente long.", label: "neutral" },
   { text: "Design agréable mais fonctionnalités limitées.", label: "neutral" },
   { text: "Produit fiable mais installation difficile.", label: "neutral" },
   { text: "Prix abordable mais qualité moyenne.", label: "neutral" },
@@ -1991,7 +1991,7 @@ export const frenchTrainingPart1 = [
   { text: "Compte utilisateur créé avec succès.", label: "neutral" },
   { text: "Paiement traité via une passerelle sécurisée.", label: "neutral" },
   { text: "Rapport généré au format PDF.", label: "neutral" },
-  { text: "Sauvegarde effectuée à l’heure prévue.", label: "neutral" },
+  { text: "Sauvegarde effectuée à l'heure prévue.", label: "neutral" },
   {
     text: "Fenêtre de maintenance serveur de 2h à 4h du matin.",
     label: "neutral",
@@ -2035,7 +2035,7 @@ export const frenchTrainingPart2 = [
 
   // Sarcasme et Ironie
   { text: "Super, encore une réunion inutile.", label: "negative" },
-  { text: "Oh oui, j’adore quand mon ordinateur plante.", label: "negative" },
+  { text: "Oh oui, j'adore quand mon ordinateur plante.", label: "negative" },
   { text: "Formidable, un autre email promotionnel.", label: "negative" },
   {
     text: "Parfait, la batterie de mon téléphone meurt toujours au pire moment.",
@@ -2043,7 +2043,7 @@ export const frenchTrainingPart2 = [
   },
   { text: "Magnifique temps pour une panne de réseau.", label: "negative" },
   {
-    text: "Quel plaisir de rester bloqué dans l’ascenseur.",
+    text: "Quel plaisir de rester bloqué dans l'ascenseur.",
     label: "negative",
   },
   {
@@ -2090,21 +2090,21 @@ export const frenchTrainingPart2 = [
     text: "Manque de tests causant des bugs en production.",
     label: "negative",
   },
-  { text: "Notifications d’erreur peu explicites.", label: "negative" },
-  { text: "Sécurité insuffisante dans l’authentification.", label: "negative" },
+  { text: "Notifications d'erreur peu explicites.", label: "negative" },
+  { text: "Sécurité insuffisante dans l'authentification.", label: "negative" },
 
   // Emociones Mixtas
   { text: "Produit fiable mais livraison lente.", label: "neutral" },
   { text: "Bonnes fonctionnalités mais interface confuse.", label: "neutral" },
   { text: "Performances correctes mais bugs occasionnels.", label: "neutral" },
-  { text: "Support efficace mais temps d’attente long.", label: "neutral" },
+  { text: "Support efficace mais temps d'attente long.", label: "neutral" },
   { text: "Beau design mais peu ergonomique.", label: "neutral" },
   {
     text: "Installation simple mais configuration complexe.",
     label: "neutral",
   },
   { text: "Prix abordable mais qualité variable.", label: "neutral" },
-  { text: "Usage facile mais manque d’options avancées.", label: "neutral" },
+  { text: "Usage facile mais manque d'options avancées.", label: "neutral" },
   { text: "Livraison rapide mais emballage fragile.", label: "neutral" },
   { text: "Bonne valeur mais pourrait être améliorée.", label: "neutral" },
 
@@ -2122,10 +2122,10 @@ export const frenchTrainingPart2 = [
 ];
 export const frenchTrainingPart3 = [
   // Marketing Positivo
-  { text: "Un service client à l’écoute et efficace.", label: "positive" },
+  { text: "Un service client à l'écoute et efficace.", label: "positive" },
   { text: "Produit haut de gamme, je recommande vivement.", label: "positive" },
   { text: "Qualité irréprochable et design moderne.", label: "positive" },
-  { text: "L’expérience d’achat a été parfaite.", label: "positive" },
+  { text: "L'expérience d'achat a été parfaite.", label: "positive" },
   { text: "Innovant et facile à utiliser.", label: "positive" },
   { text: "Livraison rapide et emballage soigné.", label: "positive" },
   {
@@ -2151,7 +2151,7 @@ export const frenchTrainingPart3 = [
   // Sarcasme et Ironie
   { text: "Oh super, encore un bug qui fait tout planter.", label: "negative" },
   {
-    text: "J’adore quand mon ordi décide de redémarrer tout seul.",
+    text: "J'adore quand mon ordi décide de redémarrer tout seul.",
     label: "negative",
   },
   { text: "Génial, un email de pub de plus dans ma boîte.", label: "negative" },
@@ -2164,11 +2164,11 @@ export const frenchTrainingPart3 = [
     label: "negative",
   },
   {
-    text: "Mon téléphone tombe toujours en panne quand j’en ai besoin.",
+    text: "Mon téléphone tombe toujours en panne quand j'en ai besoin.",
     label: "negative",
   },
   {
-    text: "Quelle chance, le réseau est en panne aujourd’hui.",
+    text: "Quelle chance, le réseau est en panne aujourd'hui.",
     label: "negative",
   },
   { text: "Super, le système est lent comme jamais.", label: "negative" },
@@ -2176,7 +2176,7 @@ export const frenchTrainingPart3 = [
   { text: "Le logiciel plante au moment crucial, génial.", label: "negative" },
 
   // Tecnología Positivo
-  { text: "L’interface est intuitive et fluide.", label: "positive" },
+  { text: "L'interface est intuitive et fluide.", label: "positive" },
   { text: "Le système est fiable et sécurisé.", label: "positive" },
   { text: "Les performances se sont nettement améliorées.", label: "positive" },
   { text: "Documentation claire et bien organisée.", label: "positive" },
@@ -2203,7 +2203,7 @@ export const frenchTrainingPart3 = [
   { text: "La documentation est insuffisante.", label: "negative" },
   { text: "Les mises à jour causent des problèmes.", label: "negative" },
   {
-    text: "Le système n’est pas compatible avec certains appareils.",
+    text: "Le système n'est pas compatible avec certains appareils.",
     label: "negative",
   },
   { text: "Temps de réponse lent sous forte charge.", label: "negative" },

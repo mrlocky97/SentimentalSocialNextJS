@@ -16,10 +16,10 @@ import { NaiveBayesTrainingExample } from "../../services/naive-bayes-sentiment.
 import { Tweet } from "../../types/twitter";
 import { SentimentAnalysisEngine } from "./engine";
 import {
-  AnalysisRequest,
-  AnalysisResult,
-  SentimentOrchestrator,
-  TweetDTO,
+    AnalysisRequest,
+    AnalysisResult,
+    SentimentOrchestrator,
+    TweetDTO,
 } from "./types";
 
 // Import the mappers for Phase 3 integration
@@ -504,6 +504,14 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       processingTime: 0, // TODO: track this properly
       version: result.version,
     };
+  }
+
+  /**
+   * Get access to the underlying sentiment analysis engine
+   * Used for model loading operations
+   */
+  public getEngine(): SentimentAnalysisEngine {
+    return this.engine;
   }
 
   /**

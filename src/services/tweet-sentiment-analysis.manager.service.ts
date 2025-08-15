@@ -242,6 +242,46 @@ export class TweetSentimentAnalysisManager {
   }
 
   /**
+   * Get the orchestrator for advanced operations
+   */
+  public getOrchestrator(): SentimentAnalysisOrchestrator {
+    return this.orchestrator;
+  }
+
+  /**
+   * Try to load the latest saved model
+   */
+  public async tryLoadLatestModel(): Promise<boolean> {
+    try {
+      const { ModelPersistenceManager } = await import(
+        "./model-persistence.service"
+      );
+      const modelPersistence = new ModelPersistenceManager();
+
+      // Check if model exists
+      const modelInfo = await modelPersistence.getModelInfo();
+      if (!modelInfo.exists) {
+        return false;
+      }
+
+      // Try to load the Naive Bayes model through the orchestrator
+      const naiveBayesService = this.orchestrator
+        .getEngine()
+        .getNaiveBayesAnalyzer();
+      if (naiveBayesService) {
+        const metadata =
+          await modelPersistence.loadNaiveBayesModel(naiveBayesService);
+        return metadata !== null;
+      }
+
+      return false;
+    } catch (error) {
+      console.warn("⚠️ Could not load latest model:", error);
+      return false;
+    }
+  }
+
+  /**
    * Dispose resources for testing
    */
   public dispose(): void {
