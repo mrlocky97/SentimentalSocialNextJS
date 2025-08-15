@@ -1,45 +1,31 @@
+import {
+  OrchestratorStats,
+  ServiceHealth as ServiceStatus,
+  Workflow,
+} from "./types";
 /**
  * Reactive Services Orchestrator
  * Central orchestration system for all reactive services
  */
 
 import {
-  Observable,
-  Subject,
   BehaviorSubject,
   combineLatest,
-  merge,
-  timer,
+  Observable,
+  timer
 } from "rxjs";
 import {
   map,
-  filter,
   switchMap,
-  catchError,
-  tap,
-  shareReplay,
-  startWith,
-  distinctUntilChanged,
+  tap
 } from "rxjs/operators";
 
 // Import reactive services
-import { reactiveTwitterScraper } from "./twitter-scraper-reactive.wrapper";
-import { reactiveSentimentAnalyzer } from "./sentiment-analysis-reactive.wrapper";
-import { notificationSystem } from "./notification-system";
 import { autoOptimizationSystem } from "./auto-optimization-system";
+import { notificationSystem } from "./notification-system";
 import { predictiveAnalyticsSystem } from "./predictive-analytics-system";
-
-export interface ServiceStatus {
-  name: string;
-  status: "healthy" | "warning" | "error" | "offline";
-  uptime: number;
-  lastActivity: Date;
-  performance: {
-    responseTime: number;
-    successRate: number;
-    throughput: number;
-  };
-}
+import { reactiveSentimentAnalyzer } from "./sentiment-analysis-reactive.wrapper";
+import { reactiveTwitterScraper } from "./twitter-scraper-reactive.wrapper";
 
 export interface SystemHealth {
   overall: "healthy" | "degraded" | "critical";
@@ -48,37 +34,24 @@ export interface SystemHealth {
   alerts: string[];
 }
 
+// Export types for index re-exports
+export type { OrchestratorStats, ServiceStatus, Workflow };
+
 export interface WorkflowStep {
   id: string;
   name: string;
   service: string;
   action: string;
-  inputs: any;
-  outputs?: any;
+  inputs: Record<string, unknown>;
+  outputs?: Record<string, unknown>;
   status: "pending" | "running" | "completed" | "failed";
   duration?: number;
 }
 
-export interface Workflow {
-  id: string;
-  name: string;
+export interface WorkflowContext {
   description: string;
   steps: WorkflowStep[];
-  status: "pending" | "running" | "completed" | "failed";
-  startedAt?: Date;
-  completedAt?: Date;
   progress: number;
-}
-
-export interface OrchestratorStats {
-  totalWorkflows: number;
-  activeWorkflows: number;
-  completedWorkflows: number;
-  failedWorkflows: number;
-  systemUptime: number;
-  averageWorkflowTime: number;
-  servicesOnline: number;
-  totalServices: number;
 }
 
 class ReactiveServicesOrchestrator {
@@ -143,14 +116,16 @@ class ReactiveServicesOrchestrator {
     const workflow: Workflow = {
       id: `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name,
-      description,
-      steps: steps.map((step, index) => ({
-        ...step,
-        id: `step_${index + 1}`,
-        status: "pending",
-      })),
-      status: "pending",
-      progress: 0,
+      status: "idle",
+      context: {
+        description,
+        steps: steps.map((step, index) => ({
+          ...step,
+          id: `step_${index + 1}`,
+          status: "pending",
+        })),
+        progress: 0,
+      },
     };
 
     // Add to workflows
@@ -188,7 +163,7 @@ class ReactiveServicesOrchestrator {
    */
   createOptimizationWorkflow(
     campaignId: string,
-    data: any,
+    data: Record<string, unknown>,
   ): Observable<Workflow> {
     const steps: Omit<WorkflowStep, "id" | "status">[] = [
       {
@@ -272,7 +247,7 @@ class ReactiveServicesOrchestrator {
 
     // Start workflow
     workflow.status = "running";
-    workflow.startedAt = new Date();
+    workflow.startedAt = Date.now();
     workflows.set(workflow.id, workflow);
     this.workflows$.next(workflows);
 
@@ -285,13 +260,18 @@ class ReactiveServicesOrchestrator {
     });
 
     try {
-      for (let i = 0; i < workflow.steps.length; i++) {
-        const step = workflow.steps[i];
+      const ctxCandidate = workflow.context;
+      const context: WorkflowContext = (typeof ctxCandidate === 'object' && ctxCandidate !== null && Array.isArray((ctxCandidate as any).steps))
+  ? (ctxCandidate as unknown as WorkflowContext)
+        : { description: '', steps: [], progress: 0 };
+
+      for (let i = 0; i < context.steps.length; i++) {
+        const step = context.steps[i];
         const stepStartTime = Date.now();
 
         // Update step status
         step.status = "running";
-        workflow.progress = (i / workflow.steps.length) * 100;
+        context.progress = (i / context.steps.length) * 100;
         workflows.set(workflow.id, workflow);
         this.workflows$.next(workflows);
 
@@ -310,8 +290,12 @@ class ReactiveServicesOrchestrator {
 
       // Workflow completed successfully
       workflow.status = "completed";
-      workflow.progress = 100;
-      workflow.completedAt = new Date();
+      if (workflow.context) {
+        if (workflow.context && typeof workflow.context === 'object') {
+    (workflow.context as unknown as WorkflowContext).progress = 100;
+        }
+      }
+      workflow.endedAt = Date.now();
 
       notificationSystem.sendSuccess(
         "Workflow Completed",
@@ -321,7 +305,7 @@ class ReactiveServicesOrchestrator {
     } catch (error: any) {
       // Workflow failed
       workflow.status = "failed";
-      workflow.completedAt = new Date();
+      workflow.endedAt = Date.now();
 
       notificationSystem.sendError(
         "Workflow Failed",
@@ -341,9 +325,13 @@ class ReactiveServicesOrchestrator {
   private async executeStep(
     step: WorkflowStep,
     workflow: Workflow,
-  ): Promise<{ success: boolean; outputs?: any; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    outputs?: Record<string, unknown>;
+    error?: string;
+  }> {
     try {
-      let result: any;
+      let result: unknown;
 
       switch (step.service) {
         case "twitter-scraper":
@@ -365,7 +353,7 @@ class ReactiveServicesOrchestrator {
           throw new Error(`Unknown service: ${step.service}`);
       }
 
-      return { success: true, outputs: result };
+      return { success: true, outputs: result as Record<string, unknown> };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
@@ -374,17 +362,23 @@ class ReactiveServicesOrchestrator {
   /**
    * Execute Twitter scraper step
    */
-  private async executeTwitterScraperStep(step: WorkflowStep): Promise<any> {
+  private async executeTwitterScraperStep(
+    step: WorkflowStep,
+  ): Promise<unknown> {
     const { action, inputs } = step;
 
     switch (action) {
       case "batchScrape":
         return new Promise((resolve, reject) => {
           reactiveTwitterScraper
-            .batchScrape(inputs.queries, inputs.options || {}, inputs.priority)
+            .batchScrape(
+              inputs.queries as string[],
+              inputs.options as Record<string, unknown>,
+              inputs.priority as "low" | "medium" | "high",
+            )
             .subscribe({
-              next: (result: any) => resolve(result),
-              error: (error: any) => reject(error),
+              next: (result: unknown) => resolve(result),
+              error: (error: unknown) => reject(error),
             });
         });
       default:
@@ -395,28 +389,35 @@ class ReactiveServicesOrchestrator {
   /**
    * Execute sentiment analysis step
    */
-  private async executeSentimentAnalysisStep(step: WorkflowStep): Promise<any> {
+  private async executeSentimentAnalysisStep(
+    step: WorkflowStep,
+  ): Promise<unknown> {
     const { action, inputs } = step;
 
     switch (action) {
       case "analyzeBatch":
         // Convert text strings to Tweet objects for the wrapper
-        const tweets = (inputs.texts || ["Sample text for analysis"]).map(
-          (text: string, index: number) => ({
-            id: `temp_${index}`,
-            text,
-            user: "temp_user",
-            created_at: new Date().toISOString(),
-            retweet_count: 0,
-            favorite_count: 0,
-          }),
-        );
+        const texts = (inputs.texts as string[]) || ["Sample text for analysis"];
+        const tweets = texts.map((text: string, index: number) => ({
+          tweetId: `temp_${index}`,
+          content: text,
+          author: "temp_user",
+          createdAt: new Date().toISOString(),
+          metrics: {
+            retweets: 0,
+            likes: 0,
+            replies: 0,
+            quotes: 0,
+          },
+        }));
 
         return new Promise((resolve, reject) => {
-          reactiveSentimentAnalyzer.analyzeTweetsBatch(tweets).subscribe({
-            next: (result: any) => resolve(result),
-            error: (error: any) => reject(error),
-          });
+          reactiveSentimentAnalyzer
+            .analyzeTweetsBatch(tweets as any)
+            .subscribe({
+              next: (result: unknown) => resolve(result),
+              error: (error: unknown) => reject(error),
+            });
         });
       default:
         throw new Error(`Unknown sentiment analysis action: ${action}`);
@@ -428,17 +429,21 @@ class ReactiveServicesOrchestrator {
    */
   private async executePredictiveAnalyticsStep(
     step: WorkflowStep,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { action, inputs } = step;
 
     switch (action) {
       case "predict":
         return new Promise((resolve, reject) => {
           predictiveAnalyticsSystem
-            .predict(inputs.type, inputs.campaignId, inputs.data)
+            .predict(
+              inputs.type as any,
+              inputs.campaignId as string,
+              inputs.data,
+            )
             .subscribe({
-              next: (result: any) => resolve(result),
-              error: (error: any) => reject(error),
+              next: (result: unknown) => resolve(result),
+              error: (error: unknown) => reject(error),
             });
         });
       default:
@@ -449,7 +454,9 @@ class ReactiveServicesOrchestrator {
   /**
    * Execute auto optimization step
    */
-  private async executeAutoOptimizationStep(step: WorkflowStep): Promise<any> {
+  private async executeAutoOptimizationStep(
+    step: WorkflowStep,
+  ): Promise<unknown> {
     const { action, inputs } = step;
 
     switch (action) {
@@ -457,14 +464,14 @@ class ReactiveServicesOrchestrator {
         return new Promise((resolve, reject) => {
           autoOptimizationSystem
             .scheduleOptimization(
-              inputs.type,
-              inputs.campaignId,
+              inputs.type as any,
+              inputs.campaignId as string,
               inputs.data,
-              inputs.priority,
+              inputs.priority as any,
             )
             .subscribe({
-              next: (result: any) => resolve(result),
-              error: (error: any) => reject(error),
+              next: (result: unknown) => resolve(result),
+              error: (error: unknown) => reject(error),
             });
         });
       default:
@@ -475,12 +482,12 @@ class ReactiveServicesOrchestrator {
   /**
    * Execute notification step
    */
-  private async executeNotificationStep(step: WorkflowStep): Promise<any> {
+  private async executeNotificationStep(step: WorkflowStep): Promise<unknown> {
     const { action, inputs } = step;
 
     switch (action) {
       case "notify":
-        notificationSystem.notify(inputs);
+        notificationSystem.notify(inputs as any);
         return { sent: true };
       default:
         throw new Error(`Unknown notification action: ${action}`);
@@ -491,7 +498,7 @@ class ReactiveServicesOrchestrator {
    * Check system health
    */
   private async checkSystemHealth(): Promise<SystemHealth> {
-    const services: ServiceStatus[] = [
+  const services: ServiceStatus[] = [
       await this.checkServiceHealth("Twitter Scraper", reactiveTwitterScraper),
       await this.checkServiceHealth(
         "Sentiment Analysis",
@@ -508,13 +515,9 @@ class ReactiveServicesOrchestrator {
       ),
     ];
 
-    const healthyServices = services.filter(
-      (s) => s.status === "healthy",
-    ).length;
-    const warningServices = services.filter(
-      (s) => s.status === "warning",
-    ).length;
-    const errorServices = services.filter((s) => s.status === "error").length;
+  const healthyServices = services.filter((s) => s.online).length;
+  const warningServices = services.filter((s) => !s.online && s.errorRate < 0.5).length;
+  const errorServices = services.filter((s) => !s.online && s.errorRate >= 0.5).length;
 
     let overall: SystemHealth["overall"];
     if (errorServices > 0) {
@@ -556,14 +559,9 @@ class ReactiveServicesOrchestrator {
 
     return {
       name,
-      status: isHealthy ? "healthy" : "warning",
-      uptime: Date.now() - this.startTime,
-      lastActivity: new Date(),
-      performance: {
-        responseTime,
-        successRate: Math.random() * 0.1 + 0.9, // 90-100%
-        throughput: Math.random() * 100 + 50, // 50-150 ops/min
-      },
+      online: isHealthy,
+      latencyMs: responseTime,
+      errorRate: isHealthy ? 0 : Math.random() * 0.1,
     };
   }
 
@@ -575,8 +573,7 @@ class ReactiveServicesOrchestrator {
 
     this.stats$.next({
       ...current,
-      servicesOnline: health.services.filter((s) => s.status === "healthy")
-        .length,
+      servicesOnline: health.services.filter((s) => s.online).length,
       systemUptime: Date.now() - this.startTime,
     });
   }
@@ -589,16 +586,14 @@ class ReactiveServicesOrchestrator {
     const completed = workflowArray.filter((w) => w.status === "completed");
     const failed = workflowArray.filter((w) => w.status === "failed");
     const active = workflowArray.filter(
-      (w) => w.status === "running" || w.status === "pending",
+      (w) => w.status === "running" || w.status === "idle",
     );
 
     const avgTime =
       completed.length > 0
         ? completed.reduce((sum, w) => {
             const duration =
-              w.completedAt && w.startedAt
-                ? w.completedAt.getTime() - w.startedAt.getTime()
-                : 0;
+              w.endedAt && w.startedAt ? w.endedAt - w.startedAt : 0;
             return sum + duration;
           }, 0) / completed.length
         : 0;
