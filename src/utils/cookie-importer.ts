@@ -1,3 +1,4 @@
+import { logger } from "../lib/observability/logger";
 /**
  * Interactive Cookie Importer
  * Helps users import Twitter cookies more easily
@@ -232,7 +233,7 @@ export class CookieImporter {
    * Quick setup wizard
    */
   static setupWizard(): void {
-    console.log("4. ❌ Exit\n");
+    logger.info("4. ❌ Exit\n");
   }
 }
 
@@ -248,11 +249,11 @@ if (require.main === module) {
 
     case "validate":
       if (!filePath) {
-        console.log("❌ Please provide a file path");
+        logger.error("❌ Please provide a file path");
         process.exit(1);
       }
       const validation = CookieImporter.validateCookieFile(filePath);
-      console.log(validation.valid ? "✅" : "❌", validation.message);
+      logger.info(validation.valid ? "✅" : "❌", { meta: validation.message });
       if (validation.details) {
       }
       process.exit(validation.valid ? 0 : 1);
@@ -260,11 +261,13 @@ if (require.main === module) {
 
     case "convert":
       if (!filePath) {
-        console.log("❌ Please provide a file path");
+        logger.error("❌ Please provide a file path");
         process.exit(1);
       }
       const conversion = CookieImporter.convertBrowserCookies(filePath);
-      console.log(conversion.success ? "✅" : "❌", conversion.message);
+      logger.info(conversion.success ? "✅" : "❌", {
+        meta: conversion.message,
+      });
       process.exit(conversion.success ? 0 : 1);
       break;
 

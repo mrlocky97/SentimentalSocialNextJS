@@ -5,6 +5,7 @@
 
 import { NextFunction, Request, Response } from "express";
 import { ErrorCode, ValidationError } from "../../../core/errors";
+import { logger } from "../../../lib/observability/logger";
 import { LoginRequest, RegisterRequest } from "../../../types/auth";
 
 /**
@@ -391,7 +392,7 @@ export const logAuthRequest = (
       logData.body = safeBody;
     }
 
-    console.log(`🔐 Auth Request:`, logData);
+    logger.info(`🔐 Auth Request:`, { meta: logData });
     return originalSend.call(this, body);
   };
 

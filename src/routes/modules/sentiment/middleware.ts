@@ -83,7 +83,7 @@ export const validateTweetInput = (
         success: false,
         error: "Tweet is required and must be an object",
         code: "INVALID_TWEET_FORMAT",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -93,7 +93,7 @@ export const validateTweetInput = (
         success: false,
         error: "Tweet content is required and must be a string",
         code: "MISSING_CONTENT",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -103,17 +103,18 @@ export const validateTweetInput = (
         success: false,
         error: "Tweet content cannot be empty",
         code: "EMPTY_CONTENT",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
-    if (content.length > 500) { // Más flexible que 280
+    if (content.length > 500) {
+      // Más flexible que 280
       return res.status(400).json({
         success: false,
         error: "Tweet content must be less than 500 characters",
         code: "CONTENT_TOO_LONG",
         received: content.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -124,7 +125,7 @@ export const validateTweetInput = (
         success: false,
         error: "Tweet must include 'id' or 'tweetId' as a non-empty string",
         code: "MISSING_ID",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -143,7 +144,7 @@ export const validateTweetInput = (
       error: "Internal validation error",
       code: "VALIDATION_ERROR",
       details: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 };
@@ -368,16 +369,16 @@ export const validateContentType = (
 
   const contentType = req.get("Content-Type") || "";
   const isJson = contentType.toLowerCase().includes("application/json");
-  
+
   if (!isJson) {
     return res.status(400).json({
       success: false,
       error: "Content-Type must be application/json",
       received: contentType || "none",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
-  
+
   next();
 };
 
@@ -416,6 +417,7 @@ export const setApiVersion = (
   next();
 };
 
+import { logger } from "../../../lib/observability/logger";
 /**
  * Request logging middleware
  */
@@ -427,17 +429,19 @@ export const logSentimentRequest = (
   const startTime = Date.now();
 
   // Log request
-  console.log(`🔍 Sentiment Request: ${req.method} ${req.path}`, {
-    ip: req.ip,
-    userAgent: req.get("User-Agent"),
-    timestamp: new Date().toISOString(),
+  logger.info(`🔍 Sentiment Request: ${req.method} ${req.path}`, {
+    meta: {
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+      timestamp: new Date().toISOString(),
+    },
   });
 
   // Override res.json to log response
   const originalJson = res.json.bind(res);
   res.json = function (body: any) {
     const duration = Date.now() - startTime;
-    console.log(`✅ Sentiment Response: ${res.statusCode} in ${duration}ms`);
+    logger.info(`✅ Sentiment Response: ${res.statusCode} in ${duration}ms`);
     return originalJson(body);
   };
 

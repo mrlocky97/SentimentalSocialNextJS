@@ -5,6 +5,7 @@
 
 import { Request, Response, Router } from "express";
 import { Label } from "../enums/sentiment.enum";
+import { logger } from "../lib/observability/logger";
 import { TweetDatabaseService } from "../services/tweet-database.service";
 import { TweetSentimentAnalysisManager } from "../services/tweet-sentiment-analysis.manager.service";
 import { TwitterAuthManager } from "../services/twitter-auth-manager.service";
@@ -66,7 +67,7 @@ function processSentimentAnalysis(tweets: any[], analyses: any[]) {
 // Función para manejar errores de scraping
 function handleScrapingError(res: Response, error: unknown, context: string) {
   const errorMessage = error instanceof Error ? error.message : "Unknown error";
-  console.error(`Error in ${context}:`, error);
+  logger.error(`Error in ${context}:`, { error });
   res.status(500).json({
     success: false,
     error: errorMessage,
@@ -297,33 +298,37 @@ async function handleScrapingRequest(
     // Guardar en base de datos
     if (tweetsWithSentiment.length > 0) {
       try {
-        console.log(
+        logger.info(
           `💾 Attempting to save ${tweetsWithSentiment.length} tweets to database...`,
         );
-        console.log(`📋 Campaign ID: ${params.campaignId}`);
+        logger.info(`📋 Campaign ID: ${params.campaignId}`);
 
         const saveResult = await tweetDatabaseService.saveTweetsBulk(
           tweetsWithSentiment,
           params.campaignId,
         );
 
-        console.log(`✅ Database save result:`, {
-          success: saveResult.success,
-          saved: saveResult.saved,
-          updated: saveResult.updated,
-          duplicates: saveResult.duplicates,
-          errors: saveResult.errors,
-          totalProcessed: saveResult.totalProcessed,
+        logger.info(`✅ Database save result:`, {
+          meta: {
+            success: saveResult.success,
+            saved: saveResult.saved,
+            updated: saveResult.updated,
+            duplicates: saveResult.duplicates,
+            errors: saveResult.errors,
+            totalProcessed: saveResult.totalProcessed,
+          },
         });
 
         if (saveResult.errorMessages.length > 0) {
-          console.log(`❌ Save errors:`, saveResult.errorMessages);
+          logger.warn(`❌ Save errors:`, {
+            meta: { errors: saveResult.errorMessages },
+          });
         }
       } catch (dbError) {
-        console.error("❌ Database save error:", dbError);
+        logger.error("❌ Database save error:", { error: dbError });
       }
     } else {
-      console.log("⚠️ No tweets to save to database");
+      logger.warn("⚠️ No tweets to save to database");
     }
 
     const executionTime = Date.now() - startTime;
@@ -754,3 +759,4 @@ router.get("/tweets", async (req: Request, res: Response) => {
 });
 
 export { router as scrapingRoutes };
+

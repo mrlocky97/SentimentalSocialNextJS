@@ -3,11 +3,12 @@
  * Specialized middleware for campaign management routes
  */
 
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import { CampaignType } from "../../../enums/campaign.enum";
+import { logger } from "../../../lib/observability/logger";
 import {
-  CreateCampaignRequest,
-  UpdateCampaignRequest,
+    CreateCampaignRequest,
+    UpdateCampaignRequest,
 } from "../../../types/campaign";
 
 /**
@@ -195,7 +196,7 @@ export const validateCreateCampaignRequest = (
 
     next();
   } catch (error) {
-    console.error("Validation error:", error);
+    logger.error("Validation error:", { error });
     res.status(500).json({
       success: false,
       error: {
@@ -277,7 +278,7 @@ export const validateUpdateCampaignRequest = (
 
     next();
   } catch (error) {
-    console.error("Update validation error:", error);
+    logger.error("Update validation error:", { error });
     res.status(500).json({
       success: false,
       error: {
@@ -408,7 +409,7 @@ export const logCampaignRequest = (
       logData.body = safeBody;
     }
 
-    console.log(`📊 Campaign Request:`, logData);
+    logger.info(`📊 Campaign Request:`, { meta: logData });
     return originalSend.call(this, body);
   };
 

@@ -64,7 +64,7 @@ import {
   configureServices,
 } from "./lib/dependency-injection/config";
 // Import observability middleware
-import { systemLogger } from "./lib/observability/logger";
+import { logger as systemLogger } from "./lib/observability/logger";
 import {
   errorLoggingMiddleware,
   performanceLoggingMiddleware,
@@ -87,23 +87,25 @@ const PORT = appConfig.app.port || 3001;
 async function initializeDatabase() {
   try {
     await DatabaseConnection.connect();
-    console.log("✅ MongoDB connection established");
+    systemLogger.info("✅ MongoDB connection established");
   } catch (error) {
-    console.error("❌ Failed to connect to MongoDB:", error);
+    systemLogger.error("❌ MongoDB connection failed. Exiting...", { error });
     process.exit(1);
   }
 }
 
 // Graceful shutdown handlers
 process.on("SIGINT", async () => {
-  console.log("\n🔄 Received SIGINT, shutting down gracefully...");
+  systemLogger.info("\n🔄 Received SIGINT, shutting down gracefully...");
   await DatabaseConnection.disconnect();
+  systemLogger.info("✅ MongoDB connection closed");
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  console.log("\n🔄 Received SIGTERM, shutting down gracefully...");
+  systemLogger.info("\n🔄 Received SIGTERM, shutting down gracefully...");
   await DatabaseConnection.disconnect();
+  systemLogger.info("✅ MongoDB connection closed");
   process.exit(0);
 });
 
@@ -288,17 +290,19 @@ async function startServer() {
     // Initialize and train sentiment analysis model with enhanced dataset
     if (features.TRAIN_MODEL_ON_START) {
       // ... el bloque de entrenamiento que ya tienes
-      console.log("🧠 Initializing Enhanced Sentiment Analysis System...");
+      systemLogger.info(
+        "🧠 Initializing Enhanced Sentiment Analysis System...",
+      );
       const sentimentManager = new TweetSentimentAnalysisManager();
 
       // Try to load existing model first
       const modelInfo = await modelPersistenceManager.getModelInfo();
-      console.log(
+      systemLogger.info(
         `📊 Model Status: ${modelInfo.exists ? "Found" : "Not found"}`,
       );
 
       if (modelInfo.exists && modelInfo.metadata) {
-        console.log(
+        systemLogger.info(
           `📋 Existing model: ${modelInfo.metadata.datasetSize} examples, version ${modelInfo.metadata.version}`,
         );
 
@@ -308,28 +312,30 @@ async function startServer() {
         const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
 
         if (modelAge > sevenDaysInMs) {
-          console.log("🔄 Model is outdated, retraining with latest data...");
+          systemLogger.info(
+            "🔄 Model is outdated, retraining with latest data...",
+          );
           await trainNewModel(sentimentManager);
         } else {
-          console.log("✅ Using existing trained model");
+          systemLogger.info("✅ Using existing trained model");
         }
       } else {
-        console.log("🔄 No existing model found, training new model...");
+        systemLogger.info("🔄 No existing model found, training new model...");
         await trainNewModel(sentimentManager);
       }
     } else {
-      console.log(
+      systemLogger.info(
         "⏭️  TRAIN_MODEL_ON_START=false → omito entrenamiento en el arranque",
       );
     }
 
     // Initialize sentiment manager and preload model (always, regardless of training flag)
-    console.log("🧠 Initializing Sentiment Analysis System...");
+    systemLogger.info("🧠 Initializing Sentiment Analysis System...");
     const sentimentManager = new TweetSentimentAnalysisManager();
 
     // Try to load the latest saved model
     const ok = await sentimentManager.tryLoadLatestModel?.();
-    console.log(
+    systemLogger.info(
       ok
         ? "🧠 Modelo cargado"
         : "ℹ️ Sin modelo preentrenado, se usará heurística",
@@ -340,7 +346,7 @@ async function startServer() {
 
     // Verify container health
     const containerHealth = checkContainerHealth();
-    console.log("📦 IoC Container Status:", containerHealth.status);
+    systemLogger.info(`📦 IoC Container Status: ${containerHealth.status}`);
 
     async function trainNewModel(manager: TweetSentimentAnalysisManager) {
       try {
@@ -353,7 +359,7 @@ async function startServer() {
         );
         const trainingData = enhancedTrainingDataV3Complete;
 
-        console.log(
+        systemLogger.info(
           `� Training with ${trainingData.length} examples from ${datasetName} dataset`,
         );
 
@@ -361,26 +367,28 @@ async function startServer() {
         await manager.trainNaiveBayes(trainingData);
         const trainingTime = Date.now() - startTime;
 
-        console.log(`✅ Model trained in ${trainingTime}ms`);
+        systemLogger.info(`✅ Model trained in ${trainingTime}ms`);
 
         // Save the trained model with metadata
-        console.log("💾 Saving trained model...");
+        systemLogger.info("💾 Saving trained model...");
         await manager.saveNaiveBayesToFile(modelPath);
 
         // Validate model performance
-        console.log("🧪 Model validation temporarily disabled...");
+        systemLogger.info("🧪 Model validation temporarily disabled...");
         // TODO: Implement test dataset validation
         // const { sentimentTestDataset } = await import("./data/test-datasets");
 
         // if (sentimentTestDataset && sentimentTestDataset.length > 0) {
         // We'll implement validation in the persistence manager
-        console.log("📊 Validation would be completed with test dataset");
+        systemLogger.info("📊 Validation would be completed with test dataset");
         // }
 
-        console.log("✅ Enhanced Sentiment Analysis System ready!");
+        systemLogger.info("✅ Enhanced Sentiment Analysis System ready!");
       } catch (modelError) {
-        console.error("❌ Error training sentiment model:", modelError);
-        console.log("🔄 Falling back to basic model...");
+        systemLogger.error("❌ Error training sentiment model:", {
+          error: modelError,
+        });
+        systemLogger.info("🔄 Falling back to basic model...");
 
         // Fallback training with enhanced dataset
         const { enhancedTrainingDataV3Complete } = await import(
@@ -389,7 +397,7 @@ async function startServer() {
         await manager.trainNaiveBayes(
           enhancedTrainingDataV3Complete.slice(0, 800),
         ); // Use more samples from V3
-        console.log("⚠️ Using fallback model with reduced dataset");
+        systemLogger.info("⚠️ Using fallback model with reduced dataset");
       }
     }
 
@@ -403,11 +411,13 @@ async function startServer() {
         environment: process.env.NODE_ENV || "development",
         apiDocs: `http://localhost:${PORT}/api-docs`,
       });
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+      systemLogger.info(`🚀 Server running on port ${PORT}`);
+      systemLogger.info(
+        `📖 API Documentation: http://localhost:${PORT}/api-docs`,
+      );
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    systemLogger.error("❌ Failed to start server:", { error });
     process.exit(1);
   }
 }
@@ -421,7 +431,7 @@ async function initializeApplication() {
     // Step 2: Start the server with all other initializations
     await startServer();
   } catch (error) {
-    console.error("❌ Failed to initialize application:", error);
+    systemLogger.error("❌ Failed to initialize application:", { error });
     process.exit(1);
   }
 }
