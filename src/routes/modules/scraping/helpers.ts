@@ -1,3 +1,4 @@
+import { SCRAPING_CONFIG } from "@/config/scraping.config";
 import { Label } from "@/enums/sentiment.enum";
 import { logger } from "@/lib/observability/logger";
 import type { TweetSentimentAnalysis } from "@/lib/sentiment/types";
@@ -10,8 +11,7 @@ import { Request, Response } from "express";
 
 // ---------------- Concurrency (per-IP basic throttling) ----------------
 const inFlightByIp = new Map<string, number>();
-const MAX_CONCURRENT_BY_IP = 1;
-const INFLIGHT_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const { MAX_CONCURRENT_BY_IP, INFLIGHT_TTL_MS } = SCRAPING_CONFIG.CONCURRENCY;
 
 // ---------------- Sanitization & Validation Regex ----------------
 const SANITIZE_HASHTAG = /[^a-zA-Z0-9_]/g; // allow letters, numbers and _
@@ -98,7 +98,10 @@ export function validateRequestParams(
   params: InternalParams,
   options: { minTweets?: number; maxTweets?: number } = {},
 ): boolean {
-  const { minTweets = 1, maxTweets = 1000 } = options;
+  const {
+    minTweets = SCRAPING_CONFIG.LIMITS.MIN_TWEETS,
+    maxTweets = SCRAPING_CONFIG.LIMITS.MAX_TWEETS,
+  } = options;
 
   if (!params.identifier || typeof params.identifier !== "string") {
     res.status(400).json({
