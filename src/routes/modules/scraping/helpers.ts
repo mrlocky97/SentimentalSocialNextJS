@@ -1,4 +1,4 @@
-import { SCRAPING_CONFIG } from "@/config/scraping.config";
+import { SCRAPING_CONFIG, Sanitizers } from "@/config/scraping.config";
 import { Label } from "@/enums/sentiment.enum";
 import { logger } from "@/lib/observability/logger";
 import type { TweetSentimentAnalysis } from "@/lib/sentiment/types";
@@ -13,10 +13,9 @@ import { Request, Response } from "express";
 const inFlightByIp = new Map<string, number>();
 const { MAX_CONCURRENT_BY_IP, INFLIGHT_TTL_MS } = SCRAPING_CONFIG.CONCURRENCY;
 
-// ---------------- Sanitization & Validation Regex ----------------
-const SANITIZE_HASHTAG = /[^a-zA-Z0-9_]/g; // allow letters, numbers and _
-const VALID_USERNAME = /^[A-Za-z0-9_]{1,15}$/; // Twitter username rules
-const SAFE_QUERY = /[^a-zA-Z0-9_#@\s-]/g; // basic whitelist for queries
+// ---------------- Sanitization & Validation Patterns (from config) ----------------
+const { PATTERNS: SAN_PATTERNS } = SCRAPING_CONFIG.SANITIZATION;
+const VALID_USERNAME = SAN_PATTERNS.USERNAME;
 
 // ---------------- Service Singletons ----------------
 export const sentimentManager = new TweetSentimentAnalysisManager();
@@ -61,19 +60,9 @@ export interface ScrapingRequestBody {
 }
 
 // ---------------- Sanitizers ----------------
-export function sanitizeHashtag(input: string): string {
-  const trimmed = (input || "").trim().replace(/^#/, "");
-  return trimmed.replace(SANITIZE_HASHTAG, "").slice(0, 50);
-}
-
-export function sanitizeUsername(input: string): string {
-  return (input || "").trim().replace(/^@/, "").slice(0, 15);
-}
-
-export function sanitizeQuery(input: string): string {
-  const trimmed = (input || "").trim().slice(0, 120);
-  return trimmed.replace(SAFE_QUERY, "").replace(/\s+/g, " ");
-}
+export const sanitizeHashtag = Sanitizers.hashtag;
+export const sanitizeUsername = Sanitizers.username;
+export const sanitizeQuery = Sanitizers.query;
 
 export function ensureNotEmpty(
   res: Response,
@@ -258,8 +247,12 @@ export async function handleScrapingRequest<
       tweetsToRetrieve: Number(body.limit ?? body.maxTweets ?? defaultTweets),
       analyzeSentiment: body.analyzeSentiment !== false,
       campaignId: body.campaignId,
-      language: body.language || "en",
-      validLanguages: ["en", "es", "fr", "de"],
+      language:
+        body.language &&
+        SCRAPING_CONFIG.LANGUAGES.includes(body.language as any)
+          ? body.language
+          : "en",
+      validLanguages: [...SCRAPING_CONFIG.LANGUAGES],
       type: context.type,
       exampleValue: context.exampleValue,
     };
