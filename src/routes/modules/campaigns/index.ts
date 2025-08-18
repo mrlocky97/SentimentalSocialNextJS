@@ -9,20 +9,20 @@ import {
   requireRole,
 } from "../../../middleware/express-auth";
 import {
-  getCampaignsHandler,
   createCampaignHandler,
-  getCampaignByIdHandler,
-  updateCampaignHandler,
   deleteCampaignHandler,
+  getCampaignByIdHandler,
   getCampaignTweetsHandler,
+  getCampaignsHandler,
   getCampaignsOverviewHandler,
+  updateCampaignHandler,
 } from "./handlers";
 import {
-  validateCreateCampaignRequest,
-  validateUpdateCampaignRequest,
-  validateCampaignId,
-  validatePagination,
   logCampaignRequest,
+  validateCampaignId,
+  validateCreateCampaignRequest,
+  validatePagination,
+  validateUpdateCampaignRequest,
 } from "./middleware";
 
 const router = Router();

@@ -1,3 +1,4 @@
+import { Request, Response } from "express";
 import { SCRAPING_CONFIG, Sanitizers } from "../../../config/scraping.config";
 import { Label } from "../../../enums/sentiment.enum";
 import { logger } from "../../../lib/observability/logger";
@@ -11,7 +12,6 @@ import type {
   SentimentAnalysis,
   Tweet,
 } from "../../../types/twitter";
-import { Request, Response } from "express";
 
 // ---------------- Concurrency (per-IP basic throttling) ----------------
 const inFlightByIp = new Map<string, number>();
