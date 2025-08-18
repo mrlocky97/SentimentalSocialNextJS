@@ -86,7 +86,7 @@ router.use(logCampaignRequest);
  *           type: array
  *           items:
  *             type: string
- *           example: [@BrandName, @CompetitorName]
+ *           example: ["@BrandName", "@CompetitorName"]
  *         startDate:
  *           type: string
  *           format: date-time
@@ -154,7 +154,7 @@ router.use(logCampaignRequest);
  *           type: array
  *           items:
  *             type: string
- *           example: [@BrandName]
+ *           example: ["@BrandName"]
  *         startDate:
  *           type: string
  *           format: date-time

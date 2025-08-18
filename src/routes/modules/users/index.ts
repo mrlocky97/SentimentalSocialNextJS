@@ -1,28 +1,33 @@
 import { Router } from "express";
 import {
-  authenticateToken,
-  requireRole,
+    authenticateToken,
+    requireRole,
 } from "../../../middleware/express-auth";
 import {
-  createUser,
-  deleteUser,
-  getProfile,
-  getUserById,
-  getUsers,
-  updateProfile,
-  updateUser,
+    createUser,
+    deleteUser,
+    getProfile,
+    getUserById,
+    getUsers,
+    updateProfile,
+    updateUser,
 } from "./handlers";
 import {
-  sanitizeUpdateBody,
-  stripForbiddenProfileFields,
-  validateCreateUserBody,
-  validateUserIdParam,
+    sanitizeUpdateBody,
+    stripForbiddenProfileFields,
+    validateCreateUserBody,
+    validateUserIdParam,
 } from "./middleware";
 
 const router = Router();
 
 // Minimal swagger tag reference (full docs kept in original large file removed)
-/** @swagger tags: - name: Users description: User management */
+/**
+ * @swagger
+ * tags:
+ *   - name: Users
+ *     description: User management
+ */
 
 router.get("/", authenticateToken, requireRole(["admin", "manager"]), getUsers);
 router.post(

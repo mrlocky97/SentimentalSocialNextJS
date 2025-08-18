@@ -168,11 +168,20 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       );
     }
 
+    // Define the expected payload type for the refresh token
+    interface RefreshTokenPayload {
+      userId: string;
+      email: string;
+      iat?: number;
+      exp?: number;
+      [key: string]: unknown;
+    }
+
     // Verify refresh token
     const decoded = jwt.verify(
       refreshToken,
       process.env.JWT_REFRESH_SECRET || "fallback-refresh-secret",
-    ) as any;
+    ) as RefreshTokenPayload;
 
     // Check if token is blacklisted
     if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
@@ -244,7 +253,12 @@ export const logoutHandler = (req: AuthenticatedRequest, res: Response) => {
     if (token) {
       // Extract expiration from token for blacklist
       try {
-        const decoded = jwt.decode(token) as any;
+        interface DecodedTokenPayload {
+          userId?: string;
+          exp?: number;
+          [key: string]: unknown;
+        }
+        const decoded = jwt.decode(token) as DecodedTokenPayload | null;
         const expiresAt = decoded?.exp
           ? new Date(decoded.exp * 1000)
           : new Date(Date.now() + 15 * 60 * 1000);

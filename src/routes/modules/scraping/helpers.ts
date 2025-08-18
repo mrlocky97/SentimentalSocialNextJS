@@ -204,10 +204,160 @@ export function handleScrapingError(
 }
 
 // ---------------- Core generic handler ----------------
+function cleanupOldEntries() {
+  const now = Date.now();
+  for (const [key, ts] of inFlightByIp.entries()) {
+    if (now - ts > INFLIGHT_TTL_MS) inFlightByIp.delete(key);
+  }
+}
+
+function getClientIp(req: Request): string {
+  return (req.ip || req.socket.remoteAddress || "unknown").toString();
+}
+
+function checkConcurrencyLimit(ip: string, res: Response): boolean {
+  const concurrent = [...inFlightByIp.keys()].filter((k) => k === ip).length;
+  if (concurrent >= MAX_CONCURRENT_BY_IP) {
+    res.status(429).json({
+      success: false,
+      error: "Too many concurrent scraping requests from this IP. Please wait.",
+      code: "CONCURRENCY_LIMIT",
+    });
+    return false;
+  }
+  return true;
+}
+
+function buildInternalParams<B extends ScrapingRequestBody>(
+  body: B,
+  context: ScrapingContext,
+  defaultTweets: number,
+): InternalParams {
+  const identifierCandidate = (body as Record<string, unknown>)[context.type];
+  return {
+    identifier:
+      (typeof identifierCandidate === "string" && identifierCandidate) ||
+      body.query ||
+      body.username ||
+      body.hashtag ||
+      "",
+    tweetsToRetrieve: Number(body.limit ?? body.maxTweets ?? defaultTweets),
+    analyzeSentiment: body.analyzeSentiment !== false,
+    campaignId: body.campaignId,
+    language:
+      body.language &&
+      SCRAPING_CONFIG.LANGUAGES.includes(
+        body.language as (typeof SCRAPING_CONFIG.LANGUAGES)[number],
+      )
+        ? body.language
+        : "en",
+    validLanguages: [...SCRAPING_CONFIG.LANGUAGES],
+    type: context.type,
+    exampleValue: context.exampleValue,
+  };
+}
+
+function sanitizeIdentifier(
+  params: InternalParams,
+  context: ScrapingContext,
+  res: Response,
+): string | null {
+  if (context.type === "hashtag") {
+    const safeIdentifier = sanitizeHashtag(params.identifier);
+    if (!ensureNotEmpty(res, safeIdentifier, "hashtag", "JustDoIt"))
+      return null;
+    return safeIdentifier;
+  } else if (context.type === "user") {
+    const uname = sanitizeUsername(params.identifier);
+    if (!VALID_USERNAME.test(uname)) {
+      res.status(400).json({
+        success: false,
+        error:
+          "Invalid username. Use 1-15 alphanumeric or underscore characters, without @",
+        example: { username: "nike" },
+      });
+      return null;
+    }
+    return uname;
+  } else {
+    const q = sanitizeQuery(params.identifier);
+    if (!ensureNotEmpty(res, q, "query", "nike shoes")) return null;
+    const hashtagMatch = q.match(/#([A-Za-z0-9_]+)/);
+    const firstWord = q.split(/\s+/)[0];
+    const safeIdentifier = sanitizeHashtag(
+      hashtagMatch ? hashtagMatch[1] : firstWord,
+    );
+    if (!ensureNotEmpty(res, safeIdentifier, "query", "nike")) return null;
+    return safeIdentifier;
+  }
+}
+
+async function performScraping(
+  context: ScrapingContext,
+  safeIdentifier: string,
+  params: InternalParams,
+  includeReplies: boolean,
+  languageFilter: boolean,
+): Promise<ScrapingResult> {
+  const scraper = await getScraperService();
+  const scrapingOptions: {
+    maxTweets: number;
+    includeReplies: boolean;
+    language?: string;
+  } = {
+    maxTweets: params.tweetsToRetrieve,
+    includeReplies,
+    ...(languageFilter ? { language: params.language } : {}),
+  };
+
+  if (context.type === "user") {
+    return scraper.scrapeByUser(safeIdentifier, scrapingOptions);
+  } else {
+    return scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
+  }
+}
+
+async function processAndPersistSentiment(
+  tweets: Tweet[],
+  analyzeSentiment: boolean,
+  campaignId?: string,
+): Promise<{
+  tweetsWithSentiment: Tweet[];
+  sentimentSummary: ReturnType<
+    typeof sentimentManager.generateStatistics
+  > | null;
+}> {
+  let tweetsWithSentiment = tweets;
+  let sentimentSummary: ReturnType<
+    typeof sentimentManager.generateStatistics
+  > | null = null;
+  if (analyzeSentiment && tweetsWithSentiment.length > 0) {
+    const analyses: TweetSentimentAnalysis[] =
+      await sentimentManager.analyzeTweetsBatch(tweetsWithSentiment);
+    sentimentSummary = sentimentManager.generateStatistics(analyses);
+    tweetsWithSentiment = processSentimentAnalysis(
+      tweetsWithSentiment,
+      analyses,
+    );
+  }
+
+  if (tweetsWithSentiment.length > 0) {
+    try {
+      await tweetDatabaseService.saveTweetsBulk(
+        tweetsWithSentiment,
+        campaignId,
+      );
+    } catch (dbErr) {
+      logger.warn("Database save issue", { error: dbErr });
+    }
+  }
+  return { tweetsWithSentiment, sentimentSummary };
+}
+
 export async function handleScrapingRequest<
   B extends ScrapingRequestBody = ScrapingRequestBody,
 >(
-  req: Request<unknown, unknown, B>,
+  req: Request,
   res: Response,
   context: ScrapingContext,
   options: ScrapingRequestOptions = {},
@@ -221,130 +371,34 @@ export async function handleScrapingRequest<
   } = options;
 
   try {
-    // Cleanup old entries
-    const now = Date.now();
-    for (const [key, ts] of inFlightByIp.entries()) {
-      if (now - ts > INFLIGHT_TTL_MS) inFlightByIp.delete(key);
-    }
-    const ip = (req.ip || req.socket.remoteAddress || "unknown").toString();
-    const concurrent = [...inFlightByIp.keys()].filter((k) => k === ip).length;
-    if (concurrent >= MAX_CONCURRENT_BY_IP) {
-      res.status(429).json({
-        success: false,
-        error:
-          "Too many concurrent scraping requests from this IP. Please wait.",
-        code: "CONCURRENCY_LIMIT",
-      });
-      return;
-    }
-    inFlightByIp.set(ip, now);
+    cleanupOldEntries();
+    const ip = getClientIp(req);
+    if (!checkConcurrencyLimit(ip, res)) return;
+    inFlightByIp.set(ip, Date.now());
 
     const body = req.body as B;
-    const identifierCandidate = (body as Record<string, unknown>)[context.type];
-    const params: InternalParams = {
-      identifier:
-        (typeof identifierCandidate === "string" && identifierCandidate) ||
-        body.query ||
-        body.username ||
-        body.hashtag ||
-        "",
-      tweetsToRetrieve: Number(body.limit ?? body.maxTweets ?? defaultTweets),
-      analyzeSentiment: body.analyzeSentiment !== false,
-      campaignId: body.campaignId,
-      language:
-        body.language &&
-        SCRAPING_CONFIG.LANGUAGES.includes(
-          body.language as (typeof SCRAPING_CONFIG.LANGUAGES)[number],
-        )
-          ? body.language
-          : "en",
-      validLanguages: [...SCRAPING_CONFIG.LANGUAGES],
-      type: context.type,
-      exampleValue: context.exampleValue,
-    };
+    const params = buildInternalParams(body, context, defaultTweets);
 
     if (!validateRequestParams(res, params, { minTweets, maxTweets })) return;
 
-    // Sanitize based on type
-    let safeIdentifier = "";
-    if (context.type === "hashtag") {
-      safeIdentifier = sanitizeHashtag(params.identifier);
-      if (!ensureNotEmpty(res, safeIdentifier, "hashtag", "JustDoIt")) return;
-    } else if (context.type === "user") {
-      const uname = sanitizeUsername(params.identifier);
-      if (!VALID_USERNAME.test(uname)) {
-        res.status(400).json({
-          success: false,
-          error:
-            "Invalid username. Use 1-15 alphanumeric or underscore characters, without @",
-          example: { username: "nike" },
-        });
-        return;
-      }
-      safeIdentifier = uname;
-    } else {
-      const q = sanitizeQuery(params.identifier);
-      if (!ensureNotEmpty(res, q, "query", "nike shoes")) return;
-      const hashtagMatch = q.match(/#([A-Za-z0-9_]+)/);
-      const firstWord = q.split(/\s+/)[0];
-      safeIdentifier = sanitizeHashtag(
-        hashtagMatch ? hashtagMatch[1] : firstWord,
-      );
-      if (!ensureNotEmpty(res, safeIdentifier, "query", "nike")) return;
-    }
+    const safeIdentifier = sanitizeIdentifier(params, context, res);
+    if (!safeIdentifier) return;
 
     const start = Date.now();
-    const scraper = await getScraperService();
-    const scrapingOptions: {
-      maxTweets: number;
-      includeReplies: boolean;
-      language?: string;
-    } = {
-      maxTweets: params.tweetsToRetrieve,
+    const scrapingResult = await performScraping(
+      context,
+      safeIdentifier,
+      params,
       includeReplies,
-      ...(languageFilter ? { language: params.language } : {}),
-    };
+      languageFilter,
+    );
 
-    let scrapingResult: ScrapingResult;
-    if (context.type === "user") {
-      scrapingResult = await scraper.scrapeByUser(
-        safeIdentifier,
-        scrapingOptions,
+    const { tweetsWithSentiment, sentimentSummary } =
+      await processAndPersistSentiment(
+        scrapingResult.tweets,
+        params.analyzeSentiment,
+        params.campaignId,
       );
-    } else {
-      // hashtag or search (mapped to hashtag keyword)
-      scrapingResult = await scraper.scrapeByHashtag(
-        safeIdentifier,
-        scrapingOptions,
-      );
-    }
-
-    // Sentiment
-    let tweetsWithSentiment: Tweet[] = scrapingResult.tweets;
-    let sentimentSummary: ReturnType<
-      typeof sentimentManager.generateStatistics
-    > | null = null;
-    if (params.analyzeSentiment && tweetsWithSentiment.length > 0) {
-      const analyses: TweetSentimentAnalysis[] =
-        await sentimentManager.analyzeTweetsBatch(tweetsWithSentiment);
-      sentimentSummary = sentimentManager.generateStatistics(analyses);
-      tweetsWithSentiment = processSentimentAnalysis(
-        tweetsWithSentiment,
-        analyses,
-      );
-    }
-
-    // Persist (best-effort, no failure propagation)
-    if (tweetsWithSentiment.length > 0) {
-      try {
-        await tweetDatabaseService.saveTweetsBulk(
-          tweetsWithSentiment,
-          params.campaignId,
-        );
-      } catch (dbErr) {
-        logger.warn("Database save issue", { error: dbErr });
-      }
-    }
 
     const execTime = Date.now() - start;
     res.json({
@@ -378,7 +432,7 @@ export async function handleScrapingRequest<
   } catch (err) {
     handleScrapingError(res, err, `${context.type} scraping`);
   } finally {
-    const ip = (req.ip || req.socket.remoteAddress || "unknown").toString();
+    const ip = getClientIp(req);
     inFlightByIp.delete(ip);
   }
 }

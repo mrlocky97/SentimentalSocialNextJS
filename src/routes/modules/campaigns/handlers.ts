@@ -386,9 +386,9 @@ export const deleteCampaignHandler = async (req: Request, res: Response) => {
 
     // Soft delete by updating status
     await campaignRepository.update(id, {
-      status: "deleted" as any, // Using 'deleted' as string since it's not in enum
+      status: CampaignStatus.deleted,
       updatedAt: new Date(),
-    } as any);
+    } as Partial<UpdateCampaignRequest>);
 
     res.json({
       success: true,
@@ -413,7 +413,7 @@ export const deleteCampaignHandler = async (req: Request, res: Response) => {
 export const getCampaignTweetsHandler = async (req: Request, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const { page = 1, limit = 20, sentiment } = req.query;
+    const { limit = 20, sentiment } = req.query;
 
     // Validate campaign ID
     if (!campaignId || campaignId.length !== 24) {
@@ -440,11 +440,10 @@ export const getCampaignTweetsHandler = async (req: Request, res: Response) => {
       });
     }
 
-    const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
 
     // Build filter for tweets
-    const filter: any = { campaignId };
+    const filter: Record<string, unknown> = { campaignId };
     if (sentiment) {
       filter.sentiment = sentiment;
     }

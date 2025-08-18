@@ -645,33 +645,37 @@ router.get("/metrics", asyncHandler(getMetricsHandler));
 // Temporary test endpoint for tweet analysis without middleware issues
 router.post(
   "/test-tweet",
-  asyncHandler(async (req: any, res: any) => {
-    try {
-      const { tweet } = req.body;
-      if (!tweet || !tweet.content) {
-        return res.status(400).json({ error: "Tweet content required" });
+  asyncHandler(
+    async (req: import("express").Request, res: import("express").Response) => {
+      try {
+        const { tweet } = req.body;
+        if (!tweet || !tweet.content) {
+          return res.status(400).json({ error: "Tweet content required" });
+        }
+
+        // Normalize id to tweetId if needed
+        if (!tweet.tweetId && tweet.id) {
+          tweet.tweetId = tweet.id;
+        }
+
+        // Import sentiment service
+        const { sentimentService } = await import(
+          "../../../services/sentiment.service"
+        );
+        const result = await sentimentService.analyzeTweet(tweet);
+
+        return res.json({
+          success: true,
+          data: result,
+          message: "Test tweet analysis completed with frozen model v3.0",
+        });
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return res.status(500).json({ error: errorMessage });
       }
-
-      // Normalize id to tweetId if needed
-      if (!tweet.tweetId && tweet.id) {
-        tweet.tweetId = tweet.id;
-      }
-
-      // Import sentiment service
-      const { sentimentService } = await import(
-        "../../../services/sentiment.service"
-      );
-      const result = await sentimentService.analyzeTweet(tweet);
-
-      return res.json({
-        success: true,
-        data: result,
-        message: "Test tweet analysis completed with frozen model v3.0",
-      });
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message });
-    }
-  }),
+    },
+  ),
 );
 
 export default router;

@@ -6,6 +6,7 @@ import { globalSecurity, securitySchemes } from "./security";
 // JSDoc scan globs
 const apiGlobs = [
   "./src/routes/*.ts",
+  "./src/routes/**/*.ts",
   "./src/controllers/*.ts",
   "./src/middleware/*.ts",
 ];
@@ -41,5 +42,37 @@ export function buildSwaggerSpec() {
     },
     apis: apiGlobs,
   };
-  return swaggerJsdoc(options);
+  
+  // Build the complete spec
+  const spec = swaggerJsdoc(options);
+  
+  // Filter out internal routes and tags
+  return filterInternalEndpoints(spec);
+}
+
+function filterInternalEndpoints(spec: any) {
+  // Filter out internal paths
+  if (spec.paths) {
+    Object.keys(spec.paths).forEach(pathKey => {
+      const pathItem = spec.paths[pathKey];
+      Object.keys(pathItem).forEach(method => {
+        const operation = pathItem[method];
+        if (operation && operation['x-internal'] === true) {
+          delete pathItem[method];
+        }
+      });
+      
+      // Remove empty path objects
+      if (Object.keys(pathItem).length === 0) {
+        delete spec.paths[pathKey];
+      }
+    });
+  }
+  
+  // Filter out internal tags
+  if (spec.tags) {
+    spec.tags = spec.tags.filter((tag: any) => tag['x-internal'] !== true);
+  }
+  
+  return spec;
 }

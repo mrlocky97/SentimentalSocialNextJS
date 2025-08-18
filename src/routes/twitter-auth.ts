@@ -21,6 +21,7 @@ const router = Router();
  * tags:
  *   name: Twitter Authentication
  *   description: Twitter authentication and session management for scraping
+ *   x-internal: true
  */
 
 /**
@@ -30,6 +31,7 @@ const router = Router();
  *     summary: Login to Twitter
  *     description: Authenticate with Twitter using environment credentials
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -81,6 +83,7 @@ router.post(
  *     summary: Import Twitter cookies manually
  *     description: Import Twitter session cookies extracted from browser
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -123,6 +126,7 @@ router.post('/import-cookies', authenticateToken, async (req: AuthenticatedReque
  *     summary: Check Twitter authentication status
  *     description: Check if Twitter session is active and valid
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -161,6 +165,7 @@ router.get(
  *     summary: Logout from Twitter
  *     description: Clear Twitter session and cookies
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -196,6 +201,7 @@ router.post(
  *     summary: Validate current Twitter cookies
  *     description: Test if current Twitter session cookies are still valid
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -232,6 +238,7 @@ router.get(
  *     summary: Get detailed session information
  *     description: Get comprehensive information about current Twitter session
  *     tags: [Twitter Authentication]
+ *     x-internal: true
  *     security:
  *       - bearerAuth: []
  *     responses:

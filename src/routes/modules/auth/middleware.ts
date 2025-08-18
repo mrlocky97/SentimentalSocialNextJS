@@ -373,10 +373,19 @@ export const logAuthRequest = (
 
   res.send = function (body) {
     const duration = Date.now() - startTime;
-    const logData: any = {
+    const logData: {
+      method: string;
+      url: string;
+      ip: string;
+      userAgent: string | undefined;
+      statusCode: number;
+      duration: string;
+      timestamp: string;
+      body?: Record<string, unknown>;
+    } = {
       method: req.method,
       url: req.originalUrl,
-      ip: req.ip,
+      ip: req.ip || "",
       userAgent: req.get("user-agent"),
       statusCode: res.statusCode,
       duration: `${duration}ms`,

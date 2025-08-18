@@ -121,14 +121,19 @@ export const analyzeTweetHandler = async (req: Request, res: Response) => {
       enrichedResult,
       "Tweet sentiment analysis completed successfully with frozen model v3.0",
     );
-  } catch (error: any) {
+  } catch (error) {
     // Manejo de errores específico
-    if (error.name === "SentimentAnalysisError") {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      (error as { name: string }).name === "SentimentAnalysisError"
+    ) {
       throw error;
     }
 
     throw SentimentAnalysisError.invalidTweet({
-      message: `Tweet analysis failed: ${error.message}`,
+      message: `Tweet analysis failed: ${(error as Error).message}`,
     });
   }
 };
@@ -151,15 +156,18 @@ export const batchAnalyzeHandler = async (req: Request, res: Response) => {
     throw SentimentAnalysisError.invalidBatch(tweets.length);
   }
 
+  // Define a minimal type for tweets that may have 'id' or 'tweetId'
+  type TweetLike = { content: string; tweetId?: string; id?: string };
+
   // Validate each tweet
-  for (const tweet of tweets) {
+  for (const tweet of tweets as TweetLike[]) {
     if (!tweet || !tweet.content) {
       throw SentimentAnalysisError.invalidTweet({
         message: "Each tweet must have content",
       });
     }
-    if (!tweet.tweetId && (tweet as any).id) {
-      (tweet as any).tweetId = (tweet as any).id;
+    if (!tweet.tweetId && tweet.id) {
+      tweet.tweetId = tweet.id;
     }
   }
 

@@ -4,6 +4,7 @@ export enum CampaignStatus {
   paused = "paused", // Temporarily stopped
   completed = "completed", // Finished collecting
   archived = "archived", // Completed and archived
+  deleted = "deleted",
 }
 
 export enum CampaignType {

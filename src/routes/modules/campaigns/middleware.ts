@@ -385,7 +385,7 @@ export const logCampaignRequest = (
 
   res.send = function (body) {
     const duration = Date.now() - startTime;
-    const logData: any = {
+    const logData: Record<string, unknown> = {
       method: req.method,
       url: req.originalUrl,
       ip: req.ip,

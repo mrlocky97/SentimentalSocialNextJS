@@ -193,6 +193,12 @@ if (process.env.ENABLE_SWAGGER_UI === "true") {
       customCss: `
       .swagger-ui .topbar { display: none }
       .swagger-ui .info .title { color: #1976d2 }
+      /* Ocultar secciones internas para usuarios externos */
+      .swagger-ui .opblock-tag-section[data-tag="Twitter Authentication"] { display: none !important; }
+      .swagger-ui .opblock-tag-section[data-tag="Admin"] { display: none !important; }
+      .swagger-ui .opblock-tag-section[data-tag="Security"] { display: none !important; }
+      /* Ocultar del índice también */
+      .swagger-ui .scheme-container { display: none; }
     `,
       customSiteTitle: "SentimentalSocial API Documentation",
       swaggerOptions: {
@@ -200,6 +206,11 @@ if (process.env.ENABLE_SWAGGER_UI === "true") {
         filter: true,
         showRequestDuration: true,
         tryItOutEnabled: true,
+        tagsSorter: "alpha",
+        operationsSorter: "alpha",
+        // Lista blanca de tags visibles para usuarios externos
+        supportedSubmitMethods: ["get", "post", "put", "delete", "patch"],
+        defaultModelExpandDepth: 1,
       },
     }),
   );
