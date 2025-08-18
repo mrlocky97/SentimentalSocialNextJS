@@ -1,12 +1,16 @@
-import { SCRAPING_CONFIG, Sanitizers } from "@/config/scraping.config";
-import { Label } from "@/enums/sentiment.enum";
-import { logger } from "@/lib/observability/logger";
-import type { TweetSentimentAnalysis } from "@/lib/sentiment/types";
-import { TweetDatabaseService } from "@/services/tweet-database.service";
-import { TweetSentimentAnalysisManager } from "@/services/tweet-sentiment-analysis.manager.service";
-import { TwitterAuthManager } from "@/services/twitter-auth-manager.service";
-import { TwitterRealScraperService } from "@/services/twitter-scraper.service";
-import type { ScrapingResult, SentimentAnalysis, Tweet } from "@/types/twitter";
+import { SCRAPING_CONFIG, Sanitizers } from "../../../config/scraping.config";
+import { Label } from "../../../enums/sentiment.enum";
+import { logger } from "../../../lib/observability/logger";
+import type { TweetSentimentAnalysis } from "../../../lib/sentiment/types";
+import { TweetDatabaseService } from "../../../services/tweet-database.service";
+import { TweetSentimentAnalysisManager } from "../../../services/tweet-sentiment-analysis.manager.service";
+import { TwitterAuthManager } from "../../../services/twitter-auth-manager.service";
+import { TwitterRealScraperService } from "../../../services/twitter-scraper.service";
+import type {
+  ScrapingResult,
+  SentimentAnalysis,
+  Tweet,
+} from "../../../types/twitter";
 import { Request, Response } from "express";
 
 // ---------------- Concurrency (per-IP basic throttling) ----------------
@@ -249,7 +253,9 @@ export async function handleScrapingRequest<
       campaignId: body.campaignId,
       language:
         body.language &&
-        SCRAPING_CONFIG.LANGUAGES.includes(body.language as any)
+        SCRAPING_CONFIG.LANGUAGES.includes(
+          body.language as (typeof SCRAPING_CONFIG.LANGUAGES)[number],
+        )
           ? body.language
           : "en",
       validLanguages: [...SCRAPING_CONFIG.LANGUAGES],
