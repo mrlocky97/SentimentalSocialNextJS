@@ -410,6 +410,71 @@ export class DashboardService {
   }
 
   /**
+   * Get dashboard overview
+   */
+  public getOverview(): any {
+    const currentMetrics = this.getCurrentMetrics();
+
+    return {
+      summary: {
+        totalRequests: currentMetrics.http.totalRequests,
+        totalAnalyses: currentMetrics.sentiment.totalAnalyses,
+        systemHealth: currentMetrics.system.health,
+        uptime: currentMetrics.system.uptime,
+      },
+      alerts: this.getSystemAlerts(),
+      quickStats: {
+        requestsPerMinute: currentMetrics.http.requestsPerMinute,
+        averageResponseTime: currentMetrics.http.averageResponseTime,
+        errorRate: currentMetrics.http.errorRate,
+        memoryUsage: currentMetrics.system.memory.percentage,
+      },
+      services: {
+        api: currentMetrics.system.health === "critical" ? "down" : "up",
+        database: "up", // This could be enhanced with actual DB health check
+        sentiment: "up",
+        cache: currentMetrics.cache.hitRate > 0 ? "up" : "degraded",
+      },
+    };
+  }
+
+  private getSystemAlerts(): Array<{
+    type: string;
+    message: string;
+    severity: string;
+  }> {
+    const alerts: Array<{ type: string; message: string; severity: string }> =
+      [];
+    const currentMetrics = this.getCurrentMetrics();
+
+    if (currentMetrics.system.memory.percentage > 90) {
+      alerts.push({
+        type: "memory",
+        message: "High memory usage detected",
+        severity: "warning",
+      });
+    }
+
+    if (currentMetrics.http.errorRate > 5) {
+      alerts.push({
+        type: "errors",
+        message: "High error rate detected",
+        severity: "critical",
+      });
+    }
+
+    if (currentMetrics.cache.hitRate < 50) {
+      alerts.push({
+        type: "cache",
+        message: "Low cache hit rate",
+        severity: "warning",
+      });
+    }
+
+    return alerts;
+  }
+
+  /**
    * Cleanup resources
    */
   public cleanup(): void {

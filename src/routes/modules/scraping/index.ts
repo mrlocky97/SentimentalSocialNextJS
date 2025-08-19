@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+    getScrapingStatus,
     listTweets,
     scrapeHashtag,
     scrapeSearch,
@@ -18,7 +19,7 @@ const router = Router();
 router.post("/hashtag", scrapeHashtag);
 router.post("/user", scrapeUser);
 router.post("/search", scrapeSearch);
-// router.get("/status", getScrapingStatus);
+router.get("/status", getScrapingStatus);
 // router.post("/reauth", forceReauth);
 router.get("/tweets", listTweets);
 

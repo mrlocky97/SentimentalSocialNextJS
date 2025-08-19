@@ -15,6 +15,23 @@ export function configureDashboardRoutes(): Router {
   const router = Router();
   const dashboardController = new DashboardController();
 
+  // Dashboard overview endpoint
+  router.get("/overview", async (req, res) => {
+    try {
+      await dashboardController.getOverview(req, res);
+    } catch (error) {
+      systemLogger.error(
+        "Dashboard overview route error",
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // Current metrics endpoint
   router.get("/metrics", async (req, res) => {
     try {

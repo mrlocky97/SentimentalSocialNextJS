@@ -176,11 +176,11 @@ router.get("/test", asyncHandler(getTestHandler));
 
 /**
  * @swagger
- * /api/sentiment/analyze-text:
+ * /api/sentiment/analyze:
  *   post:
  *     tags: [Sentiment Analysis]
- *     summary: Analyze text sentiment
- *     description: Analyze the sentiment of a given text using hybrid analysis
+ *     summary: Analyze text sentiment (main endpoint)
+ *     description: Analyze sentiment of text using the default analysis method
  *     requestBody:
  *       required: true
  *       content:
@@ -195,7 +195,7 @@ router.get("/test", asyncHandler(getTestHandler));
  *                 minLength: 1
  *                 maxLength: 5000
  *                 description: Text to analyze
- *                 example: "I absolutely love this product! It's amazing."
+ *                 example: "I love this product! It's amazing and works perfectly."
  *     responses:
  *       200:
  *         description: Sentiment analysis completed successfully
@@ -211,9 +211,103 @@ router.get("/test", asyncHandler(getTestHandler));
  *                   $ref: '#/components/schemas/SentimentAnalysisResult'
  *                 message:
  *                   type: string
- *                   example: "Text sentiment analysis completed successfully"
+ *                   example: "Sentiment analysis completed"
  *       400:
- *         description: Invalid input
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         description: Rate limit exceeded
+ */
+router.post("/analyze", validateTextInput, asyncHandler(analyzeTextHandler));
+
+/**
+ * @swagger
+ * /api/sentiment/batch:
+ *   post:
+ *     tags: [Sentiment Analysis]
+ *     summary: Analyze multiple texts (batch processing)
+ *     description: Analyze sentiment of multiple texts in a single request
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - texts
+ *             properties:
+ *               texts:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 1000
+ *                 minItems: 1
+ *                 maxItems: 100
+ *                 description: Array of texts to analyze
+ *                 example: ["I love this!", "This is okay", "I hate this"]
+ *     responses:
+ *       200:
+ *         description: Batch sentiment analysis completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/SentimentAnalysisResult'
+ *                 message:
+ *                   type: string
+ */
+router.post("/batch", validateBatchInput, asyncHandler(batchAnalyzeHandler));
+
+/**
+ * @swagger
+ * /api/sentiment/analyze-text:
+ *   post:
+ *     tags: [Sentiment Analysis]
+ *     summary: Analyze text sentiment (detailed endpoint)
+ *     description: Detailed sentiment analysis with comprehensive results
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 5000
+ *                 description: Text to analyze
+ *                 example: "I love this product! It's amazing and works perfectly."
+ *     responses:
+ *       200:
+ *         description: Sentiment analysis completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/SentimentAnalysisResult'
+ *                 message:
+ *                   type: string
+ *                   example: "Sentiment analysis completed"
+ *       400:
+ *         description: Invalid input data
  *         content:
  *           application/json:
  *             schema:

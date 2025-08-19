@@ -288,4 +288,39 @@ eventSource.onmessage = function(event) {
       });
     }
   }
+
+  /**
+   * Get dashboard overview
+   * GET /api/v1/dashboard/overview
+   */
+  async getOverview(req: Request, res: Response): Promise<void> {
+    try {
+      const startTime = performance.now();
+      const overview = dashboardService.getOverview();
+
+      res.json({
+        success: true,
+        data: overview,
+        responseTime: Math.round(performance.now() - startTime),
+        timestamp: new Date().toISOString(),
+      });
+
+      systemLogger.info("Dashboard overview exported", {
+        responseTime: performance.now() - startTime,
+        endpoint: "/api/v1/dashboard/overview",
+      });
+    } catch (error) {
+      systemLogger.error(
+        "Error getting dashboard overview",
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        message: "Failed to get dashboard overview",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 }
