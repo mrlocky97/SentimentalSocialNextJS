@@ -235,19 +235,19 @@ export class IntelligentRateLimiter {
 // Export different rate limiters for different endpoints
 export const generalRateLimit = new IntelligentRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100,
+  maxRequests: 500, // 500 requests per 15 min = supports ~30 users × 15-20 requests each
   keyGenerator: (req) => req.ip || "unknown",
 });
 
 export const heavyAnalysisRateLimit = new IntelligentRateLimiter({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  maxRequests: 20, // Lower limit for heavy operations
+  maxRequests: 90, // 90 requests per 5 min = supports 30 users × 3 heavy operations each
   keyGenerator: (req) => req.ip || "unknown",
 });
 
 export const batchRateLimit = new IntelligentRateLimiter({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  maxRequests: 5, // Very limited for batch operations
+  maxRequests: 60, // 60 requests per 10 min = supports 30 users × 2 batch operations each
   keyGenerator: (req) => req.ip || "unknown",
 });
 

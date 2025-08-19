@@ -149,7 +149,7 @@ router.use(logAuthRequest);
  */
 router.post(
   "/register",
-  authRateLimit(30, 5 * 60 * 1000), // 30 attempts per 5 minutes (development friendly)
+  authRateLimit(90, 5 * 60 * 1000), // 90 attempts per 5 min = supports 30 users × 3 registration attempts each
   validateRegisterRequest,
   registerHandler,
 );
@@ -184,7 +184,7 @@ router.post(
  */
 router.post(
   "/login",
-  authRateLimit(50, 5 * 60 * 1000), // 50 attempts per 5 minutes (development friendly)
+  authRateLimit(150, 5 * 60 * 1000), // 150 attempts per 5 min = supports 30 users × 5 login attempts each
   validateLoginRequest,
   loginHandler,
 );
