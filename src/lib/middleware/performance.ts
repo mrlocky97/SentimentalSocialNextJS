@@ -69,8 +69,8 @@ export const createRateLimit = (options?: {
  * Different rate limits for different endpoint types
  */
 export const authRateLimit = createRateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit auth attempts
+  windowMs: 5 * 60 * 1000, // 5 minutes (development friendly)
+  max: 100, // Much more lenient for development
 });
 
 export const scrapingRateLimit = createRateLimit({
