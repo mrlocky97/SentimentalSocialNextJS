@@ -121,7 +121,7 @@ router.use(logAuthRequest);
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     summary: Register a new user
  *     tags: [Authentication]
@@ -156,7 +156,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Login user
  *     tags: [Authentication]
@@ -191,7 +191,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/refresh:
+ * /api/v1/auth/refresh:
  *   post:
  *     summary: Refresh access token
  *     tags: [Authentication]
@@ -243,7 +243,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/logout:
+ * /api/v1/auth/logout:
  *   post:
  *     summary: Logout user
  *     tags: [Authentication]
@@ -275,7 +275,7 @@ router.post("/logout", authenticateToken, logoutHandler);
 
 /**
  * @swagger
- * /api/auth/forgot-password:
+ * /api/v1/auth/forgot-password:
  *   post:
  *     summary: Request password reset
  *     tags: [Authentication]
@@ -324,7 +324,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /api/v1/auth/reset-password:
  *   post:
  *     summary: Reset password with token
  *     tags: [Authentication]
@@ -378,7 +378,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/change-password:
+ * /api/v1/auth/change-password:
  *   post:
  *     summary: Change user password
  *     tags: [Authentication]
@@ -437,7 +437,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/verify-email:
+ * /api/v1/auth/verify-email:
  *   post:
  *     summary: Verify user email
  *     tags: [Authentication]
