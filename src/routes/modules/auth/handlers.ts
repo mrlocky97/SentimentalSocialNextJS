@@ -297,7 +297,7 @@ export const logoutHandler = (req: AuthenticatedRequest, res: Response) => {
 /**
  * Forgot password handler
  */
-export const forgotPasswordHandler = (req: Request, res: Response) => {
+export const forgotPasswordHandler = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
@@ -313,8 +313,15 @@ export const forgotPasswordHandler = (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implement actual password reset logic
-    // For now, return success regardless to prevent email enumeration
+    // Use auth service to handle password reset request
+    const result = await authService.requestPasswordReset(email);
+    
+    if (!result) {
+      // Still return success to prevent email enumeration, but log the error
+      console.error("Failed to send password reset email for:", email);
+    }
+
+    // Always return success message to prevent email enumeration
     ResponseHelper.success(res, {
       message:
         "If an account with that email exists, a password reset link has been sent.",
@@ -350,7 +357,7 @@ export const forgotPasswordHandler = (req: Request, res: Response) => {
 /**
  * Reset password handler
  */
-export const resetPasswordHandler = (req: Request, res: Response) => {
+export const resetPasswordHandler = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
 
@@ -368,7 +375,9 @@ export const resetPasswordHandler = (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implement actual password reset logic
+    // Use auth service to reset password
+    await authService.resetPassword(token, newPassword);
+
     ResponseHelper.success(res, {
       message: "Password reset successfully",
     });
@@ -382,6 +391,17 @@ export const resetPasswordHandler = (req: Request, res: Response) => {
           category: error.metadata.category,
           severity: error.metadata.severity,
           timestamp: error.timestamp.toISOString(),
+        },
+      };
+      res.status(400).json(response);
+    } else if (error instanceof Error) {
+      // Handle service errors (like "Invalid reset token")
+      const response = {
+        success: false,
+        error: {
+          code: ErrorCode.BUSINESS_RULE_VIOLATION,
+          message: error.message,
+          timestamp: new Date().toISOString(),
         },
       };
       res.status(400).json(response);
@@ -491,7 +511,7 @@ export const changePasswordHandler = async (
 /**
  * Verify email handler
  */
-export const verifyEmailHandler = (req: Request, res: Response) => {
+export const verifyEmailHandler = async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
 
@@ -502,7 +522,9 @@ export const verifyEmailHandler = (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implement actual email verification logic
+    // Use auth service to verify email
+    await authService.verifyEmail(token);
+
     ResponseHelper.success(res, {
       message: "Email verified successfully",
     });
@@ -516,6 +538,17 @@ export const verifyEmailHandler = (req: Request, res: Response) => {
           category: error.metadata.category,
           severity: error.metadata.severity,
           timestamp: error.timestamp.toISOString(),
+        },
+      };
+      res.status(400).json(response);
+    } else if (error instanceof Error) {
+      // Handle service errors (like "Invalid verification token")
+      const response = {
+        success: false,
+        error: {
+          code: ErrorCode.BUSINESS_RULE_VIOLATION,
+          message: error.message,
+          timestamp: new Date().toISOString(),
         },
       };
       res.status(400).json(response);

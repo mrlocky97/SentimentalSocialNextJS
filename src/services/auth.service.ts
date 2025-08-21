@@ -13,12 +13,18 @@ import {
 import { MongoUserRepository } from "../repositories/mongo-user.repository";
 import { AuthResponse, LoginRequest, RegisterRequest } from "../types/auth";
 import { CreateUserRequest } from "../types/user";
+import { EmailService } from "./email.service";
+import { TokenService } from "./token.service";
 
 export class AuthService {
   private userRepository: MongoUserRepository;
+  private emailService: EmailService;
+  private tokenService: TokenService;
 
   constructor() {
     this.userRepository = new MongoUserRepository();
+    this.emailService = new EmailService();
+    this.tokenService = new TokenService();
   }
 
   /**
@@ -231,5 +237,133 @@ export class AuthService {
    */
   validateEmail(email: string): boolean {
     return isValidEmail(email);
+  }
+
+  /**
+   * Request password reset
+   */
+  async requestPasswordReset(email: string): Promise<boolean> {
+    try {
+      // Find user by email
+      const user = await this.userRepository.findByEmail(email);
+      if (!user || !user.isActive) {
+        // Return true even if user doesn't exist to prevent email enumeration
+        return true;
+      }
+
+      // Generate reset token
+      const resetToken = this.tokenService.generatePasswordResetToken(
+        user.id,
+        user.email,
+      );
+
+      // Send reset email
+      const emailSent = await this.emailService.sendPasswordResetEmail(
+        user.email,
+        resetToken,
+      );
+
+      return emailSent;
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    // Validate new password strength
+    const passwordValidation = this.validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors.join(". "));
+    }
+
+    // Verify reset token
+    const tokenData = this.tokenService.verifyPasswordResetToken(token);
+
+    // Find user
+    const user = await this.userRepository.findById(tokenData.userId);
+    if (!user || !user.isActive) {
+      throw new Error("User not found or inactive");
+    }
+
+    // Verify email matches token
+    if (user.email !== tokenData.email) {
+      throw new Error("Invalid reset token");
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
+
+    // Update password in database
+    const updateResult = await this.userRepository.updatePassword(
+      user.id,
+      newPasswordHash,
+    );
+    if (!updateResult) {
+      throw new Error("Failed to update password in database");
+    }
+  }
+
+  /**
+   * Send email verification
+   */
+  async sendEmailVerification(userId: string): Promise<boolean> {
+    try {
+      // Find user
+      const user = await this.userRepository.findById(userId);
+      if (!user || !user.isActive) {
+        throw new Error("User not found or inactive");
+      }
+
+      // Don't send if already verified
+      if (user.isVerified) {
+        return true;
+      }
+
+      // Generate verification token
+      const verificationToken = this.tokenService.generateEmailVerificationToken(
+        user.id,
+        user.email,
+      );
+
+      // Send verification email
+      const emailSent = await this.emailService.sendEmailVerificationEmail(
+        user.email,
+        verificationToken,
+      );
+
+      return emailSent;
+    } catch (error) {
+      console.error("Email verification send error:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<void> {
+    // Verify token
+    const tokenData = this.tokenService.verifyEmailVerificationToken(token);
+
+    // Find user
+    const user = await this.userRepository.findById(tokenData.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify email matches token
+    if (user.email !== tokenData.email) {
+      throw new Error("Invalid verification token");
+    }
+
+    // Update user verification status
+    const updateResult = await this.userRepository.verifyUser(user.id);
+    if (!updateResult) {
+      throw new Error("Failed to verify user in database");
+    }
   }
 }
