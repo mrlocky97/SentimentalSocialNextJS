@@ -403,7 +403,10 @@ export const resetPasswordHandler = (req: Request, res: Response) => {
 /**
  * Change password handler
  */
-export const changePasswordHandler = (req: Request, res: Response) => {
+export const changePasswordHandler = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
@@ -421,12 +424,26 @@ export const changePasswordHandler = (req: Request, res: Response) => {
       );
     }
 
-    // TODO: Implement actual password change logic
+    // Get user ID from authenticated request
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AuthenticationError(
+        "User not authenticated",
+        ErrorCode.UNAUTHORIZED,
+      );
+    }
+
+    // Use auth service to change password
+    await authService.changePassword(userId, currentPassword, newPassword);
+
     ResponseHelper.success(res, {
       message: "Password changed successfully",
     });
   } catch (error) {
-    if (error instanceof ValidationError) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof AuthenticationError
+    ) {
       const response = {
         success: false,
         error: {
@@ -437,7 +454,25 @@ export const changePasswordHandler = (req: Request, res: Response) => {
           timestamp: error.timestamp.toISOString(),
         },
       };
-      res.status(400).json(response);
+      res
+        .status(error instanceof AuthenticationError ? 401 : 400)
+        .json(response);
+    } else if (error instanceof Error) {
+      // Handle service errors (like "Current password is incorrect")
+      const response = {
+        success: false,
+        error: {
+          code: ErrorCode.BUSINESS_RULE_VIOLATION,
+          message: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      
+      // Return 401 for password validation errors, 400 for other business logic errors
+      const statusCode = error.message.includes("Current password is incorrect")
+        ? 401
+        : 400;
+      res.status(statusCode).json(response);
     } else {
       console.error("Change password error:", error);
       const response = {

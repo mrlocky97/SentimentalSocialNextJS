@@ -164,6 +164,12 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
   ): Promise<void> {
+    // Validate new password strength
+    const passwordValidation = this.validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors.join(". "));
+    }
+
     // Find user with password hash
     const userAuth = await this.userRepository.findAuthById(userId);
     if (!userAuth) {
@@ -179,13 +185,26 @@ export class AuthService {
       throw new Error("Current password is incorrect");
     }
 
-    // Hash new password and update (this would need a repository method to update password)
-    // For now, we'll throw an error indicating this feature needs implementation
-    // TODO: Use newPassword parameter to hash and update user password when repository method is implemented
-    console.log("New password length:", newPassword.length); // Temporary to satisfy linter
-    throw new Error(
-      "Password change feature needs implementation in repository",
+    // Check if new password is different from current password
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      userAuth.passwordHash,
     );
+    if (isSamePassword) {
+      throw new Error("New password must be different from current password");
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
+    
+    // Update password in database
+    const updateResult = await this.userRepository.updatePassword(
+      userId,
+      newPasswordHash,
+    );
+    if (!updateResult) {
+      throw new Error("Failed to update password in database");
+    }
   }
 
   /**
