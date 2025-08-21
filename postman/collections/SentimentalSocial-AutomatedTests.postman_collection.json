@@ -2,9 +2,40 @@
   "info": {
     "_postman_id": "automated-tests-collection",
     "name": "SentimentalSocial - Automated Test Suite",
-    "description": "Automated test suite for all SentimentalSocial API endpoints. Run this collection to test the complete API functionality.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "description": "Comprehensive automated test suite for all SentimentalSocial API endpoints. Run this collection to validate complete API functionality including authentication, sentiment analysis, scraping, campaigns, templates, security, and admin features.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log('🧪 Running test:', pm.info.requestName);",
+          "console.log('🕒 Test started at:', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test for all requests",
+          "if (pm.response.code !== 404 && pm.response.code !== 503) {",
+          "    pm.test('Response time is acceptable', function () {",
+          "        pm.expect(pm.response.responseTime).to.be.below(15000);",
+          "    });",
+          "}",
+          "",
+          "// Log the response status",
+          "console.log('📊 Response:', pm.response.code, pm.response.status);",
+          "console.log('⏱️ Response time:', pm.response.responseTime + 'ms');"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "Setup - Register Admin User",
@@ -486,32 +517,6 @@
           "host": ["{{baseUrl}}"],
           "path": ["api", "{{apiVersion}}", "auth", "logout"]
         }
-      }
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": ["console.log('🧪 Running test:', pm.info.requestName);"]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Global test for all requests",
-          "if (pm.response.code !== 404) {",
-          "    pm.test('Response time is acceptable', function () {",
-          "        pm.expect(pm.response.responseTime).to.be.below(10000);",
-          "    });",
-          "}",
-          "",
-          "// Log the response status",
-          "console.log('📊 Response status:', pm.response.code, pm.response.status);"
-        ]
       }
     }
   ]

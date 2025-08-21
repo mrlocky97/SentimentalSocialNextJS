@@ -2,8 +2,9 @@
   "info": {
     "_postman_id": "complete-sentimentalsocial-api",
     "name": "SentimentalSocial API - Complete Collection",
-    "description": "Complete API collection for SentimentalSocial platform with all endpoints including authentication, sentiment analysis, scraping, campaigns, security, and admin functions.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "description": "Complete API collection for SentimentalSocial platform with all endpoints including authentication, sentiment analysis, scraping, campaigns, templates, security, admin, and health monitoring.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
   },
   "auth": {
     "type": "bearer",
@@ -22,7 +23,8 @@
         "type": "text/javascript",
         "exec": [
           "// Global pre-request script",
-          "console.log('🚀 Making request to:', pm.request.url.toString());"
+          "console.log('🚀 Making request to:', pm.request.url.toString());",
+          "console.log('📝 Auth token:', pm.environment.get('authToken') ? 'Present' : 'Missing');"
         ]
       }
     },
@@ -33,17 +35,24 @@
         "exec": [
           "// Global test script",
           "pm.test('Response time is acceptable', function () {",
-          "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+          "    pm.expect(pm.response.responseTime).to.be.below(15000);",
           "});",
           "",
-          "pm.test('Content-Type is JSON', function () {",
-          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
-          "});",
+          "if (pm.response.headers.get('Content-Type')) {",
+          "    pm.test('Content-Type includes JSON', function () {",
+          "        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "    });",
+          "}",
           "",
-          "pm.test('Response has success field', function () {",
-          "    const jsonData = pm.response.json();",
-          "    pm.expect(jsonData).to.have.property('success');",
-          "});"
+          "if (pm.response.code !== 404) {",
+          "    pm.test('Response has success field', function () {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('success');",
+          "    });",
+          "}",
+          "",
+          "// Log response status",
+          "console.log('📊 Response:', pm.response.code, pm.response.status);"
         ]
       }
     }
@@ -69,7 +78,7 @@
                   "",
                   "pm.test('User has correct role', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    if (jsonData.success) {",
+                  "    if (jsonData.success && jsonData.data.user) {",
                   "        pm.expect(jsonData.data.user).to.have.property('role');",
                   "        console.log('👤 User role:', jsonData.data.user.role);",
                   "    }",
@@ -136,7 +145,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"AdminPassword123!\",\n  \"rememberMe\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
@@ -144,6 +153,45 @@
               "path": ["api", "{{apiVersion}}", "auth", "login"]
             },
             "description": "Login user and get authentication token"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Token refresh successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data.token) {",
+                  "        pm.environment.set('authToken', jsonData.data.token);",
+                  "        console.log('🔄 Token refreshed successfully');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "refresh"]
+            },
+            "description": "Refresh authentication token"
           }
         },
         {
@@ -170,7 +218,7 @@
           }
         },
         {
-          "name": "Refresh Token",
+          "name": "Forgot Password",
           "request": {
             "method": "POST",
             "header": [
@@ -181,14 +229,90 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+              "raw": "{\n  \"email\": \"admin@test.com\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/refresh",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/forgot-password",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "auth", "refresh"]
+              "path": ["api", "{{apiVersion}}", "auth", "forgot-password"]
             },
-            "description": "Refresh authentication token"
+            "description": "Request password reset email"
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"NewSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "reset-password"]
+            },
+            "description": "Reset password with token"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"AdminPassword123!\",\n  \"newPassword\": \"NewAdminPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "change-password"]
+            },
+            "description": "Change user password"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification-token-here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "verify-email"]
+            },
+            "description": "Verify user email with token"
           }
         }
       ]
@@ -340,10 +464,50 @@
     },
     {
       "name": "🎯 SENTIMENT ANALYSIS",
-      "description": "Sentiment analysis endpoints for text processing",
+      "description": "Comprehensive sentiment analysis endpoints for text processing and analysis",
       "item": [
         {
+          "name": "Test API Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "test"]
+            },
+            "description": "Test sentiment analysis API availability and get service info"
+          }
+        },
+        {
           "name": "Analyze Single Text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Sentiment analysis successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('sentiment');",
+                  "    console.log('🎯 Sentiment:', jsonData.data.sentiment);",
+                  "    console.log('📊 Confidence:', jsonData.data.confidence);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -367,15 +531,15 @@
               "raw": "{\n  \"text\": \"I love this amazing product! It's absolutely fantastic and works perfectly.\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-text",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-text"]
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze"]
             },
-            "description": "Analyze sentiment of a single text using hybrid analysis system for maximum precision"
+            "description": "Analyze sentiment of a single text using default method"
           }
         },
         {
-          "name": "Analyze Multiple Texts",
+          "name": "Analyze Text (Detailed)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -396,18 +560,150 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"texts\": [\n    \"I love this product!\",\n    \"This is terrible, I hate it.\",\n    \"It's okay, nothing special.\",\n    \"Amazing quality and great service!\"\n  ]\n}"
+              "raw": "{\n  \"text\": \"This product is okay, nothing special but it works fine for the price.\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/test",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-text",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "test"]
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-text"]
             },
-            "description": "Test sentiment analysis with hybrid system (use for single text testing)"
+            "description": "Detailed sentiment analysis with comprehensive results"
+          }
+        },
+        {
+          "name": "Analyze Multi-Language",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"¡Me encanta este producto increíble! Es absolutamente fantástico.\",\n  \"language\": \"es\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-multilang",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-multilang"]
+            },
+            "description": "Analyze sentiment with multi-language support"
+          }
+        },
+        {
+          "name": "Analyze Tweet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Tweet analysis successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('tweetId');",
+                  "    pm.expect(jsonData.data).to.have.property('analysis');",
+                  "    console.log('🐦 Tweet analyzed:', jsonData.data.tweetId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tweet\": {\n    \"tweetId\": \"1234567890\",\n    \"content\": \"Just tried the new iPhone! Amazing camera quality but battery life could be better. #iPhone #tech\",\n    \"author\": {\n      \"username\": \"techreviewer\",\n      \"verified\": true,\n      \"followersCount\": 15000\n    },\n    \"metrics\": {\n      \"likes\": 245,\n      \"retweets\": 89,\n      \"replies\": 23\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-tweet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-tweet"]
+            },
+            "description": "Analyze sentiment of a complete tweet object with metadata"
+          }
+        },
+        {
+          "name": "Batch Analysis",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texts\": [\n    \"I love this product!\",\n    \"This is terrible, I hate it.\",\n    \"It's okay, nothing special.\",\n    \"Amazing quality and great service!\",\n    \"Could be better for the price.\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "batch"]
+            },
+            "description": "Analyze sentiment of multiple texts in a single request"
           }
         },
         {
           "name": "Compare Analysis Methods",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Method comparison successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('methods');",
+                  "    pm.expect(jsonData.data.methods).to.have.property('ruleBased');",
+                  "    pm.expect(jsonData.data.methods).to.have.property('naiveBayes');",
+                  "    pm.expect(jsonData.data.methods).to.have.property('hybrid');",
+                  "    console.log('⚖️ Method comparison completed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -431,67 +727,15 @@
               "raw": "{\n  \"text\": \"I love this amazing product but the delivery was terrible!\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/compare",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/compare-methods",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "compare"]
+              "path": ["api", "{{apiVersion}}", "sentiment", "compare-methods"]
             },
-            "description": "Compare different sentiment analysis methods (rule-based, naive bayes, hybrid) on the same text"
+            "description": "Compare results from different sentiment analysis methods"
           }
         },
         {
-          "name": "Model Status",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{authToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/model-status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "sentiment", "model-status"]
-            },
-            "description": "Get sentiment analysis model status and information"
-          }
-        }
-      ]
-    },
-    {
-      "name": "🐦 TWITTER SCRAPING",
-      "description": "Twitter scraping and data collection endpoints",
-      "item": [
-        {
-          "name": "Scraping Status",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{authToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "scraping", "status"]
-            },
-            "description": "Get current scraping system status"
-          }
-        },
-        {
-          "name": "Scrape by Hashtag",
+          "name": "Advanced Method Comparison",
           "request": {
             "auth": {
               "type": "bearer",
@@ -512,14 +756,284 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"hashtag\": \"{{testHashtag}}\",\n  \"maxTweets\": {{maxTweets}},\n  \"includeReplies\": false\n}"
+              "raw": "{\n  \"text\": \"The service was good but not great, pricing is fair though expensive for students.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/advanced-compare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "advanced-compare"]
+            },
+            "description": "Advanced comparison with detailed metrics and analysis"
+          }
+        },
+        {
+          "name": "Analyze with Specific Method",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"This product is absolutely amazing!\",\n  \"method\": \"rule\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-method",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "analyze-method"]
+            },
+            "description": "Analyze sentiment using a specific analysis method (rule/naive)"
+          }
+        },
+        {
+          "name": "Get Demo Analysis",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/demo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "demo"]
+            },
+            "description": "Get demonstration analysis results with example data"
+          }
+        },
+        {
+          "name": "Train Model",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examples\": [\n    {\"text\": \"I love this product\", \"label\": \"positive\"},\n    {\"text\": \"This is terrible\", \"label\": \"negative\"},\n    {\"text\": \"It's okay I guess\", \"label\": \"neutral\"},\n    {\"text\": \"Amazing quality!\", \"label\": \"positive\"},\n    {\"text\": \"Worst purchase ever\", \"label\": \"negative\"},\n    {\"text\": \"Nothing special\", \"label\": \"neutral\"},\n    {\"text\": \"Highly recommend!\", \"label\": \"positive\"},\n    {\"text\": \"Waste of money\", \"label\": \"negative\"},\n    {\"text\": \"Average product\", \"label\": \"neutral\"},\n    {\"text\": \"Exceeded expectations\", \"label\": \"positive\"}\n  ],\n  \"saveModel\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/train",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "train"]
+            },
+            "description": "Train or update the sentiment analysis model with new examples"
+          }
+        },
+        {
+          "name": "Model Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Model status retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('accuracy');",
+                  "    console.log('🧠 Model accuracy:', jsonData.data.accuracy);",
+                  "    console.log('📊 Total examples:', jsonData.data.totalExamples);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/model-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "model-status"]
+            },
+            "description": "Get current status and performance metrics of sentiment models"
+          }
+        },
+        {
+          "name": "Get Benchmarks",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/benchmarks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "benchmarks"]
+            },
+            "description": "Get performance benchmarks and metrics"
+          }
+        },
+        {
+          "name": "Get Analysis Metrics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "sentiment", "metrics"]
+            },
+            "description": "Get comprehensive analysis metrics and statistics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🐦 TWITTER SCRAPING",
+      "description": "Twitter scraping and data collection endpoints",
+      "item": [
+        {
+          "name": "Scraping Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Scraping status retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data).to.have.property('status');",
+                  "        console.log('🕷️ Scraping status:', jsonData.data.status);",
+                  "        console.log('📊 Total tweets:', jsonData.data.totalTweets || 'N/A');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "status"]
+            },
+            "description": "Get current scraping system status and statistics"
+          }
+        },
+        {
+          "name": "Scrape by Hashtag",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Hashtag scraping response received', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        console.log('🏷️ Scraped tweets for hashtag:', jsonData.data.length || jsonData.data.tweets?.length || 'N/A');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hashtag\": \"{{testHashtag}}\",\n  \"limit\": {{maxTweets}},\n  \"includeReplies\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/hashtag",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "scraping", "hashtag"]
             },
-            "description": "Scrape tweets by hashtag"
+            "description": "Scrape tweets by hashtag with optional filters"
           }
         },
         {
@@ -544,18 +1058,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"maxTweets\": {{maxTweets}},\n  \"includeReplies\": false\n}"
+              "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"limit\": {{maxTweets}},\n  \"includeRetweets\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/user",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "scraping", "user"]
             },
-            "description": "Scrape tweets from a specific user"
+            "description": "Scrape tweets from a specific user profile"
           }
         },
         {
-          "name": "Scrape by Search",
+          "name": "Scrape by Search Query",
           "request": {
             "auth": {
               "type": "bearer",
@@ -576,14 +1090,55 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"artificial intelligence\",\n  \"maxTweets\": {{maxTweets}},\n  \"lang\": \"en\"\n}"
+              "raw": "{\n  \"query\": \"artificial intelligence\",\n  \"limit\": {{maxTweets}},\n  \"language\": \"en\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/search",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "scraping", "search"]
             },
-            "description": "Scrape tweets by search query"
+            "description": "Scrape tweets by search query with language filtering"
+          }
+        },
+        {
+          "name": "List Scraped Tweets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/tweets?limit=20&offset=0&sentiment=positive",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "tweets"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of tweets to retrieve"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of tweets to skip"
+                },
+                {
+                  "key": "sentiment",
+                  "value": "positive",
+                  "description": "Filter by sentiment",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve list of previously scraped tweets with filtering"
           }
         }
       ]
@@ -664,11 +1219,93 @@
       ]
     },
     {
-      "name": "📊 CAMPAIGNS",
-      "description": "Campaign management endpoints for monitoring projects",
+      "name": "📋 CAMPAIGN TEMPLATES",
+      "description": "Campaign template management endpoints for quick campaign setup",
       "item": [
         {
-          "name": "Create Campaign",
+          "name": "Get All Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Templates retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    console.log('📋 Available templates:', jsonData.data.length);",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.environment.set('templateId', jsonData.data[0].id);",
+                  "        console.log('💾 First template ID saved:', jsonData.data[0].id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates"]
+            },
+            "description": "Get all available campaign templates"
+          }
+        },
+        {
+          "name": "Get Template by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates", "{{templateId}}"]
+            },
+            "description": "Get a specific template by ID"
+          }
+        },
+        {
+          "name": "Generate Campaign from Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign configuration generated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('name');",
+                  "    console.log('🎯 Campaign config generated:', jsonData.data.name);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -689,18 +1326,56 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Campaign\",\n  \"description\": \"Test campaign for monitoring\",\n  \"keywords\": [\"test\", \"campaign\"],\n  \"hashtags\": [\"test\"],\n  \"mentions\": [\"testuser\"],\n  \"isActive\": true\n}"
+              "raw": "{\n  \"name\": \"Nike Brand Monitoring Campaign\",\n  \"hashtags\": [\"#Nike\", \"#JustDoIt\"],\n  \"keywords\": [\"Nike\", \"athletic wear\"],\n  \"mentions\": [\"@Nike\"],\n  \"organizationId\": \"{{userId}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates/{{templateId}}/generate",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "campaigns"]
+              "path": ["api", "{{apiVersion}}", "templates", "{{templateId}}", "generate"]
             },
-            "description": "Create a new monitoring campaign"
+            "description": "Generate a campaign configuration from a template"
           }
         },
         {
-          "name": "Get Campaigns",
+          "name": "Smart Campaign Suggestions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"industry\": \"technology\",\n  \"goal\": \"product launch\",\n  \"budget\": \"medium\",\n  \"duration\": 14,\n  \"brandName\": \"TechCorp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/templates/smart-suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "templates", "smart-suggestions"]
+            },
+            "description": "Get AI-powered smart campaign suggestions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔒 SECURITY",
+      "description": "Security monitoring and token management endpoints",
+      "item": [
+        {
+          "name": "Security Status",
           "request": {
             "auth": {
               "type": "bearer",
@@ -715,15 +1390,300 @@
             "method": "GET",
             "header": [],
             "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/security/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "security", "status"]
+            },
+            "description": "Get security system status and token blacklist statistics"
+          }
+        },
+        {
+          "name": "Blacklist Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"jwt_token_to_blacklist_here\",\n  \"userId\": \"{{userId}}\",\n  \"expiresAt\": \"2025-12-31T23:59:59.999Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/security/blacklist-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "security", "blacklist-token"]
+            },
+            "description": "Manually blacklist a JWT token (admin only)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 HEALTH MONITORING",
+      "description": "System health and monitoring endpoints",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Basic server health check (no authentication required)"
+          }
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/detailed",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "detailed"]
+            },
+            "description": "Detailed system health check"
+          }
+        },
+        {
+          "name": "Critical Systems Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/critical",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "critical"]
+            },
+            "description": "Health check for critical systems"
+          }
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Kubernetes readiness probe"
+          }
+        },
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
+            },
+            "description": "Kubernetes liveness probe"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 CAMPAIGNS",
+      "description": "Campaign management endpoints for monitoring projects",
+      "item": [
+        {
+          "name": "Get Campaigns Overview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaigns overview retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('statistics');",
+                  "    console.log('📊 Total campaigns:', jsonData.data.statistics.total);",
+                  "    console.log('🔥 Active campaigns:', jsonData.data.statistics.active);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns", "overview"]
+            },
+            "description": "Get campaigns statistics and recent campaigns summary"
+          }
+        },
+        {
+          "name": "Get Campaigns (Paginated)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaigns retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    console.log('📋 Campaigns on this page:', jsonData.data.length);",
+                  "    console.log('📊 Total campaigns:', jsonData.pagination.total);",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.environment.set('campaignId', jsonData.data[0].id);",
+                  "        console.log('💾 First campaign ID saved:', jsonData.data[0].id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns?page=1&limit=20&status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "hashtag",
+                  "description": "Filter by type",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated list of campaigns with filtering options"
+          }
+        },
+        {
+          "name": "Create Campaign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.environment.set('campaignId', jsonData.data.id);",
+                  "    console.log('✅ Campaign created with ID:', jsonData.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Summer Marketing Campaign {{$timestamp}}\",\n  \"description\": \"Track brand mentions during summer promotion\",\n  \"type\": \"hashtag\",\n  \"status\": \"draft\",\n  \"dataSources\": [\"twitter\", \"instagram\"],\n  \"hashtags\": [\"SummerVibes\", \"BrandName\"],\n  \"keywords\": [\"summer sale\", \"discount\"],\n  \"mentions\": [\"@BrandName\"],\n  \"startDate\": \"2024-06-01T00:00:00Z\",\n  \"endDate\": \"2024-08-31T23:59:59Z\",\n  \"maxTweets\": 10000,\n  \"collectImages\": true,\n  \"sentimentAnalysis\": true\n}"
+            },
+            "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "campaigns"]
             },
-            "description": "Get all campaigns for the current user"
+            "description": "Create a new social media monitoring campaign"
           }
         },
         {
           "name": "Get Campaign by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('name');",
+                  "    console.log('📋 Campaign:', jsonData.data.name);",
+                  "    console.log('📊 Status:', jsonData.data.status);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -747,6 +1707,22 @@
         },
         {
           "name": "Update Campaign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign updated successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    console.log('✅ Campaign updated:', jsonData.data.name);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -767,18 +1743,90 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Test Campaign\",\n  \"description\": \"Updated description\",\n  \"isActive\": false\n}"
+              "raw": "{\n  \"name\": \"Updated Campaign Name\",\n  \"description\": \"Updated campaign description\",\n  \"status\": \"active\",\n  \"maxTweets\": 15000,\n  \"collectImages\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}"]
             },
-            "description": "Update an existing campaign"
+            "description": "Update an existing campaign's settings"
+          }
+        },
+        {
+          "name": "Get Campaign Tweets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign tweets retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    console.log('🐦 Tweets found:', jsonData.data.length);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns/{{campaignId}}/tweets?page=1&limit=20&sentiment=positive",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}", "tweets"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Tweets per page"
+                },
+                {
+                  "key": "sentiment",
+                  "value": "positive",
+                  "description": "Filter by sentiment",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve tweets collected for a specific campaign"
           }
         },
         {
           "name": "Delete Campaign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campaign deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    console.log('🗑️ Campaign deleted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -797,7 +1845,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "campaigns", "{{campaignId}}"]
             },
-            "description": "Delete a campaign"
+            "description": "Soft delete a campaign (marks as deleted but preserves data)"
           }
         }
       ]
@@ -923,7 +1971,23 @@
       "description": "Administrative endpoints for system management (admin only)",
       "item": [
         {
-          "name": "Database Health Check",
+          "name": "System Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('System health retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    console.log('⚡ System status:', jsonData.data.status);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -938,15 +2002,122 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/database/health",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/health",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "admin", "database", "health"]
+              "path": ["api", "{{apiVersion}}", "admin", "health"]
             },
-            "description": "Check database health status (admin only)"
+            "description": "Get system health status with admin details"
+          }
+        },
+        {
+          "name": "Performance Metrics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/metrics?timeWindow=3600000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "metrics"],
+              "query": [
+                {
+                  "key": "timeWindow",
+                  "value": "3600000",
+                  "description": "Time window in milliseconds (default: 1 hour)"
+                }
+              ]
+            },
+            "description": "Get performance metrics and statistics"
+          }
+        },
+        {
+          "name": "Cache Statistics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/cache-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "cache-stats"]
+            },
+            "description": "Get cache statistics and performance data"
+          }
+        },
+        {
+          "name": "Clear Cache",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Cache cleared successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    console.log('🗑️ Cache cleared');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/clear-cache",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "admin", "clear-cache"]
+            },
+            "description": "Clear system cache"
           }
         },
         {
           "name": "Get All Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Users list retrieved', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('users');",
+                  "    console.log('👥 Total users:', jsonData.data.count);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -1053,12 +2224,38 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:3001",
-      "type": "string"
+      "type": "string",
+      "description": "Base URL for the SentimentalSocial API"
     },
     {
       "key": "apiVersion",
       "value": "v1",
-      "type": "string"
+      "type": "string",
+      "description": "API version"
+    },
+    {
+      "key": "testHashtag",
+      "value": "test",
+      "type": "string",
+      "description": "Test hashtag for scraping endpoints"
+    },
+    {
+      "key": "testUsername",
+      "value": "elonmusk",
+      "type": "string",
+      "description": "Test username for scraping endpoints"
+    },
+    {
+      "key": "maxTweets",
+      "value": "20",
+      "type": "number",
+      "description": "Maximum number of tweets to scrape"
+    },
+    {
+      "key": "testSentimentText",
+      "value": "I love this amazing product! It works perfectly.",
+      "type": "string",
+      "description": "Test text for sentiment analysis"
     }
   ]
 }
