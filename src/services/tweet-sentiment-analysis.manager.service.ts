@@ -3,6 +3,10 @@
  * Motor unificado para análisis de sentimiento con manejo centralizado de errores
  */
 
+import type {
+  NaiveBayesTrainingExample,
+  SentimentLabel,
+} from "./naive-bayes-sentiment.service";
 import { Core } from "../core";
 import { logger } from "../lib/observability/logger";
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
@@ -227,19 +231,72 @@ export class TweetSentimentAnalysisManager {
   /**
    * Entrena el modelo Naive Bayes
    */
-  async trainNaiveBayes(trainingData: Array<{ text: string; label: string }>) {
-    // TODO: type model training result when implemented
+
+  /**
+   * Entrena el modelo Naive Bayes y retorna estadísticas del entrenamiento
+   */
+  async trainNaiveBayes(
+    trainingData: Array<{ text: string; label: string }>,
+  ): Promise<{
+    trained: boolean;
+    totalExamples: number;
+    trainingTimeMs: number;
+    error?: string;
+  }> {
     logger.info(`Training with ${trainingData.length} examples`);
-    return Promise.resolve();
+    const start = Date.now();
+    try {
+      // Convertir los labels a SentimentLabel si es necesario
+      const examples: NaiveBayesTrainingExample[] = trainingData.map((ex) => ({
+        text: ex.text,
+        label: ex.label as SentimentLabel,
+      }));
+      const engine = this.orchestrator.getEngine();
+      if (typeof engine.train === "function") {
+        engine.train(examples);
+      } else {
+        throw new Error("Engine does not support training");
+      }
+      const trainingTimeMs = Date.now() - start;
+      logger.info(`Naive Bayes model trained in ${trainingTimeMs}ms`);
+      return {
+        trained: true,
+        totalExamples: trainingData.length,
+        trainingTimeMs,
+      };
+    } catch (error) {
+      logger.error("Error training Naive Bayes model", error);
+      return {
+        trained: false,
+        totalExamples: trainingData.length,
+        trainingTimeMs: Date.now() - start,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   /**
    * Guarda el modelo Naive Bayes en archivo
    */
-  async saveNaiveBayesToFile(filePath: string) {
-    // TODO: implement serialization logic
-    logger.info(`Saving model to ${filePath}`);
-    return Promise.resolve();
+  /**
+   * Serializa y guarda el modelo Naive Bayes entrenado en disco
+   */
+  async saveNaiveBayesToFile(filePath: string): Promise<boolean> {
+    try {
+      const engine = this.orchestrator.getEngine();
+      const naiveBayes = engine.getNaiveBayesAnalyzer();
+      if (!naiveBayes || typeof naiveBayes.serialize !== "function") {
+        throw new Error("Naive Bayes analyzer does not support serialization");
+      }
+      const modelData = naiveBayes.serialize();
+      const fs = await import("fs/promises");
+      await fs.writeFile(filePath, JSON.stringify(modelData, null, 2), "utf-8");
+      logger.info(`Naive Bayes model saved to ${filePath}`);
+      return true;
+    } catch (error) {
+      logger.error("Error saving Naive Bayes model", error);
+      return false;
+    }
   }
 
   /**
