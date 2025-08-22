@@ -79,36 +79,79 @@ export class UserService {
   }
 
   /**
-   * Follow a user - TODO: Remove or adapt for marketing platform
+   * Follow a user - Adapted for marketing platform team collaboration
+   * Allows team members to follow each other for notifications and updates
    */
-
   async followUser(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followerId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followingId: string,
+    followerId: string,
+    followingId: string,
   ): Promise<boolean> {
-    // This functionality might not be needed for marketing analytics platform
-    throw new ApiError(
-      "NOT_IMPLEMENTED",
-      "Follow functionality not implemented for marketing platform",
-    );
+    try {
+      // Validate that both users exist and are active
+      const [follower, following] = await Promise.all([
+        this.userRepository.findById(followerId),
+        this.userRepository.findById(followingId),
+      ]);
+
+      if (!follower || !following) {
+        throw new ApiError("USER_NOT_FOUND", "One or both users not found");
+      }
+
+      if (!follower.isActive || !following.isActive) {
+        throw new ApiError("USER_INACTIVE", "Cannot follow inactive users");
+      }
+
+      // Prevent self-following
+      if (followerId === followingId) {
+        throw new ApiError("INVALID_OPERATION", "Users cannot follow themselves");
+      }
+
+      // Check if they're in the same organization (optional security check)
+      if (follower.organizationId !== following.organizationId) {
+        throw new ApiError(
+          "DIFFERENT_ORGANIZATION", 
+          "Can only follow users within the same organization"
+        );
+      }
+
+      // Use repository method to create the follow relationship
+      const result = await this.userRepository.followUser(followerId, followingId);
+      
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      console.error("Error in followUser:", error);
+      return false;
+    }
   }
 
   /**
-   * Unfollow a user - TODO: Remove or adapt for marketing platform
+   * Unfollow a user - Adapted for marketing platform team collaboration
+   * Allows team members to unfollow each other
    */
   async unfollowUser(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followerId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followingId: string,
+    followerId: string,
+    followingId: string,
   ): Promise<boolean> {
-    // This functionality might not be needed for marketing analytics platform
-    throw new ApiError(
-      "NOT_IMPLEMENTED",
-      "Unfollow functionality not implemented for marketing platform",
-    );
+    try {
+      // Basic validation
+      if (followerId === followingId) {
+        throw new ApiError("INVALID_OPERATION", "Users cannot unfollow themselves");
+      }
+
+      // Use repository method to remove the follow relationship
+      const result = await this.userRepository.unfollowUser(followerId, followingId);
+      
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      console.error("Error in unfollowUser:", error);
+      return false;
+    }
   }
 
   /**
@@ -184,11 +227,27 @@ export class UserService {
     organizationId: string,
     pagination: PaginationParams,
   ): Promise<PaginatedResponse<User>> {
-    // TODO: Implement organization-based user listing
-    const users: User[] = []; // await this.userRepository.findByOrganization(organizationId, pagination);
-    const total = 0; // await this.userRepository.countByOrganization(organizationId);
+    try {
+      // Use existing findMany method with organizationId filter
+      const users = await this.userRepository.findMany(
+        { organizationId },
+        {
+          limit: pagination.limit,
+          offset: (pagination.page - 1) * pagination.limit,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        }
+      );
+      
+      // Use existing count method with organizationId filter
+      const total = await this.userRepository.count({ organizationId });
 
-    return this.formatPaginatedResponse(users, pagination, total);
+      return this.formatPaginatedResponse(users, pagination, total);
+    } catch (error) {
+      console.error("Error getting organization users:", error);
+      // Return empty result on error
+      return this.formatPaginatedResponse([], pagination, 0);
+    }
   }
 
   // Private helper methods

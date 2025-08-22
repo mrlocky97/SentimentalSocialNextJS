@@ -138,7 +138,7 @@ export class SentimentService {
           tweet.content,
           tweet.language,
         );
-        
+
         // Store multi-language info in the keywords array for now
         // This is a conservative approach that doesn't modify the core AnalysisResult type
         if (
@@ -429,19 +429,21 @@ export class SentimentService {
       logger.info("Saving updated model...");
       try {
         // Use ModelPersistenceManager for proper model persistence
-        const { ModelPersistenceManager } = await import("./model-persistence.service");
+        const { ModelPersistenceManager } = await import(
+          "./model-persistence.service"
+        );
         const modelPersistence = new ModelPersistenceManager();
-        
+
         // Get the Naive Bayes service from orchestrator
         const naiveBayesService = sentimentManager
           .getOrchestrator()
           .getEngine()
           .getNaiveBayesAnalyzer();
-        
+
         if (!naiveBayesService) {
           throw new Error("Naive Bayes analyzer not available");
         }
-        
+
         // Calculate accuracy from test results (computed later)
         const testResults = TEST_EXAMPLES.map((ex) => {
           const result = sentimentManager.predictNaiveBayes(ex.text);
@@ -453,24 +455,34 @@ export class SentimentService {
             correct: result.label === ex.expected,
           };
         });
-        
-        const accuracy = (testResults.filter((r) => r.correct).length / testResults.length) * 100;
-        
+
+        const accuracy =
+          (testResults.filter((r) => r.correct).length / testResults.length) *
+          100;
+
         // Save model with metadata
         await modelPersistence.saveNaiveBayesModel(naiveBayesService, {
           version: "1.0",
           datasetSize: trainingData.length,
           accuracy: Math.round(accuracy * 100) / 100, // Round to 2 decimal places
-          features: ["text-analysis", "multi-language-support", "enhanced-training-v3"],
+          features: [
+            "text-analysis",
+            "multi-language-support",
+            "enhanced-training-v3",
+          ],
         });
-        
-        logger.info(`Model saved successfully with accuracy: ${accuracy.toFixed(2)}%`);
+
+        logger.info(
+          `Model saved successfully with accuracy: ${accuracy.toFixed(2)}%`,
+        );
       } catch (error) {
         logger.error("Failed to save model:", {
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
-        throw new Error(`Model persistence failed: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Model persistence failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
