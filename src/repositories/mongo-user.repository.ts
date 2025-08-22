@@ -357,6 +357,23 @@ export class MongoUserRepository implements UserRepository {
     }
   }
 
+  async getCampaignsCount(userId: string): Promise<number> {
+    try {
+      // Import campaign model to count campaigns created by this user
+      const { CampaignModel } = await import("../models/Campaign.model");
+      
+      if (!mongoose.isValidObjectId(userId)) return 0;
+      
+      const count = await CampaignModel.countDocuments({
+        $or: [{ createdBy: userId }, { assignedTo: userId }],
+      });
+      
+      return count;
+    } catch {
+      return 0;
+    }
+  }
+
   // Search
   async searchUsers(query: string, options?: QueryOptions): Promise<User[]> {
     try {

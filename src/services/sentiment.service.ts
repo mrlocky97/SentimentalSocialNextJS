@@ -3,7 +3,7 @@
 import { Core, SentimentUtils } from "../core";
 import { logger } from "../lib/observability/logger";
 import { sentimentManager } from "../lib/sentiment-manager";
-import { TweetSentimentAnalysis } from "../lib/sentiment/types";
+import { SentimentLabel, TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { ModelUpdateRequest, SentimentTestRequest } from "../types";
 import { Tweet } from "../types/twitter";
 import { cacheService } from "./cache.service";
@@ -131,11 +131,45 @@ export class SentimentService {
 
     const result = await sentimentManager.analyzeTweet(tweet, config);
 
-    // TODO: Add multi-language analysis support once types are updated
-    // if (tweet.language && tweet.language !== 'en') {
-    //   const multiLangResult = multiLanguageAnalyzer.analyzeMultiLanguage(tweet.content, tweet.language);
-    //   result.analysis.multiLanguage = multiLangResult;
-    // }
+    // Add multi-language analysis support for non-English tweets
+    if (tweet.language && tweet.language !== "en") {
+      try {
+        const multiLangResult = await this.analyzeMultiLanguageText(
+          tweet.content,
+          tweet.language,
+        );
+        
+        // Store multi-language info in the keywords array for now
+        // This is a conservative approach that doesn't modify the core AnalysisResult type
+        if (
+          multiLangResult.analysis.multiLanguage.confidence >
+          result.analysis.sentiment.confidence
+        ) {
+          // If multi-language analysis has higher confidence, update the sentiment
+          result.analysis.sentiment = {
+            ...result.analysis.sentiment,
+            label: multiLangResult.analysis.multiLanguage
+              .sentiment as SentimentLabel,
+            confidence: multiLangResult.analysis.multiLanguage.confidence,
+            score: multiLangResult.analysis.multiLanguage.score,
+          };
+
+          // Add language information to keywords
+          result.analysis.keywords = [
+            ...result.analysis.keywords,
+            `lang:${multiLangResult.detectedLanguage}`,
+            `multiLang:${multiLangResult.analysis.multiLanguage.sentiment}`,
+          ];
+        }
+      } catch (error) {
+        // Don't fail the entire analysis if multi-language fails
+        logger.warn("Multi-language analysis failed, using standard analysis", {
+          tweetId: tweet.id,
+          language: tweet.language,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
 
     return result;
   }

@@ -479,15 +479,19 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    * @returns Legacy format response
    */
   async analyzeTextLegacy(text: string, method: string = "hybrid") {
+    const startTime = Date.now();
+    
     // Get raw analysis result instead of API response
     const { SentimentMappers } = await import("./mappers");
     const request = SentimentMappers.Input.textToAnalysisRequest(text);
     const result = await this.analyzeText(request);
+    
+    const processingTime = Date.now() - startTime;
 
     return {
       ...SentimentMappers.Legacy.analysisToLegacyResult(result),
       method,
-      processingTime: 0, // TODO: track this properly
+      processingTime,
       version: result.version,
     };
   }

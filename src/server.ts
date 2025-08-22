@@ -385,14 +385,46 @@ async function startServer() {
         await manager.saveNaiveBayesToFile(modelPath);
 
         // Validate model performance
-        systemLogger.info("🧪 Model validation temporarily disabled...");
-        // TODO: Implement test dataset validation
-        // const { sentimentTestDataset } = await import("./data/test-datasets");
+        systemLogger.info("🧪 Validating model with test dataset...");
 
-        // if (sentimentTestDataset && sentimentTestDataset.length > 0) {
-        // We'll implement validation in the persistence manager
-        systemLogger.info("📊 Validation would be completed with test dataset");
-        // }
+        try {
+          const { sentimentTestDataset } = await import("./data/test-datasets");
+
+          if (sentimentTestDataset && sentimentTestDataset.length > 0) {
+            // Use the sentiment service to evaluate accuracy
+            const { SentimentService } = await import(
+              "./services/sentiment.service"
+            );
+            const sentimentService = new SentimentService();
+
+            const evaluation = await sentimentService.evaluateAccuracy({
+              testCases: sentimentTestDataset.map((item) => ({
+                text: item.text,
+                expectedSentiment: item.expectedSentiment,
+              })),
+              includeComparison: true,
+            });
+
+            systemLogger.info("📊 Model validation completed", {
+              totalTests: evaluation.overall.total,
+              accuracy: `${evaluation.overall.accuracy.toFixed(1)}%`,
+              correctPredictions: evaluation.overall.correct,
+            });
+
+            // Log comparison if available
+            if (evaluation.comparison) {
+              systemLogger.info("� Model comparison results", {
+                ruleBasedAccuracy: `${evaluation.comparison.rule.accuracy.toFixed(1)}%`,
+                naiveBayesAccuracy: `${evaluation.comparison.naive.accuracy.toFixed(1)}%`,
+                agreement: evaluation.comparison.agreement,
+              });
+            }
+          }
+        } catch (error) {
+          systemLogger.warn("⚠️ Model validation failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
 
         systemLogger.info("✅ Enhanced Sentiment Analysis System ready!");
       } catch (modelError) {

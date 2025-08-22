@@ -34,6 +34,7 @@ export interface UserRepository
   getFollowersCount(userId: string): Promise<number>;
   getFollowingCount(userId: string): Promise<number>;
   getPostsCount(userId: string): Promise<number>;
+  getCampaignsCount(userId: string): Promise<number>;
 
   // Search
   searchUsers(query: string, options?: QueryOptions): Promise<User[]>;

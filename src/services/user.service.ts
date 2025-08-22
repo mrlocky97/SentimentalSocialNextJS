@@ -47,8 +47,8 @@ export class UserService {
     const user = await this.userRepository.findById(userId);
     if (!user) return null;
 
-    // TODO: Implement getCampaignsCount in UserRepository
-    const campaignsCount = 0; // await this.userRepository.getCampaignsCount(userId);
+    // Get user's campaigns count
+    const campaignsCount = await this.userRepository.getCampaignsCount(userId);
 
     return {
       id: user.id,

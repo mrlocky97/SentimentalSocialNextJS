@@ -9,6 +9,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { appCache } from "../cache";
 import { appConfig } from "../config/app";
 import { logger } from "../observability/logger";
+import { defaultMetrics } from "../observability/metrics";
 
 /**
  * Compression middleware with optimization
@@ -114,8 +115,36 @@ export const performanceMiddleware = (
       res.setHeader("X-Response-Time", `${duration}ms`);
     }
 
-    // Record metrics
-    // TODO: Integrate metricsRegistry.recordRequest when implementation ready
+    // Record metrics in the global metrics registry
+    try {
+      // Extract route from URL (remove query params and normalize)
+      const route = url.split("?")[0].replace(/\/\d+/g, "/:id");
+
+      // Record request count
+      defaultMetrics.httpRequestsTotal.inc(1, {
+        method,
+        status_code: status.toString(),
+        route,
+      });
+
+      // Record request duration
+      defaultMetrics.httpRequestDuration.observe(duration, {
+        method,
+        route,
+      });
+
+      // Record errors (4xx and 5xx status codes)
+      if (status >= 400) {
+        defaultMetrics.httpRequestsErrors.inc(1, {
+          method,
+          status_code: status.toString(),
+          route,
+        });
+      }
+    } catch (error) {
+      // Don't let metrics recording break the response
+      logger.error("Error recording request metrics", error as Error);
+    }
 
     // Log slow requests (> 1 second)
     if (duration > 1000) {
