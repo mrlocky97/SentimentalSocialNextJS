@@ -370,4 +370,43 @@ export class MongoCampaignRepository {
       throw new Error("SEARCH_CAMPAIGNS_ERROR");
     }
   }
+
+  /**
+   * Find campaigns by user ID with pagination
+   */
+  async findByUserId(
+    userId: string,
+    pagination: { offset: number; limit: number } = { offset: 0, limit: 20 },
+  ): Promise<ICampaignDocument[]> {
+    try {
+      const campaigns = await CampaignModel.find({
+        $or: [{ createdBy: userId }, { assignedTo: userId }],
+      })
+        .sort({ createdAt: -1 })
+        .skip(pagination.offset)
+        .limit(pagination.limit)
+        .exec();
+
+      return campaigns;
+    } catch (error) {
+      console.error("Error finding campaigns by user ID:", error);
+      throw new Error("FIND_CAMPAIGNS_BY_USER_ERROR");
+    }
+  }
+
+  /**
+   * Count campaigns by user ID
+   */
+  async countByUserId(userId: string): Promise<number> {
+    try {
+      const count = await CampaignModel.countDocuments({
+        $or: [{ createdBy: userId }, { assignedTo: userId }],
+      });
+
+      return count;
+    } catch (error) {
+      console.error("Error counting campaigns by user ID:", error);
+      throw new Error("COUNT_CAMPAIGNS_BY_USER_ERROR");
+    }
+  }
 }

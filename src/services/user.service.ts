@@ -1,13 +1,10 @@
 /**
  * User Service
- * Business logic for user operations following Single Responsibility Princip  async unfollowUser(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followerId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _followingId: string
-  ): Promise<boolean> {*/
+ * Business logic for user operations following Single Responsibility Principle
+ */
 
 import { UserRepository } from "../repositories/user.repository";
+import { MongoCampaignRepository } from "../repositories/mongo-campaign.repository";
 import { PaginatedResponse, PaginationParams } from "../types/api";
 import {
   CreateUserRequest,
@@ -17,7 +14,10 @@ import {
 } from "../types/user";
 
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    private campaignRepository: MongoCampaignRepository
+  ) {}
 
   /**
    * Create a new user
@@ -135,11 +135,46 @@ export class UserService {
     userId: string,
     pagination: PaginationParams,
   ): Promise<PaginatedResponse<Record<string, unknown>>> {
-    // TODO: Implement getUserCampaigns to return user's marketing campaigns
-    const campaigns: Record<string, unknown>[] = []; // await this.campaignRepository.findByUserId(userId, pagination);
-    const total = 0; // await this.campaignRepository.countByUserId(userId);
+    try {
+      // Convert page-based pagination to offset-based for repository
+      const offset = (pagination.page - 1) * pagination.limit;
+      
+      // Find campaigns where user is either creator or assigned
+      const campaigns = await this.campaignRepository.findByUserId(
+        userId,
+        { offset, limit: pagination.limit }
+      );
+      
+      // Get total count for pagination
+      const total = await this.campaignRepository.countByUserId(userId);
 
-    return this.formatPaginatedResponse(campaigns, pagination, total);
+      // Convert documents to plain objects for API response
+      const campaignData = campaigns.map(campaign => ({
+        id: campaign._id,
+        name: campaign.name,
+        description: campaign.description,
+        status: campaign.status,
+        type: campaign.type,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+        hashtags: campaign.hashtags,
+        keywords: campaign.keywords,
+        mentions: campaign.mentions,
+        dataSources: campaign.dataSources,
+        createdBy: campaign.createdBy,
+        assignedTo: campaign.assignedTo,
+        organizationId: campaign.organizationId,
+        stats: campaign.stats,
+        createdAt: campaign.createdAt,
+        updatedAt: campaign.updatedAt,
+      }));
+
+      return this.formatPaginatedResponse(campaignData, pagination, total);
+    } catch (error) {
+      console.error("Error getting user campaigns:", error);
+      // Return empty result on error
+      return this.formatPaginatedResponse([], pagination, 0);
+    }
   }
 
   /**
