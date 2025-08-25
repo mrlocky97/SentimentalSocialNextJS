@@ -363,7 +363,8 @@ setImmediate(() => {
 });
 ```
 
-### Performance Dashboard
+### Performance Dashboard (removido)
+La sección del dashboard de rendimiento ha sido eliminada; la interfaz ya no forma parte del proyecto.
 
 #### Real-time Monitoring
 

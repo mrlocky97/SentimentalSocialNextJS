@@ -546,8 +546,8 @@ Endpoints disponibles para monitoreo:
 # Métricas Prometheus (para Grafana)
 GET /metrics
 
-# Métricas en JSON (dashboards internos)
-GET /metrics/json
+# Métricas en JSON (dashboards internos) (removido)
+# Nota: La interfaz de dashboard fue eliminada. Las APIs de observabilidad JSON para frontends ya no están disponibles.
 
 # Métricas específicas
 GET /metrics/system      # CPU, memoria

@@ -332,7 +332,7 @@ export class AICampaignAssistantService {
     relatedHelp: Array<{ title: string; url: string }>;
   } {
     const helpContent = {
-      dashboard: {
+      overview: {
         tips: [
           "Use filters to focus on specific time periods or sentiment ranges",
           "Click on any chart element to drill down into detailed data",
@@ -360,7 +360,7 @@ export class AICampaignAssistantService {
 
     const pageHelp =
       helpContent[currentPage as keyof typeof helpContent] ||
-      helpContent.dashboard;
+      helpContent.overview;
 
     return {
       tips: pageHelp.tips,

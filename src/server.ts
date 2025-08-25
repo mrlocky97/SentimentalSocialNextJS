@@ -41,7 +41,6 @@ import DatabaseConnection from "./lib/database/connection";
 import adminRoutes from "./routes/admin";
 import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
-import configureDashboardRoutes from "./routes/dashboard.routes";
 import configureHealthRoutes from "./routes/health.routes";
 import configureMetricsRoutes from "./routes/metrics.routes";
 import { scrapingRoutes } from "./routes/scraping";
@@ -234,7 +233,7 @@ app.use(
 );
 app.use("/api/v1/security", authRateLimit, securityRoutes);
 app.use("/api/v1/admin", authRateLimit, adminRoutes);
-app.use("/api/v1/dashboard", analyticsRateLimit, configureDashboardRoutes());
+// Dashboard feature removed per request
 
 // API info endpoint
 app.get("/api/v1", (req, res) => {
@@ -252,7 +251,6 @@ app.get("/api/v1", (req, res) => {
       sentiment: "/api/v1/sentiment",
       security: "/api/v1/security",
       admin: "/api/v1/admin",
-      dashboard: "/api/v1/dashboard",
       health: "/health",
       metrics: "/metrics",
     },
@@ -263,7 +261,7 @@ app.get("/api/v1", (req, res) => {
       "Real-time Sentiment Analysis",
       "Advanced Analytics & Reporting",
       "Data Export Capabilities",
-      "Real-time Observability Dashboard",
+  // Dashboard removed per user request
       "Comprehensive Health Monitoring",
       "Performance Metrics & Alerting",
     ],

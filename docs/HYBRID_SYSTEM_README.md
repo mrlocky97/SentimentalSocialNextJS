@@ -342,7 +342,7 @@ if (rbLabel === nbLabel) {
 
 ### 🚀 **Próximos Pasos Sugeridos**
 
-1. **📊 Dashboard de Métricas**: Interfaz para monitoreo en tiempo real
+1. **📊 Dashboard de Métricas**: (removido) La interfaz de dashboard fue eliminada del proyecto.
 2. **🔄 Auto-reentrenamiento**: Pipeline automático con nuevos datos
 3. **🌐 Más Idiomas**: Expandir a PT, IT, NL
 4. **📈 Deep Learning**: Explorar BERT/Transformers para casos complejos

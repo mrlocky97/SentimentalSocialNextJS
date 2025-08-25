@@ -86,7 +86,7 @@ El servidor se encuentra ejecutándose correctamente en el puerto 3001 con todas
 | `/api/v1/sentiment/analyze-text` | ✅     | Análisis básico de sentimientos     |
 | `/api/v1/sentiment/demo`         | ✅     | Demo con tweets de ejemplo          |
 | `/api/v1/sentiment/model-status` | ✅     | Estado de los modelos ML            |
-| `/admin/monitoring/performance`  | ✅     | Métricas de rendimiento             |
+| `/admin/monitoring/performance`  | ❌ (removido) | La interfaz de dashboard fue eliminada del proyecto |
 
 ## 📈 Métricas de Rendimiento
 
@@ -111,7 +111,7 @@ El servidor se encuentra ejecutándose correctamente en el puerto 3001 con todas
 2. **Testing de Carga**: Realizar pruebas con múltiples requests simultáneos
 3. **Configuración de Producción**: Ajustar variables de entorno para prod
 4. **Documentación**: La API docs está completa en `/api-docs`
-5. **Monitoreo**: Dashboard de métricas disponible en `/admin/monitoring/performance`
+5. **Monitoreo**: La interfaz de dashboard fue eliminada; use `/metrics` y herramientas externas (Prometheus/Grafana) para monitoreo.
 
 ## 🏆 Conclusión
 
