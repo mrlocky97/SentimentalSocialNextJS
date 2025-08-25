@@ -3,15 +3,16 @@
  * Motor unificado para análisis de sentimiento con manejo centralizado de errores
  */
 
+import { Core } from "../core";
+import { logger } from "../lib/observability/logger";
+import { metricsRegistry } from "../lib/observability/metrics";
+import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
+import { TweetSentimentAnalysis } from "../lib/sentiment/types";
+import { Tweet } from "../types/twitter";
 import type {
   NaiveBayesTrainingExample,
   SentimentLabel,
 } from "./naive-bayes-sentiment.service";
-import { Core } from "../core";
-import { logger } from "../lib/observability/logger";
-import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
-import { TweetSentimentAnalysis } from "../lib/sentiment/types";
-import { Tweet } from "../types/twitter";
 
 export class TweetSentimentAnalysisManager {
   private orchestrator: SentimentAnalysisOrchestrator;
@@ -83,7 +84,37 @@ export class TweetSentimentAnalysisManager {
     const tweetDTO = Core.Mappers.Tweet.map(tweet);
 
     try {
+      const start = Date.now();
       const result = await this.orchestrator.analyzeText(tweetDTO);
+      const duration = Date.now() - start;
+
+      // Update metrics
+      try {
+        const totalMetric = metricsRegistry.getMetric(
+          "sentiment_analysis_total",
+        );
+        totalMetric?.inc(1);
+        const durationMetric = metricsRegistry.getMetric(
+          "sentiment_analysis_duration_ms",
+        );
+        durationMetric?.observe(duration);
+
+        // Compute average confidence gauge (custom metric)
+        const confidence =
+          (result.sentiment && result.sentiment.confidence) || 0;
+        const confidenceMetric = metricsRegistry.getOrCreateMetric({
+          name: "sentiment_confidence_avg",
+          type: "gauge" as any,
+          help: "Average sentiment confidence (approx)",
+        });
+
+        // We will store the latest value; a real average should be calculated server-side
+        confidenceMetric.set(confidence);
+      } catch (metricErr) {
+        logger.debug("Failed to update sentiment metrics", {
+          error: metricErr,
+        });
+      }
 
       // Convertimos el resultado a TweetSentimentAnalysis usando el mapper
       return Core.Mappers.SentimentAnalysis.map(tweet, result, {

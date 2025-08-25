@@ -71,9 +71,15 @@ export class DashboardService {
   > = new Map();
   private readonly maxHistoryPoints = 100; // Keep last 100 data points
   private updateInterval: NodeJS.Timeout | null = null;
+  private persistInterval: NodeJS.Timeout | null = null;
+  private persistEnabled: boolean = false;
 
   private constructor() {
     this.initializeHistoricalTracking();
+    this.persistEnabled = process.env.PERSIST_DASHBOARD_METRICS === "true";
+    if (this.persistEnabled) {
+      this.initializePersistenceTask();
+    }
   }
 
   public static getInstance(): DashboardService {
@@ -98,7 +104,7 @@ export class DashboardService {
   /**
    * Collect a single historical data point
    */
-  private collectHistoricalDataPoint(): void {
+  private async collectHistoricalDataPoint(): Promise<void> {
     try {
       const now = new Date();
       const systemMetrics = metricsRegistry.getSystemMetrics();
@@ -135,6 +141,18 @@ export class DashboardService {
           series.shift();
         }
       });
+      // If persistence enabled, save a compact set of points to DB
+      if (this.persistEnabled) {
+        try {
+          // Lazy import to avoid circular deps when DB not used
+          const repo = await import("../../repositories/metrics.repository");
+          Object.entries(dataPoints).forEach(([key, value]) => {
+            repo.saveMetricPoint(key, Number(value || 0), new Date());
+          });
+        } catch (error) {
+          systemLogger.error("Error persisting metric points", error as Error);
+        }
+      }
     } catch (error) {
       systemLogger.error(
         "Error collecting historical data point",
@@ -342,8 +360,16 @@ export class DashboardService {
   }
 
   private calculateAverageResponseTime(): number {
-    // This would be calculated from histogram data in a real implementation
-    return 150; // Placeholder
+    const histogram = metricsRegistry.getMetric("http_request_duration_ms");
+    if (!histogram) return 0;
+
+    const values = histogram.getValues();
+    if (values.length === 0) return 0;
+
+    // Average of recent values (last 100)
+    const recent = values.slice(-100);
+    const sum = recent.reduce((acc, v) => acc + v.value, 0);
+    return Math.round((sum / recent.length) * 100) / 100;
   }
 
   private calculateErrorRate(): number {
@@ -388,8 +414,12 @@ export class DashboardService {
   }
 
   private getSentimentAverageConfidence(): number {
-    // This would be calculated from sentiment metrics in a real implementation
-    return 85.5; // Placeholder
+    // Attempt to calculate average confidence from recently stored custom metric
+    const metric = metricsRegistry.getMetric("sentiment_confidence_avg");
+    if (metric) {
+      return Math.round((metric.getValue() || 0) * 100) / 100;
+    }
+    return 0;
   }
 
   private getSentimentAverageTime(): number {
@@ -410,10 +440,53 @@ export class DashboardService {
   }
 
   /**
+   * Initialize periodic persistence cleanup task
+   */
+  private initializePersistenceTask(): void {
+    // Persist old points to DB every minute (best-effort)
+    this.persistInterval = setInterval(async () => {
+      try {
+        // Keep in-memory history trimmed
+        const now = Date.now();
+        const cutoff = new Date(now - 24 * 60 * 60 * 1000); // 24h
+        import("../../repositories/metrics.repository")
+          .then((repo) => repo.clearOldMetrics(cutoff))
+          .catch((err) =>
+            systemLogger.error(
+              "Error importing metrics repository",
+              err as Error,
+            ),
+          );
+      } catch (error) {
+        systemLogger.error(
+          "Error during metrics persistence cleanup",
+          error as Error,
+        );
+      }
+    }, 60 * 1000);
+  }
+
+  /**
    * Get dashboard overview
    */
-  public getOverview(): any {
+  public async getOverview(): Promise<any> {
     const currentMetrics = this.getCurrentMetrics();
+
+    // Resolve DB health asynchronously using dynamic import to avoid require()
+    let databaseStatus: "up" | "degraded" | "unknown" = "unknown";
+    try {
+      const dbModule = await import("../database/connection");
+      const db = dbModule.default;
+      databaseStatus =
+        db && typeof db.isHealthy === "function"
+          ? db.isHealthy()
+            ? "up"
+            : "degraded"
+          : "unknown";
+    } catch (err) {
+      systemLogger.error("Error checking DB health", err as Error);
+      databaseStatus = "unknown";
+    }
 
     return {
       summary: {
@@ -431,7 +504,7 @@ export class DashboardService {
       },
       services: {
         api: currentMetrics.system.health === "critical" ? "down" : "up",
-        database: "up", // This could be enhanced with actual DB health check
+        database: databaseStatus,
         sentiment: "up",
         cache: currentMetrics.cache.hitRate > 0 ? "up" : "degraded",
       },
@@ -483,6 +556,10 @@ export class DashboardService {
       this.updateInterval = null;
     }
     this.historicalData.clear();
+    if (this.persistInterval) {
+      clearInterval(this.persistInterval);
+      this.persistInterval = null;
+    }
     systemLogger.info("Dashboard service cleaned up");
   }
 }

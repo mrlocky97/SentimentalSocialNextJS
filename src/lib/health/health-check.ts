@@ -8,6 +8,7 @@ import { systemLogger } from "../observability/logger";
 import { container, TOKENS } from "../dependency-injection/container";
 import { AdvancedCacheSystem } from "../cache/advanced-cache";
 import { SentimentAnalysisEngine } from "../sentiment/engine";
+import DatabaseConnection from "../database/connection";
 
 export enum HealthStatus {
   HEALTHY = "healthy",
@@ -386,6 +387,55 @@ export class HealthChecks {
               error: (error as Error).name,
               workingDirectory: process.cwd(),
             },
+          };
+        }
+      },
+    };
+  }
+
+  /**
+   * Check MongoDB connection health
+   */
+  static mongoDB(): HealthCheck {
+    return {
+      name: "mongodb",
+      critical: true,
+      timeout: 2000,
+      async check(): Promise<HealthCheckResult> {
+        const startTime = performance.now();
+        try {
+          const connected = DatabaseConnection.isHealthy();
+          const duration = performance.now() - startTime;
+
+          if (!connected) {
+            return {
+              name: "mongodb",
+              status: HealthStatus.UNHEALTHY,
+              message: "MongoDB not connected",
+              duration,
+              timestamp: new Date(),
+              details: await DatabaseConnection.healthCheck(),
+            };
+          }
+
+          const details = await DatabaseConnection.healthCheck();
+          return {
+            name: "mongodb",
+            status: HealthStatus.HEALTHY,
+            message: "MongoDB connection healthy",
+            duration,
+            timestamp: new Date(),
+            details,
+          };
+        } catch (error) {
+          const duration = performance.now() - startTime;
+          return {
+            name: "mongodb",
+            status: HealthStatus.UNHEALTHY,
+            message: `MongoDB health check error: ${(error as Error).message}`,
+            duration,
+            timestamp: new Date(),
+            details: { error: (error as Error).message },
           };
         }
       },
