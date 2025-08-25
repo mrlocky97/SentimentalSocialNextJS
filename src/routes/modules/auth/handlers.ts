@@ -13,7 +13,7 @@ import {
   ValidationError,
 } from "../../../core/errors";
 import { tokenBlacklistService } from "../../../lib/security/token-blacklist";
-import { AuthenticatedRequest } from "../../../middleware/express-auth";
+import { AuthenticatedRequest, verifyRefreshToken, generateToken } from "../../../middleware/express-auth";
 import { AuthService } from "../../../services/auth.service";
 import { LoginRequest, RegisterRequest } from "../../../types/auth";
 
@@ -64,7 +64,8 @@ export const registerHandler = async (req: Request, res: Response) => {
         displayName: result.user.displayName,
         username: result.user.username,
       },
-      token: result.accessToken,
+  token: result.accessToken,
+  refreshToken: (result as any).refreshToken,
     });
   } catch (error) {
     if (
@@ -121,7 +122,8 @@ export const loginHandler = async (req: Request, res: Response) => {
         displayName: result.user.displayName,
         username: result.user.username,
       },
-      token: result.accessToken,
+  token: result.accessToken,
+  refreshToken: (result as any).refreshToken,
     });
   } catch (error) {
     if (
@@ -177,11 +179,11 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       [key: string]: unknown;
     }
 
-    // Verify refresh token
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET || "fallback-refresh-secret",
-    ) as RefreshTokenPayload;
+    // Verify refresh token using shared helper (ensures same secret as generation)
+    const decoded = verifyRefreshToken(refreshToken) as RefreshTokenPayload | null;
+    if (!decoded) {
+      throw new ValidationError("Invalid refresh token", ErrorCode.INVALID_TOKEN);
+    }
 
     // Check if token is blacklisted
     if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
@@ -191,12 +193,14 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       );
     }
 
-    // Generate new access token
-    const newAccessToken = jwt.sign(
-      { userId: decoded.userId, email: decoded.email },
-      process.env.JWT_SECRET || "fallback-secret",
-      { expiresIn: "15m" },
-    );
+    // Generate new access token using generator to keep signing consistent
+    const tokenPayload = {
+      id: (decoded as any).id || (decoded as any).userId,
+      email: decoded.email,
+      role: (decoded as any).role || "analyst",
+      fullName: (decoded as any).fullName || "",
+    };
+    const newAccessToken = generateToken(tokenPayload as any);
 
     ResponseHelper.success(res, {
       message: "Token refreshed successfully",

@@ -5,7 +5,7 @@
 
 import { Core } from "../core";
 import { logger } from "../lib/observability/logger";
-import { metricsRegistry } from "../lib/observability/metrics";
+import { metricsRegistry, defaultMetrics } from "../lib/observability/metrics";
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
 import { TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { Tweet } from "../types/twitter";
@@ -102,14 +102,33 @@ export class TweetSentimentAnalysisManager {
         // Compute average confidence gauge (custom metric)
         const confidence =
           (result.sentiment && result.sentiment.confidence) || 0;
-        const confidenceMetric = metricsRegistry.getOrCreateMetric({
-          name: "sentiment_confidence_avg",
-          type: "gauge" as any,
-          help: "Average sentiment confidence (approx)",
-        });
+        try {
+          defaultMetrics.tweetSentimentConfidence.set(confidence, {
+            language: result.language || "unknown",
+          });
+        } catch (err) {
+          logger.debug("Failed to set tweet_sentiment_confidence_avg", { err });
+        }
 
-        // We will store the latest value; a real average should be calculated server-side
-        confidenceMetric.set(confidence);
+        // Increment per-tweet sentiment counter
+        try {
+          const label = result.sentiment?.label || "neutral";
+          defaultMetrics.tweetSentimentTotal.inc(1, {
+            sentiment: label,
+            language: result.language || "unknown",
+          });
+        } catch (err) {
+          logger.debug("Failed to increment tweet_sentiment_total", { err });
+        }
+
+        // Observe per-tweet latency
+        try {
+          defaultMetrics.tweetSentimentLatency.observe(duration, {
+            language: result.language || "unknown",
+          });
+        } catch (err) {
+          logger.debug("Failed to observe tweet_sentiment_latency_ms", { err });
+        }
       } catch (metricErr) {
         logger.debug("Failed to update sentiment metrics", {
           error: metricErr,

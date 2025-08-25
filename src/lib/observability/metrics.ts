@@ -615,6 +615,49 @@ export const defaultMetrics = {
     labels: ["error_type"],
   }),
 
+  // Scraping & per-tweet sentiment metrics
+  tweetsScrapedTotal: metricsRegistry.register({
+    name: "tweets_scraped_total",
+    type: MetricType.COUNTER,
+    help: "Total number of tweets scraped",
+    labels: ["source", "queryType"],
+  }),
+
+  tweetsProcessedTotal: metricsRegistry.register({
+    name: "tweets_processed_total",
+    type: MetricType.COUNTER,
+    help: "Total number of tweets processed (after normalization/filters)",
+    labels: ["pipeline"],
+  }),
+
+  tweetSentimentTotal: metricsRegistry.register({
+    name: "tweet_sentiment_total",
+    type: MetricType.COUNTER,
+    help: "Total number of tweet sentiment classifications",
+    labels: ["sentiment", "language"],
+  }),
+
+  tweetSentimentConfidence: metricsRegistry.register({
+    name: "tweet_sentiment_confidence_avg",
+    type: MetricType.GAUGE,
+    help: "Latest sentiment confidence value per language",
+    labels: ["language"],
+  }),
+
+  tweetSentimentLatency: metricsRegistry.register({
+    name: "tweet_sentiment_latency_ms",
+    type: MetricType.HISTOGRAM,
+    help: "Latency for per-tweet sentiment processing in milliseconds",
+    labels: ["language"],
+  }),
+
+  tweetSentimentErrors: metricsRegistry.register({
+    name: "tweet_sentiment_errors_total",
+    type: MetricType.COUNTER,
+    help: "Total number of errors while processing tweet sentiment",
+    labels: ["error_type"],
+  }),
+
   memoryUsage: metricsRegistry.register({
     name: "memory_usage_bytes",
     type: MetricType.GAUGE,

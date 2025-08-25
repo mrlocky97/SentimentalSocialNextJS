@@ -12,6 +12,7 @@ import {
   ScrapingResult,
   Tweet,
 } from "../types/twitter";
+import { defaultMetrics } from "../lib/observability/metrics";
 
 // Expresiones regulares precompiladas para detección de idioma
 const LANGUAGE_REGEX = {
@@ -182,6 +183,15 @@ export class TwitterRealScraperService {
         scrapedTweets.slice(0, maxTweets),
         options,
       );
+      // Record scraped tweets (batch)
+      try {
+        defaultMetrics.tweetsScrapedTotal.inc(scrapedTweets.length, {
+          source: "twitter",
+          queryType: "hashtag",
+        });
+      } catch (err) {
+        console.warn("Failed to record tweets_scraped_total metric", err);
+      }
       this.requestCount++;
 
       return {
@@ -226,6 +236,15 @@ export class TwitterRealScraperService {
         scrapedTweets.slice(0, maxTweets),
         options,
       );
+      // Record scraped tweets (batch)
+      try {
+        defaultMetrics.tweetsScrapedTotal.inc(scrapedTweets.length, {
+          source: "twitter",
+          queryType: "user",
+        });
+      } catch (err) {
+        console.warn("Failed to record tweets_scraped_total metric", err);
+      }
       this.requestCount++;
 
       return {
@@ -343,7 +362,7 @@ export class TwitterRealScraperService {
     scrapedData: ScrapedTweetData[],
     options: ScrapingOptions,
   ): Tweet[] {
-    const now = new Date();
+  const now = new Date();
     const maxAge = options.maxAgeHours
       ? options.maxAgeHours * 60 * 60 * 1000
       : Infinity;
@@ -373,11 +392,25 @@ export class TwitterRealScraperService {
         }
 
         tweets.push(tweet);
+        try {
+          defaultMetrics.tweetsProcessedTotal.inc(1, { pipeline: "default" });
+        } catch (err) {
+          // non-fatal metric failure
+        }
       } catch (error) {
         console.warn(
           `Error processing tweet: ${error instanceof Error ? error.message : error}`,
         );
       }
+    }
+
+    // Observe batch processing duration (best-effort)
+    try {
+      // Not a perfect mapping, but helps track processing latency
+      const duration = Date.now() - now.getTime();
+      defaultMetrics.tweetSentimentLatency.observe(duration, { language: "unknown" });
+    } catch (err) {
+      // ignore metric errors
     }
 
     return tweets;
