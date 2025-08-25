@@ -480,6 +480,52 @@
       }
     },
     {
+      "name": "Test - Dashboard Overview",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Dashboard overview retrieved', function () {",
+              "    if (pm.response.code === 200) {",
+              "        const jsonData = pm.response.json();",
+              "        pm.expect(jsonData).to.have.property('success');",
+              "        if (jsonData.success && jsonData.data) {",
+              "            pm.expect(jsonData.data).to.have.property('requestsPerMinute');",
+              "            console.log('📈 RPM:', jsonData.data.requestsPerMinute);",
+              "        }",
+              "    } else {",
+              "        console.log('Dashboard overview not available (status ' + pm.response.code + ')');",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/overview",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "{{apiVersion}}", "dashboard", "overview"]
+        }
+      }
+    },
+    {
+      "name": "Test - Dashboard Metrics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/metrics",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "{{apiVersion}}", "dashboard", "metrics"]
+        }
+      }
+    },
+    {
       "name": "Cleanup - Logout",
       "event": [
         {

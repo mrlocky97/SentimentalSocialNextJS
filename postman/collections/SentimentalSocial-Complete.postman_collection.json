@@ -2219,6 +2219,128 @@
         }
       ]
     }
+    ,
+    {
+      "name": "📈 DASHBOARD",
+      "description": "Dashboard endpoints for metrics, historical data and streaming",
+      "item": [
+        {
+          "name": "Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "overview"]
+            },
+            "description": "Get dashboard overview metrics"
+          }
+        },
+        {
+          "name": "Dashboard Current Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "metrics"]
+            },
+            "description": "Get current in-memory metrics snapshot"
+          }
+        },
+        {
+          "name": "Dashboard Historical - 1h",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/historical?timeRange=1h",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "historical"],
+              "query": [
+                { "key": "timeRange", "value": "1h" }
+              ]
+            },
+            "description": "Get historical metrics for last 1 hour"
+          }
+        },
+        {
+          "name": "Dashboard Historical - 6h",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/historical?timeRange=6h",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "historical"],
+              "query": [
+                { "key": "timeRange", "value": "6h" }
+              ]
+            },
+            "description": "Get historical metrics for last 6 hours"
+          }
+        },
+        {
+          "name": "Dashboard Historical - 24h",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/historical?timeRange=24h",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "historical"],
+              "query": [
+                { "key": "timeRange", "value": "24h" }
+              ]
+            },
+            "description": "Get historical metrics for last 24 hours"
+          }
+        },
+        {
+          "name": "Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "summary"]
+            },
+            "description": "Get dashboard aggregated summary"
+          }
+        },
+        {
+          "name": "Dashboard Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "info"]
+            },
+            "description": "Get static info about dashboard feature"
+          }
+        },
+        {
+          "name": "Dashboard Stream (SSE) - connect",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "text/event-stream" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/stream",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "stream"]
+            },
+            "description": "Open SSE stream for dashboard updates (use Postman stream viewer)"
+          }
+        }
+      ]
+    }
   ],
   "variable": [
     {
