@@ -4,148 +4,253 @@
  */
 
 import { CampaignCategory } from "../enums/campaign.enum";
+import { CampaignTemplateModel } from "../models/CampaignTemplate.model";
 import { CampaignTemplate, CampaignType, DataSource } from "../types/campaign";
 
 export class CampaignTemplatesService {
+  // Default templates used for seeding and fallback
+  private static defaultTemplates: CampaignTemplate[] = [
+    {
+      id: "brand-monitoring",
+      name: "Brand Monitoring",
+      description:
+        "Monitor your brand mentions and sentiment across social media",
+      type: "mention" as CampaignType,
+      category: CampaignCategory.brandMonitoring,
+      defaultDuration: 30,
+      defaultMaxTweets: 50000,
+      defaultDataSources: ["twitter", "instagram"] as DataSource[],
+      defaultAnalysis: {
+        sentiment: true,
+        emotion: true,
+        topics: false,
+        influencer: true,
+      },
+      suggestedHashtags: ["#yourbrand"],
+      suggestedKeywords: ["your brand name", "product name", "company"],
+      suggestedLanguages: ["en", "es"],
+      createdAt: new Date(),
+      isActive: true,
+    },
+    {
+      id: "product-launch",
+      name: "Product Launch Analysis",
+      description: "Analyze reception and sentiment around your product launch",
+      type: "hashtag" as CampaignType,
+      category: CampaignCategory.marketing,
+      defaultDuration: 14,
+      defaultMaxTweets: 25000,
+      defaultDataSources: ["twitter", "instagram", "tiktok"] as DataSource[],
+      defaultAnalysis: {
+        sentiment: true,
+        emotion: true,
+        topics: true,
+        influencer: true,
+      },
+      suggestedHashtags: ["#newproduct", "#launch", "#innovation"],
+      suggestedKeywords: ["product name", "launch event", "available now"],
+      suggestedLanguages: ["en"],
+      createdAt: new Date(),
+      isActive: true,
+    },
+    {
+      id: "competitor-analysis",
+      name: "Competitor Analysis",
+      description: "Monitor competitor activity and market positioning",
+      type: "competitor" as CampaignType,
+      category: CampaignCategory.competitorAnalysis,
+      defaultDuration: 60,
+      defaultMaxTweets: 100000,
+      defaultDataSources: ["twitter", "linkedin"] as DataSource[],
+      defaultAnalysis: {
+        sentiment: true,
+        emotion: false,
+        topics: true,
+        influencer: true,
+      },
+      suggestedHashtags: ["#competitor1", "#competitor2"],
+      suggestedKeywords: ["competitor name", "vs competitor", "alternative"],
+      suggestedLanguages: ["en", "es"],
+      createdAt: new Date(),
+      isActive: true,
+    },
+    {
+      id: "crisis-management",
+      name: "Crisis Management",
+      description: "Real-time monitoring during PR crises or negative events",
+      type: "keyword" as CampaignType,
+      category: CampaignCategory.crisisManagement,
+      defaultDuration: 7,
+      defaultMaxTweets: 10000,
+      defaultDataSources: ["twitter"] as DataSource[],
+      defaultAnalysis: {
+        sentiment: true,
+        emotion: true,
+        topics: true,
+        influencer: true,
+      },
+      suggestedHashtags: ["#crisis", "#issue"],
+      suggestedKeywords: ["brand issue", "controversy", "problem"],
+      suggestedLanguages: ["en", "es"],
+      createdAt: new Date(),
+      isActive: true,
+    },
+    {
+      id: "campaign-performance",
+      name: "Marketing Campaign Performance",
+      description: "Track performance of specific marketing campaigns",
+      type: "hashtag" as CampaignType,
+      category: CampaignCategory.marketing,
+      defaultDuration: 21,
+      defaultMaxTweets: 75000,
+      defaultDataSources: ["twitter", "instagram", "tiktok"] as DataSource[],
+      defaultAnalysis: {
+        sentiment: true,
+        emotion: true,
+        topics: true,
+        influencer: true,
+      },
+      suggestedHashtags: ["#campaignname", "#promotion", "#sale"],
+      suggestedKeywords: ["campaign slogan", "promotion code", "limited time"],
+      suggestedLanguages: ["en", "es"],
+      createdAt: new Date(),
+      isActive: true,
+    },
+  ];
+
   /**
-   * Get all available campaign templates
+   * Ensure DB has default templates seeded. Safe to call on startup.
    */
-  static getTemplates(): CampaignTemplate[] {
-    return [
-      {
-        id: "brand-monitoring",
-        name: "Brand Monitoring",
-        description:
-          "Monitor your brand mentions and sentiment across social media",
-        type: "mention" as CampaignType,
-        category: CampaignCategory.brandMonitoring,
-        defaultDuration: 30, // 30 days
-        defaultMaxTweets: 50000,
-        defaultDataSources: ["twitter", "instagram"] as DataSource[],
-        defaultAnalysis: {
-          sentiment: true,
-          emotion: true,
-          topics: false,
-          influencer: true,
-        },
-        suggestedHashtags: ["#yourbrand"],
-        suggestedKeywords: ["your brand name", "product name", "company"],
-        suggestedLanguages: ["en", "es"],
-        createdAt: new Date(),
-        isActive: true,
-      },
-      {
-        id: "product-launch",
-        name: "Product Launch Analysis",
-        description:
-          "Analyze reception and sentiment around your product launch",
-        type: "hashtag" as CampaignType,
-        category: CampaignCategory.marketing,
-        defaultDuration: 14,
-        defaultMaxTweets: 25000,
-        defaultDataSources: ["twitter", "instagram", "tiktok"] as DataSource[],
-        defaultAnalysis: {
-          sentiment: true,
-          emotion: true,
-          topics: true,
-          influencer: true,
-        },
-        suggestedHashtags: ["#newproduct", "#launch", "#innovation"],
-        suggestedKeywords: ["product name", "launch event", "available now"],
-        suggestedLanguages: ["en"],
-        createdAt: new Date(),
-        isActive: true,
-      },
-      {
-        id: "competitor-analysis",
-        name: "Competitor Analysis",
-        description: "Monitor competitor activity and market positioning",
-        type: "competitor" as CampaignType,
-        category: CampaignCategory.competitorAnalysis,
-        defaultDuration: 60,
-        defaultMaxTweets: 100000,
-        defaultDataSources: ["twitter", "linkedin"] as DataSource[],
-        defaultAnalysis: {
-          sentiment: true,
-          emotion: false,
-          topics: true,
-          influencer: true,
-        },
-        suggestedHashtags: ["#competitor1", "#competitor2"],
-        suggestedKeywords: ["competitor name", "vs competitor", "alternative"],
-        suggestedLanguages: ["en", "es"],
-        createdAt: new Date(),
-        isActive: true,
-      },
-      {
-        id: "crisis-management",
-        name: "Crisis Management",
-        description: "Real-time monitoring during PR crises or negative events",
-        type: "keyword" as CampaignType,
-        category: CampaignCategory.crisisManagement,
-        defaultDuration: 7,
-        defaultMaxTweets: 10000,
-        defaultDataSources: ["twitter"] as DataSource[],
-        defaultAnalysis: {
-          sentiment: true,
-          emotion: true,
-          topics: true,
-          influencer: true,
-        },
-        suggestedHashtags: ["#crisis", "#issue"],
-        suggestedKeywords: ["brand issue", "controversy", "problem"],
-        suggestedLanguages: ["en", "es"],
-        createdAt: new Date(),
-        isActive: true,
-      },
-      {
-        id: "campaign-performance",
-        name: "Marketing Campaign Performance",
-        description: "Track performance of specific marketing campaigns",
-        type: "hashtag" as CampaignType,
-        category: CampaignCategory.marketing,
-        defaultDuration: 21,
-        defaultMaxTweets: 75000,
-        defaultDataSources: ["twitter", "instagram", "tiktok"] as DataSource[],
-        defaultAnalysis: {
-          sentiment: true,
-          emotion: true,
-          topics: true,
-          influencer: true,
-        },
-        suggestedHashtags: ["#campaignname", "#promotion", "#sale"],
-        suggestedKeywords: [
-          "campaign slogan",
-          "promotion code",
-          "limited time",
-        ],
-        suggestedLanguages: ["en", "es"],
-        createdAt: new Date(),
-        isActive: true,
-      },
-    ];
+  static async ensureSeeded() {
+    try {
+      const count = await CampaignTemplateModel.estimatedDocumentCount();
+      if (count === 0) {
+        const docs = this.defaultTemplates.map((t) => ({
+          templateId: t.id,
+          name: t.name,
+          description: t.description,
+          type: t.type as string,
+          category: t.category as string,
+          defaultDuration: t.defaultDuration,
+          defaultMaxTweets: t.defaultMaxTweets,
+          defaultDataSources: t.defaultDataSources,
+          defaultAnalysis: t.defaultAnalysis,
+          suggestedHashtags: t.suggestedHashtags,
+          suggestedKeywords: t.suggestedKeywords,
+          suggestedLanguages: t.suggestedLanguages,
+          createdAt: t.createdAt,
+          isActive: t.isActive,
+        }));
+
+        await CampaignTemplateModel.insertMany(docs);
+      }
+    } catch (err) {
+      // Non-fatal: log and continue; fallback to in-memory defaults exists
+      console.error("Failed seeding campaign templates:", err);
+    }
   }
 
   /**
-   * Get template by ID
+   * Get all available campaign templates (from DB). Falls back to defaults if DB unavailable.
    */
-  static getTemplate(id: string): CampaignTemplate | null {
-    return this.getTemplates().find((template) => template.id === id) || null;
+  static async getTemplates(): Promise<CampaignTemplate[]> {
+    try {
+      await this.ensureSeeded();
+      const docs = await CampaignTemplateModel.find({}).lean();
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      return docs.map((d: unknown) => {
+        const doc = d as any;
+        return {
+          id: doc.templateId,
+          name: doc.name,
+          description: doc.description || "",
+          type: doc.type as CampaignType,
+          category: doc.category as CampaignCategory,
+          defaultDuration: doc.defaultDuration,
+          defaultMaxTweets: doc.defaultMaxTweets,
+          defaultDataSources: doc.defaultDataSources as DataSource[],
+          defaultAnalysis: doc.defaultAnalysis,
+          suggestedHashtags: doc.suggestedHashtags,
+          suggestedKeywords: doc.suggestedKeywords,
+          suggestedLanguages: doc.suggestedLanguages,
+          createdAt: doc.createdAt,
+          isActive: doc.isActive,
+        };
+      });
+    } catch (err) {
+      console.error("Error reading templates from DB, using defaults:", err);
+      return this.defaultTemplates;
+    }
+  }
+
+  static async getTemplate(id: string): Promise<CampaignTemplate | null> {
+    try {
+      const d = await CampaignTemplateModel.findOne({ templateId: id }).lean();
+      if (!d) return null;
+      const doc = d as any;
+      return {
+        id: doc.templateId,
+        name: doc.name,
+        description: doc.description || "",
+        type: doc.type as CampaignType,
+        category: doc.category as CampaignCategory,
+        defaultDuration: doc.defaultDuration,
+        defaultMaxTweets: doc.defaultMaxTweets,
+        defaultDataSources: doc.defaultDataSources as DataSource[],
+        defaultAnalysis: doc.defaultAnalysis,
+        suggestedHashtags: doc.suggestedHashtags,
+        suggestedKeywords: doc.suggestedKeywords,
+        suggestedLanguages: doc.suggestedLanguages,
+        createdAt: doc.createdAt,
+        isActive: doc.isActive,
+      };
+    } catch (err) {
+      console.error("Error fetching template from DB, falling back:", err);
+      return this.defaultTemplates.find((t) => t.id === id) || null;
+    }
+  }
+
+  static async getTemplatesByCategory(
+    category: string,
+  ): Promise<CampaignTemplate[]> {
+    try {
+      await this.ensureSeeded();
+      const docs = await CampaignTemplateModel.find({ category }).lean();
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      return docs.map((d: unknown) => {
+        const doc = d as any;
+        return {
+          id: doc.templateId,
+          name: doc.name,
+          description: doc.description || "",
+          type: doc.type as CampaignType,
+          category: doc.category as CampaignCategory,
+          defaultDuration: doc.defaultDuration,
+          defaultMaxTweets: doc.defaultMaxTweets,
+          defaultDataSources: doc.defaultDataSources as DataSource[],
+          defaultAnalysis: doc.defaultAnalysis,
+          suggestedHashtags: doc.suggestedHashtags,
+          suggestedKeywords: doc.suggestedKeywords,
+          suggestedLanguages: doc.suggestedLanguages,
+          createdAt: doc.createdAt,
+          isActive: doc.isActive,
+        };
+      });
+    } catch (err) {
+      console.error(
+        "Error fetching templates by category, using defaults:",
+        err,
+      );
+      return this.defaultTemplates.filter(
+        (t) => t.category === (category as any),
+      );
+    }
   }
 
   /**
-   * Get templates by category
+   * Generate campaign config from template (async)
    */
-  static getTemplatesByCategory(category: string): CampaignTemplate[] {
-    return this.getTemplates().filter(
-      (template) => template.category === category,
-    );
-  }
-
-  /**
-   * Generate campaign config from template
-   */
-  static generateCampaignFromTemplate(
+  static async generateCampaignFromTemplate(
     templateId: string,
     customization: {
       name: string;
@@ -155,7 +260,7 @@ export class CampaignTemplatesService {
       organizationId: string;
     },
   ) {
-    const template = this.getTemplate(templateId);
+    const template = await this.getTemplate(templateId);
     if (!template) {
       throw new Error("Template not found");
     }

@@ -52,11 +52,11 @@ router.get(
 
       let templates;
       if (category) {
-        templates = CampaignTemplatesService.getTemplatesByCategory(
+        templates = await CampaignTemplatesService.getTemplatesByCategory(
           category as string,
         );
       } else {
-        templates = CampaignTemplatesService.getTemplates();
+        templates = await CampaignTemplatesService.getTemplates();
       }
 
       res.json({
@@ -115,9 +115,9 @@ router.get(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const template = CampaignTemplatesService.getTemplate(id);
+  const template = await CampaignTemplatesService.getTemplate(id);
 
-      if (!template) {
+  if (!template) {
         return res.status(404).json({
           success: false,
           error: {
@@ -227,14 +227,16 @@ router.post(
         });
       }
 
-      const campaignConfig =
-        CampaignTemplatesService.generateCampaignFromTemplate(id, {
+      const campaignConfig = await CampaignTemplatesService.generateCampaignFromTemplate(
+        id,
+        {
           name,
           hashtags,
           keywords,
           mentions,
           organizationId,
-        });
+        },
+      );
 
       res.json({
         success: true,
