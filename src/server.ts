@@ -197,6 +197,10 @@ if (process.env.ENABLE_SWAGGER_UI === "true") {
       .swagger-ui .opblock-tag-section[data-tag="Twitter Authentication"] { display: none !important; }
       .swagger-ui .opblock-tag-section[data-tag="Admin"] { display: none !important; }
       .swagger-ui .opblock-tag-section[data-tag="Security"] { display: none !important; }
+  /* Ocultar Sentiment Analysis (grupo de endpoints) */
+  .swagger-ui .opblock-tag-section[data-tag="Sentiment Analysis"] { display: none !important; }
+  /* Ocultar referencia en el índice/lateral para Sentiment Analysis */
+  .swagger-ui .opblock-tag[data-tag="Sentiment Analysis"] { display: none !important; }
       /* Ocultar del índice también */
       .swagger-ui .scheme-container { display: none; }
     `,
