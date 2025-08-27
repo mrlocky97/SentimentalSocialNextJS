@@ -9,10 +9,10 @@ import { CampaignType } from "../../../enums/campaign.enum";
 import { MongoCampaignRepository } from "../../../repositories/mongo-campaign.repository";
 import { TweetDatabaseService } from "../../../services/tweet-database.service";
 import {
-  CampaignFilter,
-  CampaignStatus,
-  CreateCampaignRequest,
-  UpdateCampaignRequest,
+    CampaignFilter,
+    CampaignStatus,
+    CreateCampaignRequest,
+    UpdateCampaignRequest,
 } from "../../../types/campaign";
 
 const campaignRepository = new MongoCampaignRepository();
@@ -79,7 +79,21 @@ export const getCampaignsHandler = async (req: Request, res: Response) => {
 export const createCampaignHandler = async (req: Request, res: Response) => {
   try {
     const campaignData: CreateCampaignRequest = req.body;
-    const user = (req as unknown as { user: { id: string } }).user;
+    const user = (
+      req as unknown as { user?: { id: string; organizationId?: string } }
+    ).user;
+
+    // Ensure request is authenticated (we expect auth middleware to attach user)
+    if (!user || !user.id) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          message: "Authentication required to create a campaign",
+          code: "AUTH_REQUIRED",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
 
     // Validate required fields
     if (
@@ -98,6 +112,19 @@ export const createCampaignHandler = async (req: Request, res: Response) => {
             required: ["name", "type", "dataSources", "startDate", "endDate"],
             provided: Object.keys(req.body),
           },
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Validate organizationId presence (can come from body or authenticated user)
+    const organizationId = campaignData.organizationId || user.organizationId;
+    if (!organizationId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "Organization ID is required",
+          code: "MISSING_ORGANIZATION_ID",
           timestamp: new Date().toISOString(),
         },
       });
@@ -149,16 +176,62 @@ export const createCampaignHandler = async (req: Request, res: Response) => {
     const campaignWithUser = {
       ...campaignData,
       createdBy: user.id,
+      organizationId,
       status: CampaignStatus.draft,
+      timezone: campaignData.timezone || "UTC",
     };
 
-    const campaign = await campaignRepository.create(campaignWithUser);
+    try {
+      const campaign = await campaignRepository.create(campaignWithUser);
+      return res.status(201).json({
+        success: true,
+        data: campaign,
+        message: "Campaign created successfully",
+      });
+    } catch (err: unknown) {
+      // Map Mongoose validation errors and custom pre-save errors to 400
+      const e = err as any;
+      if (e) {
+        // Mongoose ValidationError
+        if (e.name === "ValidationError" && e.errors) {
+          const details: Record<string, string> = {};
+          Object.keys(e.errors).forEach((k) => {
+            details[k] = e.errors[k].message || String(e.errors[k]);
+          });
+          return res.status(400).json({
+            success: false,
+            error: {
+              message: "Validation failed",
+              code: "VALIDATION_ERROR",
+              details,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
 
-    res.status(201).json({
-      success: true,
-      data: campaign,
-      message: "Campaign created successfully",
-    });
+        // Pre-save or other thrown Error with descriptive message
+        if (e instanceof Error && e.message) {
+          const msg = e.message;
+          if (
+            msg.includes("At least one hashtag") ||
+            msg.includes("At least one data source") ||
+            msg.includes("duration cannot exceed")
+          ) {
+            return res.status(400).json({
+              success: false,
+              error: {
+                message: msg,
+                code: "VALIDATION_ERROR",
+                timestamp: new Date().toISOString(),
+              },
+            });
+          }
+        }
+      }
+
+      // Re-throw to be handled by outer catch (which will return 500)
+      throw err;
+    }
   } catch (error: unknown) {
     console.error("Error creating campaign:", error);
 
@@ -339,6 +412,40 @@ export const updateCampaignHandler = async (req: Request, res: Response) => {
           timestamp: new Date().toISOString(),
         },
       });
+    }
+
+    // Handle validation errors - Provide detailed feedback to API consumers
+    if (error instanceof Error) {
+      if (error.message === "VALIDATION_ERROR") {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: "Validation failed - check provided data",
+            code: "CAMPAIGN_VALIDATION_ERROR",
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Check for mongoose validation errors with more details
+      const mongooseError = error as any;
+      if (mongooseError.name === "ValidationError" && mongooseError.errors) {
+        const validationErrors: Record<string, string> = {};
+
+        Object.keys(mongooseError.errors).forEach((field) => {
+          validationErrors[field] = mongooseError.errors[field].message;
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: "Validation failed for campaign update",
+            code: "VALIDATION_ERROR",
+            details: validationErrors,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
     }
 
     res.status(500).json({
