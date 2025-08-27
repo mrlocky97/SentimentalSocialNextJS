@@ -231,17 +231,25 @@ export class MongoCampaignRepository {
   }
 
   /**
-   * Delete campaign by ID (soft delete - archive)
+   * Delete campaign by ID (supports both soft delete and permanent removal)
+   * @param id Campaign ID to delete
+   * @param hardDelete If true, permanently removes the campaign from database; otherwise marks as deleted status
    */
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string, hardDelete: boolean = false): Promise<boolean> {
     try {
-      const result = await CampaignModel.findByIdAndUpdate(
-        id,
-        { status: "archived", updatedAt: new Date() },
-        { new: true },
-      );
-
-      return result !== null;
+      if (hardDelete) {
+        // Hard delete - permanently remove from database
+        const deleteResult = await CampaignModel.findByIdAndDelete(id);
+        return deleteResult !== null;
+      } else {
+        // Soft delete - mark as deleted status
+        const result = await CampaignModel.findByIdAndUpdate(
+          id,
+          { status: "deleted", updatedAt: new Date() },
+          { new: true },
+        );
+        return result !== null;
+      }
     } catch (error) {
       console.error("Error deleting campaign:", error);
       throw new Error("DELETE_CAMPAIGN_ERROR");

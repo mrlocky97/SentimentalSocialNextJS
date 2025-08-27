@@ -491,11 +491,8 @@ export const deleteCampaignHandler = async (req: Request, res: Response) => {
       });
     }
 
-    // Soft delete by updating status
-    await campaignRepository.update(id, {
-      status: CampaignStatus.deleted,
-      updatedAt: new Date(),
-    } as Partial<UpdateCampaignRequest>);
+    // Use hardDelete=true for permanent removal from database
+    const deleteSuccess = await campaignRepository.delete(id, true);
 
     res.json({
       success: true,
