@@ -15,6 +15,9 @@ export * from "./validation.utils";
 // Metrics Calculation Utilities
 export * from "./metrics.utils";
 
+// Array Utilities
+export * from "./array.utils";
+
 /**
  * Generate unique ID (you might want to use UUID library)
  */

@@ -7,7 +7,7 @@
  * /api/v1/scraping/hashtag:
  *   post:
  *     summary: Scrape tweets by hashtag using twikit
- *     description: Collects tweets for a specific hashtag with sentiment analysis
+ *     description: Collects tweets for a specific hashtag or multiple hashtags with sentiment analysis
  *     tags: [Twitter Scraping]
  *     requestBody:
  *       required: true
@@ -16,12 +16,20 @@
  *           schema:
  *             type: object
  *             required:
- *               - hashtag
+ *               - oneOf:
+ *                 - hashtag
+ *                 - hashtags
  *             properties:
  *               hashtag:
  *                 type: string
- *                 description: Hashtag to search (without #)
+ *                 description: Single hashtag to search (with or without #)
  *                 example: "JustDoIt"
+ *               hashtags:
+ *                 type: array
+ *                 description: Multiple hashtags to search (with or without #)
+ *                 items:
+ *                   type: string
+ *                 example: ["JustDoIt", "Marketing", "#Nike"]
  *               maxTweets:
  *                 type: number
  *                 minimum: 1
@@ -49,6 +57,80 @@
  *     responses:
  *       200:
  *         description: Tweets scraped successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         hashtag:
+ *                           type: string
+ *                           example: "#JustDoIt"
+ *                         requested:
+ *                           type: number
+ *                           example: 50
+ *                         totalFound:
+ *                           type: number
+ *                           example: 150
+ *                         totalScraped:
+ *                           type: number
+ *                           example: 50
+ *                         tweets:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         sentiment_summary:
+ *                           type: object
+ *                         campaignId:
+ *                           type: string
+ *                           example: "my_nike_campaign_2024"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 50/50 hashtag tweets with sentiment"
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         hashtags:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example: ["#JustDoIt", "#Marketing", "#Nike"]
+ *                         items:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               hashtag:
+ *                                 type: string
+ *                                 example: "#JustDoIt"
+ *                               tweetCount:
+ *                                 type: number
+ *                                 example: 25
+ *                               totalFound:
+ *                                 type: number
+ *                                 example: 100
+ *                               sentiment_summary:
+ *                                 type: object
+ *                         totalTweets:
+ *                           type: number
+ *                           example: 75
+ *                         campaignId:
+ *                           type: string
+ *                           example: "my_nike_campaign_2024"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 75 tweets from 3 hashtags"
  *       400:
  *         description: Invalid request parameters
  *       500:
@@ -58,8 +140,8 @@
  * @swagger
  * /api/v1/scraping/user:
  *   post:
- *     summary: Scrape tweets from a specific user
- *     description: Collects recent tweets from a specific Twitter user
+ *     summary: Scrape tweets from one or more users
+ *     description: Collects recent tweets from specific Twitter users
  *     tags: [Twitter Scraping]
  *     requestBody:
  *       required: true
@@ -68,11 +150,20 @@
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - oneOf:
+ *                 - username
+ *                 - usernames
  *             properties:
  *               username:
  *                 type: string
+ *                 description: Single username to search (with or without @)
  *                 example: "nike"
+ *               usernames:
+ *                 type: array
+ *                 description: Multiple usernames to search (with or without @)
+ *                 items:
+ *                   type: string
+ *                 example: ["nike", "adidas", "@puma"]
  *               maxTweets:
  *                 type: number
  *                 minimum: 1
@@ -95,6 +186,80 @@
  *     responses:
  *       200:
  *         description: User tweets scraped successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           type: string
+ *                           example: "@nike"
+ *                         requested:
+ *                           type: number
+ *                           example: 30
+ *                         totalFound:
+ *                           type: number
+ *                           example: 100
+ *                         totalScraped:
+ *                           type: number
+ *                           example: 30
+ *                         tweets:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         sentiment_summary:
+ *                           type: object
+ *                         campaignId:
+ *                           type: string
+ *                           example: "nike_monitoring_campaign"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 30/30 user tweets with sentiment"
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         usernames:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example: ["@nike", "@adidas", "@puma"]
+ *                         items:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               username:
+ *                                 type: string
+ *                                 example: "@nike"
+ *                               tweetCount:
+ *                                 type: number
+ *                                 example: 25
+ *                               totalFound:
+ *                                 type: number
+ *                                 example: 100
+ *                               sentiment_summary:
+ *                                 type: object
+ *                         totalTweets:
+ *                           type: number
+ *                           example: 75
+ *                         campaignId:
+ *                           type: string
+ *                           example: "nike_monitoring_campaign"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 75 tweets from 3 users"
  *       400:
  *         description: Invalid username
  *       500:
@@ -105,7 +270,7 @@
  * /api/v1/scraping/search:
  *   post:
  *     summary: Search and scrape tweets by keyword
- *     description: Collects tweets matching a search query with sentiment analysis
+ *     description: Collects tweets matching one or more search queries with sentiment analysis
  *     tags: [Twitter Scraping]
  *     requestBody:
  *       required: true
@@ -114,11 +279,20 @@
  *           schema:
  *             type: object
  *             required:
- *               - query
+ *               - oneOf:
+ *                 - query
+ *                 - queries
  *             properties:
  *               query:
  *                 type: string
+ *                 description: Single search query
  *                 example: "nike shoes OR adidas sneakers"
+ *               queries:
+ *                 type: array
+ *                 description: Multiple search queries
+ *                 items:
+ *                   type: string
+ *                 example: ["nike shoes", "adidas sneakers", "puma sportswear"]
  *               maxTweets:
  *                 type: number
  *                 minimum: 1
@@ -143,6 +317,80 @@
  *     responses:
  *       200:
  *         description: Search completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         search:
+ *                           type: string
+ *                           example: "nike shoes OR adidas sneakers"
+ *                         requested:
+ *                           type: number
+ *                           example: 50
+ *                         totalFound:
+ *                           type: number
+ *                           example: 200
+ *                         totalScraped:
+ *                           type: number
+ *                           example: 50
+ *                         tweets:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         sentiment_summary:
+ *                           type: object
+ *                         campaignId:
+ *                           type: string
+ *                           example: "search_nike_vs_adidas_2024"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 50/50 search tweets with sentiment"
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         queries:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example: ["nike shoes", "adidas sneakers", "puma sportswear"]
+ *                         items:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               query:
+ *                                 type: string
+ *                                 example: "nike shoes"
+ *                               tweetCount:
+ *                                 type: number
+ *                                 example: 25
+ *                               totalFound:
+ *                                 type: number
+ *                                 example: 100
+ *                               sentiment_summary:
+ *                                 type: object
+ *                         totalTweets:
+ *                           type: number
+ *                           example: 75
+ *                         campaignId:
+ *                           type: string
+ *                           example: "search_nike_vs_adidas_2024"
+ *                     message:
+ *                       type: string
+ *                       example: "Scraped 75 tweets from 3 search queries"
  *       400:
  *         description: Invalid search query
  *       500:

@@ -354,6 +354,31 @@ async function processAndPersistSentiment(
   return { tweetsWithSentiment, sentimentSummary };
 }
 
+// Define the return type of the scraping operation
+export interface ScrapingResponse {
+  success: boolean;
+  data: {
+    [key: string]: unknown;
+    requested: number;
+    totalFound: number;
+    totalScraped: number;
+    tweets: Tweet[];
+    sentiment_summary: unknown;
+    campaignId: string;
+    campaignInfo: {
+      id: string;
+      type: string;
+      source: string;
+    };
+    rate_limit: {
+      remaining: number;
+      reset_time: Date;
+    };
+  };
+  execution_time: number;
+  message: string;
+}
+
 export async function handleScrapingRequest<
   B extends ScrapingRequestBody = ScrapingRequestBody,
 >(
@@ -361,7 +386,8 @@ export async function handleScrapingRequest<
   res: Response,
   context: ScrapingContext,
   options: ScrapingRequestOptions = {},
-): Promise<void> {
+  returnResultInsteadOfSending = false, // Flag to control response flow
+): Promise<ScrapingResponse | void> {
   const {
     minTweets = 1,
     maxTweets = 1000,
@@ -401,7 +427,7 @@ export async function handleScrapingRequest<
       );
 
     const execTime = Date.now() - start;
-    res.json({
+    const response: ScrapingResponse = {
       success: true,
       data: {
         [context.type]:
@@ -428,9 +454,39 @@ export async function handleScrapingRequest<
       },
       execution_time: execTime,
       message: `Scraped ${tweetsWithSentiment.length}/${params.tweetsToRetrieve} ${context.type} tweets${params.analyzeSentiment ? " with sentiment" : ""}`,
-    });
+    };
+    
+    if (returnResultInsteadOfSending) {
+      return response;
+    }
+    
+    res.json(response);
   } catch (err) {
     handleScrapingError(res, err, `${context.type} scraping`);
+    if (returnResultInsteadOfSending) {
+      return {
+        success: false,
+        data: {
+          requested: 0,
+          totalFound: 0,
+          totalScraped: 0,
+          tweets: [],
+          sentiment_summary: null,
+          campaignId: "",
+          campaignInfo: {
+            id: "",
+            type: "error",
+            source: context.type,
+          },
+          rate_limit: {
+            remaining: 0,
+            reset_time: new Date(),
+          },
+        },
+        execution_time: 0,
+        message: err instanceof Error ? err.message : "Unknown error",
+      };
+    }
   } finally {
     const ip = getClientIp(req);
     inFlightByIp.delete(ip);
