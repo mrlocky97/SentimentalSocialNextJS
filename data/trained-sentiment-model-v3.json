@@ -1,10 +1,10 @@
 {
   "trained": true,
-  "trainingDate": "2025-08-14T21:17:55.771Z",
+  "trainingDate": "2025-08-30T00:55:18.940Z",
   "datasetSize": 1274,
   "stats": {
     "trained": true,
-    "vocabularySize": 2888,
+    "vocabularySize": 2996,
     "totalDocuments": 1274,
     "classCounts": {
       "positive": 376,

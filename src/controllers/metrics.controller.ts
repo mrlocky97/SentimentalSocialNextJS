@@ -376,4 +376,62 @@ export class MetricsController {
       });
     }
   }
+  
+  /**
+   * Get cross-validation metrics
+   * GET /metrics/cv
+   */
+  async getCrossValidationMetrics(req: Request, res: Response): Promise<void> {
+    try {
+      // Import fs and path modules
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      
+      const modelMetadataPath = path.join(
+        process.cwd(),
+        "data",
+        "model-metadata.json",
+      );
+      
+      // Read the model metadata file
+      const metadataContent = await fs.readFile(modelMetadataPath, "utf-8");
+      const metadata = JSON.parse(metadataContent);
+      
+      if (!metadata.performance || !metadata.performance.cv) {
+        res.status(404).json({
+          status: "error",
+          message: 
+            "Cross-validation metrics not found. Run the model with EVAL_MODE=CROSS_VALIDATION first.",
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+      
+      // Return the cross-validation metrics
+      const response = {
+        status: "success",
+        data: metadata.performance.cv,
+        timestamp: new Date().toISOString(),
+      };
+      
+      res.status(200).json(response);
+      
+      this.logger.info("Cross-validation metrics exported", {
+        kFolds: metadata.performance.cv.k,
+        responseTime: performance.now(),
+        endpoint: "/metrics/cv",
+      });
+    } catch (error) {
+      this.logger.error(
+        "Error exporting cross-validation metrics",
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      
+      res.status(500).json({
+        status: "error",
+        message: "Failed to export cross-validation metrics",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 }

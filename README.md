@@ -20,6 +20,7 @@ A complete platform that combines unlimited tweet collection via web scraping, i
 - **Brand Mention Detection**: Automatic brand mention identification
 - **Entity Extraction**: Extraction of people, organizations, and locations
 - **Language Detection**: Support for English and Spanish
+- **K-fold Cross-Validation**: Stratified model evaluation with performance metrics
 
 ### 💡 **Automatic Marketing Insights**
 

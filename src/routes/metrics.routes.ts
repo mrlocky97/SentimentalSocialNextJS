@@ -143,6 +143,22 @@ export function configureMetricsRoutes(): Router {
       });
     }
   });
+  
+  // Cross-validation metrics endpoint
+  router.get("/cv", async (req, res) => {
+    try {
+      await metricsController.getCrossValidationMetrics(req, res);
+    } catch (error) {
+      logger.error(
+        "Cross-validation metrics route error",
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      res.status(500).json({
+        status: "error",
+        message: "Internal server error",
+      });
+    }
+  });
 
   logger.info("Metrics routes configured", {
     endpoints: [
@@ -153,6 +169,7 @@ export function configureMetricsRoutes(): Router {
       "GET /metrics/sentiment",
       "GET /metrics/performance",
       "GET /metrics/summary",
+      "GET /metrics/cv",
       "POST /metrics/reset",
     ],
   });
