@@ -3208,6 +3208,600 @@ export const finalBalanceAdjustments = [
   },
 ];
 
+/**
+ * Expansión del dataset para mejorar la representación de la clase "sarcasm"
+ * Este archivo contiene 143 nuevos ejemplos de sarcasmo para alcanzar aproximadamente un 15% del dataset
+ * (Aumentando de 48 ejemplos actuales a 191 ejemplos totales)
+ *
+ * Distribución por idiomas:
+ * - Inglés (EN): ~55% (79 ejemplos)
+ * - Español (ES): ~25% (36 ejemplos)
+ * - Francés (FR): ~12% (17 ejemplos)
+ * - Alemán (DE): ~8% (11 ejemplos)
+ */
+
+export const sarcasmExpansionV4 = [
+  // === INGLÉS (EN) ===
+  {
+    text: "Just what I needed today, another meeting that could have been an email.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh great, the train is delayed again. Perfect way to start my Monday.",
+    label: "sarcasm",
+  },
+  {
+    text: "Wow, thanks for explaining that to me. I never would have figured it out on my own.",
+    label: "sarcasm",
+  },
+  {
+    text: "Love how my phone dies right when I need to make an important call.",
+    label: "sarcasm",
+  },
+  {
+    text: "Nothing better than spending my weekend fixing someone else's mistakes.",
+    label: "sarcasm",
+  },
+  {
+    text: "Awesome, another political discussion at the family dinner. Can't wait.",
+    label: "sarcasm",
+  },
+  {
+    text: "Sure, I'd love to work late on Friday. Not like I had plans or anything.",
+    label: "sarcasm",
+  },
+  {
+    text: "Thanks for the constructive feedback. Really helps my self-esteem.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh look, another notification about my data being compromised. How exciting.",
+    label: "sarcasm",
+  },
+  {
+    text: "The customer service was so helpful, they only transferred me seven times before hanging up.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm so glad you asked for my opinion just to completely ignore it.",
+    label: "sarcasm",
+  },
+  {
+    text: "Thrilled to see that my flight is delayed by three hours. More quality time at the airport!",
+    label: "sarcasm",
+  },
+  {
+    text: "Yes, please tell me more about your cryptocurrency investments. I'm fascinated.",
+    label: "sarcasm",
+  },
+  {
+    text: "I absolutely love it when someone uses my things without asking.",
+    label: "sarcasm",
+  },
+  {
+    text: "How wonderful, another bill I wasn't expecting. Just what my bank account needed.",
+    label: "sarcasm",
+  },
+  {
+    text: "So happy that my internet decides to stop working during my important video call.",
+    label: "sarcasm",
+  },
+  {
+    text: "Amazing how technology always works perfectly when you need it most.",
+    label: "sarcasm",
+  },
+  {
+    text: "Just loving how this app keeps crashing every time I try to save my work.",
+    label: "sarcasm",
+  },
+  {
+    text: "Thanks for the spoiler. I definitely wasn't planning to watch that movie myself.",
+    label: "sarcasm",
+  },
+  {
+    text: "Fantastic, my favorite part of the day: sitting in traffic for hours.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm so glad you waited until the deadline to tell me about these changes.",
+    label: "sarcasm",
+  },
+  {
+    text: "Exactly what I was hoping for, more paperwork to fill out.",
+    label: "sarcasm",
+  },
+  {
+    text: "How thoughtful of you to call me at 3am with a non-emergency.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm shocked, absolutely shocked that the project is over budget and behind schedule.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh joy, another software update that will change all the features I actually use.",
+    label: "sarcasm",
+  },
+  {
+    text: "Please, continue talking during the movie. It really enhances the experience.",
+    label: "sarcasm",
+  },
+  {
+    text: "So glad my neighbor decided 7am on Saturday is the perfect time for construction.",
+    label: "sarcasm",
+  },
+  {
+    text: "I just love when people don't use their turn signals. Keeps driving exciting.",
+    label: "sarcasm",
+  },
+  {
+    text: "My favorite part of online shopping: paying more for shipping than the actual item.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's fine, I didn't want those concert tickets anyway. I love when they sell out in seconds.",
+    label: "sarcasm",
+  },
+  {
+    text: "I can't believe this phone battery lasted almost two hours. What amazing technology.",
+    label: "sarcasm",
+  },
+  {
+    text: "Great timing, an hour-long system update right when I need to finish my project.",
+    label: "sarcasm",
+  },
+  {
+    text: "Looking forward to another year of social media showing me ads for things I just bought.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm so thankful for automated customer service that never connects me to a real person.",
+    label: "sarcasm",
+  },
+  {
+    text: "My favorite thing about modern apps: constant notifications I can't turn off.",
+    label: "sarcasm",
+  },
+  {
+    text: "Really appreciate receiving this email about a sale that ended yesterday.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's so convenient when websites make me create an account just to view basic information.",
+    label: "sarcasm",
+  },
+  {
+    text: "Ah yes, please tell me more about how I should be doing my job that you know nothing about.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm sure this 'quick fix' won't cause any problems down the road. Not at all.",
+    label: "sarcasm",
+  },
+  {
+    text: "So impressive how the delivery person managed to bend my 'do not bend' package in half.",
+    label: "sarcasm",
+  },
+  {
+    text: "The joys of open office plans: getting to hear everyone's conversations all day long.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm thrilled that this website asks me to accept cookies on every single page.",
+    label: "sarcasm",
+  },
+  {
+    text: "Nothing says 'user-friendly' like hiding the most used features in random submenus.",
+    label: "sarcasm",
+  },
+  {
+    text: "I adore when my GPS reroutes me through every possible back road to save 30 seconds.",
+    label: "sarcasm",
+  },
+  {
+    text: "Just what I wanted, a lengthy explanation of something I already understand.",
+    label: "sarcasm",
+  },
+  {
+    text: "So glad my computer chose this exact moment to install updates and restart.",
+    label: "sarcasm",
+  },
+  {
+    text: "I absolutely love when people reply-all to company-wide emails with 'thanks'.",
+    label: "sarcasm",
+  },
+  {
+    text: "Exciting news: another password breach from a company I used once five years ago.",
+    label: "sarcasm",
+  },
+  {
+    text: "Amazing how customer support keeps putting me on hold just when I thought I was making progress.",
+    label: "sarcasm",
+  },
+  {
+    text: "I couldn't be happier that the product I just bought is now on sale for half price.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's such a joy when the elevator stops at every floor on my way down from the 20th.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh good, another social media platform I need to create an account for.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm absolutely loving this hold music that's been playing for the last 45 minutes.",
+    label: "sarcasm",
+  },
+  {
+    text: "Thanks for including me in this email thread of 57 replies that has nothing to do with me.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's great when people stand on both sides of the escalator so no one can walk past.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm so glad you asked me a question and then immediately started looking at your phone.",
+    label: "sarcasm",
+  },
+  {
+    text: "Love how my carefully packed lunch leaked all over my bag. Makes the day more exciting.",
+    label: "sarcasm",
+  },
+  {
+    text: "What fun, my favorite show just killed off the main character for shock value.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm really excited about this new feature that makes the app harder to use.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's amazing how you can say so much without actually answering my question.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh good, more confetti animations and pop-ups to celebrate clicking a button.",
+    label: "sarcasm",
+  },
+  {
+    text: "Really enjoying how this site bombards me with newsletter signup forms every 5 seconds.",
+    label: "sarcasm",
+  },
+  {
+    text: "Just when I thought my day couldn't get better, my headphones got tangled in my pocket.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm overjoyed that you keep rescheduling our meeting at the last minute.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's so helpful when people explain basic concepts to me that I use professionally every day.",
+    label: "sarcasm",
+  },
+  {
+    text: "Absolutely love when my carefully stacked dishwasher gets rearranged by someone 'helping'.",
+    label: "sarcasm",
+  },
+  {
+    text: "What a pleasure to be CC'd on every single email about a project I'm not even involved in.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm thrilled that this website forces me to watch a video before showing me the content I want.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh joy, another password requirement that means I'll definitely forget it tomorrow.",
+    label: "sarcasm",
+  },
+  {
+    text: "I'm so impressed by your ability to make simple tasks unnecessarily complicated.",
+    label: "sarcasm",
+  },
+  {
+    text: "What a delight to see my ex posting vacation photos with their new partner on my feed.",
+    label: "sarcasm",
+  },
+  {
+    text: "Super excited about this automatic update that changed all my preferences back to default.",
+    label: "sarcasm",
+  },
+  {
+    text: "I couldn't be happier about this surprise road construction on my commute.",
+    label: "sarcasm",
+  },
+  {
+    text: "Just loving how my new smart device needs an account, app, and internet connection to turn on.",
+    label: "sarcasm",
+  },
+  {
+    text: "It's fantastic when someone takes the last coffee without making a new pot.",
+    label: "sarcasm",
+  },
+  {
+    text: "I totally needed that unsolicited advice on something I've been doing for years.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh good, another robocall about my car's extended warranty. Just what I was hoping for today.",
+    label: "sarcasm",
+  },
+  {
+    text: "I really appreciate how quiet my neighbors are at 2am with their home renovation project.",
+    label: "sarcasm",
+  },
+  {
+    text: "Sure, let's have another meeting about why we're having too many meetings.",
+    label: "sarcasm",
+  },
+
+  // === ESPAÑOL (ES) ===
+  {
+    text: "Justo lo que necesitaba, otro informe para entregar en menos de una hora.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué maravilla, llueve cuando olvidé mi paraguas. Este día mejora por momentos.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me encanta cuando el wifi se cae justo en mitad de una videollamada importante.",
+    label: "sarcasm",
+  },
+  {
+    text: "Genial, otra actualización que hace que mi teléfono vaya más lento. Exactamente lo que pedí.",
+    label: "sarcasm",
+  },
+  {
+    text: "Vaya, qué alegría recibir más facturas por pagar. Es mi pasatiempo favorito.",
+    label: "sarcasm",
+  },
+  {
+    text: "Por supuesto que me encanta esperar en la fila por dos horas. No es como si tuviera cosas mejores que hacer.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué bueno que me avisan del cambio de horario cinco minutos antes. Muy considerados.",
+    label: "sarcasm",
+  },
+  {
+    text: "Maravilloso, me encanta cuando alguien usa mi computadora sin pedir permiso.",
+    label: "sarcasm",
+  },
+  {
+    text: "¡Perfecto! El autobús acaba de irse cuando llegué a la parada. Justo a tiempo.",
+    label: "sarcasm",
+  },
+  {
+    text: "Adoro cuando la gente me interrumpe constantemente. Hace la conversación más interesante.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué bien que la película revele el final en el tráiler. Ahora no tengo que verla.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me fascina cómo las instrucciones de montaje nunca coinciden con las piezas reales.",
+    label: "sarcasm",
+  },
+  {
+    text: "Es fantástico recibir consejos de alguien que nunca ha hecho esto antes.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué alegría, mi vecino decidió que las 3 de la mañana es el momento ideal para taladrar.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me encanta que me corrijan la pronunciación de mi propio nombre. Súper útil.",
+    label: "sarcasm",
+  },
+  {
+    text: "Estoy impresionado por la eficiencia de la burocracia. Solo tres meses para un simple trámite.",
+    label: "sarcasm",
+  },
+  {
+    text: "¡Genial! El supermercado abrió otra caja justo cuando ya pagué después de 20 minutos en la fila.",
+    label: "sarcasm",
+  },
+  {
+    text: "Adoro cuando la gente no responde mensajes pero veo que están activos en redes sociales.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué conveniente que la garantía expire justo una semana antes de que el producto falle.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me fascina este nuevo rediseño de la aplicación que hace imposible encontrar las funciones básicas.",
+    label: "sarcasm",
+  },
+  {
+    text: "Justo lo que esperaba: más publicidad en la aplicación por la que ya pagué.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué suerte tengo de que justo hoy, que tengo prisa, todos los semáforos estén en rojo.",
+    label: "sarcasm",
+  },
+  {
+    text: "Es increíble cómo el servicio de atención al cliente nunca está disponible cuando lo necesitas.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me encanta cuando el aire acondicionado se estropea en el día más caluroso del año.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué bien que la aplicación necesite actualizarse justo cuando voy a usarla con urgencia.",
+    label: "sarcasm",
+  },
+  {
+    text: "Es maravilloso cuando alguien te cuenta el final de un libro que apenas has empezado.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me alegra tanto que hayan cambiado la receta de mi comida favorita para 'mejorarla'.",
+    label: "sarcasm",
+  },
+  {
+    text: "Adoro cuando la gente cancela planes a último minuto después de haber rechazado otras opciones.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué eficiencia, solo tuve que llamar siete veces para resolver un problema simple.",
+    label: "sarcasm",
+  },
+  {
+    text: "Estoy encantado de que me cobren extra por un servicio que debería ser estándar.",
+    label: "sarcasm",
+  },
+  {
+    text: "¡Fantástico! La página web se bloquea justo cuando estaba a punto de finalizar mi compra.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me fascina cuando las personas me explican mi propio trabajo como si fuera novato.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué alegría recibir llamadas de telemarketing durante mi única hora de descanso.",
+    label: "sarcasm",
+  },
+  {
+    text: "Es tan divertido cuando alguien te habla mientras tienes los auriculares puestos.",
+    label: "sarcasm",
+  },
+  {
+    text: "Me encanta cuando el jefe añade más tareas justo antes de terminar la jornada.",
+    label: "sarcasm",
+  },
+  {
+    text: "Qué suerte tener vecinos que ponen música a todo volumen a medianoche.",
+    label: "sarcasm",
+  },
+
+  // === FRANCÉS (FR) ===
+  {
+    text: "Exactement ce dont j'avais besoin, encore une réunion inutile avant le week-end.",
+    label: "sarcasm",
+  },
+  {
+    text: "Quelle merveille, il pleut et j'ai oublié mon parapluie. Cette journée est de mieux en mieux.",
+    label: "sarcasm",
+  },
+  {
+    text: "J'adore quand le métro est en retard le jour où j'ai un entretien important.",
+    label: "sarcasm",
+  },
+  {
+    text: "Parfait timing pour que mon téléphone n'ait plus de batterie. Juste quand j'en ai besoin.",
+    label: "sarcasm",
+  },
+  {
+    text: "Tellement content que ma voiture tombe en panne juste avant mes vacances. Quel timing parfait.",
+    label: "sarcasm",
+  },
+  {
+    text: "Merci beaucoup pour m'envoyer cet email important à minuit. Exactement quand je vérifie mes messages.",
+    label: "sarcasm",
+  },
+  {
+    text: "C'est formidable quand quelqu'un change nos plans à la dernière minute.",
+    label: "sarcasm",
+  },
+  {
+    text: "Je suis ravi que l'application se mette à jour précisément au moment où je dois l'utiliser.",
+    label: "sarcasm",
+  },
+  {
+    text: "Comme c'est gentil de me rappeler cette échéance cinq minutes avant qu'elle n'expire.",
+    label: "sarcasm",
+  },
+  {
+    text: "Oh joie, encore une notification de réseau social dont je n'ai pas besoin.",
+    label: "sarcasm",
+  },
+  {
+    text: "Quel plaisir de trouver une place de parking après seulement 45 minutes de recherche.",
+    label: "sarcasm",
+  },
+  {
+    text: "J'adore quand les gens me donnent des conseils non sollicités sur ma vie personnelle.",
+    label: "sarcasm",
+  },
+  {
+    text: "C'est tellement pratique quand le site web plante juste au moment de finaliser ma commande.",
+    label: "sarcasm",
+  },
+  {
+    text: "Quelle chance d'être coincé dans les embouteillages quand je suis déjà en retard.",
+    label: "sarcasm",
+  },
+  {
+    text: "Je suis ravi de payer des frais supplémentaires pour un service qui devrait être gratuit.",
+    label: "sarcasm",
+  },
+  {
+    text: "Comme c'est agréable d'entendre les travaux de construction à 7h du matin le samedi.",
+    label: "sarcasm",
+  },
+  {
+    text: "Fantastique, mon train est annulé et le prochain arrive dans trois heures.",
+    label: "sarcasm",
+  },
+
+  // === ALEMÁN (DE) ===
+  {
+    text: "Genau was ich brauchte, noch mehr Arbeit für das Wochenende.",
+    label: "sarcasm",
+  },
+  {
+    text: "Wie wunderbar, es regnet und mein Regenschirm ist zu Hause. Der Tag wird immer besser.",
+    label: "sarcasm",
+  },
+  {
+    text: "Ich liebe es wenn der Zug Verspätung hat, besonders wenn ich einen wichtigen Termin habe.",
+    label: "sarcasm",
+  },
+  {
+    text: "Toll, mein Computer stürzt genau dann ab, wenn ich meine Arbeit nicht gespeichert habe. Fantastisch.",
+    label: "sarcasm",
+  },
+  {
+    text: "Was für ein Glück, die Batterie meines Handys ist genau dann leer, wenn ich einen Notruf tätigen muss.",
+    label: "sarcasm",
+  },
+  {
+    text: "Wunderbar, schon wieder eine E-Mail-Benachrichtigung um drei Uhr morgens.",
+    label: "sarcasm",
+  },
+  {
+    text: "Ich freue mich so über den Stau auf dem Weg zur Arbeit. Macht den Morgen viel interessanter.",
+    label: "sarcasm",
+  },
+  {
+    text: "Großartig, meine Lieblingsfunktion wurde mit dem neuen Update entfernt.",
+    label: "sarcasm",
+  },
+  {
+    text: "Wie schön, dass das Restaurant schließt, genau wenn wir ankommen.",
+    label: "sarcasm",
+  },
+  {
+    text: "Es ist so praktisch, wenn die Webseite beim Bezahlen abstürzt.",
+    label: "sarcasm",
+  },
+  {
+    text: "Ich bin begeistert, dass ich für diesen einfachen Service extra bezahlen muss.",
+    label: "sarcasm",
+  },
+];
+
 // === EXPORT CONSOLIDADO FINAL - CALIDAD EXCELENTE ===
 export const enhancedTrainingDataV3Complete = [
   ...trainingDataBlock1,
@@ -3226,4 +3820,5 @@ export const enhancedTrainingDataV3Complete = [
   ...additionalPositiveTraining,
   ...additionalNegativeTraining,
   ...finalBalanceAdjustments,
+  ...sarcasmExpansionV4,
 ];
