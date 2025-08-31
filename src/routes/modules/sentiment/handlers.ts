@@ -5,7 +5,6 @@
 
 import { Request, Response } from "express";
 import {
-  SentimentAnalysisError,
   successResponse,
 } from "../../../core/errors/error-handler";
 import { ValidationError } from "../../../core/errors/error-types";
@@ -13,6 +12,8 @@ import { Method } from "../../../enums/sentiment.enum";
 import { enhancedSentimentService } from "../../../services/enhanced-sentiment.service";
 import { sentimentService } from "../../../services/sentiment.service";
 import { Tweet } from "../../../types/twitter";
+import { SentimentAnalysisOrchestrator } from "../../../lib/sentiment/orchestrator";
+import { SentimentAnalysisErrorFactory as SentimentAnalysisError } from "../../../core/errors/sentiment-errors";
 
 /**
  * Analyze text sentiment handler
@@ -286,22 +287,16 @@ export const trainModelHandler = async (req: Request, res: Response) => {
   }
 
   if (examples.length < 10) {
-    throw SentimentAnalysisError.invalidTrainingData({
-      message: "At least 10 training samples required",
-    });
+    throw SentimentAnalysisError.invalidTrainingData();
   }
 
   // Validate training data format
   for (const example of examples) {
     if (!example.text || !example.label) {
-      throw SentimentAnalysisError.invalidTrainingData({
-        message: "Each training sample must have text and label fields",
-      });
+      throw SentimentAnalysisError.invalidTrainingData();
     }
     if (!["positive", "negative", "neutral"].includes(example.label)) {
-      throw SentimentAnalysisError.invalidTrainingData({
-        message: "Label must be positive, negative, or neutral",
-      });
+      throw SentimentAnalysisError.invalidTrainingData();
     }
   }
 
@@ -315,6 +310,38 @@ export const trainModelHandler = async (req: Request, res: Response) => {
 export const getModelStatusHandler = async (req: Request, res: Response) => {
   const result = await sentimentService.getModelStatus();
   return successResponse(res, result, "Model status retrieved successfully");
+};
+
+/**
+ * Initialize BERT model for enhanced sentiment analysis
+ */
+export const initializeBertHandler = async (req: Request, res: Response) => {
+  const { enableAfterLoad = true } = req.body;
+  
+  try {
+    // Create an instance of the orchestrator to access BERT initialization
+    const orchestrator = new SentimentAnalysisOrchestrator();
+    
+    // Initialize BERT model
+    await orchestrator.initializeBertModel(enableAfterLoad);
+    
+    return successResponse(
+      res,
+      {
+        initialized: true,
+        enabled: orchestrator.isBertEnabled(),
+        modelType: "BERT",
+        version: "2.0.0",
+      },
+      `BERT model initialized ${enableAfterLoad ? "and enabled" : "but not enabled"} successfully`
+    );
+  } catch (error) {
+    throw SentimentAnalysisError.modelError({
+      message: `Failed to initialize BERT model: ${(error as Error).message}`,
+      modelType: "BERT",
+      errorSource: "initialization",
+    });
+  }
 };
 
 /**

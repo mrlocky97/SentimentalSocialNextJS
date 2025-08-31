@@ -49,6 +49,8 @@
   "dependencies": {
     "@crawlee/core": "^3.13.10",
     "@crawlee/playwright": "^3.13.10",
+    "@tensorflow/tfjs": "^4.16.0",
+    "@huggingface/inference": "^2.6.1",
     "@the-convocation/twitter-scraper": "^0.17.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",

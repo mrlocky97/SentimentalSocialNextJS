@@ -48,12 +48,18 @@ export interface AnalysisResult {
 
 export interface AnalyzerEngine {
   analyze(input: AnalysisRequest): Promise<AnalysisResult>;
+  initializeBert(): Promise<void>;
+  setBertEnabled(enabled: boolean): void;
+  isBertEnabled(): boolean;
 }
 
 export interface SentimentOrchestrator {
   analyzeText(input: AnalysisRequest | string): Promise<AnalysisResult>;
   analyzeTweet(tweet: TweetDTO): Promise<AnalysisResult & { tweetId: string }>;
   analyzeBatch(tweets: TweetDTO[]): Promise<AnalysisResult[]>;
+  initializeBertModel(enableAfterLoad?: boolean): Promise<void>;
+  setBertEnabled(enabled: boolean): void;
+  isBertEnabled(): boolean;
 }
 
 export interface TweetDTO {

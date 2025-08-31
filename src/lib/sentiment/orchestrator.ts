@@ -79,6 +79,44 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       5 * 60 * 1000,
     ); // Every 5 minutes
   }
+  
+  /**
+   * Initialize BERT model for enhanced sentiment analysis
+   * @param enableAfterLoad Automatically enable BERT after successful loading (default: true)
+   * @returns Promise that resolves when loading is complete
+   */
+  async initializeBertModel(enableAfterLoad: boolean = true): Promise<void> {
+    console.log("[Orchestrator] Initializing BERT model...");
+    try {
+      await this.engine.initializeBert();
+      if (enableAfterLoad) {
+        this.engine.setBertEnabled(true);
+        console.log("[Orchestrator] BERT model initialized and enabled");
+      } else {
+        console.log("[Orchestrator] BERT model initialized but not enabled");
+      }
+    } catch (error) {
+      console.error("[Orchestrator] Error initializing BERT model:", error);
+      throw new Error("Failed to initialize BERT model");
+    }
+  }
+  
+  /**
+   * Enable or disable BERT analysis
+   * @param enabled Whether to enable BERT
+   */
+  setBertEnabled(enabled: boolean): void {
+    this.engine.setBertEnabled(enabled);
+    console.log(`[Orchestrator] BERT analysis ${enabled ? "enabled" : "disabled"}`);
+  }
+  
+  /**
+   * Check if BERT is enabled
+   * @returns True if BERT is enabled and initialized
+   */
+  isBertEnabled(): boolean {
+    return this.engine.isBertEnabled();
+  }
   analyzeBatch(tweets: TweetDTO[]): Promise<AnalysisResult[]> {
     return Promise.all(tweets.map((t) => this.analyzeText({ text: t.text })));
   }

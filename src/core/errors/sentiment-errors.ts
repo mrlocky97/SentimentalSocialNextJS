@@ -272,6 +272,27 @@ export class SentimentAnalysisErrorFactory {
       },
     );
   }
+  
+  /**
+   * Error genérico del modelo
+   */
+  static modelError(details?: any): BusinessLogicError {
+    return new BusinessLogicError(
+      "Model operation failed",
+      ErrorCode.MODEL_PROCESSING_ERROR,
+      {
+        operation: "model_operation",
+        component: "sentiment_analysis",
+        additionalData: details,
+      },
+      [
+        "Check model initialization parameters",
+        "Verify TensorFlow dependencies are installed correctly",
+        "Ensure model files are accessible",
+        "Check system resources (memory, GPU availability)",
+      ],
+    );
+  }
 
   /**
    * Error de array de análisis inválido

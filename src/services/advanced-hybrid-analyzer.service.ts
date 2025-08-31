@@ -26,6 +26,15 @@ export interface ContextualFeatures {
   complexity: number;
 }
 
+export interface PredictionWithWeight {
+  prediction: {
+    label: string;
+    confidence: number;
+    score?: number;
+  };
+  weight: number;
+}
+
 export class AdvancedHybridAnalyzer {
   private baseConfig: HybridConfig = {
     naiveWeight: 0.5,
@@ -295,6 +304,106 @@ export class AdvancedHybridAnalyzer {
         naive: adjustedWeights.naiveWeight,
         rule: adjustedWeights.ruleWeight,
       },
+      features,
+      explanation,
+    };
+  }
+  
+  /**
+   * Enhanced hybrid prediction with custom weighted models
+   * @param text Text to analyze
+   * @param predictionsWithWeights Array of predictions with their weights
+   * @param language Language code
+   * @returns Enhanced sentiment prediction
+   */
+  predictWithCustomWeights(
+    text: string,
+    predictionsWithWeights: PredictionWithWeight[],
+    language: string = "en",
+  ): {
+    label: string;
+    confidence: number;
+    score: number;
+    weights: Record<string, number>;
+    features: ContextualFeatures;
+    explanation: string;
+  } {
+    const features = this.extractContextualFeatures(text, language);
+    
+    // Normalize weights to ensure they sum to 1
+    const totalWeight = predictionsWithWeights.reduce((sum, p) => sum + p.weight, 0);
+    const normalizedPredictions = predictionsWithWeights.map(p => ({
+      ...p,
+      weight: p.weight / totalWeight
+    }));
+    
+    // Calculate weighted score
+    let weightedScore = 0;
+    let weightedConfidence = 0;
+    const weights: Record<string, number> = {};
+    
+    normalizedPredictions.forEach((p, index) => {
+      // Convert label to score if score is not provided
+      let score = p.prediction.score ?? 0;
+      if (!p.prediction.score) {
+        if (p.prediction.label === "positive") score = 0.7;
+        else if (p.prediction.label === "negative") score = -0.7;
+      }
+      
+      // Apply weight to score and confidence
+      weightedScore += score * p.weight;
+      weightedConfidence += p.prediction.confidence * p.weight;
+      
+      // Store weights for reporting
+      weights[`model_${index}`] = p.weight;
+    });
+    
+    // Determine final label with contextual adjustments
+    let finalLabel = "neutral";
+    const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15;
+    
+    if (weightedScore > threshold) {
+      finalLabel = "positive";
+    } else if (weightedScore < -threshold) {
+      finalLabel = "negative";
+    }
+    
+    // Sarcasm override
+    if (features.sarcasmIndicators > 1) {
+      const positiveSignals = normalizedPredictions.filter(p => 
+        p.prediction.label === "positive" || (p.prediction.score ?? 0) > 0
+      ).length;
+      
+      const scorePositive = weightedScore > 0.05;
+      
+      if (positiveSignals > normalizedPredictions.length / 2 || scorePositive) {
+        finalLabel = "negative";
+        weightedScore = -Math.abs(weightedScore); // Flip to negative
+      }
+    }
+    
+    // Generate explanation
+    const weightExplanation = normalizedPredictions
+      .map((p, i) => `Model_${i}: ${p.weight.toFixed(2)}`)
+      .join(", ");
+    
+    let explanation = `Custom weights (${weightExplanation})`;
+    
+    if (features.sarcasmIndicators > 1) {
+      explanation += "; Sarcasm detected - biasing toward negative";
+    }
+    if (features.emotionalWords > 2) {
+      explanation += "; High emotional intensity detected";
+    }
+    if (features.hasEmojis) {
+      explanation += "; Emoji analysis applied";
+    }
+    
+    return {
+      label: finalLabel,
+      confidence: weightedConfidence,
+      score: weightedScore,
+      weights,
       features,
       explanation,
     };

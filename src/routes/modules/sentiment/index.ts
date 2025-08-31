@@ -20,6 +20,7 @@ import {
   getMetricsHandler,
   getModelStatusHandler,
   getTestHandler,
+  initializeBertHandler,
   trainModelHandler,
 } from "./handlers";
 
@@ -37,6 +38,7 @@ import {
   validateTextInput,
   validateTrainingInput,
   validateTweetInput,
+  validateBertInitInput,
 } from "./middleware";
 
 const router = Router();
@@ -735,6 +737,98 @@ router.get("/benchmarks", asyncHandler(getBenchmarksHandler));
  *     description: Get comprehensive analysis metrics and statistics
  */
 router.get("/metrics", asyncHandler(getMetricsHandler));
+
+/**
+ * @swagger
+ * /api/sentiment/initialize-bert:
+ *   post:
+ *     tags: [Sentiment Analysis]
+ *     summary: Initialize BERT model for enhanced sentiment analysis
+ *     description: Load and initialize the BERT model for superior sentiment analysis
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               enableAfterLoad:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Whether to enable BERT analysis immediately after loading
+ *     responses:
+ *       200:
+ *         description: BERT model initialized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     initialized:
+ *                       type: boolean
+ *                     enabled:
+ *                       type: boolean
+ *                     modelType:
+ *                       type: string
+ *                     version:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to initialize BERT model
+ */
+router.post("/initialize-bert", validateBertInitInput, asyncHandler(initializeBertHandler));
+
+/**
+ * @swagger
+ * /api/sentiment/initialize-bert:
+ *   post:
+ *     tags: [Sentiment Analysis]
+ *     summary: Initialize BERT model for enhanced sentiment analysis
+ *     description: Load and initialize the BERT model for superior sentiment analysis
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               enableAfterLoad:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Whether to enable BERT analysis immediately after loading
+ *     responses:
+ *       200:
+ *         description: BERT model initialized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     initialized:
+ *                       type: boolean
+ *                     enabled:
+ *                       type: boolean
+ *                     modelType:
+ *                       type: string
+ *                     version:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to initialize BERT model
+ */
+router.post("/initialize-bert", validateBertInitInput, asyncHandler(initializeBertHandler));
 
 // Temporary test endpoint for tweet analysis without middleware issues
 router.post(

@@ -467,3 +467,20 @@ export const setSentimentSecurityHeaders = (
   });
   next();
 };
+
+/**
+ * Validate BERT initialization input middleware
+ */
+export const validateBertInitInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { enableAfterLoad } = req.body;
+
+  if (enableAfterLoad !== undefined && typeof enableAfterLoad !== "boolean") {
+    throw new ValidationError("enableAfterLoad must be a boolean");
+  }
+
+  next();
+};
