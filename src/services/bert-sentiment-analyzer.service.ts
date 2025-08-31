@@ -85,16 +85,13 @@ export class BertSentimentAnalyzerService {
           // For this implementation, we'll primarily support the API approach
           logger.warn('Local model loading with pure TF.js requires additional setup');
           logger.info('Defaulting to API approach for BERT analysis');
-          
-          // Verify API key as we'll default to API
-          if (!HUGGINGFACE_API_KEY) {
-            throw new Error('HUGGINGFACE_API_KEY environment variable is required for remote BERT model');
-          }
+        }
+        
+        // Check if API key is available (but don't fail if not)
+        if (!HUGGINGFACE_API_KEY) {
+          logger.warn('HUGGINGFACE_API_KEY not set. BERT will operate in demo mode with limited functionality.');
+          logger.info('To enable full BERT functionality, set HUGGINGFACE_API_KEY environment variable');
         } else {
-          // For API-based approach, just verify API key
-          if (!HUGGINGFACE_API_KEY) {
-            throw new Error('HUGGINGFACE_API_KEY environment variable is required for remote BERT model');
-          }
           logger.info('BERT API configuration verified');
         }
         
@@ -193,6 +190,12 @@ export class BertSentimentAnalyzerService {
    */
   private async predictWithRemoteAPI(text: string): Promise<BertPrediction> {
     try {
+      // If no API key, use demo mode with simulated responses
+      if (!HUGGINGFACE_API_KEY) {
+        logger.warn('Using BERT demo mode (no API key provided)');
+        return this.generateDemoPrediction(text);
+      }
+      
       const response = await axios.post(
         REMOTE_MODEL_ENDPOINT,
         { inputs: text },
@@ -218,8 +221,65 @@ export class BertSentimentAnalyzerService {
     } catch (error) {
       logger.error('Hugging Face API call failed:', {
         error: error instanceof Error ? error.message : String(error),
+        useDemo: !HUGGINGFACE_API_KEY
       });
+      
+      // If API call fails but we have no API key, use demo mode
+      if (!HUGGINGFACE_API_KEY) {
+        logger.info('Falling back to demo mode prediction');
+        return this.generateDemoPrediction(text);
+      }
+      
       throw new Error('BERT API inference failed');
+    }
+  }
+  
+  /**
+   * Generate a demo prediction when no API key is available
+   * Uses simple keyword matching for demonstration purposes
+   * @param text Input text
+   * @returns Simulated prediction
+   */
+  private generateDemoPrediction(text: string): BertPrediction {
+    // Simple keyword-based sentiment analysis for demo mode
+    const lowerText = text.toLowerCase();
+    
+    // Lists of positive and negative keywords
+    const positiveKeywords = [
+      'good', 'great', 'excellent', 'amazing', 'love', 'happy',
+      'wonderful', 'best', 'like', 'enjoy', 'fantastic', 'perfect',
+      'awesome', 'brilliant', 'bueno', 'excelente', 'me gusta'
+    ];
+    
+    const negativeKeywords = [
+      'bad', 'terrible', 'horrible', 'hate', 'worst', 'awful',
+      'poor', 'disappointing', 'dislike', 'wrong', 'problema',
+      'malo', 'terrible', 'odio', 'peor', 'fatal'
+    ];
+    
+    // Count matches
+    const positiveMatches = positiveKeywords.filter(word => 
+      lowerText.includes(word)).length;
+    
+    const negativeMatches = negativeKeywords.filter(word => 
+      lowerText.includes(word)).length;
+    
+    // Generate sentiment based on keyword matches
+    if (positiveMatches > negativeMatches) {
+      return { 
+        label: 'POS', 
+        score: 0.65 + (Math.min(positiveMatches, 3) * 0.1) 
+      };
+    } else if (negativeMatches > positiveMatches) {
+      return { 
+        label: 'NEG', 
+        score: 0.65 + (Math.min(negativeMatches, 3) * 0.1)
+      };
+    } else {
+      return { 
+        label: 'NEU', 
+        score: 0.75 
+      };
     }
   }
 
