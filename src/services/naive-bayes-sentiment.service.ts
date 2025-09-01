@@ -1,4 +1,4 @@
-import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
+import { MultilingualSentimentDataset } from "../data/enhanced-training-data-v3";
 import { logger } from "../lib/observability/logger";
 
 export type SentimentLabel = "positive" | "negative" | "neutral";
@@ -41,9 +41,9 @@ export class NaiveBayesSentimentService {
   }
 
   private trainWithEnhancedData(): void {
-    // Convert enhanced training data to proper format - USANDO TODO EL DATASET
+    // Use the imported MultilingualSentimentDataset
     const trainingData: NaiveBayesTrainingExample[] =
-      enhancedTrainingDataV3Complete.map((item) => ({
+      MultilingualSentimentDataset.map((item: { text: string; label: string }) => ({
         text: item.text,
         label: item.label as SentimentLabel,
       }));

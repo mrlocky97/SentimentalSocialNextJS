@@ -1,17 +1,16 @@
 {
   "trained": true,
-  "trainingDate": "2025-08-30T02:26:43.839Z",
-  "datasetSize": 1417,
+  "trainingDate": "2025-09-01T11:02:20.366Z",
+  "datasetSize": 4000,
   "stats": {
     "trained": true,
-    "vocabularySize": 3479,
-    "totalDocuments": 1417,
+    "vocabularySize": 1104,
+    "totalDocuments": 4000,
     "classCounts": {
-      "positive": 376,
-      "negative": 444,
-      "neutral": 406,
-      "sarcasm": 191
+      "positive": 1333,
+      "negative": 1333,
+      "neutral": 1334
     }
   },
-  "trainingTime": 15
+  "trainingTime": 47
 }
