@@ -2,12 +2,17 @@
 
 Este documento explica cómo entrenar el modelo de análisis de sentimiento utilizando el dataset mejorado para SentimentalSocial.
 
-## Scripts Creados
+## Scripts Disponibles
 
-Se han creado dos nuevos scripts para trabajar con el modelo entrenado:
+### Scripts Principales (En Uso)
 
 1. **`scripts/train-enhanced-model.ts`** - Entrena el modelo con el dataset multilingüe completo
-2. **`scripts/run-sentiment-analysis.ts`** - Permite probar el modelo con textos personalizados
+2. **`scripts/run-sentiment-analysis.ts`** - Permite probar el modelo con textos personalizados o datasets de prueba
+
+### Scripts de Evaluación Avanzada
+
+3. **`src/scripts/evaluate-accuracy.ts`** - Realiza evaluación avanzada con métricas detalladas (F1-score, matrices de confusión)
+4. **`src/scripts/test-enhanced-system.ts`** - Prueba rápida del sistema híbrido completo
 
 ## Cómo Entrenar el Modelo
 
@@ -71,3 +76,23 @@ Para mejorar aún más el modelo, se podría:
 ## Notas Adicionales
 
 El sistema usa la clase `NaiveBayesSentimentService` que se actualiza automáticamente cuando se inicializa el servicio. Se modificó la implementación para usar correctamente el dataset multilingüe.
+
+## Sistema Híbrido
+
+El sistema implementa un enfoque híbrido que combina:
+
+1. **Análisis basado en reglas**: Implementado con diccionarios especializados
+2. **Naive Bayes ML Model**: Entrenado con el dataset multilingüe mejorado
+3. **Combinación avanzada**: Implementada en `advanced-hybrid-analyzer.service.ts`
+
+La documentación completa del sistema híbrido está disponible en `docs/HYBRID_SYSTEM_README.md`.
+
+## Organización del Código
+
+Se ha reorganizado la estructura de archivos para mayor claridad:
+
+1. Los scripts principales están en el directorio `scripts/`
+2. Los scripts auxiliares y de evaluación están en `src/scripts/`
+3. Los scripts obsoletos se han movido a `src/scripts/archived/`
+
+Esta organización facilita entender qué componentes están activos en el sistema actual.
