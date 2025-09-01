@@ -1,4 +1,7 @@
-// senimport { cacheService } from '../lib/cache/cache-migration';iment-service.ts
+/**
+ * @deprecated Este servicio está en transición y será eliminado en futuras versiones.
+ * Utilice TweetSentimentAnalysisManager o SentimentAnalysisOrchestrator directamente.
+ */
 
 import { Core, SentimentUtils } from "../core";
 import { logger } from "../lib/observability/logger";
@@ -124,8 +127,17 @@ const TEST_EXAMPLES = [
   { text: "No me gusta para nada", expected: "negative" },
 ];
 
+/**
+ * @deprecated Use TweetSentimentAnalysisManager directly
+ */
 export class SentimentService {
+  /**
+   * @deprecated Use TweetSentimentAnalysisManager.analyzeTweet instead
+   */
   async analyzeTweet(tweet: Tweet, config?: Record<string, unknown>) {
+    logger.warn(
+      "SentimentService.analyzeTweet is deprecated. Use TweetSentimentAnalysisManager directly.",
+    );
     const validation = Core.Validators.Tweet.validate(tweet);
     Core.Validators.Utils.validateOrThrow(validation, "tweet analysis");
 
@@ -174,11 +186,17 @@ export class SentimentService {
     return result;
   }
 
+  /**
+   * @deprecated Use TweetSentimentAnalysisManager.analyzeTweetsBatch instead
+   */
   async analyzeTweetsBatch(
     tweets: Tweet[],
     config?: Record<string, unknown>,
     includeStats = true,
   ) {
+    logger.warn(
+      "SentimentService.analyzeTweetsBatch is deprecated. Use TweetSentimentAnalysisManager directly.",
+    );
     const validation = Core.Validators.Tweet.validateBatch(tweets);
     Core.Validators.Utils.validateOrThrow(validation, "batch analysis");
 
