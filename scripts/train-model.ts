@@ -6,9 +6,12 @@
 import dotenv from "dotenv";
 dotenv.config({ path: [".env.local", ".env"] });
 
-import { enhancedTrainingDataV3Complete } from "../src/data/enhanced-training-data-v3";
+import { MultilingualSentimentDataset } from "../src/data/enhanced-training-data-v3";
 import { ModelPersistenceManager } from "../src/services/model-persistence.service";
 import { TweetSentimentAnalysisManager } from "../src/services/tweet-sentiment-analysis.manager.service";
+
+// Use MultilingualSentimentDataset as enhancedTrainingDataV3Complete
+const enhancedTrainingDataV3Complete = MultilingualSentimentDataset;
 
 async function trainAndSaveModel() {
   try {

@@ -1,10 +1,10 @@
 {
-  "version": "v3-kcv",
-  "created_at": "2025-08-30T02:26:43.741Z",
+  "version": "v3.1",
+  "created_at": "2025-09-01T16:16:33.596Z",
   "model_type": "naive_bayes_enhanced",
   "dataset": {
     "source": "enhanced-training-data-v3.ts",
-    "total_samples": 1417,
+    "total_samples": 4000,
     "distribution": {
       "positive": 376,
       "negative": 444,
@@ -73,60 +73,45 @@
       }
     },
     "single_split": {
-      "accuracy": 0.6363636363636364,
-      "macro_f1": 0.5140242607098584,
-      "weighted_f1": 0.5916512473454688,
-      "test_samples": 286,
+      "accuracy": 0.9987515605493134,
+      "macro_f1": 0.9987515561712051,
+      "weighted_f1": 0.9987515561712051,
+      "test_samples": 801,
       "metrics_by_class": {
         "positive": {
-          "precision": 0.5742574257425742,
-          "recall": 0.7631578947368421,
-          "f1_score": 0.655367231638418,
-          "support": 76
+          "precision": 1,
+          "recall": 1,
+          "f1_score": 1,
+          "support": 267
         },
         "negative": {
-          "precision": 0.6078431372549019,
-          "recall": 0.6966292134831461,
-          "f1_score": 0.6492146596858639,
-          "support": 89
-        },
-        "sarcasm": {
-          "precision": 0,
-          "recall": 0,
-          "f1_score": 0,
-          "support": 39
+          "precision": 1,
+          "recall": 0.9962546816479401,
+          "f1_score": 0.99812382739212,
+          "support": 267
         },
         "neutral": {
-          "precision": 0.7469879518072289,
-          "recall": 0.7560975609756098,
-          "f1_score": 0.7515151515151515,
-          "support": 82
+          "precision": 0.996268656716418,
+          "recall": 1,
+          "f1_score": 0.9981308411214954,
+          "support": 267
         }
       },
       "confusion_matrix": {
         "positive": {
-          "positive": 58,
-          "negative": 8,
-          "sarcasm": 0,
-          "neutral": 10
+          "positive": 267,
+          "negative": 0,
+          "neutral": 0
         },
         "negative": {
-          "positive": 18,
-          "negative": 62,
-          "sarcasm": 0,
-          "neutral": 9
-        },
-        "sarcasm": {
-          "positive": 12,
-          "negative": 25,
-          "sarcasm": 0,
-          "neutral": 2
+          "positive": 0,
+          "negative": 266,
+          "neutral": 1
         },
         "neutral": {
-          "positive": 13,
-          "negative": 7,
-          "sarcasm": 0,
-          "neutral": 62
+          "positive": 0,
+          "negative": 0,
+          "neutral": 267
         }
       }
     },
@@ -136,678 +121,510 @@
       "folds": [
         {
           "fold": 1,
-          "accuracy": 0.6041666666666666,
-          "macro_f1": 0.48798543689320384,
-          "weighted_f1": 0.5610234627831715,
-          "test_samples": 144,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 402,
           "by_class": {
             "positive": {
-              "precision": 0.5238095238095238,
-              "recall": 0.5789473684210527,
-              "f1_score": 0.5500000000000002,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             },
             "negative": {
-              "precision": 0.5344827586206896,
-              "recall": 0.6888888888888889,
-              "f1_score": 0.6019417475728155,
-              "support": 45
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 20
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             },
             "neutral": {
-              "precision": 0.7727272727272727,
-              "recall": 0.8292682926829268,
-              "f1_score": 0.7999999999999999,
-              "support": 41
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 22,
-              "negative": 12,
-              "sarcasm": 0,
-              "neutral": 4
+              "positive": 134,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 9,
-              "negative": 31,
-              "sarcasm": 0,
-              "neutral": 5
-            },
-            "sarcasm": {
-              "positive": 8,
-              "negative": 11,
-              "sarcasm": 0,
-              "neutral": 1
+              "positive": 0,
+              "negative": 134,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 4,
-              "sarcasm": 0,
-              "neutral": 34
+              "positive": 0,
+              "negative": 0,
+              "neutral": 134
             }
           }
         },
         {
           "fold": 2,
-          "accuracy": 0.6643356643356644,
-          "macro_f1": 0.5304617604617605,
-          "weighted_f1": 0.6148497966679785,
-          "test_samples": 143,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 402,
           "by_class": {
             "positive": {
-              "precision": 0.5897435897435898,
-              "recall": 0.6052631578947368,
-              "f1_score": 0.5974025974025974,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             },
             "negative": {
-              "precision": 0.6181818181818182,
-              "recall": 0.7555555555555555,
-              "f1_score": 0.6799999999999999,
-              "support": 45
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             },
             "neutral": {
-              "precision": 0.7755102040816326,
-              "recall": 0.926829268292683,
-              "f1_score": 0.8444444444444446,
-              "support": 41
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 23,
-              "negative": 9,
-              "sarcasm": 0,
-              "neutral": 6
+              "positive": 134,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 7,
-              "negative": 34,
-              "sarcasm": 0,
-              "neutral": 4
-            },
-            "sarcasm": {
-              "positive": 6,
-              "negative": 12,
-              "sarcasm": 0,
-              "neutral": 1
+              "positive": 0,
+              "negative": 134,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 3,
+              "positive": 0,
               "negative": 0,
-              "sarcasm": 0,
-              "neutral": 38
+              "neutral": 134
             }
           }
         },
         {
           "fold": 3,
-          "accuracy": 0.6503496503496503,
-          "macro_f1": 0.5261022927689594,
-          "weighted_f1": 0.6085272751939418,
-          "test_samples": 143,
+          "accuracy": 0.9950248756218906,
+          "macro_f1": 0.9950245985333704,
+          "weighted_f1": 0.9950245985333704,
+          "test_samples": 402,
           "by_class": {
             "positive": {
-              "precision": 0.5813953488372093,
-              "recall": 0.6578947368421053,
-              "f1_score": 0.6172839506172839,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             },
             "negative": {
-              "precision": 0.5666666666666667,
-              "recall": 0.7555555555555555,
-              "f1_score": 0.6476190476190475,
-              "support": 45
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 0.9850746268656716,
+              "f1_score": 0.9924812030075187,
+              "support": 134
             },
             "neutral": {
-              "precision": 0.85,
-              "recall": 0.8292682926829268,
-              "f1_score": 0.8395061728395061,
-              "support": 41
+              "precision": 0.9852941176470589,
+              "recall": 1,
+              "f1_score": 0.9925925925925926,
+              "support": 134
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 25,
-              "negative": 11,
-              "sarcasm": 0,
-              "neutral": 2
+              "positive": 134,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 8,
-              "negative": 34,
-              "sarcasm": 0,
-              "neutral": 3
-            },
-            "sarcasm": {
-              "positive": 6,
-              "negative": 12,
-              "sarcasm": 0,
-              "neutral": 1
+              "positive": 0,
+              "negative": 132,
+              "neutral": 2
             },
             "neutral": {
-              "positive": 4,
-              "negative": 3,
-              "sarcasm": 0,
-              "neutral": 34
+              "positive": 0,
+              "negative": 0,
+              "neutral": 134
             }
           }
         },
         {
           "fold": 4,
-          "accuracy": 0.6503496503496503,
-          "macro_f1": 0.520834503042684,
-          "weighted_f1": 0.6021537189418195,
-          "test_samples": 143,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 400,
           "by_class": {
             "positive": {
-              "precision": 0.6410256410256411,
-              "recall": 0.6578947368421053,
-              "f1_score": 0.6493506493506495,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.6153846153846154,
-              "recall": 0.7111111111111111,
-              "f1_score": 0.6597938144329897,
-              "support": 45
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.6923076923076923,
-              "recall": 0.8780487804878049,
-              "f1_score": 0.7741935483870966,
-              "support": 41
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 134
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 25,
-              "negative": 5,
-              "sarcasm": 0,
-              "neutral": 8
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 7,
-              "negative": 32,
-              "sarcasm": 0,
-              "neutral": 6
-            },
-            "sarcasm": {
-              "positive": 4,
-              "negative": 13,
-              "sarcasm": 0,
-              "neutral": 2
+              "positive": 0,
+              "negative": 133,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 2,
-              "sarcasm": 0,
-              "neutral": 36
+              "positive": 0,
+              "negative": 0,
+              "neutral": 134
             }
           }
         },
         {
           "fold": 5,
-          "accuracy": 0.6267605633802817,
-          "macro_f1": 0.5028526862045175,
-          "weighted_f1": 0.581578223578505,
-          "test_samples": 142,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.6388888888888888,
-              "recall": 0.6052631578947368,
-              "f1_score": 0.6216216216216216,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.5645161290322581,
-              "recall": 0.7954545454545454,
-              "f1_score": 0.6603773584905661,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.7045454545454546,
-              "recall": 0.7560975609756098,
-              "f1_score": 0.7294117647058823,
-              "support": 41
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 23,
-              "negative": 7,
-              "sarcasm": 0,
-              "neutral": 8
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 5,
-              "negative": 35,
-              "sarcasm": 0,
-              "neutral": 4
-            },
-            "sarcasm": {
-              "positive": 5,
-              "negative": 13,
-              "sarcasm": 0,
-              "neutral": 1
+              "positive": 0,
+              "negative": 133,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 7,
-              "sarcasm": 0,
-              "neutral": 31
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         },
         {
           "fold": 6,
-          "accuracy": 0.6549295774647887,
-          "macro_f1": 0.524434369319053,
-          "weighted_f1": 0.6073979677614497,
-          "test_samples": 142,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.5581395348837209,
-              "recall": 0.631578947368421,
-              "f1_score": 0.5925925925925927,
-              "support": 38
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.6274509803921569,
-              "recall": 0.7272727272727273,
-              "f1_score": 0.6736842105263158,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.7708333333333334,
-              "recall": 0.9024390243902439,
-              "f1_score": 0.8314606741573034,
-              "support": 41
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 24,
-              "negative": 8,
-              "sarcasm": 0,
-              "neutral": 6
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 7,
-              "negative": 32,
-              "sarcasm": 0,
-              "neutral": 5
-            },
-            "sarcasm": {
-              "positive": 9,
-              "negative": 10,
-              "sarcasm": 0,
+              "positive": 0,
+              "negative": 133,
               "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 1,
-              "sarcasm": 0,
-              "neutral": 37
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         },
         {
           "fold": 7,
-          "accuracy": 0.6928571428571428,
-          "macro_f1": 0.5572717348640958,
-          "weighted_f1": 0.6424727000014018,
-          "test_samples": 140,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.6428571428571429,
-              "recall": 0.7297297297297297,
-              "f1_score": 0.6835443037974683,
-              "support": 37
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.6538461538461539,
-              "recall": 0.7727272727272727,
-              "f1_score": 0.7083333333333333,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.782608695652174,
-              "recall": 0.9,
-              "f1_score": 0.8372093023255814,
-              "support": 40
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 27,
-              "negative": 5,
-              "sarcasm": 0,
-              "neutral": 5
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 5,
-              "negative": 34,
-              "sarcasm": 0,
-              "neutral": 5
-            },
-            "sarcasm": {
-              "positive": 7,
-              "negative": 12,
-              "sarcasm": 0,
+              "positive": 0,
+              "negative": 133,
               "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 1,
-              "sarcasm": 0,
-              "neutral": 36
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         },
         {
           "fold": 8,
-          "accuracy": 0.6071428571428571,
-          "macro_f1": 0.48727746972128994,
-          "weighted_f1": 0.5600657167872255,
-          "test_samples": 140,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.5294117647058824,
-              "recall": 0.7297297297297297,
-              "f1_score": 0.6136363636363636,
-              "support": 37
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.6,
-              "recall": 0.5454545454545454,
-              "f1_score": 0.5714285714285713,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.6938775510204082,
-              "recall": 0.85,
-              "f1_score": 0.7640449438202247,
-              "support": 40
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 27,
-              "negative": 3,
-              "sarcasm": 0,
-              "neutral": 7
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 13,
-              "negative": 24,
-              "sarcasm": 0,
-              "neutral": 7
-            },
-            "sarcasm": {
-              "positive": 8,
-              "negative": 10,
-              "sarcasm": 0,
-              "neutral": 1
+              "positive": 0,
+              "negative": 133,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 3,
-              "negative": 3,
-              "sarcasm": 0,
-              "neutral": 34
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         },
         {
           "fold": 9,
-          "accuracy": 0.6071428571428571,
-          "macro_f1": 0.4882170380775217,
-          "weighted_f1": 0.563140568478255,
-          "test_samples": 140,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.5882352941176471,
-              "recall": 0.5405405405405406,
-              "f1_score": 0.5633802816901409,
-              "support": 37
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.5161290322580645,
-              "recall": 0.7272727272727273,
-              "f1_score": 0.6037735849056604,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.75,
-              "recall": 0.825,
-              "f1_score": 0.7857142857142856,
-              "support": 40
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 20,
-              "negative": 12,
-              "sarcasm": 0,
-              "neutral": 5
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 6,
-              "negative": 32,
-              "sarcasm": 0,
-              "neutral": 6
-            },
-            "sarcasm": {
-              "positive": 6,
-              "negative": 13,
-              "sarcasm": 0,
+              "positive": 0,
+              "negative": 133,
               "neutral": 0
             },
             "neutral": {
-              "positive": 2,
-              "negative": 5,
-              "sarcasm": 0,
-              "neutral": 33
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         },
         {
           "fold": 10,
-          "accuracy": 0.6357142857142857,
-          "macro_f1": 0.5104216241264434,
-          "weighted_f1": 0.5892493049119555,
-          "test_samples": 140,
+          "accuracy": 1,
+          "macro_f1": 1,
+          "weighted_f1": 1,
+          "test_samples": 399,
           "by_class": {
             "positive": {
-              "precision": 0.6216216216216216,
-              "recall": 0.6216216216216216,
-              "f1_score": 0.6216216216216216,
-              "support": 37
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "negative": {
-              "precision": 0.5833333333333334,
-              "recall": 0.7954545454545454,
-              "f1_score": 0.673076923076923,
-              "support": 44
-            },
-            "sarcasm": {
-              "precision": 0,
-              "recall": 0,
-              "f1_score": 0,
-              "support": 19
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             },
             "neutral": {
-              "precision": 0.7209302325581395,
-              "recall": 0.775,
-              "f1_score": 0.7469879518072289,
-              "support": 40
+              "precision": 1,
+              "recall": 1,
+              "f1_score": 1,
+              "support": 133
             }
           },
           "confusion_matrix": {
             "positive": {
-              "positive": 23,
-              "negative": 9,
-              "sarcasm": 0,
-              "neutral": 5
+              "positive": 133,
+              "negative": 0,
+              "neutral": 0
             },
             "negative": {
-              "positive": 4,
-              "negative": 35,
-              "sarcasm": 0,
-              "neutral": 5
-            },
-            "sarcasm": {
-              "positive": 4,
-              "negative": 13,
-              "sarcasm": 0,
-              "neutral": 2
+              "positive": 0,
+              "negative": 133,
+              "neutral": 0
             },
             "neutral": {
-              "positive": 6,
-              "negative": 3,
-              "sarcasm": 0,
-              "neutral": 31
+              "positive": 0,
+              "negative": 0,
+              "neutral": 133
             }
           }
         }
       ],
       "aggregate": {
         "accuracy": {
-          "mean": 0.6393748915403845,
-          "std": 0.027306004453244995
+          "mean": 0.9995024875621891,
+          "std": 0.0014925373134328293
         },
         "macro_f1": {
-          "mean": 0.513585891547953,
-          "std": 0.021532415900493606
+          "mean": 0.999502459853337,
+          "std": 0.0014926204399888677
         },
         "weighted_f1": {
-          "mean": 0.5930458735105705,
-          "std": 0.02569125380617164
+          "mean": 0.999502459853337,
+          "std": 0.0014926204399888677
         },
         "by_class": {
           "positive": {
             "precision": {
-              "mean": 0.5915128350490868,
-              "std": 0.042319120845687216
+              "mean": 1,
+              "std": 0
             },
             "recall": {
-              "mean": 0.635846372688478,
-              "std": 0.05745637390788252
+              "mean": 1,
+              "std": 0
             },
             "f1": {
-              "mean": 0.6110433982330339,
-              "std": 0.03676664956466306
+              "mean": 1,
+              "std": 0
             },
             "support": {
-              "mean": 37.6,
-              "std": 0.4898979485566356
+              "mean": 133.3,
+              "std": 0.45825756949558394
             }
           },
           "negative": {
             "precision": {
-              "mean": 0.5879991487715756,
-              "std": 0.04093270983583129
-            },
-            "recall": {
-              "mean": 0.7274747474747475,
-              "std": 0.06910530596059139
-            },
-            "f1": {
-              "mean": 0.6480028591386222,
-              "std": 0.04023133360919473
-            },
-            "support": {
-              "mean": 44.4,
-              "std": 0.4898979485566356
-            }
-          },
-          "sarcasm": {
-            "precision": {
-              "mean": 0,
+              "mean": 1,
               "std": 0
             },
             "recall": {
-              "mean": 0,
-              "std": 0
+              "mean": 0.9985074626865671,
+              "std": 0.00447761194029852
             },
             "f1": {
-              "mean": 0,
-              "std": 0
+              "mean": 0.9992481203007518,
+              "std": 0.002255639097744377
             },
             "support": {
-              "mean": 19.1,
-              "std": 0.2999999999999999
+              "mean": 133.3,
+              "std": 0.45825756949558394
             }
           },
           "neutral": {
             "precision": {
-              "mean": 0.7513340436226107,
-              "std": 0.04694268446934407
+              "mean": 0.9985294117647058,
+              "std": 0.004411764705882336
             },
             "recall": {
-              "mean": 0.8471951219512196,
-              "std": 0.05271425220454931
+              "mean": 1,
+              "std": 0
             },
             "f1": {
-              "mean": 0.7952973088201553,
-              "std": 0.039553756265343874
+              "mean": 0.9992592592592592,
+              "std": 0.0022222222222222253
             },
             "support": {
-              "mean": 40.6,
+              "mean": 133.4,
               "std": 0.4898979485566356
             }
           }

@@ -1,12 +1,12 @@
 {
-  "version": "v3.2-enhanced",
+  "version": "v3.1",
   "datasetSize": 4000,
-  "accuracy": 0.92,
+  "accuracy": 0.9987515605493134,
   "features": [
     "naive_bayes",
-    "enhanced_dataset_v3"
+    "enhanced"
   ],
   "modelType": "naive_bayes",
-  "trainingDate": "2025-09-01T11:02:20.360Z",
-  "lastUpdated": "2025-09-01T11:02:20.365Z"
+  "trainingDate": "2025-09-01T16:16:33.691Z",
+  "lastUpdated": "2025-09-01T16:16:33.695Z"
 }

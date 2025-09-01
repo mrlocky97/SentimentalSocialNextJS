@@ -12,10 +12,13 @@ dotenv.config({ path: [".env.local", ".env"] });
 
 import fs from "fs/promises";
 import path from "path";
-import { enhancedTrainingDataV3Complete } from "../src/data/enhanced-training-data-v3";
+import { MultilingualSentimentDataset } from "../src/data/enhanced-training-data-v3";
 import { ModelPersistenceManager } from "../src/services/model-persistence.service";
 import { NaiveBayesSentimentService, SentimentLabel } from "../src/services/naive-bayes-sentiment.service";
 import { TweetSentimentAnalysisManager } from "../src/services/tweet-sentiment-analysis.manager.service";
+
+// Use MultilingualSentimentDataset as enhancedTrainingDataV3Complete
+const enhancedTrainingDataV3Complete = MultilingualSentimentDataset;
 
 // Configuration constants
 const RANDOM_SEED = parseInt(process.env.RANDOM_SEED || "42", 10);
@@ -266,6 +269,7 @@ function evaluateModel(
   weighted_f1: number;
   by_class: Record<string, ClassMetrics>;
   confusion_matrix: ConfusionMatrix;
+  test_samples: number;
 } {
   const predictions = testData.map((example) => {
     const prediction = naiveBayesService.predict(example.text);
@@ -275,7 +279,11 @@ function evaluateModel(
     };
   });
   
-  return calculateMetrics(predictions);
+  const metrics = calculateMetrics(predictions);
+  return {
+    ...metrics,
+    test_samples: testData.length
+  };
 }
 
 /**
