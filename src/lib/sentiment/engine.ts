@@ -11,9 +11,7 @@ import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
 } from "../../services/advanced-hybrid-analyzer.service";
-import {
-  BertSentimentAnalyzerService
-} from "../../services/bert-sentiment-analyzer.service";
+import { BertSentimentAnalyzerService } from "../../services/bert-sentiment-analyzer.service";
 import {
   NaiveBayesSentimentService,
   NaiveBayesTrainingExample,
@@ -198,7 +196,7 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
     this.naiveBayesAnalyzer = new NaiveBayesSentimentService();
     this.hybridAnalyzer = new AdvancedHybridAnalyzer();
   }
-  
+
   /**
    * Initializes the BERT model for sentiment analysis.
    * This is done lazily to avoid loading the model unless needed.
@@ -212,14 +210,14 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
       console.log("[SentimentEngine] BERT model successfully loaded");
     }
   }
-  
+
   /**
    * Enable or disable BERT analysis
    */
   public setBertEnabled(enabled: boolean): void {
     this.bertEnabled = enabled && this.bertAnalyzer !== null;
   }
-  
+
   /**
    * Check if BERT is initialized and enabled
    */
@@ -276,23 +274,28 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
     // 1. Get predictions from rule-based and Naive Bayes analyzers.
     const ruleResultPromise = this.ruleBasedAnalyzer.analyze(text);
     const naiveResult = this.naiveBayesAnalyzer.predict(text);
-    
+
     // 2. Get BERT prediction if enabled and available
     let bertResult = null;
     if (this.isBertEnabled() && this.bertAnalyzer) {
       try {
         bertResult = await this.bertAnalyzer.predict(text);
-        console.log(`[SentimentEngine] BERT prediction: ${JSON.stringify(bertResult)}`);
+        console.log(
+          `[SentimentEngine] BERT prediction: ${JSON.stringify(bertResult)}`,
+        );
       } catch (error) {
-        console.error("[SentimentEngine] BERT analysis failed, falling back to standard hybrid analysis", error);
+        console.error(
+          "[SentimentEngine] BERT analysis failed, falling back to standard hybrid analysis",
+          error,
+        );
       }
     }
-    
+
     const ruleResult = await ruleResultPromise;
 
     // 3. Use the advanced hybrid analyzer to get a unified result.
     let hybridPrediction;
-    
+
     if (bertResult) {
       // If BERT is available, use it with other analyzers in enhanced hybrid mode
       hybridPrediction = this.hybridAnalyzer.predictWithCustomWeights(
@@ -300,7 +303,7 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
         [
           {
             prediction: naiveResult,
-            weight: 0.25
+            weight: 0.25,
           },
           {
             prediction: {
@@ -308,7 +311,7 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
               confidence: ruleResult.sentiment.confidence,
               score: ruleResult.sentiment.score,
             },
-            weight: 0.25
+            weight: 0.25,
           },
           {
             prediction: {
@@ -316,10 +319,10 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
               confidence: bertResult.confidence,
               score: bertResult.score,
             },
-            weight: 0.5
+            weight: 0.5,
           },
         ],
-        language
+        language,
       );
     } else {
       // Fall back to original hybrid analysis without BERT

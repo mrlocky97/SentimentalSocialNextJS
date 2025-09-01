@@ -92,6 +92,9 @@ jest.mock("../src/lib/database/connection", () => ({
   },
 }));
 
+// Import mocks for sentiment system
+import "./mocks/sentiment-mocks";
+
 // Global cleanup after all tests
 afterAll(async () => {
   // Clear all timers and intervals

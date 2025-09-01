@@ -455,11 +455,11 @@ export async function handleScrapingRequest<
       execution_time: execTime,
       message: `Scraped ${tweetsWithSentiment.length}/${params.tweetsToRetrieve} ${context.type} tweets${params.analyzeSentiment ? " with sentiment" : ""}`,
     };
-    
+
     if (returnResultInsteadOfSending) {
       return response;
     }
-    
+
     res.json(response);
   } catch (err) {
     handleScrapingError(res, err, `${context.type} scraping`);

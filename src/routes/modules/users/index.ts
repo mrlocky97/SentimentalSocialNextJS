@@ -1,22 +1,22 @@
 import { Router } from "express";
 import {
-    authenticateToken,
-    requireRole,
+  authenticateToken,
+  requireRole,
 } from "../../../middleware/express-auth";
 import {
-    createUser,
-    deleteUser,
-    getProfile,
-    getUserById,
-    getUsers,
-    updateProfile,
-    updateUser,
+  createUser,
+  deleteUser,
+  getProfile,
+  getUserById,
+  getUsers,
+  updateProfile,
+  updateUser,
 } from "./handlers";
 import {
-    sanitizeUpdateBody,
-    stripForbiddenProfileFields,
-    validateCreateUserBody,
-    validateUserIdParam,
+  sanitizeUpdateBody,
+  stripForbiddenProfileFields,
+  validateCreateUserBody,
+  validateUserIdParam,
 } from "./middleware";
 
 const router = Router();
@@ -66,7 +66,7 @@ const router = Router();
  *           type: string
  *           format: date-time
  *           example: 2023-01-01T00:00:00.000Z
- * 
+ *
  *     CreateUserRequest:
  *       type: object
  *       required:
@@ -98,7 +98,7 @@ const router = Router();
  *           type: string
  *           enum: [admin, manager, analyst, client]
  *           example: analyst
- * 
+ *
  *     UpdateProfileRequest:
  *       type: object
  *       properties:
@@ -114,7 +114,7 @@ const router = Router();
  *           type: string
  *           maxLength: 500
  *           example: Updated bio description
- * 
+ *
  *     UpdateUserRequest:
  *       type: object
  *       properties:
@@ -131,7 +131,7 @@ const router = Router();
  *         isVerified:
  *           type: boolean
  *           example: true
- * 
+ *
  * tags:
  *   - name: Users
  *     description: User management endpoints for profiles, user administration and user operations

@@ -16,7 +16,7 @@ import {
 export class UserService {
   constructor(
     private userRepository: UserRepository,
-    private campaignRepository: MongoCampaignRepository
+    private campaignRepository: MongoCampaignRepository,
   ) {}
 
   /**
@@ -82,10 +82,7 @@ export class UserService {
    * Follow a user - Adapted for marketing platform team collaboration
    * Allows team members to follow each other for notifications and updates
    */
-  async followUser(
-    followerId: string,
-    followingId: string,
-  ): Promise<boolean> {
+  async followUser(followerId: string, followingId: string): Promise<boolean> {
     try {
       // Validate that both users exist and are active
       const [follower, following] = await Promise.all([
@@ -103,20 +100,26 @@ export class UserService {
 
       // Prevent self-following
       if (followerId === followingId) {
-        throw new ApiError("INVALID_OPERATION", "Users cannot follow themselves");
+        throw new ApiError(
+          "INVALID_OPERATION",
+          "Users cannot follow themselves",
+        );
       }
 
       // Check if they're in the same organization (optional security check)
       if (follower.organizationId !== following.organizationId) {
         throw new ApiError(
-          "DIFFERENT_ORGANIZATION", 
-          "Can only follow users within the same organization"
+          "DIFFERENT_ORGANIZATION",
+          "Can only follow users within the same organization",
         );
       }
 
       // Use repository method to create the follow relationship
-      const result = await this.userRepository.followUser(followerId, followingId);
-      
+      const result = await this.userRepository.followUser(
+        followerId,
+        followingId,
+      );
+
       return result;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -138,12 +141,18 @@ export class UserService {
     try {
       // Basic validation
       if (followerId === followingId) {
-        throw new ApiError("INVALID_OPERATION", "Users cannot unfollow themselves");
+        throw new ApiError(
+          "INVALID_OPERATION",
+          "Users cannot unfollow themselves",
+        );
       }
 
       // Use repository method to remove the follow relationship
-      const result = await this.userRepository.unfollowUser(followerId, followingId);
-      
+      const result = await this.userRepository.unfollowUser(
+        followerId,
+        followingId,
+      );
+
       return result;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -181,18 +190,18 @@ export class UserService {
     try {
       // Convert page-based pagination to offset-based for repository
       const offset = (pagination.page - 1) * pagination.limit;
-      
+
       // Find campaigns where user is either creator or assigned
-      const campaigns = await this.campaignRepository.findByUserId(
-        userId,
-        { offset, limit: pagination.limit }
-      );
-      
+      const campaigns = await this.campaignRepository.findByUserId(userId, {
+        offset,
+        limit: pagination.limit,
+      });
+
       // Get total count for pagination
       const total = await this.campaignRepository.countByUserId(userId);
 
       // Convert documents to plain objects for API response
-      const campaignData = campaigns.map(campaign => ({
+      const campaignData = campaigns.map((campaign) => ({
         id: campaign._id,
         name: campaign.name,
         description: campaign.description,
@@ -236,9 +245,9 @@ export class UserService {
           offset: (pagination.page - 1) * pagination.limit,
           sortBy: "createdAt",
           sortOrder: "desc",
-        }
+        },
       );
-      
+
       // Use existing count method with organizationId filter
       const total = await this.userRepository.count({ organizationId });
 

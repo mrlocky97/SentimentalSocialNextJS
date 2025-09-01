@@ -362,7 +362,7 @@ export class TwitterRealScraperService {
     scrapedData: ScrapedTweetData[],
     options: ScrapingOptions,
   ): Tweet[] {
-  const now = new Date();
+    const now = new Date();
     const maxAge = options.maxAgeHours
       ? options.maxAgeHours * 60 * 60 * 1000
       : Infinity;
@@ -408,7 +408,9 @@ export class TwitterRealScraperService {
     try {
       // Not a perfect mapping, but helps track processing latency
       const duration = Date.now() - now.getTime();
-      defaultMetrics.tweetSentimentLatency.observe(duration, { language: "unknown" });
+      defaultMetrics.tweetSentimentLatency.observe(duration, {
+        language: "unknown",
+      });
     } catch (err) {
       // ignore metric errors
     }

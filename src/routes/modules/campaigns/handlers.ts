@@ -9,10 +9,10 @@ import { CampaignType } from "../../../enums/campaign.enum";
 import { MongoCampaignRepository } from "../../../repositories/mongo-campaign.repository";
 import { TweetDatabaseService } from "../../../services/tweet-database.service";
 import {
-    CampaignFilter,
-    CampaignStatus,
-    CreateCampaignRequest,
-    UpdateCampaignRequest,
+  CampaignFilter,
+  CampaignStatus,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
 } from "../../../types/campaign";
 
 const campaignRepository = new MongoCampaignRepository();

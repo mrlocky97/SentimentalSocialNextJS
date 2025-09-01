@@ -143,7 +143,7 @@ export function configureMetricsRoutes(): Router {
       });
     }
   });
-  
+
   // Cross-validation metrics endpoint
   router.get("/cv", async (req, res) => {
     try {

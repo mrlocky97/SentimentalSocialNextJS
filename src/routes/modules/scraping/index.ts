@@ -1,10 +1,10 @@
 import { Router } from "express";
 import {
-    getScrapingStatus,
-    listTweets,
-    scrapeHashtag,
-    scrapeSearch,
-    scrapeUser,
+  getScrapingStatus,
+  listTweets,
+  scrapeHashtag,
+  scrapeSearch,
+  scrapeUser,
 } from "./handlers";
 
 const router = Router();

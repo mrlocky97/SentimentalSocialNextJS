@@ -69,7 +69,9 @@ export async function queryMetrics(
 export async function clearOldMetrics(olderThan: Date): Promise<number> {
   try {
     const Model = getModel();
-    const res = await Model.deleteMany({ timestamp: { $lt: olderThan } }).exec();
+    const res = await Model.deleteMany({
+      timestamp: { $lt: olderThan },
+    }).exec();
     return res.deletedCount || 0;
   } catch (error) {
     systemLogger.error("Error clearing old metrics", error as Error);

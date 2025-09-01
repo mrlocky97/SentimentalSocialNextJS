@@ -79,7 +79,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       5 * 60 * 1000,
     ); // Every 5 minutes
   }
-  
+
   /**
    * Initialize BERT model for enhanced sentiment analysis
    * @param enableAfterLoad Automatically enable BERT after successful loading (default: true)
@@ -100,16 +100,18 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       throw new Error("Failed to initialize BERT model");
     }
   }
-  
+
   /**
    * Enable or disable BERT analysis
    * @param enabled Whether to enable BERT
    */
   setBertEnabled(enabled: boolean): void {
     this.engine.setBertEnabled(enabled);
-    console.log(`[Orchestrator] BERT analysis ${enabled ? "enabled" : "disabled"}`);
+    console.log(
+      `[Orchestrator] BERT analysis ${enabled ? "enabled" : "disabled"}`,
+    );
   }
-  
+
   /**
    * Check if BERT is enabled
    * @returns True if BERT is enabled and initialized
@@ -518,12 +520,12 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    */
   async analyzeTextLegacy(text: string, method: string = "hybrid") {
     const startTime = Date.now();
-    
+
     // Get raw analysis result instead of API response
     const { SentimentMappers } = await import("./mappers");
     const request = SentimentMappers.Input.textToAnalysisRequest(text);
     const result = await this.analyzeText(request);
-    
+
     const processingTime = Date.now() - startTime;
 
     return {

@@ -13,7 +13,11 @@ import {
   ValidationError,
 } from "../../../core/errors";
 import { tokenBlacklistService } from "../../../lib/security/token-blacklist";
-import { AuthenticatedRequest, verifyRefreshToken, generateToken } from "../../../middleware/express-auth";
+import {
+  AuthenticatedRequest,
+  verifyRefreshToken,
+  generateToken,
+} from "../../../middleware/express-auth";
 import { AuthService } from "../../../services/auth.service";
 import { LoginRequest, RegisterRequest } from "../../../types/auth";
 
@@ -64,8 +68,8 @@ export const registerHandler = async (req: Request, res: Response) => {
         displayName: result.user.displayName,
         username: result.user.username,
       },
-  token: result.accessToken,
-  refreshToken: (result as any).refreshToken,
+      token: result.accessToken,
+      refreshToken: (result as any).refreshToken,
     });
   } catch (error) {
     if (
@@ -122,8 +126,8 @@ export const loginHandler = async (req: Request, res: Response) => {
         displayName: result.user.displayName,
         username: result.user.username,
       },
-  token: result.accessToken,
-  refreshToken: (result as any).refreshToken,
+      token: result.accessToken,
+      refreshToken: (result as any).refreshToken,
     });
   } catch (error) {
     if (
@@ -180,9 +184,14 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
     }
 
     // Verify refresh token using shared helper (ensures same secret as generation)
-    const decoded = verifyRefreshToken(refreshToken) as RefreshTokenPayload | null;
+    const decoded = verifyRefreshToken(
+      refreshToken,
+    ) as RefreshTokenPayload | null;
     if (!decoded) {
-      throw new ValidationError("Invalid refresh token", ErrorCode.INVALID_TOKEN);
+      throw new ValidationError(
+        "Invalid refresh token",
+        ErrorCode.INVALID_TOKEN,
+      );
     }
 
     // Check if token is blacklisted
@@ -319,7 +328,7 @@ export const forgotPasswordHandler = async (req: Request, res: Response) => {
 
     // Use auth service to handle password reset request
     const result = await authService.requestPasswordReset(email);
-    
+
     if (!result) {
       // Still return success to prevent email enumeration, but log the error
       console.error("Failed to send password reset email for:", email);
@@ -491,7 +500,7 @@ export const changePasswordHandler = async (
           timestamp: new Date().toISOString(),
         },
       };
-      
+
       // Return 401 for password validation errors, 400 for other business logic errors
       const statusCode = error.message.includes("Current password is incorrect")
         ? 401

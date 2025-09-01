@@ -4,16 +4,18 @@
  * Using pure tfjs to avoid native dependencies
  */
 
-import * as tf from '@tensorflow/tfjs';
-import axios from 'axios';
-import { SentimentLabel } from './naive-bayes-sentiment.service';
-import { logger } from '../lib/observability/logger';
+import * as tf from "@tensorflow/tfjs";
+import axios from "axios";
+import { SentimentLabel } from "./naive-bayes-sentiment.service";
+import { logger } from "../lib/observability/logger";
 
 // Environment variables (should be defined in .env)
-const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY || '';
-const USE_LOCAL_MODEL = process.env.USE_LOCAL_BERT_MODEL === 'true';
-const LOCAL_MODEL_PATH = process.env.BERT_MODEL_PATH || './models/bert';
-const REMOTE_MODEL_ENDPOINT = process.env.BERT_API_ENDPOINT || 'https://api-inference.huggingface.co/models/finiteautomata/bertweet-base-sentiment-analysis';
+const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY || "";
+const USE_LOCAL_MODEL = process.env.USE_LOCAL_BERT_MODEL === "true";
+const LOCAL_MODEL_PATH = process.env.BERT_MODEL_PATH || "./models/bert";
+const REMOTE_MODEL_ENDPOINT =
+  process.env.BERT_API_ENDPOINT ||
+  "https://api-inference.huggingface.co/models/finiteautomata/bertweet-base-sentiment-analysis";
 
 // Type for BERT model prediction result
 export interface BertPrediction {
@@ -31,15 +33,15 @@ export class BertSentimentAnalyzerService {
   private isModelLoaded = false;
   private isLoading = false;
   private loadPromise: Promise<void> | null = null;
-  
+
   // Map Hugging Face labels to our standard format
   private static LABEL_MAPPING: Record<string, SentimentLabel> = {
-    'POS': 'positive',
-    'NEU': 'neutral',
-    'NEG': 'negative',
-    'POSITIVE': 'positive',
-    'NEUTRAL': 'neutral',
-    'NEGATIVE': 'negative',
+    POS: "positive",
+    NEU: "neutral",
+    NEG: "negative",
+    POSITIVE: "positive",
+    NEUTRAL: "neutral",
+    NEGATIVE: "negative",
   };
 
   constructor() {
@@ -76,34 +78,42 @@ export class BertSentimentAnalyzerService {
 
     this.loadPromise = (async () => {
       try {
-        logger.info('Loading BERT model...');
+        logger.info("Loading BERT model...");
         const startTime = Date.now();
-        
+
         if (USE_LOCAL_MODEL) {
           // With pure TF.js, we can't use file:// protocol easily in Node.js
           // We would need to use tf.io.fileSystem or similar approach
           // For this implementation, we'll primarily support the API approach
-          logger.warn('Local model loading with pure TF.js requires additional setup');
-          logger.info('Defaulting to API approach for BERT analysis');
+          logger.warn(
+            "Local model loading with pure TF.js requires additional setup",
+          );
+          logger.info("Defaulting to API approach for BERT analysis");
         }
-        
+
         // Check if API key is available (but don't fail if not)
         if (!HUGGINGFACE_API_KEY) {
-          logger.warn('HUGGINGFACE_API_KEY not set. BERT will operate in demo mode with limited functionality.');
-          logger.info('To enable full BERT functionality, set HUGGINGFACE_API_KEY environment variable');
+          logger.warn(
+            "HUGGINGFACE_API_KEY not set. BERT will operate in demo mode with limited functionality.",
+          );
+          logger.info(
+            "To enable full BERT functionality, set HUGGINGFACE_API_KEY environment variable",
+          );
         } else {
-          logger.info('BERT API configuration verified');
+          logger.info("BERT API configuration verified");
         }
-        
+
         this.isModelLoaded = true;
-        logger.info(`BERT model configuration completed in ${Date.now() - startTime}ms`);
+        logger.info(
+          `BERT model configuration completed in ${Date.now() - startTime}ms`,
+        );
       } catch (error) {
-        logger.error('Failed to load BERT model:', {
+        logger.error("Failed to load BERT model:", {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         });
         this.isModelLoaded = false;
-        throw new Error('Failed to load BERT model');
+        throw new Error("Failed to load BERT model");
       } finally {
         this.isLoading = false;
       }
@@ -129,7 +139,7 @@ export class BertSentimentAnalyzerService {
       }
 
       let prediction: BertPrediction;
-      
+
       if (USE_LOCAL_MODEL && this.model) {
         // Local model inference
         prediction = await this.predictWithLocalModel(text);
@@ -137,35 +147,36 @@ export class BertSentimentAnalyzerService {
         // Remote API inference
         prediction = await this.predictWithRemoteAPI(text);
       }
-      
+
       // Map to our standard format
-      const label = BertSentimentAnalyzerService.LABEL_MAPPING[prediction.label] || 'neutral';
-      
+      const label =
+        BertSentimentAnalyzerService.LABEL_MAPPING[prediction.label] ||
+        "neutral";
+
       // Convert score to our format (-1 to 1 scale)
       let score = 0;
-      if (label === 'positive') {
+      if (label === "positive") {
         score = prediction.score * 0.8; // 0 to 0.8
-      } else if (label === 'negative') {
+      } else if (label === "negative") {
         score = -prediction.score * 0.8; // 0 to -0.8
       }
-      
+
       return {
         label: label as SentimentLabel,
         confidence: prediction.score,
-        score
+        score,
       };
-      
     } catch (error) {
-      logger.error('BERT prediction failed:', {
+      logger.error("BERT prediction failed:", {
         error: error instanceof Error ? error.message : String(error),
-        text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        text: text.substring(0, 50) + (text.length > 50 ? "..." : ""),
       });
-      
+
       // Return neutral as fallback
       return {
-        label: 'neutral',
+        label: "neutral",
         confidence: 0.5,
-        score: 0
+        score: 0,
       };
     }
   }
@@ -192,48 +203,48 @@ export class BertSentimentAnalyzerService {
     try {
       // If no API key, use demo mode with simulated responses
       if (!HUGGINGFACE_API_KEY) {
-        logger.warn('Using BERT demo mode (no API key provided)');
+        logger.warn("Using BERT demo mode (no API key provided)");
         return this.generateDemoPrediction(text);
       }
-      
+
       const response = await axios.post(
         REMOTE_MODEL_ENDPOINT,
         { inputs: text },
         {
           headers: {
-            'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        }
+            Authorization: `Bearer ${HUGGINGFACE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
-      
+
       // Process response from Hugging Face
       const results = response.data;
-      
+
       // API returns an array of label/score objects
       if (Array.isArray(results) && results.length > 0) {
         // Sort by score in descending order
         const sortedResults = [...results].sort((a, b) => b.score - a.score);
         return sortedResults[0]; // Return the highest scoring prediction
       }
-      
-      throw new Error('Unexpected API response format');
+
+      throw new Error("Unexpected API response format");
     } catch (error) {
-      logger.error('Hugging Face API call failed:', {
+      logger.error("Hugging Face API call failed:", {
         error: error instanceof Error ? error.message : String(error),
-        useDemo: !HUGGINGFACE_API_KEY
+        useDemo: !HUGGINGFACE_API_KEY,
       });
-      
+
       // If API call fails but we have no API key, use demo mode
       if (!HUGGINGFACE_API_KEY) {
-        logger.info('Falling back to demo mode prediction');
+        logger.info("Falling back to demo mode prediction");
         return this.generateDemoPrediction(text);
       }
-      
-      throw new Error('BERT API inference failed');
+
+      throw new Error("BERT API inference failed");
     }
   }
-  
+
   /**
    * Generate a demo prediction when no API key is available
    * Uses simple keyword matching for demonstration purposes
@@ -243,42 +254,71 @@ export class BertSentimentAnalyzerService {
   private generateDemoPrediction(text: string): BertPrediction {
     // Simple keyword-based sentiment analysis for demo mode
     const lowerText = text.toLowerCase();
-    
+
     // Lists of positive and negative keywords
     const positiveKeywords = [
-      'good', 'great', 'excellent', 'amazing', 'love', 'happy',
-      'wonderful', 'best', 'like', 'enjoy', 'fantastic', 'perfect',
-      'awesome', 'brilliant', 'bueno', 'excelente', 'me gusta'
+      "good",
+      "great",
+      "excellent",
+      "amazing",
+      "love",
+      "happy",
+      "wonderful",
+      "best",
+      "like",
+      "enjoy",
+      "fantastic",
+      "perfect",
+      "awesome",
+      "brilliant",
+      "bueno",
+      "excelente",
+      "me gusta",
     ];
-    
+
     const negativeKeywords = [
-      'bad', 'terrible', 'horrible', 'hate', 'worst', 'awful',
-      'poor', 'disappointing', 'dislike', 'wrong', 'problema',
-      'malo', 'terrible', 'odio', 'peor', 'fatal'
+      "bad",
+      "terrible",
+      "horrible",
+      "hate",
+      "worst",
+      "awful",
+      "poor",
+      "disappointing",
+      "dislike",
+      "wrong",
+      "problema",
+      "malo",
+      "terrible",
+      "odio",
+      "peor",
+      "fatal",
     ];
-    
+
     // Count matches
-    const positiveMatches = positiveKeywords.filter(word => 
-      lowerText.includes(word)).length;
-    
-    const negativeMatches = negativeKeywords.filter(word => 
-      lowerText.includes(word)).length;
-    
+    const positiveMatches = positiveKeywords.filter((word) =>
+      lowerText.includes(word),
+    ).length;
+
+    const negativeMatches = negativeKeywords.filter((word) =>
+      lowerText.includes(word),
+    ).length;
+
     // Generate sentiment based on keyword matches
     if (positiveMatches > negativeMatches) {
-      return { 
-        label: 'POS', 
-        score: 0.65 + (Math.min(positiveMatches, 3) * 0.1) 
+      return {
+        label: "POS",
+        score: 0.65 + Math.min(positiveMatches, 3) * 0.1,
       };
     } else if (negativeMatches > positiveMatches) {
-      return { 
-        label: 'NEG', 
-        score: 0.65 + (Math.min(negativeMatches, 3) * 0.1)
+      return {
+        label: "NEG",
+        score: 0.65 + Math.min(negativeMatches, 3) * 0.1,
       };
     } else {
-      return { 
-        label: 'NEU', 
-        score: 0.75 
+      return {
+        label: "NEU",
+        score: 0.75,
       };
     }
   }

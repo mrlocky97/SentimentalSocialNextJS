@@ -272,7 +272,7 @@ export class SentimentAnalysisErrorFactory {
       },
     );
   }
-  
+
   /**
    * Error genérico del modelo
    */

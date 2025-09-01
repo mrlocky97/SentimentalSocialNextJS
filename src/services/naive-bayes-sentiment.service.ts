@@ -43,10 +43,12 @@ export class NaiveBayesSentimentService {
   private trainWithEnhancedData(): void {
     // Use the imported MultilingualSentimentDataset
     const trainingData: NaiveBayesTrainingExample[] =
-      MultilingualSentimentDataset.map((item: { text: string; label: string }) => ({
-        text: item.text,
-        label: item.label as SentimentLabel,
-      }));
+      MultilingualSentimentDataset.map(
+        (item: { text: string; label: string }) => ({
+          text: item.text,
+          label: item.label as SentimentLabel,
+        }),
+      );
 
     this.train(trainingData);
   }

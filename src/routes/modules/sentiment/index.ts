@@ -782,7 +782,11 @@ router.get("/metrics", asyncHandler(getMetricsHandler));
  *       500:
  *         description: Failed to initialize BERT model
  */
-router.post("/initialize-bert", validateBertInitInput, asyncHandler(initializeBertHandler));
+router.post(
+  "/initialize-bert",
+  validateBertInitInput,
+  asyncHandler(initializeBertHandler),
+);
 
 /**
  * @swagger
@@ -828,7 +832,11 @@ router.post("/initialize-bert", validateBertInitInput, asyncHandler(initializeBe
  *       500:
  *         description: Failed to initialize BERT model
  */
-router.post("/initialize-bert", validateBertInitInput, asyncHandler(initializeBertHandler));
+router.post(
+  "/initialize-bert",
+  validateBertInitInput,
+  asyncHandler(initializeBertHandler),
+);
 
 // Temporary test endpoint for tweet analysis without middleware issues
 router.post(

@@ -11,16 +11,20 @@ export interface EmailOptions {
 }
 
 export class EmailService {
-  private readonly FROM_EMAIL = process.env.FROM_EMAIL || "noreply@sentimentalsocial.com";
+  private readonly FROM_EMAIL =
+    process.env.FROM_EMAIL || "noreply@sentimentalsocial.com";
   private readonly APP_URL = process.env.APP_URL || "http://localhost:3000";
 
   /**
    * Send password reset email
    */
-  async sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+  async sendPasswordResetEmail(
+    email: string,
+    resetToken: string,
+  ): Promise<boolean> {
     try {
       const resetUrl = `${this.APP_URL}/reset-password?token=${resetToken}`;
-      
+
       const emailOptions: EmailOptions = {
         to: email,
         subject: "Password Reset - SentimentalSocial",
@@ -54,7 +58,7 @@ SentimentalSocial Team
   <hr>
   <p><small>Best regards,<br>SentimentalSocial Team</small></p>
 </div>
-        `
+        `,
       };
 
       // For now, we'll just log the email instead of actually sending it
@@ -62,7 +66,7 @@ SentimentalSocial Team
       console.log("📧 Password reset email would be sent to:", email);
       console.log("🔗 Reset URL:", resetUrl);
       console.log("📄 Email content:", emailOptions);
-      
+
       return true;
     } catch (error) {
       console.error("Failed to send password reset email:", error);
@@ -73,10 +77,13 @@ SentimentalSocial Team
   /**
    * Send email verification email
    */
-  async sendEmailVerificationEmail(email: string, verificationToken: string): Promise<boolean> {
+  async sendEmailVerificationEmail(
+    email: string,
+    verificationToken: string,
+  ): Promise<boolean> {
     try {
       const verificationUrl = `${this.APP_URL}/verify-email?token=${verificationToken}`;
-      
+
       const emailOptions: EmailOptions = {
         to: email,
         subject: "Email Verification - SentimentalSocial",
@@ -109,14 +116,14 @@ SentimentalSocial Team
   <hr>
   <p><small>Best regards,<br>SentimentalSocial Team</small></p>
 </div>
-        `
+        `,
       };
 
       // For now, we'll just log the email instead of actually sending it
       console.log("📧 Verification email would be sent to:", email);
       console.log("🔗 Verification URL:", verificationUrl);
       console.log("📄 Email content:", emailOptions);
-      
+
       return true;
     } catch (error) {
       console.error("Failed to send verification email:", error);

@@ -50,14 +50,14 @@ export class TokenService {
     const payload: VerificationTokenPayload = {
       userId,
       email,
-      type: 'email-verification',
-      expiresAt: new Date(Date.now() + this.VERIFICATION_TOKEN_EXPIRY)
+      type: "email-verification",
+      expiresAt: new Date(Date.now() + this.VERIFICATION_TOKEN_EXPIRY),
     };
 
     return jwt.sign(payload, this.SECRET, {
-      expiresIn: '24h',
-      issuer: 'sentimentalsocial',
-      subject: 'email-verification'
+      expiresIn: "24h",
+      issuer: "sentimentalsocial",
+      subject: "email-verification",
     });
   }
 
@@ -67,22 +67,22 @@ export class TokenService {
   verifyPasswordResetToken(token: string): ResetTokenPayload {
     try {
       const decoded = jwt.verify(token, this.SECRET, {
-        issuer: 'sentimentalsocial',
-        subject: 'password-reset'
+        issuer: "sentimentalsocial",
+        subject: "password-reset",
       }) as ResetTokenPayload;
 
-      if (decoded.type !== 'password-reset') {
-        throw new Error('Invalid token type');
+      if (decoded.type !== "password-reset") {
+        throw new Error("Invalid token type");
       }
 
       if (new Date() > new Date(decoded.expiresAt)) {
-        throw new Error('Token expired');
+        throw new Error("Token expired");
       }
 
       return decoded;
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error('Invalid reset token');
+        throw new Error("Invalid reset token");
       }
       throw error;
     }
@@ -94,22 +94,22 @@ export class TokenService {
   verifyEmailVerificationToken(token: string): VerificationTokenPayload {
     try {
       const decoded = jwt.verify(token, this.SECRET, {
-        issuer: 'sentimentalsocial',
-        subject: 'email-verification'
+        issuer: "sentimentalsocial",
+        subject: "email-verification",
       }) as VerificationTokenPayload;
 
-      if (decoded.type !== 'email-verification') {
-        throw new Error('Invalid token type');
+      if (decoded.type !== "email-verification") {
+        throw new Error("Invalid token type");
       }
 
       if (new Date() > new Date(decoded.expiresAt)) {
-        throw new Error('Token expired');
+        throw new Error("Token expired");
       }
 
       return decoded;
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error('Invalid verification token');
+        throw new Error("Invalid verification token");
       }
       throw error;
     }
@@ -119,6 +119,6 @@ export class TokenService {
    * Generate secure random token (alternative to JWT for simpler use cases)
    */
   generateSecureToken(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return crypto.randomBytes(32).toString("hex");
   }
 }

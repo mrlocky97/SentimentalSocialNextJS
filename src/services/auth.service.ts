@@ -202,7 +202,7 @@ export class AuthService {
 
     // Hash new password
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
-    
+
     // Update password in database
     const updateResult = await this.userRepository.updatePassword(
       userId,
@@ -324,10 +324,8 @@ export class AuthService {
       }
 
       // Generate verification token
-      const verificationToken = this.tokenService.generateEmailVerificationToken(
-        user.id,
-        user.email,
-      );
+      const verificationToken =
+        this.tokenService.generateEmailVerificationToken(user.id, user.email);
 
       // Send verification email
       const emailSent = await this.emailService.sendEmailVerificationEmail(

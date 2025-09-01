@@ -15,8 +15,8 @@ dotenv.config({ path: [".env.local", ".env"] });
 import * as fs from "fs";
 import * as path from "path";
 import { MultilingualSentimentDataset } from "../src/data/enhanced-training-data-v3";
-import { TweetSentimentAnalysisManager } from "../src/services/tweet-sentiment-analysis.manager.service";
 import { ModelPersistenceManager } from "../src/services/model-persistence.service";
+import { TweetSentimentAnalysisManager } from "../src/services/tweet-sentiment-analysis.manager.service";
 
 async function trainEnhancedModel() {
   console.log("🚀 Iniciando entrenamiento del modelo con dataset mejorado...\n");

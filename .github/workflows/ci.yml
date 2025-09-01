@@ -70,7 +70,7 @@ jobs:
         run: npm ci
 
       - name: 🧪 Run Tests with Coverage
-        run: npm test -- --coverage --watchAll=false
+        run: npm run test:ci
 
       - name: 📊 Upload Coverage Reports
         uses: actions/upload-artifact@v4

@@ -20,17 +20,19 @@ interface BasicTweet {
 // Wrapper handlers mapping to generic handler with context/options
 export async function scrapeHashtag(req: Request, res: Response) {
   // Accept either hashtag or hashtags parameter
-  const identifiers = toStringArray(req.body.hashtags || req.body.hashtag, { stripPrefix: "#" });
+  const identifiers = toStringArray(req.body.hashtags || req.body.hashtag, {
+    stripPrefix: "#",
+  });
 
   if (identifiers.length === 0) {
     return res.status(400).json({
       success: false,
       error: "hashtag or hashtags parameter is required",
-      example: { 
+      example: {
         hashtag: "JustDoIt",
         // Or alternatively:
-        hashtags: ["JustDoIt", "Marketing", "#Nike"] 
-      }
+        hashtags: ["JustDoIt", "Marketing", "#Nike"],
+      },
     });
   }
 
@@ -47,7 +49,7 @@ export async function scrapeHashtag(req: Request, res: Response) {
   // Process multiple hashtags in series
   const results = [];
   let totalTweets = 0;
-  
+
   for (const identifier of identifiers) {
     try {
       const result = await handleScrapingRequest(
@@ -55,9 +57,9 @@ export async function scrapeHashtag(req: Request, res: Response) {
         res,
         { type: "hashtag", identifier, exampleValue: "JustDoIt" },
         { languageFilter: true },
-        true // Return result instead of sending response
+        true, // Return result instead of sending response
       );
-      
+
       if (result && result.success) {
         results.push({
           hashtag: `#${identifier}`,
@@ -72,7 +74,7 @@ export async function scrapeHashtag(req: Request, res: Response) {
       results.push({
         hashtag: `#${identifier}`,
         error: err instanceof Error ? err.message : "Unknown error",
-        tweetCount: 0
+        tweetCount: 0,
       });
     }
   }
@@ -80,28 +82,30 @@ export async function scrapeHashtag(req: Request, res: Response) {
   res.json({
     success: true,
     data: {
-      hashtags: identifiers.map(h => `#${h}`),
+      hashtags: identifiers.map((h) => `#${h}`),
       items: results,
       totalTweets,
       campaignId: req.body.campaignId ?? "",
     },
-    message: `Scraped ${totalTweets} tweets from ${identifiers.length} hashtags`
+    message: `Scraped ${totalTweets} tweets from ${identifiers.length} hashtags`,
   });
 }
 
 export async function scrapeUser(req: Request, res: Response) {
   // Accept either username or usernames parameter
-  const identifiers = toStringArray(req.body.usernames || req.body.username, { stripPrefix: "@" });
+  const identifiers = toStringArray(req.body.usernames || req.body.username, {
+    stripPrefix: "@",
+  });
 
   if (identifiers.length === 0) {
     return res.status(400).json({
       success: false,
       error: "username or usernames parameter is required",
-      example: { 
+      example: {
         username: "nike",
         // Or alternatively:
-        usernames: ["nike", "adidas", "@puma"] 
-      }
+        usernames: ["nike", "adidas", "@puma"],
+      },
     });
   }
 
@@ -118,7 +122,7 @@ export async function scrapeUser(req: Request, res: Response) {
   // Process multiple usernames in series
   const results = [];
   let totalTweets = 0;
-  
+
   for (const identifier of identifiers) {
     try {
       const result = await handleScrapingRequest(
@@ -126,9 +130,9 @@ export async function scrapeUser(req: Request, res: Response) {
         res,
         { type: "user", identifier, exampleValue: "nike" },
         { maxTweets: 500, defaultTweets: 30 },
-        true // Return result instead of sending response
+        true, // Return result instead of sending response
       );
-      
+
       if (result && result.success) {
         results.push({
           username: `@${identifier}`,
@@ -143,7 +147,7 @@ export async function scrapeUser(req: Request, res: Response) {
       results.push({
         username: `@${identifier}`,
         error: err instanceof Error ? err.message : "Unknown error",
-        tweetCount: 0
+        tweetCount: 0,
       });
     }
   }
@@ -151,12 +155,12 @@ export async function scrapeUser(req: Request, res: Response) {
   res.json({
     success: true,
     data: {
-      usernames: identifiers.map(u => `@${u}`),
+      usernames: identifiers.map((u) => `@${u}`),
       items: results,
       totalTweets,
       campaignId: req.body.campaignId ?? "",
     },
-    message: `Scraped ${totalTweets} tweets from ${identifiers.length} users`
+    message: `Scraped ${totalTweets} tweets from ${identifiers.length} users`,
   });
 }
 
@@ -168,11 +172,11 @@ export async function scrapeSearch(req: Request, res: Response) {
     return res.status(400).json({
       success: false,
       error: "query or queries parameter is required",
-      example: { 
+      example: {
         query: "nike shoes",
         // Or alternatively:
-        queries: ["nike shoes", "adidas sneakers"] 
-      }
+        queries: ["nike shoes", "adidas sneakers"],
+      },
     });
   }
 
@@ -181,7 +185,11 @@ export async function scrapeSearch(req: Request, res: Response) {
     return await handleScrapingRequest(
       req,
       res,
-      { type: "search", identifier: identifiers[0], exampleValue: "nike shoes" },
+      {
+        type: "search",
+        identifier: identifiers[0],
+        exampleValue: "nike shoes",
+      },
       { languageFilter: true },
     );
   }
@@ -189,7 +197,7 @@ export async function scrapeSearch(req: Request, res: Response) {
   // Process multiple queries in series
   const results = [];
   let totalTweets = 0;
-  
+
   for (const identifier of identifiers) {
     try {
       const result = await handleScrapingRequest(
@@ -197,9 +205,9 @@ export async function scrapeSearch(req: Request, res: Response) {
         res,
         { type: "search", identifier, exampleValue: "nike shoes" },
         { languageFilter: true },
-        true // Return result instead of sending response
+        true, // Return result instead of sending response
       );
-      
+
       if (result && result.success) {
         results.push({
           query: identifier,
@@ -214,7 +222,7 @@ export async function scrapeSearch(req: Request, res: Response) {
       results.push({
         query: identifier,
         error: err instanceof Error ? err.message : "Unknown error",
-        tweetCount: 0
+        tweetCount: 0,
       });
     }
   }
@@ -227,7 +235,7 @@ export async function scrapeSearch(req: Request, res: Response) {
       totalTweets,
       campaignId: req.body.campaignId ?? "",
     },
-    message: `Scraped ${totalTweets} tweets from ${identifiers.length} search queries`
+    message: `Scraped ${totalTweets} tweets from ${identifiers.length} search queries`,
   });
 }
 

@@ -42,10 +42,10 @@ export function buildSwaggerSpec() {
     },
     apis: apiGlobs,
   };
-  
+
   // Build the complete spec
   const spec = swaggerJsdoc(options);
-  
+
   // Filter out internal routes and tags
   return filterInternalEndpoints(spec);
 }
@@ -53,26 +53,26 @@ export function buildSwaggerSpec() {
 function filterInternalEndpoints(spec: any) {
   // Filter out internal paths
   if (spec.paths) {
-    Object.keys(spec.paths).forEach(pathKey => {
+    Object.keys(spec.paths).forEach((pathKey) => {
       const pathItem = spec.paths[pathKey];
-      Object.keys(pathItem).forEach(method => {
+      Object.keys(pathItem).forEach((method) => {
         const operation = pathItem[method];
-        if (operation && operation['x-internal'] === true) {
+        if (operation && operation["x-internal"] === true) {
           delete pathItem[method];
         }
       });
-      
+
       // Remove empty path objects
       if (Object.keys(pathItem).length === 0) {
         delete spec.paths[pathKey];
       }
     });
   }
-  
+
   // Filter out internal tags
   if (spec.tags) {
-    spec.tags = spec.tags.filter((tag: any) => tag['x-internal'] !== true);
+    spec.tags = spec.tags.filter((tag: any) => tag["x-internal"] !== true);
   }
-  
+
   return spec;
 }

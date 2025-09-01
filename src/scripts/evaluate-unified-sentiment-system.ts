@@ -6,10 +6,11 @@
  */
 
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
-import { tweetSentimentAnalysisManager } from "../services/tweet-sentiment-analysis.manager.service";
 
 async function evaluateUnifiedSentimentSystem() {
-  console.log("🔄 === EVALUANDO SISTEMA UNIFICADO DE ANÁLISIS DE SENTIMIENTO ===\n");
+  console.log(
+    "🔄 === EVALUANDO SISTEMA UNIFICADO DE ANÁLISIS DE SENTIMIENTO ===\n",
+  );
 
   try {
     // 1. Inicializar el orquestador
@@ -54,12 +55,16 @@ async function evaluateUnifiedSentimentSystem() {
     const metrics = orchestrator.getMetrics();
     console.log(`   Total de peticiones: ${metrics.totalRequests}`);
     console.log(`   Tasa de aciertos en caché: ${metrics.cacheHitRate * 100}%`);
-    console.log(`   Tiempo medio de procesamiento: ${metrics.averageProcessingTime.toFixed(2)}ms`);
+    console.log(
+      `   Tiempo medio de procesamiento: ${metrics.averageProcessingTime.toFixed(2)}ms`,
+    );
     console.log(`   Tamaño de la caché: ${metrics.cacheSize} entradas`);
     console.log("");
 
     // 4. Demostración de nuevas capacidades
-    console.log("🌟 Paso 4: Demostrando capacidades del sistema unificado...\n");
+    console.log(
+      "🌟 Paso 4: Demostrando capacidades del sistema unificado...\n",
+    );
 
     console.log("🎭 Detección de sarcasmo:");
     const sarcasmTests = [
@@ -74,7 +79,9 @@ async function evaluateUnifiedSentimentSystem() {
       console.log(
         `   ${result.sentiment.label.toUpperCase()} (${(result.sentiment.confidence * 100).toFixed(1)}%)`,
       );
-      console.log(`   Señales: intensificadores=${result.signals.intensifierBoost}, sarcasmo=${result.signals.sarcasmScore}`);
+      console.log(
+        `   Señales: intensificadores=${result.signals.intensifierBoost}, sarcasmo=${result.signals.sarcasmScore}`,
+      );
     }
 
     console.log("\n🌍 Soporte multilingüe:");
@@ -86,9 +93,9 @@ async function evaluateUnifiedSentimentSystem() {
     ];
 
     for (const test of multilingualTests) {
-      const result = await orchestrator.analyzeText({ 
+      const result = await orchestrator.analyzeText({
         text: test.text,
-        language: test.lang
+        language: test.lang,
       });
       console.log(`🏳️ [${test.lang}] "${test.text}"`);
       console.log(
@@ -107,7 +114,7 @@ async function evaluateUnifiedSentimentSystem() {
 
     const startTime = Date.now();
     const batchResults = await Promise.all(
-      performanceTexts.map(text => orchestrator.analyzeText({ text }))
+      performanceTexts.map((text) => orchestrator.analyzeText({ text })),
     );
     const endTime = Date.now();
 
@@ -140,9 +147,13 @@ async function evaluateUnifiedSentimentSystem() {
       "1. 🔄 Actualizar cualquier código restante para usar el TweetSentimentAnalysisManager o SentimentAnalysisOrchestrator directamente",
     );
     console.log("2. 📊 Implementar monitoreo de precisión en tiempo real");
-    console.log("3. 🎯 Configurar BERT para mejorar análisis de casos complejos");
+    console.log(
+      "3. 🎯 Configurar BERT para mejorar análisis de casos complejos",
+    );
     console.log("4. 📈 Evaluar impacto en rendimiento del sistema unificado");
-    console.log("5. 🌟 Considerar entrenamiento continuo con más datos específicos");
+    console.log(
+      "5. 🌟 Considerar entrenamiento continuo con más datos específicos",
+    );
   } catch (error) {
     console.error("❌ Error durante la evaluación del sistema:", error);
     process.exit(1);
@@ -153,10 +164,10 @@ async function evaluateUnifiedSentimentSystem() {
 if (require.main === module) {
   evaluateUnifiedSentimentSystem()
     .then(() => {
+      console.log("\n🎉 ¡Sistema unificado evaluado exitosamente!");
       console.log(
-        "\n🎉 ¡Sistema unificado evaluado exitosamente!",
+        "💡 El sistema de análisis está listo para usar en producción.",
       );
-      console.log("💡 El sistema de análisis está listo para usar en producción.");
       process.exit(0);
     })
     .catch((error) => {
