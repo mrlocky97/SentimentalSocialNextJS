@@ -405,7 +405,7 @@ async function startServer() {
             const evaluation = await sentimentService.evaluateAccuracy({
               testCases: sentimentTestDataset.map((item) => ({
                 text: item.text,
-                expectedSentiment: item.expectedSentiment,
+                expectedSentiment: item.label,
               })),
               includeComparison: true,
             });

@@ -6,7 +6,7 @@
 // Define our own simplified sentiment types for the fixed model
 export type SimpleSentimentLabel = "positive" | "negative" | "neutral";
 
-import { logger } from "../lib/observability/logger"; // adjust path if needed
+import { logger } from "../../lib/observability/logger"; // adjust path if needed
 export interface TrainingExample {
   text: string;
   label: SimpleSentimentLabel;

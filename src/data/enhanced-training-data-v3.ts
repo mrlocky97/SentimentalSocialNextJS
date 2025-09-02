@@ -1,4 +1,16 @@
-export const MultilingualSentimentDataset = [
+/**
+ * Enhanced Sentiment Analysis Training Dataset V3 
+ * Combined multilingual dataset with improved quality and balance
+ */
+
+// Data structure for sentiment analysis training
+export interface SentimentTrainingItem {
+  text: string;
+  label: 'positive' | 'negative' | 'neutral';
+}
+
+// Export the enhanced training data (complete version)
+export const enhancedTrainingDataV3Complete = [
   {
     text: "Hoy estuvo joya, la pase increible con la banda #heute 😎",
     label: "positive",

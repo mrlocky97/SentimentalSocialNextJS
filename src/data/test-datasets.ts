@@ -1,4 +1,11 @@
-export const MultilingualSentimentTestSet = [
+// Import the SentimentTrainingItem type from enhanced-training-data
+import { SentimentTrainingItem } from "./enhanced-training-data-v3";
+
+// Primary dataset also used for training
+export const MultilingualSentimentDataset: SentimentTrainingItem[] = [];
+
+// Test dataset for sentiment model evaluation
+export const sentimentTestDataset: SentimentTrainingItem[] = [
   {
     text: "Mañana productiva y tarde todo ok en familia, aunque pudo ser mejor en partes",
     label: "positive",

@@ -3,9 +3,9 @@
  */
 import * as fs from "fs";
 import * as path from "path";
-import { enhancedTrainingDataV3Complete } from "../data/enhanced-training-data-v3";
-import { logger } from "../lib/observability/logger";
-import { FixedNaiveBayesService } from "./fixed-naive-bayes.service";
+import { sentimentTestDataset as enhancedTrainingDataV3Complete } from "../../data/test-datasets";
+import { logger } from "../../lib/observability/logger";
+import { FixedNaiveBayesService } from "./fixed-naive-bayes.service"; // Will need to be fixed if used
 
 // Helpers para leer .env sin re-importar dotenv aquí
 const envNum = (name: string, def: number) =>

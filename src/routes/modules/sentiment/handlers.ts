@@ -1,5 +1,8 @@
 /**
- * Sentiment Analysis Handlers Module
+ * Sentiimport { LanguageCode, SentimentResponse, TweetDTO } from '../../../lib/sentiment/types';
+import { MultilingualSentimentService } from '../../../services/multilingual-sentiment/multilingual-sentiment.service';
+import { SentimentService } from '../../../services/sentiment/sentiment.service';
+import { UnitedAiService } from '../../../services/united-ai/united-ai.service';ent Analysis Handlers Module
  * Separated route handlers for sentiment analysis endpoints
  */
 
@@ -10,6 +13,7 @@ import { SentimentAnalysisErrorFactory as SentimentAnalysisError } from "../../.
 import { Method } from "../../../enums/sentiment.enum";
 import { SentimentAnalysisOrchestrator } from "../../../lib/sentiment/orchestrator";
 import { sentimentService } from "../../../services/sentiment.service";
+import { TweetDTO, LanguageCode } from "../../../lib/sentiment/types";
 
 /**
  * Analyze text sentiment handler
@@ -237,10 +241,13 @@ export const batchAnalyzeHandler = async (req: Request, res: Response) => {
   }
 
   // Define a minimal type for tweets that may have 'id' or 'tweetId'
-  type TweetLike = { content: string; tweetId?: string; id?: string };
-
-  // Validate each tweet and convert to DTO format
-  const tweetsDTO = [];
+  type TweetLike = {
+    content: string;
+    tweetId?: string;
+    id?: string;
+    language?: LanguageCode;
+  }; // Validate each tweet and convert to DTO format
+  const tweetsDTO: Array<TweetDTO> = [];
   for (const tweet of tweets as TweetLike[]) {
     if (!tweet || !tweet.content) {
       throw SentimentAnalysisError.invalidTweet({
