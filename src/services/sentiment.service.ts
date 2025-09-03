@@ -633,7 +633,7 @@ export class SentimentService {
           undefined,
         );
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: refine evaluation result typing
+         
         const result: any = {
           text: testCase.text,
           expected: testCase.expectedSentiment,
@@ -662,7 +662,7 @@ export class SentimentService {
     const ruleCorrect = results.filter((r) => r.rule.correct).length;
     const ruleAccuracy = (ruleCorrect / results.length) * 100;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: define structured EvaluationResponse type
+     
     const response: any = {
       overall: {
         total: results.length,

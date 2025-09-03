@@ -157,7 +157,7 @@ export class CampaignTemplatesService {
     try {
       await this.ensureSeeded();
       const docs = await CampaignTemplateModel.find({}).lean();
-      /* eslint-disable @typescript-eslint/no-explicit-any */
+       
       return docs.map((d: unknown) => {
         const doc = d as any;
         return {
@@ -216,7 +216,7 @@ export class CampaignTemplatesService {
     try {
       await this.ensureSeeded();
       const docs = await CampaignTemplateModel.find({ category }).lean();
-      /* eslint-disable @typescript-eslint/no-explicit-any */
+       
       return docs.map((d: unknown) => {
         const doc = d as any;
         return {

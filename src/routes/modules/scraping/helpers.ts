@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import { Request, Response } from "express";
 import { SCRAPING_CONFIG, Sanitizers } from "../../../config/scraping.config";
 import { Label } from "../../../enums/sentiment.enum";

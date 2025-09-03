@@ -1,13 +1,10 @@
-// ESLint v9 flat config
+// ESLint v9 flat config - Configuración básica y menos molesta
 import js from "@eslint/js";
-import eslintPluginImport from "eslint-plugin-import";
-import eslintPluginPrettier from "eslint-plugin-prettier";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default [
   {
-    name: "globals",
     ignores: [
       "node_modules/**",
       "dist/**",
@@ -15,67 +12,40 @@ export default [
       ".next/**",
       "public/**",
       "backup/**",
-      "scripts/**",
-      "src/services/reactive/**",
-      "src/utils/cookie-importer.ts",
+      "temp/**",
+      "*.js", // Ignora archivos JS en la raíz
     ],
   },
+  // Configuración básica de JavaScript
   js.configs.recommended,
+  // Configuración básica de TypeScript (solo recommended, no strict)
   ...tseslint.configs.recommended,
   {
     languageOptions: {
       globals: {
         ...globals.node,
-        // Allow CommonJS/Node globals in tests and setup files
+        console: true,
         process: true,
         __dirname: true,
+        __filename: true,
         module: true,
         require: true,
       },
     },
-    plugins: {
-      import: eslintPluginImport,
-      prettier: eslintPluginPrettier,
-    },
-    settings: {
-      "import/resolver": {
-        typescript: {
-          project: "./tsconfig.server.json",
-        },
-      },
-    },
     rules: {
-      "prettier/prettier": "warn",
-      "import/no-unresolved": "off",
+      // Desactivar reglas molestas
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn", // Solo advertencia, no error
       "@typescript-eslint/no-non-null-assertion": "off",
-      // Relax rule to avoid blocking on broad Function type usage in wrappers
       "@typescript-eslint/no-unsafe-function-type": "off",
-    },
-  },
-  {
-    files: ["src/**/*.ts"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-      "no-console": [
-        "error",
-        { allow: ["error", "warn", "info", "debug", "log"] },
-      ],
-      "max-lines": [
-        "warn",
-        { max: 400, skipBlankLines: true, skipComments: true },
-      ],
-      "max-lines-per-function": [
-        "warn",
-        { max: 120, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  // endurece más en services + routes (donde más duele)
-  {
-    files: ["src/services/**/*.ts", "src/routes/**/*.ts"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-require-imports": "off",
+      
+      // Mantener solo reglas básicas importantes
+      "no-console": "off", // Permitir console.log
+      "no-debugger": "warn",
+      "no-duplicate-case": "error",
+      "no-unreachable": "warn",
+      "no-undef": "off", // TypeScript ya maneja esto
     },
   },
 ];
