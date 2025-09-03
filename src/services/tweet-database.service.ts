@@ -148,7 +148,7 @@ export class TweetDatabaseService {
         { tweetId: tweet.tweetId },
         {
           $set: tweetData,
-          $setOnInsert: { scrapedAt: new Date() },
+          // scrapedAt is already included in tweetData, no need for $setOnInsert
         },
         {
           upsert: true,

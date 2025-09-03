@@ -129,9 +129,10 @@ const tweetSchema = new Schema<ITweetDocument>(
       index: true,
       validate: {
         validator: function (tweetId: string) {
-          return /^\d+$/.test(tweetId); // Twitter IDs are numeric strings
+          // Allow pure numeric strings (real Twitter IDs) or prefixed IDs (scraped/test data)
+          return /^\d+$/.test(tweetId) || /^(scraped|test|bulk|service)_/.test(tweetId);
         },
-        message: "Tweet ID must be a numeric string",
+        message: "Tweet ID must be a numeric string or a valid prefixed identifier (scraped_, test_, etc.)",
       },
     },
 
@@ -223,9 +224,10 @@ const tweetSchema = new Schema<ITweetDocument>(
       index: true,
       validate: {
         validator: function (id: string) {
-          return mongoose.Types.ObjectId.isValid(id);
+          // Allow valid ObjectIds or simple string identifiers for testing/campaigns
+          return mongoose.Types.ObjectId.isValid(id) || /^[a-zA-Z0-9_-]+$/.test(id);
         },
-        message: "Campaign ID must be a valid ObjectId",
+        message: "Campaign ID must be a valid ObjectId or alphanumeric string",
       },
     },
 
