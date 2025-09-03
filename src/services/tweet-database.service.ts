@@ -439,7 +439,7 @@ export class TweetDatabaseService {
       isRetweet: Boolean(tweet.isRetweet),
       isReply: Boolean(tweet.isReply),
       isQuote: Boolean(tweet.isQuote),
-      language: tweet.language || "en",
+      language: (tweet.language && tweet.language !== "unknown") ? tweet.language : "en",
       scrapedAt: now,
       tweetCreatedAt: new Date(tweet.createdAt || now),
     };
