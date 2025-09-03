@@ -251,13 +251,13 @@ const tweetSchema = new Schema<ITweetDocument>(
     language: {
       type: String,
       required: [true, "Language is required"],
-      length: 2,
       default: "en",
       validate: {
         validator: function (lang: string) {
-          return /^[a-z]{2}$/.test(lang);
+          // Allow ISO 639-1 codes (2 letters) or "unknown"
+          return /^[a-z]{2}$/.test(lang) || lang === "unknown";
         },
-        message: "Language must be a valid ISO 639-1 code",
+        message: "Language must be a valid ISO 639-1 code (2 letters) or 'unknown'",
       },
       index: true,
     },

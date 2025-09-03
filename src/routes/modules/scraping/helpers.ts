@@ -406,13 +406,39 @@ async function processAndPersistSentiment(
 
   if (tweetsWithSentiment.length > 0) {
     try {
-      await tweetDatabaseService.saveTweetsBulk(
+      logger.info(`Attempting to save ${tweetsWithSentiment.length} tweets to database`, {
+        campaignId,
+        tweetIds: tweetsWithSentiment.slice(0, 3).map(t => t.tweetId)
+      });
+      
+      const saveResult = await tweetDatabaseService.saveTweetsBulk(
         tweetsWithSentiment,
         campaignId,
       );
+      
+      logger.info("Database save completed", {
+        success: saveResult.success,
+        saved: saveResult.saved,
+        errors: saveResult.errors,
+        errorMessages: saveResult.errorMessages
+      });
+      
+      if (!saveResult.success && saveResult.errorMessages.length > 0) {
+        logger.error("Database save failed", {
+          errorMessages: saveResult.errorMessages,
+          tweetsProcessed: saveResult.totalProcessed
+        });
+      }
+      
     } catch (dbErr) {
-      logger.warn("Database save issue", { error: dbErr });
+      logger.error("Critical database save error", { 
+        error: dbErr,
+        tweetsCount: tweetsWithSentiment.length,
+        campaignId 
+      });
     }
+  } else {
+    logger.info("No tweets to save to database");
   }
 
   return { tweetsWithSentiment, sentimentSummary };
