@@ -130,9 +130,9 @@ const tweetSchema = new Schema<ITweetDocument>(
       validate: {
         validator: function (tweetId: string) {
           // Allow pure numeric strings (real Twitter IDs) or prefixed IDs (scraped/test data)
-          return /^\d+$/.test(tweetId) || /^(scraped|test|bulk|service)_/.test(tweetId);
+          return /^\d+$/.test(tweetId) || /^(scraped|test|bulk|service|mongoose|native)_/.test(tweetId);
         },
-        message: "Tweet ID must be a numeric string or a valid prefixed identifier (scraped_, test_, etc.)",
+        message: "Tweet ID must be a numeric string or a valid prefixed identifier (scraped_, test_, mongoose_, native_, etc.)",
       },
     },
 
