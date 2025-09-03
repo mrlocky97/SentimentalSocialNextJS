@@ -5,7 +5,7 @@
 
 import { Core } from "../core";
 import { logger } from "../lib/observability/logger";
-import { metricsRegistry, defaultMetrics } from "../lib/observability/metrics";
+import { defaultMetrics, metricsRegistry } from "../lib/observability/metrics";
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
 import { TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { Tweet } from "../types/twitter";
@@ -151,6 +151,7 @@ export class TweetSentimentAnalysisManager {
 
   /**
    * Analiza el sentimiento de múltiples tweets en lote con validación centralizada
+   * Optimizado para procesamiento paralelo y deduplicación
    */
   async analyzeTweetsBatch(
     tweets: Tweet[],
@@ -160,13 +161,43 @@ export class TweetSentimentAnalysisManager {
     const validation = Core.Validators.Tweet.validateBatch(tweets);
     Core.Validators.Utils.validateOrThrow(validation, "batch analysis");
 
-    const results: TweetSentimentAnalysis[] = [];
+    if (tweets.length === 0) {
+      return [];
+    }
 
     try {
-      for (const tweet of tweets) {
-        const analysis = await this.analyzeTweet(tweet, config);
-        results.push(analysis);
+      // Optimize for batch processing with controlled concurrency
+      const BATCH_SIZE = 10; // Process in chunks to avoid overwhelming the system
+      const results: TweetSentimentAnalysis[] = [];
+
+      // Process tweets in parallel batches
+      for (let i = 0; i < tweets.length; i += BATCH_SIZE) {
+        const batch = tweets.slice(i, i + BATCH_SIZE);
+
+        // Process batch in parallel with controlled concurrency
+        const batchPromises = batch.map(async (tweet) => {
+          try {
+            return await this.analyzeTweet(tweet, config);
+          } catch (error) {
+            // Handle individual tweet errors gracefully
+            logger.warn(
+              `Failed to analyze tweet ${tweet.id || tweet.tweetId}`,
+              { error },
+            );
+            // Return neutral analysis for failed tweets to maintain batch integrity
+            return this.createNeutralAnalysis(tweet);
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+
+        // Brief pause between batches to prevent overwhelming downstream services
+        if (i + BATCH_SIZE < tweets.length) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
       }
+
       return results;
     } catch (error) {
       throw Core.Errors.modelProcessingError(
@@ -176,6 +207,53 @@ export class TweetSentimentAnalysisManager {
           : new Error("Unknown batch processing error"),
       );
     }
+  }
+
+  /**
+   * Creates a neutral analysis result for failed tweet processing
+   */
+  private createNeutralAnalysis(tweet: Tweet): TweetSentimentAnalysis {
+    return {
+      tweetId: tweet.id || tweet.tweetId || "failed-tweet",
+      analysis: {
+        sentiment: {
+          score: 0,
+          label: "neutral",
+          confidence: 0.5,
+          magnitude: 0,
+          emotions: {
+            joy: 0,
+            sadness: 0,
+            anger: 0,
+            fear: 0,
+            surprise: 0,
+            disgust: 0,
+          },
+        },
+        language: "en",
+        keywords: [],
+        signals: {
+          tokens: [],
+          ngrams: {},
+          emojis: {},
+          negationFlips: 0,
+          intensifierBoost: 0,
+          sarcasmScore: 0,
+        },
+        version: "1.0.0",
+      },
+      brandMentions: [],
+      marketingInsights: {
+        engagementPotential: 0,
+        viralityIndicators: [],
+        targetDemographics: [],
+        competitorMentions: [],
+        trendAlignment: 0,
+        brandRisk: "low",
+        opportunityScore: 0,
+      },
+      analyzedAt: new Date(),
+    };
   }
 
   /**

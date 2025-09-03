@@ -1,19 +1,26 @@
 /**
- * Tweet Database Service - CONSOLIDATED
+ * Tweet Database Service - OPTIMIZED & CONSOLIDATED
  * Service for saving and managing tweets in the database
  * Integrated with MongoTweetRepository functionality
  */
 
+import { logger } from "../lib/observability/logger";
 import { ITweetDocument, TweetModel } from "../models/Tweet.model";
 import { MongoTweetRepository } from "../repositories/mongo-tweet.repository";
 import { Tweet } from "../types/twitter";
 
+// ==================== Constants & Configuration ====================
+const BATCH_SIZE = 100; // Increased from 50 for better throughput
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+
+// ==================== Types & Interfaces ====================
 export interface SaveTweetResult {
-  success: boolean;
-  tweetId?: string;
-  isNew?: boolean;
-  message?: string;
-  error?: string;
+  readonly success: boolean;
+  readonly tweetId?: string;
+  readonly isNew?: boolean;
+  readonly message?: string;
+  readonly error?: string;
 }
 
 export interface BulkSaveResult {
@@ -27,24 +34,77 @@ export interface BulkSaveResult {
   errorMessages: string[];
 }
 
+export interface StorageStats {
+  totalTweets: number;
+  tweetsToday: number;
+  uniqueAuthors: number;
+  averageSentiment: number;
+}
+
+// ==================== Utility Functions ====================
+const normalizeHashtag = (tag: string): string =>
+  tag.replace("#", "").toLowerCase().trim();
+
+const normalizeMention = (mention: string): string =>
+  mention.replace("@", "").toLowerCase().trim();
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const createTweetMetrics = (metrics: Tweet["metrics"]) => ({
+  likes: Math.max(0, metrics.likes || 0),
+  retweets: Math.max(0, metrics.retweets || 0),
+  replies: Math.max(0, metrics.replies || 0),
+  quotes: Math.max(0, metrics.quotes || 0),
+  views: Math.max(0, metrics.views || 0),
+  engagement: Math.max(0, metrics.engagement || 0),
+});
+
+// ==================== Error Handling ====================
+class DatabaseError extends Error {
+  public readonly operation: string;
+  public readonly cause?: Error;
+
+  constructor(message: string, operation: string, cause?: Error) {
+    super(message);
+    this.name = "DatabaseError";
+    this.operation = operation;
+    this.cause = cause;
+  }
+}
+
+// ==================== Main Service Class ====================
 export class TweetDatabaseService {
-  private repository: MongoTweetRepository;
+  private readonly repository: MongoTweetRepository;
 
   constructor() {
     this.repository = new MongoTweetRepository();
   }
 
-  // Repository delegation methods
+  // ==================== Repository Delegation Methods ====================
   async getAnalytics(filters = {}) {
     return this.repository.getAnalytics(filters);
   }
 
   async getHashtagTrends(hashtag: string, days = 30) {
-    return this.repository.getHashtagTrends(hashtag, days);
+    if (!hashtag?.trim()) {
+      throw new DatabaseError("Hashtag is required", "getHashtagTrends");
+    }
+    return this.repository.getHashtagTrends(normalizeHashtag(hashtag), days);
   }
 
   async findByHashtag(hashtag: string, pagination = { page: 1, limit: 100 }) {
-    return this.repository.findByHashtag(hashtag, pagination);
+    if (!hashtag?.trim()) {
+      throw new DatabaseError("Hashtag is required", "findByHashtag");
+    }
+
+    const normalizedHashtag = normalizeHashtag(hashtag);
+    const safePagination = {
+      page: Math.max(1, pagination.page),
+      limit: Math.min(1000, Math.max(1, pagination.limit)),
+    };
+
+    return this.repository.findByHashtag(normalizedHashtag, safePagination);
   }
 
   async searchByText(
@@ -52,52 +112,78 @@ export class TweetDatabaseService {
     filters = {},
     pagination = { page: 1, limit: 50 },
   ) {
-    return this.repository.searchByText(searchText, filters, pagination);
+    if (!searchText?.trim()) {
+      throw new DatabaseError("Search text is required", "searchByText");
+    }
+
+    const safePagination = {
+      page: Math.max(1, pagination.page),
+      limit: Math.min(1000, Math.max(1, pagination.limit)),
+    };
+
+    return this.repository.searchByText(
+      searchText.trim(),
+      filters,
+      safePagination,
+    );
   }
+
+  // ==================== Core Save Operations ====================
   /**
-   * Save a single tweet to the database
+   * Save a single tweet to the database with optimized upsert operation
    */
   async saveTweet(tweet: Tweet, campaignId?: string): Promise<SaveTweetResult> {
+    if (!tweet?.tweetId) {
+      return {
+        success: false,
+        error: "Invalid tweet data: tweetId is required",
+      };
+    }
+
     try {
-      // Check if tweet already exists
-      const existingTweet = await TweetModel.findOne({
-        tweetId: tweet.tweetId,
-      });
-
-      if (existingTweet) {
-        // Update existing tweet with latest data
-        await this.updateTweet(existingTweet, tweet);
-        return {
-          success: true,
-          tweetId: tweet.tweetId,
-          isNew: false,
-          message: "Tweet updated successfully",
-        };
-      }
-
-      // Create new tweet document
       const tweetData = this.mapScrapedTweetToDocument(tweet, campaignId);
-      const newTweet = new TweetModel(tweetData);
 
-      await newTweet.save();
+      // Use upsert for better performance
+      const result = await TweetModel.findOneAndUpdate(
+        { tweetId: tweet.tweetId },
+        {
+          $set: tweetData,
+          $setOnInsert: { scrapedAt: new Date() },
+        },
+        {
+          upsert: true,
+          new: true,
+          runValidators: true,
+        },
+      );
+
+      const isNew = result.isNew === true;
 
       return {
         success: true,
         tweetId: tweet.tweetId,
-        isNew: true,
-        message: "Tweet saved successfully",
+        isNew,
+        message: isNew
+          ? "Tweet saved successfully"
+          : "Tweet updated successfully",
       };
-    } catch (error: any) {
-      console.error("Error saving tweet:", error);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      logger.error("Error saving tweet", {
+        tweetId: tweet.tweetId,
+        error: errorMessage,
+      });
+
       return {
         success: false,
-        error: error.message || "Unknown error occurred while saving tweet",
+        error: errorMessage,
       };
     }
   }
 
   /**
-   * Save multiple tweets to the database efficiently
+   * Optimized bulk save with better error handling and performance
    */
   async saveTweetsBulk(
     tweets: Tweet[],
@@ -114,204 +200,225 @@ export class TweetDatabaseService {
       errorMessages: [],
     };
 
-    if (tweets.length === 0) {
+    if (!tweets?.length) {
+      return result;
+    }
+
+    // Validate and filter invalid tweets
+    const validTweets = tweets.filter((tweet) => {
+      if (!tweet?.tweetId?.trim()) {
+        result.errors++;
+        result.errorMessages.push("Tweet missing tweetId");
+        return false;
+      }
+      return true;
+    });
+
+    if (validTweets.length === 0) {
+      result.success = false;
+      result.errorMessages.push("No valid tweets to process");
       return result;
     }
 
     try {
-      // Get existing tweet IDs to check for duplicates
-      const tweetIds = tweets.map((t) => t.tweetId);
-
-      const existingTweets = await TweetModel.find({
-        tweetId: { $in: tweetIds },
-      }).select("tweetId");
+      // Check for existing tweets in a single query
+      const tweetIds = validTweets.map((t) => t.tweetId);
+      const existingTweets = await TweetModel.find(
+        { tweetId: { $in: tweetIds } },
+        { tweetId: 1, _id: 0 },
+      ).lean();
 
       const existingTweetIds = new Set(existingTweets.map((t) => t.tweetId));
 
-      // Separate new tweets from existing ones
-      const newTweets = tweets.filter((t) => !existingTweetIds.has(t.tweetId));
-      const tweetsToUpdate = tweets.filter((t) =>
+      // Separate new and existing tweets
+      const newTweets = validTweets.filter(
+        (t) => !existingTweetIds.has(t.tweetId),
+      );
+      const tweetsToUpdate = validTweets.filter((t) =>
         existingTweetIds.has(t.tweetId),
       );
 
-      // Process new tweets in batches
-      if (newTweets.length > 0) {
-        const batchSize = 50; // Process in smaller batches to avoid memory issues
-
-        for (let i = 0; i < newTweets.length; i += batchSize) {
-          const batch = newTweets.slice(i, i + batchSize);
-
-          try {
-            const tweetDocuments = batch.map((tweet) =>
-              this.mapScrapedTweetToDocument(tweet, campaignId),
-            );
-
-            try {
-              const insertedTweets = await TweetModel.insertMany(
-                tweetDocuments,
-                {
-                  ordered: false, // Continue inserting even if some fail
-                },
-              );
-
-              result.saved += insertedTweets.length;
-              result.savedTweetIds.push(
-                ...insertedTweets.map((t) => t.tweetId),
-              );
-            } catch (insertError: any) {
-              console.error(`Insert error details:`, {
-                name: insertError.name,
-                message: insertError.message,
-                code: insertError.code,
-                writeErrors: insertError.writeErrors,
-                result: insertError.result,
-              });
-
-              // Check if it's a bulk write error with some successes
-              if (
-                insertError.insertedDocs &&
-                insertError.insertedDocs.length > 0
-              ) {
-                result.saved += insertError.insertedDocs.length;
-                result.savedTweetIds.push(
-                  ...insertError.insertedDocs.map((t: any) => t.tweetId),
-                );
-              }
-
-              result.errors +=
-                batch.length - (insertError.insertedDocs?.length || 0);
-              result.errorMessages.push(`Insert error: ${insertError.message}`);
-            }
-          } catch (batchError: any) {
-            console.error(
-              `❌ Error in batch ${i}-${i + batchSize}:`,
-              batchError,
-            );
-            result.errors += batch.length;
-            result.errorMessages.push(`Batch error: ${batchError.message}`);
-          }
-        }
-      }
-
-      // Update existing tweets
-      if (tweetsToUpdate.length > 0) {
-        for (const tweet of tweetsToUpdate) {
-          try {
-            const existingTweet = await TweetModel.findOne({
-              tweetId: tweet.tweetId,
-            });
-            if (existingTweet) {
-              await this.updateTweet(existingTweet, tweet);
-              result.updated++;
-            }
-          } catch (updateError: any) {
-            console.error(
-              `Error updating tweet ${tweet.tweetId}:`,
-              updateError,
-            );
-            result.errors++;
-            result.errorMessages.push(
-              `Update error for ${tweet.tweetId}: ${updateError.message}`,
-            );
-          }
-        }
-      }
-
       result.duplicates = existingTweetIds.size;
 
+      // Process new tweets in optimized batches
+      if (newTweets.length > 0) {
+        await this.processBatchInserts(newTweets, campaignId, result);
+      }
+
+      // Process updates efficiently
+      if (tweetsToUpdate.length > 0) {
+        await this.processBatchUpdates(tweetsToUpdate, campaignId, result);
+      }
+
       return result;
-    } catch (error: any) {
-      console.error("Bulk save error:", error);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown bulk operation error";
+      logger.error("Bulk save operation failed", {
+        error: errorMessage,
+        tweetCount: tweets.length,
+      });
+
       result.success = false;
-      result.errorMessages.push(`Bulk operation error: ${error.message}`);
+      result.errorMessages.push(`Bulk operation error: ${errorMessage}`);
       return result;
     }
   }
 
-  /**
-   * Update an existing tweet with new data
-   */
-  private async updateTweet(
-    existingTweet: ITweetDocument,
-    newTweetData: Tweet,
+  // ==================== Private Helper Methods ====================
+  private async processBatchInserts(
+    tweets: Tweet[],
+    campaignId: string | undefined,
+    result: BulkSaveResult,
   ): Promise<void> {
-    // Update metrics (they may have changed)
-    existingTweet.metrics = {
-      likes: newTweetData.metrics.likes,
-      retweets: newTweetData.metrics.retweets,
-      replies: newTweetData.metrics.replies,
-      quotes: newTweetData.metrics.quotes,
-      views: newTweetData.metrics.views || 0,
-      engagement: newTweetData.metrics.engagement,
+    for (let i = 0; i < tweets.length; i += BATCH_SIZE) {
+      const batch = tweets.slice(i, i + BATCH_SIZE);
+      let retryCount = 0;
+
+      while (retryCount < MAX_RETRY_ATTEMPTS) {
+        try {
+          const tweetDocuments = batch.map((tweet) =>
+            this.mapScrapedTweetToDocument(tweet, campaignId),
+          );
+
+          const insertedTweets = await TweetModel.insertMany(tweetDocuments, {
+            ordered: false,
+            rawResult: false,
+          });
+
+          result.saved += insertedTweets.length;
+          result.savedTweetIds = [
+            ...result.savedTweetIds,
+            ...insertedTweets.map((t) => t.tweetId),
+          ];
+          break;
+        } catch (insertError: any) {
+          retryCount++;
+
+          // Handle partial success in bulk operations
+          if (insertError.insertedDocs?.length > 0) {
+            const successful = insertError.insertedDocs.length;
+            result.saved += successful;
+            result.savedTweetIds = [
+              ...result.savedTweetIds,
+              ...insertError.insertedDocs.map((t: any) => t.tweetId),
+            ];
+          }
+
+          const failed = batch.length - (insertError.insertedDocs?.length || 0);
+          result.errors += failed;
+
+          if (retryCount >= MAX_RETRY_ATTEMPTS) {
+            result.errorMessages.push(
+              `Batch ${i}-${i + batch.length} failed after ${MAX_RETRY_ATTEMPTS} attempts: ${insertError.message}`,
+            );
+            break;
+          }
+
+          // Exponential backoff
+          await sleep(RETRY_DELAY_MS * Math.pow(2, retryCount - 1));
+        }
+      }
+    }
+  }
+
+  private async processBatchUpdates(
+    tweets: Tweet[],
+    campaignId: string | undefined,
+    result: BulkSaveResult,
+  ): Promise<void> {
+    const bulkOps = tweets.map((tweet) => ({
+      updateOne: {
+        filter: { tweetId: tweet.tweetId },
+        update: {
+          $set: this.createUpdateDocument(tweet, campaignId),
+        },
+      },
+    }));
+
+    try {
+      const bulkResult = await TweetModel.bulkWrite(bulkOps, {
+        ordered: false,
+      });
+      result.updated += bulkResult.modifiedCount;
+    } catch (bulkError: any) {
+      logger.error("Bulk update failed", { error: bulkError.message });
+      result.errors += tweets.length;
+      result.errorMessages.push(`Bulk update error: ${bulkError.message}`);
+    }
+  }
+
+  private createUpdateDocument(
+    tweet: Tweet,
+    campaignId?: string,
+  ): Partial<ITweetDocument> {
+    const updateDoc: Partial<ITweetDocument> = {
+      metrics: createTweetMetrics(tweet.metrics),
     };
 
-    // Update author metrics (follower count may have changed)
-    if (newTweetData.author.followersCount) {
-      existingTweet.author.followersCount = newTweetData.author.followersCount;
-    }
-    if (newTweetData.author.followingCount) {
-      existingTweet.author.followingCount = newTweetData.author.followingCount;
+    // Update author metrics if available - use proper nested update
+    if (
+      tweet.author?.followersCount !== undefined ||
+      tweet.author?.followingCount !== undefined
+    ) {
+      updateDoc.author = {
+        ...updateDoc.author,
+        followersCount: tweet.author.followersCount || 0,
+        followingCount: tweet.author.followingCount || 0,
+      } as ITweetDocument["author"];
     }
 
     // Update sentiment if provided
-    if (newTweetData.sentiment) {
-      existingTweet.sentiment = {
-        score: newTweetData.sentiment.score,
-        magnitude: newTweetData.sentiment.magnitude,
-        label: newTweetData.sentiment.label,
-        confidence: newTweetData.sentiment.confidence,
-        emotions: newTweetData.sentiment.emotions,
-        keywords: newTweetData.sentiment.keywords || [],
+    if (tweet.sentiment) {
+      updateDoc.sentiment = {
+        score: tweet.sentiment.score,
+        magnitude: tweet.sentiment.magnitude,
+        label: tweet.sentiment.label,
+        confidence: tweet.sentiment.confidence,
+        emotions: tweet.sentiment.emotions,
+        keywords: tweet.sentiment.keywords || [],
         analyzedAt: new Date(),
-        processingTime: newTweetData.sentiment.processingTime,
+        processingTime: tweet.sentiment.processingTime,
       };
     }
 
-    // Update campaignId if provided and different
-    if (
-      newTweetData.campaignId &&
-      newTweetData.campaignId !== existingTweet.campaignId
-    ) {
-      existingTweet.campaignId = newTweetData.campaignId;
+    // Update campaignId if provided
+    if (campaignId) {
+      updateDoc.campaignId = campaignId;
     }
 
-    await existingTweet.save();
+    return updateDoc;
   }
 
   /**
-   * Map scraped tweet data to database document structure
+   * Optimized mapping with better validation and error handling
    */
   private mapScrapedTweetToDocument(
     tweet: Tweet,
     campaignId?: string,
   ): Partial<ITweetDocument> {
+    const now = new Date();
+
     return {
       tweetId: tweet.tweetId,
-      content: tweet.content,
+      content: tweet.content?.trim() || "",
       author: {
-        id: tweet.author.id,
-        username: tweet.author.username,
-        displayName: tweet.author.displayName,
-        avatar: tweet.author.avatar,
-        verified: tweet.author.verified,
-        followersCount: tweet.author.followersCount,
-        followingCount: tweet.author.followingCount,
-        tweetsCount: tweet.author.tweetsCount,
-        location: tweet.author.location,
-        bio: tweet.author.bio,
-        website: tweet.author.website,
-        joinedDate: tweet.author.joinedDate,
-        influenceScore: tweet.author.influenceScore,
-        engagementRate: tweet.author.engagementRate,
+        id: tweet.author?.id || "",
+        username: tweet.author?.username || "",
+        displayName: tweet.author?.displayName || "",
+        avatar: tweet.author?.avatar || "",
+        verified: Boolean(tweet.author?.verified),
+        followersCount: Math.max(0, tweet.author?.followersCount || 0),
+        followingCount: Math.max(0, tweet.author?.followingCount || 0),
+        tweetsCount: Math.max(0, tweet.author?.tweetsCount || 0),
+        location: tweet.author?.location || "",
+        bio: tweet.author?.bio || "",
+        website: tweet.author?.website || "",
+        joinedDate: tweet.author?.joinedDate || now,
+        influenceScore: Math.max(0, tweet.author?.influenceScore || 0),
+        engagementRate: Math.max(0, tweet.author?.engagementRate || 0),
       },
-      metrics: {
-        likes: tweet.metrics.likes,
-        retweets: tweet.metrics.retweets,
-        replies: tweet.metrics.replies,
-        quotes: tweet.metrics.quotes,
-        views: tweet.metrics.views || 0,
-        engagement: tweet.metrics.engagement,
-      },
+      metrics: createTweetMetrics(tweet.metrics),
       sentiment: tweet.sentiment
         ? {
             score: tweet.sentiment.score,
@@ -320,98 +427,108 @@ export class TweetDatabaseService {
             confidence: tweet.sentiment.confidence,
             emotions: tweet.sentiment.emotions,
             keywords: tweet.sentiment.keywords || [],
-            analyzedAt: new Date(),
+            analyzedAt: now,
             processingTime: tweet.sentiment.processingTime,
           }
         : undefined,
-      hashtags: tweet.hashtags.map((tag: string) =>
-        tag.replace("#", "").toLowerCase(),
-      ),
-      mentions: tweet.mentions.map((mention: string) =>
-        mention.replace("@", "").toLowerCase(),
-      ),
-      urls: tweet.urls,
-      mediaUrls: tweet.mediaUrls,
-      campaignId: campaignId,
-      isRetweet: tweet.isRetweet,
-      isReply: tweet.isReply,
-      isQuote: tweet.isQuote,
+      hashtags: (tweet.hashtags || []).map(normalizeHashtag).filter(Boolean),
+      mentions: (tweet.mentions || []).map(normalizeMention).filter(Boolean),
+      urls: tweet.urls || [],
+      mediaUrls: tweet.mediaUrls || [],
+      campaignId,
+      isRetweet: Boolean(tweet.isRetweet),
+      isReply: Boolean(tweet.isReply),
+      isQuote: Boolean(tweet.isQuote),
       language: tweet.language || "en",
-      scrapedAt: new Date(),
-      tweetCreatedAt: new Date(tweet.createdAt),
+      scrapedAt: now,
+      tweetCreatedAt: new Date(tweet.createdAt || now),
     };
   }
 
+  // ==================== Query Methods ====================
   /**
-   * Get tweets by campaign ID
+   * Get tweets by campaign with better error handling
    */
   async getTweetsByCampaign(
     campaignId: string,
-    limit: number = 100,
+    limit = 100,
   ): Promise<ITweetDocument[]> {
+    if (!campaignId?.trim()) {
+      throw new DatabaseError("Campaign ID is required", "getTweetsByCampaign");
+    }
+
+    const safeLimit = Math.min(1000, Math.max(1, limit));
+
     try {
-      return await TweetModel.find({ campaignId })
+      return await TweetModel.find({ campaignId: campaignId.trim() })
         .sort({ tweetCreatedAt: -1 })
-        .limit(limit);
+        .limit(safeLimit)
+        .lean();
     } catch (error) {
-      console.error("Error fetching tweets by campaign:", error);
+      logger.error("Error fetching tweets by campaign", { campaignId, error });
       return [];
     }
   }
 
   /**
-   * Get tweets by hashtag
+   * Get tweets by hashtag with improved normalization
    */
   async getTweetsByHashtag(
     hashtag: string,
-    limit: number = 100,
+    limit = 100,
   ): Promise<ITweetDocument[]> {
+    const safeLimit = Math.min(1000, Math.max(1, limit));
+
     try {
-      return await TweetModel.find({
-        hashtags: hashtag.toLowerCase().replace("#", ""),
-      })
+      const normalizedHashtag = hashtag ? normalizeHashtag(hashtag) : "";
+      const query = normalizedHashtag ? { hashtags: normalizedHashtag } : {};
+
+      return await TweetModel.find(query)
         .sort({ tweetCreatedAt: -1 })
-        .limit(limit);
+        .limit(safeLimit)
+        .lean();
     } catch (error) {
-      console.error("Error fetching tweets by hashtag:", error);
+      logger.error("Error fetching tweets by hashtag", { hashtag, error });
       return [];
     }
   }
 
   /**
-   * Get basic statistics about stored tweets
+   * Optimized storage stats with better aggregation
    */
-  async getStorageStats(): Promise<{
-    totalTweets: number;
-    tweetsToday: number;
-    uniqueAuthors: number;
-    averageSentiment: number;
-  }> {
+  async getStorageStats(): Promise<StorageStats> {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const [totalTweets, tweetsToday, uniqueAuthors, sentimentStats] =
-        await Promise.all([
-          TweetModel.countDocuments(),
-          TweetModel.countDocuments({ scrapedAt: { $gte: today } }),
-          TweetModel.distinct("author.username"),
-          TweetModel.aggregate([
-            { $match: { "sentiment.score": { $exists: true } } },
-            {
-              $group: { _id: null, avgSentiment: { $avg: "$sentiment.score" } },
-            },
-          ]),
-        ]);
+      const [statsResult] = await TweetModel.aggregate([
+        {
+          $facet: {
+            totalCount: [{ $count: "total" }],
+            todayCount: [
+              { $match: { scrapedAt: { $gte: today } } },
+              { $count: "today" },
+            ],
+            uniqueAuthors: [
+              { $group: { _id: "$author.username" } },
+              { $count: "unique" },
+            ],
+            avgSentiment: [
+              { $match: { "sentiment.score": { $exists: true, $ne: null } } },
+              { $group: { _id: null, avg: { $avg: "$sentiment.score" } } },
+            ],
+          },
+        },
+      ]);
 
       return {
-        totalTweets,
-        tweetsToday,
-        uniqueAuthors: uniqueAuthors.length,
-        averageSentiment: sentimentStats[0]?.avgSentiment || 0,
+        totalTweets: statsResult.totalCount[0]?.total || 0,
+        tweetsToday: statsResult.todayCount[0]?.today || 0,
+        uniqueAuthors: statsResult.uniqueAuthors[0]?.unique || 0,
+        averageSentiment: statsResult.avgSentiment[0]?.avg || 0,
       };
     } catch (error) {
-      console.error("Error getting storage stats:", error);
+      logger.error("Error getting storage stats", { error });
       return {
         totalTweets: 0,
         tweetsToday: 0,

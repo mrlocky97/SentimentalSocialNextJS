@@ -6,10 +6,10 @@ import { NaiveBayesTrainingExample } from "../../services/naive-bayes-sentiment.
 import { Tweet } from "../../types/twitter";
 import { SentimentAnalysisEngine } from "./engine";
 import {
-  AnalysisRequest,
-  AnalysisResult,
-  SentimentOrchestrator,
-  TweetDTO,
+    AnalysisRequest,
+    AnalysisResult,
+    SentimentOrchestrator,
+    TweetDTO,
 } from "./types";
 
 // (Mappers imported lazily elsewhere if needed)
@@ -274,6 +274,23 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
   }
 
   /**
+   * Generate a normalized cache key for better hit rates
+   */
+  private generateCacheKey(text: string, language?: string): string {
+    // Normalize text for better cache hits
+    const normalized = text
+      .toLowerCase()
+      .replace(/\s+/g, " ") // normalize whitespace
+      .replace(/[^\w\s]/g, "") // remove punctuation for similar content matching
+      .trim();
+
+    // Use first 100 characters to avoid overly long keys while maintaining uniqueness
+    const keyText =
+      normalized.length > 100 ? normalized.substring(0, 100) : normalized;
+    return `text:${keyText}:${language || "en"}`;
+  }
+
+  /**
    * Analyzes a plain text string with enhanced caching, metrics, and error handling.
    * @param request - The analysis request.
    * @returns The sentiment analysis result.
@@ -288,14 +305,12 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       throw new Error("Service temporarily unavailable - circuit breaker open");
     }
 
-    const cacheKey = `text:${request.text}:${JSON.stringify(request.language)}`;
+    const cacheKey = this.generateCacheKey(request.text, request.language);
 
     // Try cache first
     const cachedResult = this.getCacheEntry(cacheKey);
     if (cachedResult) {
-      console.log(
-        `[Orchestrator] Cache hit for key: ${cacheKey.substring(0, 50)}...`,
-      );
+      console.log(`[Orchestrator] Cache hit for normalized text`);
       return cachedResult;
     }
 
@@ -341,7 +356,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
   async analyzeTweet(
     tweet: TweetDTO,
   ): Promise<AnalysisResult & { tweetId: string }> {
-    const cacheKey = `tweet:${tweet.id}`;
+    const cacheKey = this.generateCacheKey(tweet.text, tweet.language);
 
     // Try cache first
     const cachedResult = this.getCacheEntry(cacheKey);
@@ -350,7 +365,9 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
       return { ...cachedResult, tweetId: tweet.id };
     }
 
-    console.log(`[Orchestrator] Cache miss. Analyzing tweet: ${tweet.id}`);
+    console.log(
+      `[Orchestrator] Cache miss. Analyzing text: "${tweet.text.substring(0, 50)}..."`,
+    );
     const request: AnalysisRequest = {
       text: tweet.text,
       language: tweet.language,
@@ -370,19 +387,26 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
   }
 
   /**
-   * Analyzes a batch of tweets efficiently.
+   * Analyzes a batch of tweets efficiently with deduplication.
    * @param tweets - An array of tweet DTOs.
    * @returns An array of analysis results.
    */
   async analyzeTweetsBatch(
     tweets: TweetDTO[],
   ): Promise<(AnalysisResult & { tweetId: string })[]> {
-    console.log(
-      `[Orchestrator] Starting batch analysis for ${tweets.length} tweets.`,
-    );
-    const results = await Promise.all(
-      tweets.map((tweet) => this.analyzeTweet(tweet)),
-    );
+    console.log(`[Orchestrator] Batch analysis for ${tweets.length} tweets.`);
+
+    // Simple optimization: process with limited concurrency
+    const BATCH_SIZE = 3;
+    const results: (AnalysisResult & { tweetId: string })[] = [];
+
+    for (let i = 0; i < tweets.length; i += BATCH_SIZE) {
+      const batch = tweets.slice(i, i + BATCH_SIZE);
+      const batchPromises = batch.map((tweet) => this.analyzeTweet(tweet));
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
     console.log("[Orchestrator] Batch analysis complete.");
     return results;
   }
