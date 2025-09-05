@@ -1,6 +1,7 @@
 /**
- * Twitter Real Scraper Service - OPTIMIZED v2.0
- * High-performance scraping with improved error handling and resource management
+ * Twitter Real Scraper Service - OPTIMIZED v3.0
+ * High-performance scraping with streamlined API and enhanced resource management
+ * Focused on production-ready methods with strict type safety
  */
 
 import { Label } from '../enums/sentiment.enum';
@@ -16,17 +17,14 @@ import {
 } from '../types/twitter';
 
 // ==================== Constants & Configuration ====================
-// Language detection patterns
+// Core configuration for production scraping
 const LANGUAGE_PATTERNS = Object.freeze(
-  new Map([
-    [
-      'es',
-      /\b(?:el|la|de|en|que|y|es|se|no|por|con|para|muy|pero|más|como|este|otro|todo|hacer|estar)\b/i,
-    ],
+  new Map<string, RegExp>([
+    ['es', /\b(?:el|la|de|en|que|y|es|se|no|por|con|para|muy|pero|más|como|este|otro|todo|hacer|estar)\b/i],
     ['pt', /\b(?:o|a|de|em|que|e|do|da|para|com|não|mais|por|muito|ser|ter|fazer|estar)\b/i],
     ['fr', /\b(?:le|la|de|et|à|un|il|être|avoir|que|pour|dans|sur|avec|ne|pas)\b/i],
     ['de', /\b(?:der|die|das|und|in|den|von|zu|ist|mit|sich|auf|für|als|sie|ein)\b/i],
-  ] as const)
+  ])
 );
 
 const HASHTAG_REGEX = /#(\w+)/g;
@@ -37,8 +35,7 @@ const DEFAULT_CONFIG = Object.freeze({
   timeout: 45000,
   delay: 2000,
   maxRetries: 1,
-  userAgent:
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 } as const satisfies Required<ScrapingConfig>);
 
 const RATE_LIMIT_CONFIG = Object.freeze({
@@ -70,16 +67,15 @@ interface RateLimitStatus {
 // ==================== Utility Functions ====================
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-const createDefaultSentiment = (now: Date) =>
-  Object.freeze({
-    score: 0,
-    label: Label.NEUTRAL,
-    magnitude: 0,
-    confidence: 1,
-    keywords: [],
-    analyzedAt: now,
-    processingTime: 0,
-  });
+const createDefaultSentiment = (now: Date) => Object.freeze({
+  score: 0,
+  label: Label.NEUTRAL,
+  magnitude: 0,
+  confidence: 1,
+  keywords: [],
+  analyzedAt: now,
+  processingTime: 0,
+});
 
 const safeParseJson = (jsonString: string): Record<string, any> | null => {
   try {
@@ -100,10 +96,7 @@ const calculateEngagement = (metrics: Tweet['metrics']): number =>
 
 const recordMetrics = (count: number, queryType: string): void => {
   try {
-    defaultMetrics.tweetsScrapedTotal.inc(count, {
-      source: 'twitter',
-      queryType,
-    });
+    defaultMetrics.tweetsScrapedTotal.inc(count, { source: 'twitter', queryType });
   } catch (error) {
     logger.warn('Failed to record metric', { error });
   }
@@ -158,6 +151,29 @@ export class TwitterRealScraperService {
     });
   }
 
+  /**
+   * Scrape with exact count guarantee - will continue until exact number is found
+   * @param type - 'user' | 'hashtag'
+   * @param query - search query
+   * @param exactCount - exact number of tweets needed
+   * @param options - scraping options
+   * @returns exactly exactCount tweets (or fewer if no more available)
+   */
+  async scrapeExactCount(
+    type: 'user' | 'hashtag',
+    query: string,
+    exactCount: number,
+    options: ScrapingOptions = {}
+  ): Promise<ScrapingResult> {
+    const enhancedOptions = { ...options, maxTweets: exactCount };
+    
+    if (type === 'user') {
+      return this.scrapeByUser(query, enhancedOptions);
+    } else {
+      return this.scrapeByHashtag(query, enhancedOptions);
+    }
+  }
+
   getRateLimitStatus(): RateLimitStatus {
     const timeSinceLastAttempt = Date.now() - this.lastLoginAttempt.getTime();
     const cooldownRemaining = Math.max(0, RATE_LIMIT_CONFIG.loginCooldownMs - timeSinceLastAttempt);
@@ -196,15 +212,184 @@ export class TwitterRealScraperService {
     }
   }
 
-  // ==================== Private Core Methods ====================
-  
+
   /**
-   * Centralized scraping execution with error handling and rate limiting
+   * Adaptive scraping that continues until the exact number of tweets is found
+   * or no more tweets are available
+   * @param type - 'user' | 'hashtag'
+   * @param query - search query
+   * @param targetCount - exact number of tweets desired
+   * @param options - scraping options
+   * @returns scraping result with exactly targetCount tweets (or fewer if exhausted)
+   */
+  private async adaptiveScraping(
+    type: string,
+    query: string,
+    targetCount: number,
+    options: ScrapingOptions,
+    scraperFunction: (scraper: any, query: string, maxTweets: number) => Promise<ScrapedTweetData[]>
+  ): Promise<ScrapingResult> {
+    const collectedTweets: Tweet[] = [];
+    const seenIds = new Set<string>();
+    const allErrors: string[] = [];
+    let totalScraped = 0;
+    let attempt = 1;
+    const maxAttempts = 5; // Prevent infinite loops
+    const batchSize = Math.max(targetCount, 20); // Always scrape at least 20 to account for filtering
+
+    logger.info('Starting adaptive scraping', {
+      type,
+      query,
+      targetCount,
+      batchSize,
+      maxAttempts,
+      filters: {
+        maxAgeHours: options.maxAgeHours,
+        language: options.language,
+        includeReplies: options.includeReplies,
+      },
+    });
+
+    const scraper = await this.initializeScraper();
+
+    while (collectedTweets.length < targetCount && attempt <= maxAttempts) {
+      try {
+        logger.info(`Adaptive scraping attempt ${attempt}/${maxAttempts}`, {
+          currentCount: collectedTweets.length,
+          targetCount,
+          remaining: targetCount - collectedTweets.length,
+        });
+
+        await sleep(this.config.delay * attempt); // Increasing delay between attempts
+
+        // Calculate how many more tweets to scrape
+        const remainingNeeded = targetCount - collectedTweets.length;
+        
+        // Use adaptive batch sizing: scrape more if we're filtering heavily
+        const adaptiveBatchSize = Math.min(
+          1000, // API limit
+          Math.max(
+            batchSize,
+            remainingNeeded * 3 // Scrape 3x more to account for filtering
+          )
+        );
+
+        logger.debug('Executing scraping batch', {
+          attempt,
+          adaptiveBatchSize,
+          remainingNeeded,
+        });
+
+        const batchData = await scraperFunction(scraper, query, adaptiveBatchSize);
+        totalScraped += batchData.length;
+
+        if (batchData.length === 0) {
+          logger.info('No more tweets available from source', {
+            attempt,
+            totalFound: collectedTweets.length,
+            targetCount,
+          });
+          break; // No more tweets available
+        }
+
+        // Process the batch with detailed stats
+        const { tweets: processedTweets, stats } = this.processTweetsWithStats(batchData, options);
+
+        // Filter out duplicates and add new tweets
+        let newTweetsAdded = 0;
+        for (const tweet of processedTweets) {
+          if (!seenIds.has(tweet.id) && collectedTweets.length < targetCount) {
+            seenIds.add(tweet.id);
+            collectedTweets.push(tweet);
+            newTweetsAdded++;
+          }
+        }
+
+        logger.info(`Attempt ${attempt} completed`, {
+          batchScraped: batchData.length,
+          batchProcessed: processedTweets.length,
+          newTweetsAdded,
+          totalCollected: collectedTweets.length,
+          targetCount,
+          filteringStats: stats,
+        });
+
+        // If we got very few new tweets despite scraping many, we might be hitting limits
+        if (batchData.length >= 10 && newTweetsAdded === 0) {
+          logger.warn('No new tweets found despite successful scraping - may have exhausted unique content', {
+            attempt,
+            batchScraped: batchData.length,
+            totalCollected: collectedTweets.length,
+          });
+          break;
+        }
+
+        // If we got exactly what we wanted, we're done
+        if (collectedTweets.length >= targetCount) {
+          logger.info('Target count reached!', {
+            collected: collectedTweets.length,
+            targetCount,
+            attempts: attempt,
+          });
+          break;
+        }
+
+        attempt++;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        allErrors.push(`Attempt ${attempt}: ${errorMessage}`);
+        
+        logger.warn(`Adaptive scraping attempt ${attempt} failed`, {
+          error: errorMessage,
+          currentCount: collectedTweets.length,
+          targetCount,
+        });
+
+        // If it's an auth error, don't continue
+        if (AUTH_ERROR_PATTERNS.test(errorMessage)) {
+          logger.error('Authentication error in adaptive scraping', { error: errorMessage });
+          throw error;
+        }
+
+        attempt++;
+        // Add exponential backoff for retries
+        await sleep(this.config.delay * Math.pow(2, attempt - 1));
+      }
+    }
+
+    const finalResult = {
+      tweets: collectedTweets.slice(0, targetCount), // Ensure exact count
+      totalFound: totalScraped,
+      totalScraped: collectedTweets.length,
+      errors: allErrors,
+      rateLimit: {
+        remaining: RATE_LIMIT_CONFIG.maxRequestsPerHour - this.requestCount,
+        resetTime: this.rateLimitResetTime,
+      },
+    };
+
+    logger.info('Adaptive scraping completed', {
+      requested: targetCount,
+      collected: finalResult.tweets.length,
+      totalAttempts: attempt - 1,
+      totalScrapedFromSource: totalScraped,
+      success: finalResult.tweets.length === targetCount,
+      errors: allErrors.length,
+    });
+
+    recordMetrics(finalResult.tweets.length, type);
+    this.requestCount++;
+
+    return finalResult;
+  }
+
+  /**
+   * Centralized scraping execution with adaptive behavior and error handling
    * @param type - 'user' | 'hashtag'
    * @param query query string (username or hashtag)
    * @param options scraping options
    * @param scraperFunction function that performs the actual scraping
-   * @returns scraping result
+   * @returns scraping result with exactly the requested number of tweets (or fewer if exhausted)
    */
   private async executeScraping(
     type: string,
@@ -214,35 +399,57 @@ export class TwitterRealScraperService {
   ): Promise<ScrapingResult> {
     try {
       this.validateRateLimit();
-      const scraper = await this.initializeScraper();
-      const maxTweets = Math.min(
+      
+      const targetCount = Math.min(
         1000,
         Math.max(1, options.maxTweets ?? (type === 'user' ? 30 : 50))
       );
 
-      await sleep(this.config.delay);
-
-      const scrapedTweets = await scraperFunction(scraper, query, maxTweets);
-      const processedTweets = this.processTweets(scrapedTweets, options);
-
-      recordMetrics(scrapedTweets.length, type);
-      this.requestCount++;
-
-      return {
-        tweets: processedTweets,
-        totalFound: scrapedTweets.length,
-        totalScraped: processedTweets.length,
-        errors: [],
-        rateLimit: {
-          remaining: RATE_LIMIT_CONFIG.maxRequestsPerHour - this.requestCount,
-          resetTime: this.rateLimitResetTime,
+      logger.info('Starting scraping operation', {
+        type,
+        query,
+        targetCount,
+        options: {
+          maxAgeHours: options.maxAgeHours,
+          language: options.language,
+          includeReplies: options.includeReplies,
         },
-      };
+      });
+
+      // Use adaptive scraping to get exactly the number requested
+      const result = await this.adaptiveScraping(
+        type,
+        query,
+        targetCount,
+        options,
+        scraperFunction
+      );
+
+      logger.info('Scraping operation completed', {
+        type,
+        query,
+        requested: targetCount,
+        scraped: result.totalFound,
+        processed: result.totalScraped,
+        delivered: result.tweets.length,
+        success: result.tweets.length === targetCount,
+        filteringEfficiency: result.totalFound > 0 
+          ? `${Math.round((result.tweets.length / result.totalFound) * 100)}%`
+          : '0%',
+      });
+
+      return result;
     } catch (error) {
       return this.handleScrapingError(error);
     }
   }
 
+  /**
+   * Collect tweets from an async iterable with a maximum limit
+   * @param tweetIterator async iterable of scraped tweets
+   * @param maxTweets maximum number of tweets to collect
+   * @returns array of scraped tweet data
+   */
   private async collectTweets(
     tweetIterator: AsyncIterable<any>,
     maxTweets: number
@@ -354,170 +561,170 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Process and normalize scraped tweets with filtering and enrichment
+   * Process and normalize scraped tweets with efficient filtering
    * @param scrapedData - raw scraped tweet data
    * @param options - scraping options for filtering
-   * @returns processed and normalized tweets
+   * @returns processed tweets and filtering statistics
    */
-  private processTweets(scrapedData: ScrapedTweetData[], options: ScrapingOptions): Tweet[] {
+  private processTweetsWithStats(scrapedData: ScrapedTweetData[], options: ScrapingOptions): {
+    tweets: Tweet[];
+    stats: {
+      inputCount: number;
+      outputCount: number;
+      filteredByAge: number;
+      filteredByLanguage: number;
+      failedToProcess: number;
+      duplicatesFiltered: number;
+    };
+  } {
     const now = new Date();
     const maxAge = options.maxAgeHours ? options.maxAgeHours * 3600000 : Infinity;
     const shouldFilterLanguage = Boolean(options.language && options.language !== 'all');
     const targetLanguage = options.language;
 
-    const startTime = Date.now();
     const processedTweets: Tweet[] = [];
+    const seenIds = new Set<string>();
+    
+    // Initialize counters for efficient tracking
+    const stats = {
+      inputCount: scrapedData.length,
+      outputCount: 0,
+      filteredByAge: 0,
+      filteredByLanguage: 0,
+      failedToProcess: 0,
+      duplicatesFiltered: 0,
+    };
 
     for (const item of scrapedData) {
       try {
         const tweet = this.normalizeTweet(item, now);
 
-        // Early filtering optimizations
-        if (options.maxAgeHours) {
-          const tweetAge = now.getTime() - tweet.createdAt.getTime();
-          if (tweetAge > maxAge) continue;
+        // Duplicate check - early exit for performance
+        if (seenIds.has(tweet.id)) {
+          stats.duplicatesFiltered++;
+          continue;
+        }
+        seenIds.add(tweet.id);
+
+        // Age filtering
+        if (options.maxAgeHours && (now.getTime() - tweet.createdAt.getTime()) > maxAge) {
+          stats.filteredByAge++;
+          continue;
         }
 
-        if (
-          shouldFilterLanguage &&
-          tweet.language &&
-          tweet.language !== 'unknown' &&
-          tweet.language !== targetLanguage
-        ) {
+        // Language filtering
+        if (shouldFilterLanguage && tweet.language && 
+            tweet.language !== 'unknown' && tweet.language !== targetLanguage) {
+          stats.filteredByLanguage++;
           continue;
         }
 
         processedTweets.push(tweet);
-
-        // Record metrics with error handling
-        try {
-          defaultMetrics.tweetsProcessedTotal.inc(1, { pipeline: 'default' });
-        } catch {
-          // Non-fatal metric failure
+      } catch {
+        stats.failedToProcess++;
+        // Create minimal fallback tweet if possible
+        const fallbackTweet = this.createFallbackTweet(item, now);
+        if (fallbackTweet && !seenIds.has(fallbackTweet.id)) {
+          seenIds.add(fallbackTweet.id);
+          processedTweets.push(fallbackTweet);
         }
-      } catch (error) {
-        logger.warn('Error processing tweet', {
-          error: error instanceof Error ? error.message : error,
-        });
       }
     }
 
-    // Record processing latency
+    stats.outputCount = processedTweets.length;
+
+    // Concise logging for production
+    logger.debug('Tweet processing completed', {
+      input: stats.inputCount,
+      output: stats.outputCount,
+      filtered: stats.inputCount - stats.outputCount,
+    });
+
+    // Record metrics efficiently
     try {
-      const duration = Date.now() - startTime;
-      defaultMetrics.tweetSentimentLatency.observe(duration, { language: 'unknown' });
+      defaultMetrics.tweetsProcessedTotal.inc(stats.outputCount, { pipeline: 'adaptive' });
     } catch {
-      // Ignore metric errors
+      // Silent fail for metrics
     }
 
-    return processedTweets;
+    return { tweets: processedTweets, stats };
   }
 
   /**
-   * Normalize raw scraped tweet data into structured Tweet object
+   * Legacy wrapper for backward compatibility
+   * @param scrapedData - raw scraped tweet data
+   * @param options - scraping options for filtering
+   * @returns processed and normalized tweets
+   */
+  private processTweets(scrapedData: ScrapedTweetData[], options: ScrapingOptions): Tweet[] {
+    const result = this.processTweetsWithStats(scrapedData, options);
+    
+    // Log summary for legacy calls
+    logger.info('Tweet processing completed', {
+      inputCount: result.stats.inputCount,
+      outputCount: result.stats.outputCount,
+      filteredByAge: result.stats.filteredByAge,
+      filteredByLanguage: result.stats.filteredByLanguage,
+      failedToProcess: result.stats.failedToProcess,
+      duplicatesFiltered: result.stats.duplicatesFiltered,
+    });
+
+    return result.tweets;
+  }
+
+  /**
+   * Normalize raw scraped tweet data into structured Tweet object - optimized version
    * @param data - raw scraped tweet data
    * @param now - current timestamp for reference
    * @returns normalized Tweet object
    */
   private normalizeTweet(data: ScrapedTweetData, now: Date): Tweet {
-    // Extract comprehensive IDs with null-safe access
-    const tweetId =
-      data.id ||
-      data.__raw_UNSTABLE?.id_str ||
+    // Core identifiers with optimized fallbacks
+    const tweetId = data.id || data.__raw_UNSTABLE?.id_str || 
       `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
+    const conversationId = data.conversationId || data.__raw_UNSTABLE?.conversation_id_str || tweetId;
+    const content = data.text || data.content || data.full_text || data.__raw_UNSTABLE?.full_text || '';
 
-    const conversationId =
-      data.conversationId || data.__raw_UNSTABLE?.conversation_id_str || tweetId;
-
-    // Extract content with all possible sources
-    const content =
-      data.text || data.content || data.full_text || data.__raw_UNSTABLE?.full_text || '';
-
-    // Extract author data with comprehensive fallbacks
-    const author = this.extractAuthorData(data, now);
-
-    // Extract comprehensive metrics with null-safe access
+    // Extract metrics efficiently
     const rawMetrics = {
-      likes:
-        data.likes ||
-        data.favorite_count ||
-        data.favoriteCount ||
-        data.__raw_UNSTABLE?.favorite_count ||
-        0,
-      retweets:
-        data.retweets ||
-        data.retweet_count ||
-        data.retweetCount ||
-        data.__raw_UNSTABLE?.retweet_count ||
-        0,
-      replies:
-        data.replies ||
-        data.reply_count ||
-        data.replyCount ||
-        data.__raw_UNSTABLE?.reply_count ||
-        0,
+      likes: data.likes || data.favorite_count || data.favoriteCount || data.__raw_UNSTABLE?.favorite_count || 0,
+      retweets: data.retweets || data.retweet_count || data.retweetCount || data.__raw_UNSTABLE?.retweet_count || 0,
+      replies: data.replies || data.reply_count || data.replyCount || data.__raw_UNSTABLE?.reply_count || 0,
       quotes: data.quote_count || data.quoteCount || data.__raw_UNSTABLE?.quote_count || 0,
       bookmarks: data.bookmarkCount || data.__raw_UNSTABLE?.bookmark_count || 0,
-      views: data.views || Math.max(0, (data.likes || data.favorite_count || 0) * 10), // Estimation fallback
+      views: data.views || Math.max(0, (data.likes || data.favorite_count || 0) * 10),
       engagement: 0,
     };
-
     rawMetrics.engagement = calculateEngagement(rawMetrics);
 
-    // Extract hashtags from multiple sources
-    const hashtags = this.extractHashtags(data, content);
-
-    // Extract mentions from multiple sources
-    const mentions = this.extractMentions(data);
-
-    // Extract URLs from multiple sources
-    const urls = this.extractUrls(data);
-
-    // Extract media URLs and photo data
+    // Extract media data once and destructure
     const { mediaUrls, photoData } = this.extractMediaData(data);
-
-    // Parse creation date with multiple fallbacks
-    const createdAt = this.parseCreatedAtEnhanced(data, now);
-
-    // Extract location data
-    const locationData = this.extractLocationData(data);
 
     return {
       id: tweetId,
       tweetId,
       conversationId,
       content,
-      author,
+      author: this.extractAuthorData(data, now),
       metrics: rawMetrics,
-      hashtags,
-      mentions,
-      urls,
+      hashtags: this.extractHashtags(data, content),
+      mentions: this.extractMentions(data),
+      urls: this.extractUrls(data),
       mediaUrls,
-      photoData, // New field for rich photo data
+      photoData,
       isRetweet: Boolean(data.isRetweet || data.is_retweet || data.__raw_UNSTABLE?.retweeted),
-      isReply: Boolean(
-        data.isReply ||
-          content.startsWith('@') ||
-          (data.__raw_UNSTABLE?.display_text_range &&
-            data.__raw_UNSTABLE?.display_text_range[0] > 0)
-      ),
-      isQuote: Boolean(
-        data.isQuoted ||
-          data.isQuote ||
-          data.is_quote_status ||
-          data.__raw_UNSTABLE?.is_quote_status
-      ),
+      isReply: Boolean(data.isReply || content.startsWith('@') || 
+        (data.__raw_UNSTABLE?.display_text_range && data.__raw_UNSTABLE?.display_text_range[0] > 0)),
+      isQuote: Boolean(data.isQuoted || data.isQuote || data.is_quote_status || data.__raw_UNSTABLE?.is_quote_status),
       isEdited: Boolean(data.isEdited),
       isPinned: Boolean(data.isPin),
-      isSensitive: Boolean(
-        data.sensitiveContent || data.possibly_sensitive || data.__raw_UNSTABLE?.possibly_sensitive
-      ),
+      isSensitive: Boolean(data.sensitiveContent || data.possibly_sensitive || data.__raw_UNSTABLE?.possibly_sensitive),
       language: this.detectTweetLanguage(data),
-      location: locationData,
+      location: this.extractLocationData(data),
       permanentUrl: data.permanentUrl,
-      htmlContent: data.html, // New field for HTML representation
+      htmlContent: data.html,
       scrapedAt: now,
-      createdAt,
+      createdAt: this.parseCreatedAtEnhanced(data, now),
       updatedAt: now,
       sentiment: createDefaultSentiment(now),
     };
@@ -567,6 +774,60 @@ export class TwitterRealScraperService {
       website: user.url || user.website || '',
       joinedDate: now,
     };
+  }
+
+  /**
+   * Create a minimal fallback tweet for items that failed to process normally
+   * @param data - raw scraped tweet data
+   * @param now - current timestamp
+   * @returns minimal Tweet object or null if impossible to create
+   */
+  private createFallbackTweet(data: ScrapedTweetData, now: Date): Tweet | null {
+    try {
+      // Must have at least some content to be useful
+      const content = data.text || data.content || data.full_text || '';
+      if (!content.trim()) {
+        return null;
+      }
+
+      const tweetId =
+        data.id || `fallback_${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      return {
+        id: tweetId,
+        tweetId,
+        conversationId: tweetId,
+        content: content.trim(),
+        author: this.createDefaultAuthor(now),
+        metrics: {
+          likes: 0,
+          retweets: 0,
+          replies: 0,
+          quotes: 0,
+          bookmarks: 0,
+          views: 0,
+          engagement: 0,
+        },
+        hashtags: extractHashtags(content),
+        mentions: [],
+        urls: [],
+        mediaUrls: [],
+        isRetweet: false,
+        isReply: false,
+        isQuote: false,
+        isEdited: false,
+        isPinned: false,
+        isSensitive: false,
+        language: 'unknown',
+        scrapedAt: now,
+        createdAt: now,
+        updatedAt: now,
+        sentiment: createDefaultSentiment(now),
+      };
+    } catch (error) {
+      logger.error('Failed to create fallback tweet', { error });
+      return null;
+    }
   }
 
   private createDefaultAuthor(now: Date) {
@@ -788,7 +1049,6 @@ export class TwitterRealScraperService {
       logger.warn('Twitter credentials not fully configured - authentication may fail');
     }
   }
-
 
   /**
    * Validate and enforce rate limiting based on configuration
