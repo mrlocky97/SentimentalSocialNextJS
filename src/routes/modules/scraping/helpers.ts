@@ -384,6 +384,13 @@ async function performScraping(
     : scraper.scrapeByHashtag(safeIdentifier, scrapingOptions);
 }
 
+/**
+ * Process and persist sentiment analysis results
+ * @param tweets - array of tweets to analyze
+ * @param analyzeSentiment - whether to perform sentiment analysis
+ * @param campaignId - optional campaign ID for tracking
+ * @returns processed tweets and sentiment summary
+ */
 async function processAndPersistSentiment(
   tweets: readonly Tweet[],
   analyzeSentiment: boolean,

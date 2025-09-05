@@ -16,6 +16,7 @@ import {
 } from '../types/twitter';
 
 // ==================== Constants & Configuration ====================
+// Language detection patterns
 const LANGUAGE_PATTERNS = Object.freeze(
   new Map([
     [
@@ -196,6 +197,15 @@ export class TwitterRealScraperService {
   }
 
   // ==================== Private Core Methods ====================
+  
+  /**
+   * Centralized scraping execution with error handling and rate limiting
+   * @param type - 'user' | 'hashtag'
+   * @param query query string (username or hashtag)
+   * @param options scraping options
+   * @param scraperFunction function that performs the actual scraping
+   * @returns scraping result
+   */
   private async executeScraping(
     type: string,
     query: string,
@@ -258,6 +268,10 @@ export class TwitterRealScraperService {
     }
   }
 
+  /**
+   * Initialize and authenticate the scraper instance
+   * @returns initialized and authenticated scraper instance
+   */
   private async initializeScraper(): Promise<any> {
     if (this.scraper && this.isAuthenticated) {
       return this.scraper;
@@ -287,6 +301,10 @@ export class TwitterRealScraperService {
     }
   }
 
+  /**
+   * Attempt to authenticate using cookies from environment variable
+   * @returns true if authentication succeeded, false otherwise
+   */
   private async tryAuthenticateWithCookies(): Promise<boolean> {
     const cookiesEnv = process.env.TWITTER_COOKIES?.trim();
     if (!cookiesEnv || !this.scraper) {
@@ -335,6 +353,12 @@ export class TwitterRealScraperService {
     this.isAuthenticated = true;
   }
 
+  /**
+   * Process and normalize scraped tweets with filtering and enrichment
+   * @param scrapedData - raw scraped tweet data
+   * @param options - scraping options for filtering
+   * @returns processed and normalized tweets
+   */
   private processTweets(scrapedData: ScrapedTweetData[], options: ScrapingOptions): Tweet[] {
     const now = new Date();
     const maxAge = options.maxAgeHours ? options.maxAgeHours * 3600000 : Infinity;
@@ -389,52 +413,52 @@ export class TwitterRealScraperService {
     return processedTweets;
   }
 
+  /**
+   * Normalize raw scraped tweet data into structured Tweet object
+   * @param data - raw scraped tweet data
+   * @param now - current timestamp for reference
+   * @returns normalized Tweet object
+   */
   private normalizeTweet(data: ScrapedTweetData, now: Date): Tweet {
     // Extract comprehensive IDs with null-safe access
-    const tweetId = data.id || 
-                   data.__raw_UNSTABLE?.id_str || 
-                   `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
-    
-    const conversationId = data.conversationId || 
-                          data.__raw_UNSTABLE?.conversation_id_str || 
-                          tweetId;
+    const tweetId =
+      data.id ||
+      data.__raw_UNSTABLE?.id_str ||
+      `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
+
+    const conversationId =
+      data.conversationId || data.__raw_UNSTABLE?.conversation_id_str || tweetId;
 
     // Extract content with all possible sources
-    const content = data.text || 
-                   data.content || 
-                   data.full_text || 
-                   data.__raw_UNSTABLE?.full_text || 
-                   '';
+    const content =
+      data.text || data.content || data.full_text || data.__raw_UNSTABLE?.full_text || '';
 
     // Extract author data with comprehensive fallbacks
     const author = this.extractAuthorData(data, now);
 
     // Extract comprehensive metrics with null-safe access
     const rawMetrics = {
-      likes: data.likes || 
-             data.favorite_count || 
-             data.favoriteCount || 
-             data.__raw_UNSTABLE?.favorite_count || 
-             0,
-      retweets: data.retweets || 
-                data.retweet_count || 
-                data.retweetCount || 
-                data.__raw_UNSTABLE?.retweet_count || 
-                0,
-      replies: data.replies || 
-               data.reply_count || 
-               data.replyCount || 
-               data.__raw_UNSTABLE?.reply_count || 
-               0,
-      quotes: data.quote_count || 
-              data.quoteCount || 
-              data.__raw_UNSTABLE?.quote_count || 
-              0,
-      bookmarks: data.bookmarkCount || 
-                 data.__raw_UNSTABLE?.bookmark_count || 
-                 0,
-      views: data.views || 
-             Math.max(0, (data.likes || data.favorite_count || 0) * 10), // Estimation fallback
+      likes:
+        data.likes ||
+        data.favorite_count ||
+        data.favoriteCount ||
+        data.__raw_UNSTABLE?.favorite_count ||
+        0,
+      retweets:
+        data.retweets ||
+        data.retweet_count ||
+        data.retweetCount ||
+        data.__raw_UNSTABLE?.retweet_count ||
+        0,
+      replies:
+        data.replies ||
+        data.reply_count ||
+        data.replyCount ||
+        data.__raw_UNSTABLE?.reply_count ||
+        0,
+      quotes: data.quote_count || data.quoteCount || data.__raw_UNSTABLE?.quote_count || 0,
+      bookmarks: data.bookmarkCount || data.__raw_UNSTABLE?.bookmark_count || 0,
+      views: data.views || Math.max(0, (data.likes || data.favorite_count || 0) * 10), // Estimation fallback
       engagement: 0,
     };
 
@@ -442,13 +466,13 @@ export class TwitterRealScraperService {
 
     // Extract hashtags from multiple sources
     const hashtags = this.extractHashtags(data, content);
-    
+
     // Extract mentions from multiple sources
     const mentions = this.extractMentions(data);
-    
+
     // Extract URLs from multiple sources
     const urls = this.extractUrls(data);
-    
+
     // Extract media URLs and photo data
     const { mediaUrls, photoData } = this.extractMediaData(data);
 
@@ -470,28 +494,23 @@ export class TwitterRealScraperService {
       urls,
       mediaUrls,
       photoData, // New field for rich photo data
-      isRetweet: Boolean(
-        data.isRetweet || 
-        data.is_retweet || 
-        data.__raw_UNSTABLE?.retweeted
-      ),
+      isRetweet: Boolean(data.isRetweet || data.is_retweet || data.__raw_UNSTABLE?.retweeted),
       isReply: Boolean(
-        data.isReply || 
-        content.startsWith('@') ||
-        (data.__raw_UNSTABLE?.display_text_range && data.__raw_UNSTABLE?.display_text_range[0] > 0)
+        data.isReply ||
+          content.startsWith('@') ||
+          (data.__raw_UNSTABLE?.display_text_range &&
+            data.__raw_UNSTABLE?.display_text_range[0] > 0)
       ),
       isQuote: Boolean(
-        data.isQuoted || 
-        data.isQuote || 
-        data.is_quote_status || 
-        data.__raw_UNSTABLE?.is_quote_status
+        data.isQuoted ||
+          data.isQuote ||
+          data.is_quote_status ||
+          data.__raw_UNSTABLE?.is_quote_status
       ),
       isEdited: Boolean(data.isEdited),
       isPinned: Boolean(data.isPin),
       isSensitive: Boolean(
-        data.sensitiveContent || 
-        data.possibly_sensitive || 
-        data.__raw_UNSTABLE?.possibly_sensitive
+        data.sensitiveContent || data.possibly_sensitive || data.__raw_UNSTABLE?.possibly_sensitive
       ),
       language: this.detectTweetLanguage(data),
       location: locationData,
@@ -504,21 +523,25 @@ export class TwitterRealScraperService {
     };
   }
 
+  /**
+   * Extract and normalize author/user data from scraped tweet
+   * @param data - raw scraped tweet data
+   * @param now - current timestamp for reference
+   * @returns normalized TwitterUser object
+   */
   private extractAuthorData(data: ScrapedTweetData, now: Date) {
     // Extract user data from direct fields (preferred)
-    const directUser = data.userId && data.username && data.name
-      ? {
-          id: data.userId,
-          username: data.username,
-          displayName: data.name,
-        }
-      : null;
+    const directUser =
+      data.userId && data.username && data.name
+        ? {
+            id: data.userId,
+            username: data.username,
+            displayName: data.name,
+          }
+        : null;
 
     // Try multiple user data sources
-    const user = directUser || 
-                 data.user || 
-                 (data as any).author || 
-                 (data as any).account;
+    const user = directUser || data.user || (data as any).author || (data as any).account;
 
     if (!user) {
       return this.createDefaultAuthor(now);
@@ -563,6 +586,11 @@ export class TwitterRealScraperService {
     });
   }
 
+  /**
+   * Detect tweet language using multiple heuristics
+   * @param data - raw scraped tweet data
+   * @returns ISO language code or 'unknown'
+   */
   private detectTweetLanguage(data: ScrapedTweetData): string {
     // Use provided language if available and valid
     if (data.lang && data.lang !== 'und') return data.lang;
@@ -593,108 +621,132 @@ export class TwitterRealScraperService {
       const parsed = new Date(data.timeParsed);
       if (!isNaN(parsed.getTime())) return parsed;
     }
-    
+
     if (data.timestamp) {
       // Handle both seconds and milliseconds timestamps
       const timestampMs = data.timestamp > 1e10 ? data.timestamp : data.timestamp * 1000;
       const parsed = new Date(timestampMs);
       if (!isNaN(parsed.getTime())) return parsed;
     }
-    
+
     if (data.__raw_UNSTABLE?.created_at) {
       const parsed = new Date(data.__raw_UNSTABLE.created_at);
       if (!isNaN(parsed.getTime())) return parsed;
     }
-    
+
     // Fallback to original method
     return this.parseCreatedAt(data, fallback);
   }
 
   private extractHashtags(data: ScrapedTweetData, content: string): string[] {
     const hashtags: string[] = [];
-    
+
     // Extract from structured data
     if (data.hashtags) {
       if (Array.isArray(data.hashtags)) {
-        hashtags.push(...data.hashtags.map((h: any) => typeof h === 'string' ? h : h.text));
+        hashtags.push(...data.hashtags.map((h: any) => (typeof h === 'string' ? h : h.text)));
       }
     }
-    
+
     // Extract from raw data
     if (data.__raw_UNSTABLE?.entities?.hashtags) {
       hashtags.push(...data.__raw_UNSTABLE.entities.hashtags.map((h: any) => h.text));
     }
-    
+
     // Fallback: extract from content
     if (hashtags.length === 0) {
       hashtags.push(...extractHashtags(content));
     }
-    
+
     return [...new Set(hashtags)]; // Remove duplicates
   }
 
   private extractMentions(data: ScrapedTweetData): string[] {
     const mentions: string[] = [];
-    
+
     // Extract from structured data
     if (data.mentions && Array.isArray(data.mentions)) {
-      mentions.push(...data.mentions.map((m: any) => m.screen_name || m.username || '').filter(Boolean));
+      mentions.push(
+        ...data.mentions.map((m: any) => m.screen_name || m.username || '').filter(Boolean)
+      );
     }
-    
+
     // Extract from raw data
     if (data.__raw_UNSTABLE?.entities?.user_mentions) {
-      mentions.push(...data.__raw_UNSTABLE.entities.user_mentions.map((m: any) => m.screen_name || '').filter(Boolean));
+      mentions.push(
+        ...data.__raw_UNSTABLE.entities.user_mentions
+          .map((m: any) => m.screen_name || '')
+          .filter(Boolean)
+      );
     }
-    
+
     return [...new Set(mentions)]; // Remove duplicates
   }
 
   private extractUrls(data: ScrapedTweetData): string[] {
     const urls: string[] = [];
-    
+
     // Extract from structured data
     if (data.urls && Array.isArray(data.urls)) {
-      urls.push(...data.urls.map((u: any) => typeof u === 'string' ? u : u.expanded_url || u.url || '').filter(Boolean));
+      urls.push(
+        ...data.urls
+          .map((u: any) => (typeof u === 'string' ? u : u.expanded_url || u.url || ''))
+          .filter(Boolean)
+      );
     }
-    
+
     // Extract from raw data
     if (data.__raw_UNSTABLE?.entities?.urls) {
-      urls.push(...data.__raw_UNSTABLE.entities.urls.map((u: any) => u.expanded_url || u.url || '').filter(Boolean));
+      urls.push(
+        ...data.__raw_UNSTABLE.entities.urls
+          .map((u: any) => u.expanded_url || u.url || '')
+          .filter(Boolean)
+      );
     }
-    
+
     return [...new Set(urls)]; // Remove duplicates
   }
 
   private extractMediaData(data: ScrapedTweetData): { mediaUrls: string[]; photoData?: any[] } {
     const mediaUrls: string[] = [];
     const photoData: any[] = [];
-    
+
     // Extract from photos array
     if (data.photos && Array.isArray(data.photos)) {
       photoData.push(...data.photos);
       mediaUrls.push(...data.photos.map((p: any) => p.url).filter(Boolean));
     }
-    
+
     // Extract from raw media data
     if (data.__raw_UNSTABLE?.entities?.media) {
       photoData.push(...data.__raw_UNSTABLE.entities.media);
-      mediaUrls.push(...data.__raw_UNSTABLE.entities.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+      mediaUrls.push(
+        ...data.__raw_UNSTABLE.entities.media
+          .map((m: any) => m.media_url_https || m.url || '')
+          .filter(Boolean)
+      );
     }
-    
+
     // Extract from extended_entities for higher quality
     if (data.__raw_UNSTABLE?.extended_entities?.media) {
       photoData.push(...data.__raw_UNSTABLE.extended_entities.media);
-      mediaUrls.push(...data.__raw_UNSTABLE.extended_entities.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+      mediaUrls.push(
+        ...data.__raw_UNSTABLE.extended_entities.media
+          .map((m: any) => m.media_url_https || m.url || '')
+          .filter(Boolean)
+      );
     }
-    
+
     // Legacy media field
     if (data.media && Array.isArray(data.media)) {
-      mediaUrls.push(...data.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+      mediaUrls.push(
+        ...data.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean)
+      );
     }
-    
+
     return {
       mediaUrls: [...new Set(mediaUrls)], // Remove duplicates
-      photoData: photoData.length > 0 ? photoData : undefined
+      photoData: photoData.length > 0 ? photoData : undefined,
     };
   }
 
@@ -708,10 +760,10 @@ export class TwitterRealScraperService {
         countryCode: data.place.country_code,
         placeType: data.place.place_type,
         boundingBox: data.place.bounding_box,
-        url: data.place.url
+        url: data.place.url,
       };
     }
-    
+
     if (data.__raw_UNSTABLE?.place) {
       const place = data.__raw_UNSTABLE.place;
       return {
@@ -722,10 +774,10 @@ export class TwitterRealScraperService {
         countryCode: place.country_code,
         placeType: place.place_type,
         boundingBox: place.bounding_box,
-        url: place.url
+        url: place.url,
       };
     }
-    
+
     return undefined;
   }
 
@@ -737,6 +789,11 @@ export class TwitterRealScraperService {
     }
   }
 
+
+  /**
+   * Validate and enforce rate limiting based on configuration
+   * @throws Error if rate limit is exceeded
+   */
   private validateRateLimit(): void {
     const now = Date.now();
     const timeSinceReset = now - this.lastResetTime;

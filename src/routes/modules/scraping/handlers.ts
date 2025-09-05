@@ -145,6 +145,14 @@ async function processSingleIdentifier(
   }
 }
 
+/**
+ * Process multiple identifiers concurrently with error handling
+ * @param req 
+ * @param res 
+ * @param identifiers 
+ * @param scrapingType 
+ * @returns BatchResponse
+ */
 async function processBatchScraping(
   req: Request,
   res: Response,
