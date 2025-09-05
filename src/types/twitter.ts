@@ -318,9 +318,11 @@ export interface ScrapedTweetData {
   author?: any; // Alternative user object name
   account?: any; // Another alternative
   favorite_count?: number;
-  favoriteCount?: number;
-  retweet_count?: number;
+  likes?: number;
+  views?: number;
+  retweets?: number;
   retweetCount?: number;
+  replies?: number;
   reply_count?: number;
   replyCount?: number;
   quote_count?: number;
@@ -337,6 +339,7 @@ export interface ScrapedTweetData {
   isQuote?: boolean;
   lang?: string;
   language?: string;
+  __raw_UNSTABLE?: any;
 }
 
 export interface ScrapingOptions {
