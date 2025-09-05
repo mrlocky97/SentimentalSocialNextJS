@@ -50,7 +50,7 @@ export interface ScrapingRequestBody {
   readonly limit?: number;
   readonly maxTweets?: number;
   readonly analyzeSentiment?: boolean;
-  readonly campaignId?: string;
+  readonly campaignId: string; // ✅ Now required
   readonly language?: string;
 }
 
@@ -58,7 +58,7 @@ interface InternalParams {
   readonly identifier: string;
   readonly tweetsToRetrieve: number;
   readonly analyzeSentiment: boolean;
-  readonly campaignId?: string;
+  readonly campaignId: string; // ✅ Now required
   readonly language: string;
   readonly validLanguages: readonly string[];
   readonly type: string;
@@ -315,11 +315,16 @@ function buildInternalParams<B extends ScrapingRequestBody>(
       ? body.language
       : 'en';
 
+  // ✅ Validate required campaignId
+  if (!body.campaignId || typeof body.campaignId !== 'string' || body.campaignId.trim().length === 0) {
+    throw new Error('campaignId is required and must be a non-empty string');
+  }
+
   return Object.freeze({
     identifier,
     tweetsToRetrieve: Number(body.limit ?? body.maxTweets ?? defaultTweets),
     analyzeSentiment: body.analyzeSentiment !== false,
-    campaignId: body.campaignId,
+    campaignId: body.campaignId.trim(),
     language,
     validLanguages: SCRAPING_CONFIG.LANGUAGES,
     type: context.type,
@@ -477,10 +482,10 @@ function buildSuccessResponse(
       totalScraped: tweetsWithSentiment.length,
       tweets: tweetsWithSentiment,
       sentiment_summary: sentimentSummary,
-      campaignId: params.campaignId ?? '',
+      campaignId: params.campaignId, // ✅ Now guaranteed to exist
       campaignInfo: {
-        id: params.campaignId ?? '',
-        type: params.campaignId ? 'user-provided' : 'auto-generated',
+        id: params.campaignId,
+        type: 'user-provided',
         source: context.type,
       },
       rate_limit: {
@@ -489,7 +494,7 @@ function buildSuccessResponse(
       },
     },
     execution_time: execTime,
-    message: `Scraped ${tweetsWithSentiment.length}/${params.tweetsToRetrieve} ${context.type} tweets${params.analyzeSentiment ? ' with sentiment' : ''}`,
+    message: `Scraped ${tweetsWithSentiment.length}/${params.tweetsToRetrieve} ${context.type} tweets${params.analyzeSentiment ? ' with sentiment' : ''} for campaign ${params.campaignId}`,
   });
 }
 

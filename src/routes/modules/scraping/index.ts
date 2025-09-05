@@ -113,7 +113,7 @@ const router = Router();
  *   post:
  *     tags: [Twitter Scraping]
  *     summary: Scrape tweets by hashtag
- *     description: Scrape tweets containing specific hashtags
+ *     description: Scrape tweets containing specific hashtags for a campaign
  *     requestBody:
  *       required: true
  *       content:
@@ -122,11 +122,16 @@ const router = Router();
  *             type: object
  *             required:
  *               - hashtag
+ *               - campaignId
  *             properties:
  *               hashtag:
  *                 type: string
  *                 description: Hashtag to search (with or without #)
  *                 example: "marketing"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier to organize scraped tweets
+ *                 example: "nike_marketing_2024"
  *               limit:
  *                 type: number
  *                 minimum: 1
@@ -137,9 +142,15 @@ const router = Router();
  *                 type: boolean
  *                 default: false
  *                 description: Whether to include reply tweets
+ *               language:
+ *                 type: string
+ *                 description: Language filter (ISO 639-1 code)
+ *                 example: "en"
  *     responses:
  *       200:
  *         description: Hashtag scraping completed successfully
+ *       400:
+ *         description: Missing required parameters (hashtag or campaignId)
  *       403:
  *         description: Scraping service is disabled
  *       500:
@@ -152,7 +163,7 @@ const router = Router();
  *   post:
  *     tags: [Twitter Scraping]
  *     summary: Scrape tweets from user
- *     description: Scrape tweets from a specific Twitter user
+ *     description: Scrape tweets from a specific Twitter user for a campaign
  *     requestBody:
  *       required: true
  *       content:
@@ -161,11 +172,16 @@ const router = Router();
  *             type: object
  *             required:
  *               - username
+ *               - campaignId
  *             properties:
  *               username:
  *                 type: string
  *                 description: Twitter username (with or without @)
  *                 example: "elonmusk"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier to organize scraped tweets
+ *                 example: "tesla_analysis_2024"
  *               limit:
  *                 type: number
  *                 minimum: 1
@@ -174,9 +190,15 @@ const router = Router();
  *               includeRetweets:
  *                 type: boolean
  *                 default: false
+ *               language:
+ *                 type: string
+ *                 description: Language filter (ISO 639-1 code)
+ *                 example: "en"
  *     responses:
  *       200:
  *         description: User scraping completed successfully
+ *       400:
+ *         description: Missing required parameters (username or campaignId)
  *       403:
  *         description: Scraping service is disabled
  *       500:
@@ -189,7 +211,7 @@ const router = Router();
  *   post:
  *     tags: [Twitter Scraping]
  *     summary: Scrape tweets by search query
- *     description: Scrape tweets matching a specific search query
+ *     description: Scrape tweets matching a specific search query for a campaign
  *     requestBody:
  *       required: true
  *       content:
@@ -198,11 +220,16 @@ const router = Router();
  *             type: object
  *             required:
  *               - query
+ *               - campaignId
  *             properties:
  *               query:
  *                 type: string
  *                 description: Search query string
  *                 example: "artificial intelligence"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier to organize scraped tweets
+ *                 example: "ai_research_2024"
  *               limit:
  *                 type: number
  *                 minimum: 1
@@ -215,6 +242,8 @@ const router = Router();
  *     responses:
  *       200:
  *         description: Search scraping completed successfully
+ *       400:
+ *         description: Missing required parameters (query or campaignId)
  *       403:
  *         description: Scraping service is disabled
  *       500:

@@ -22,21 +22,33 @@ const SCRAPING_CONFIGS = Object.freeze({
     options: { languageFilter: true },
     stripPrefix: "#",
     errorField: "hashtag or hashtags",
-    examples: { hashtag: "JustDoIt", hashtags: ["JustDoIt", "Marketing", "#Nike"] },
+    examples: { 
+      hashtag: "JustDoIt", 
+      campaignId: "nike_campaign_2024",
+      hashtags: ["JustDoIt", "Marketing", "#Nike"] 
+    },
   },
   user: {
     context: { type: "user" as const, exampleValue: "nike" },
     options: { maxTweets: 500, defaultTweets: 30 },
     stripPrefix: "@",
     errorField: "username or usernames",
-    examples: { username: "nike", usernames: ["nike", "adidas", "@puma"] },
+    examples: { 
+      username: "nike", 
+      campaignId: "nike_campaign_2024",
+      usernames: ["nike", "adidas", "@puma"] 
+    },
   },
   search: {
     context: { type: "search" as const, exampleValue: "nike shoes" },
     options: { languageFilter: true },
     stripPrefix: "",
     errorField: "query or queries",
-    examples: { query: "nike shoes", queries: ["nike shoes", "adidas sneakers"] },
+    examples: { 
+      query: "nike shoes", 
+      campaignId: "nike_campaign_2024",
+      queries: ["nike shoes", "adidas sneakers"] 
+    },
   },
 } as const);
 
@@ -84,6 +96,19 @@ const createValidationError = (errorField: string, examples: Record<string, unkn
   error: `${errorField} parameter is required`,
   example: examples,
 });
+
+const createCampaignIdValidationError = () => ({
+  success: false,
+  error: "campaignId is required and must be a non-empty string",
+  example: {
+    campaignId: "my_marketing_campaign_2024",
+    description: "Campaign ID helps organize and track your scraped tweets"
+  },
+});
+
+const validateCampaignId = (campaignId: any): boolean => {
+  return typeof campaignId === 'string' && campaignId.trim().length > 0;
+};
 
 // ==================== Core Processing Logic ====================
 async function processSingleIdentifier(
@@ -155,7 +180,7 @@ async function processBatchScraping(
       identifiers: identifiers.map((id) => formatIdentifier(id, config.stripPrefix)),
       items: results,
       totalTweets,
-      campaignId: req.body.campaignId ?? "",
+      campaignId: req.body.campaignId, // ✅ Now guaranteed to exist
     },
     message: `Scraped ${totalTweets} tweets from ${identifiers.length} ${scrapingType}${identifiers.length > 1 ? "s" : ""}`,
   };
@@ -169,6 +194,12 @@ async function handleGenericScraping(
   identifierKeys: string[],
 ): Promise<void> {
   const config = SCRAPING_CONFIGS[scrapingType];
+
+  // ✅ Validate campaignId first - critical requirement
+  if (!validateCampaignId(req.body.campaignId)) {
+    res.status(400).json(createCampaignIdValidationError());
+    return;
+  }
 
   // Extract identifiers from request body
   const identifiers = identifierKeys
