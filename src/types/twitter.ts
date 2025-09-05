@@ -16,6 +16,7 @@ import {
 export interface Tweet {
   id: string;
   tweetId: string; // Twitter's original tweet ID
+  conversationId?: string; // Conversation thread ID
   content: string;
   text?: string; // Alias de content para compatibilidad
   author: TwitterUser;
@@ -25,31 +26,45 @@ export interface Tweet {
   mentions: string[];
   urls: string[];
   mediaUrls?: string[];
+  photoData?: any[]; // Rich photo/media data
   campaignId?: string; // Associated campaign
 
   // Tweet Classification
   isRetweet: boolean;
   isReply: boolean;
   isQuote: boolean;
+  isEdited?: boolean; // If tweet was edited
+  isPinned?: boolean; // If tweet is pinned
+  isSensitive?: boolean; // If content is sensitive
   parentTweetId?: string; // If it's a reply or quote
 
   // Geographic Data
-  geoLocation?: {
-    country?: string;
-    city?: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
-  };
+  geoLocation?: GeoLocation;
+  location?: any; // Rich location data
 
   // Language Detection
   language: string; // ISO code
+
+  // URLs and Rich Content
+  permanentUrl?: string; // Permanent URL to tweet
+  htmlContent?: string; // HTML representation
 
   // Timestamps
   scrapedAt: Date;
   createdAt: Date; // Tweet creation date
   updatedAt: Date;
+}
+
+/**
+ * Geographic Location interface
+ */
+export interface GeoLocation {
+  country?: string;
+  city?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface TwitterUser {
@@ -76,6 +91,7 @@ export interface TweetMetrics {
   likes: number;
   replies: number;
   quotes: number;
+  bookmarks?: number; // Bookmark count
   views?: number;
   engagement: number; // Calculated engagement rate
 }
@@ -278,11 +294,37 @@ export interface StartScrapingRequest {
   priority?: PriorityScrapingStrategy;
 }
 
-// Twitter Scraper Service Types
+// Twitter Scraper Service Types - Updated for complete data structure
 export interface ScrapedTweetData {
+  // Core identifiers
   id?: string;
+  conversationId?: string;
+  userId?: string;
+  
+  // Content
   text?: string;
-  content?: string; // Alternative field name
+  content?: string;
+  full_text?: string;
+  html?: string;
+  
+  // Engagement metrics
+  likes?: number;
+  favorite_count?: number;
+  favoriteCount?: number;
+  retweets?: number;
+  retweet_count?: number;
+  retweetCount?: number;
+  replies?: number;
+  reply_count?: number;
+  replyCount?: number;
+  quote_count?: number;
+  quoteCount?: number;
+  bookmarkCount?: number;
+  views?: number;
+  
+  // User data
+  name?: string;
+  username?: string;
   user?: {
     id_str?: string;
     id?: string;
@@ -315,30 +357,60 @@ export interface ScrapedTweetData {
     url?: string;
     website?: string;
   };
-  author?: any; // Alternative user object name
-  account?: any; // Another alternative
-  favorite_count?: number;
-  likes?: number;
-  views?: number;
-  retweets?: number;
-  retweetCount?: number;
-  replies?: number;
-  reply_count?: number;
-  replyCount?: number;
-  quote_count?: number;
-  quoteCount?: number;
+  author?: any;
+  account?: any;
+  
+  // Content metadata
+  hashtags?: string[] | any[];
+  mentions?: any[];
+  urls?: string[] | any[];
+  photos?: any[];
+  videos?: any[];
+  media?: any[];
+  
+  // Status flags
+  isRetweet?: boolean;
+  is_retweet?: boolean;
+  isReply?: boolean;
+  isQuoted?: boolean;
+  isQuote?: boolean;
+  is_quote_status?: boolean;
+  isEdited?: boolean;
+  isPin?: boolean;
+  sensitiveContent?: boolean;
+  possibly_sensitive?: boolean;
+  
+  // Temporal data
   created_at?: string;
   createdAt?: string;
-  hashtags?: string[];
-  mentions?: any[];
-  urls?: any[];
-  media?: any[];
-  is_retweet?: boolean;
-  isRetweet?: boolean;
-  is_quote_status?: boolean;
-  isQuote?: boolean;
+  timeParsed?: string;
+  timestamp?: number;
+  
+  // Language and location
   lang?: string;
   language?: string;
+  place?: {
+    id: string;
+    name: string;
+    full_name: string;
+    country: string;
+    country_code: string;
+    place_type: string;
+    url?: string;
+    bounding_box?: {
+      type: "Polygon";
+      coordinates: number[][][];
+    };
+  };
+  
+  // Conversation data
+  thread?: any[];
+  versions?: string[];
+  
+  // URLs and links
+  permanentUrl?: string;
+  
+  // Raw data access
   __raw_UNSTABLE?: any;
 }
 

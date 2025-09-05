@@ -9,6 +9,7 @@ import { SentimentAnalysis, TweetMetrics, TwitterUser } from "../types/twitter";
 
 export interface ITweetDocument extends Document {
   tweetId: string;
+  conversationId?: string; // New field
   content: string;
   author: TwitterUser;
   metrics: TweetMetrics;
@@ -17,12 +18,16 @@ export interface ITweetDocument extends Document {
   mentions: string[];
   urls: string[];
   mediaUrls?: string[];
+  photoData?: any[]; // New field for rich photo data
   campaignId?: string;
 
   // Tweet Classification
   isRetweet: boolean;
   isReply: boolean;
   isQuote: boolean;
+  isEdited?: boolean; // New field
+  isPinned?: boolean; // New field  
+  isSensitive?: boolean; // New field
   parentTweetId?: string;
 
   // Geographic Data
@@ -34,9 +39,14 @@ export interface ITweetDocument extends Document {
       lng: number;
     };
   };
+  location?: any; // New field for rich location data
 
   // Language
   language: string;
+
+  // URLs and Rich Content
+  permanentUrl?: string; // New field
+  htmlContent?: string; // New field
 
   // Timestamps
   scrapedAt: Date;
@@ -71,6 +81,7 @@ const tweetMetricsSchema = new Schema(
     likes: { type: Number, required: true, min: 0, default: 0 },
     replies: { type: Number, required: true, min: 0, default: 0 },
     quotes: { type: Number, required: true, min: 0, default: 0 },
+    bookmarks: { type: Number, min: 0, default: 0 }, // New field
     views: { type: Number, min: 0 },
     engagement: { type: Number, required: true, min: 0, default: 0 },
   },
@@ -120,6 +131,27 @@ const geoLocationSchema = new Schema(
   { _id: false },
 );
 
+// Rich location data schema for detailed location information
+const locationSchema = new Schema(
+  {
+    id: { type: String },
+    name: { type: String, maxlength: 100 },
+    fullName: { type: String, maxlength: 200 },
+    country: { type: String, maxlength: 100 },
+    countryCode: { type: String, maxlength: 2 },
+    placeType: { type: String, maxlength: 50 },
+    boundingBox: {
+      type: {
+        type: String,
+        enum: ["Polygon"],
+      },
+      coordinates: [[[Number]]],
+    },
+    url: { type: String },
+  },
+  { _id: false },
+);
+
 const tweetSchema = new Schema<ITweetDocument>(
   {
     tweetId: {
@@ -133,6 +165,17 @@ const tweetSchema = new Schema<ITweetDocument>(
           return /^\d+$/.test(tweetId) || /^(scraped|test|bulk|service|mongoose|native)_/.test(tweetId);
         },
         message: "Tweet ID must be a numeric string or a valid prefixed identifier (scraped_, test_, mongoose_, native_, etc.)",
+      },
+    },
+
+    conversationId: {
+      type: String,
+      index: true,
+      validate: {
+        validator: function (conversationId: string) {
+          return /^\d+$/.test(conversationId) || /^(scraped|test|bulk|service|mongoose|native)_/.test(conversationId);
+        },
+        message: "Conversation ID must be a numeric string or a valid prefixed identifier",
       },
     },
 
@@ -219,6 +262,9 @@ const tweetSchema = new Schema<ITweetDocument>(
       },
     ],
 
+    // Rich photo/media data
+    photoData: [{ type: Schema.Types.Mixed }],
+
     campaignId: {
       type: String,
       index: true,
@@ -235,6 +281,9 @@ const tweetSchema = new Schema<ITweetDocument>(
     isRetweet: { type: Boolean, required: true, default: false, index: true },
     isReply: { type: Boolean, required: true, default: false, index: true },
     isQuote: { type: Boolean, required: true, default: false, index: true },
+    isEdited: { type: Boolean, default: false, index: true },
+    isPinned: { type: Boolean, default: false, index: true },
+    isSensitive: { type: Boolean, default: false, index: true },
 
     parentTweetId: {
       type: String,
@@ -247,6 +296,7 @@ const tweetSchema = new Schema<ITweetDocument>(
     },
 
     geoLocation: geoLocationSchema,
+    location: locationSchema,
 
     language: {
       type: String,
@@ -260,6 +310,27 @@ const tweetSchema = new Schema<ITweetDocument>(
         message: "Language must be a valid ISO 639-1 code (2 letters) or 'unknown'",
       },
       index: true,
+    },
+
+    // URLs and Rich Content
+    permanentUrl: {
+      type: String,
+      validate: {
+        validator: function (url: string) {
+          try {
+            new URL(url);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        message: "Invalid permanent URL format",
+      },
+    },
+
+    htmlContent: {
+      type: String,
+      maxlength: [2000, "HTML content cannot exceed 2000 characters"],
     },
 
     scrapedAt: {

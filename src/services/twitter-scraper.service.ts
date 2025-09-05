@@ -390,76 +390,158 @@ export class TwitterRealScraperService {
   }
 
   private normalizeTweet(data: ScrapedTweetData, now: Date): Tweet {
-    const tweetId =
-      data.id ?? `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
-    const content = data.text ?? data.content ?? '';
+    // Extract comprehensive IDs with null-safe access
+    const tweetId = data.id || 
+                   data.__raw_UNSTABLE?.id_str || 
+                   `scraped_${now.getTime()}_${Math.random().toString(36).slice(2, 11)}`;
+    
+    const conversationId = data.conversationId || 
+                          data.__raw_UNSTABLE?.conversation_id_str || 
+                          tweetId;
+
+    // Extract content with all possible sources
+    const content = data.text || 
+                   data.content || 
+                   data.full_text || 
+                   data.__raw_UNSTABLE?.full_text || 
+                   '';
+
+    // Extract author data with comprehensive fallbacks
     const author = this.extractAuthorData(data, now);
 
+    // Extract comprehensive metrics with null-safe access
     const rawMetrics = {
-      likes: data.likes ?? 0,
-      retweets: data.retweets ?? data.retweetCount ?? 0,
-      replies: data.replies ?? data.replyCount ?? 0,
-      quotes: data.__raw_UNSTABLE.quote_count ?? data.quoteCount ?? 0,
-      views: data.views ?? 0,
+      likes: data.likes || 
+             data.favorite_count || 
+             data.favoriteCount || 
+             data.__raw_UNSTABLE?.favorite_count || 
+             0,
+      retweets: data.retweets || 
+                data.retweet_count || 
+                data.retweetCount || 
+                data.__raw_UNSTABLE?.retweet_count || 
+                0,
+      replies: data.replies || 
+               data.reply_count || 
+               data.replyCount || 
+               data.__raw_UNSTABLE?.reply_count || 
+               0,
+      quotes: data.quote_count || 
+              data.quoteCount || 
+              data.__raw_UNSTABLE?.quote_count || 
+              0,
+      bookmarks: data.bookmarkCount || 
+                 data.__raw_UNSTABLE?.bookmark_count || 
+                 0,
+      views: data.views || 
+             Math.max(0, (data.likes || data.favorite_count || 0) * 10), // Estimation fallback
       engagement: 0,
     };
 
     rawMetrics.engagement = calculateEngagement(rawMetrics);
 
+    // Extract hashtags from multiple sources
+    const hashtags = this.extractHashtags(data, content);
+    
+    // Extract mentions from multiple sources
+    const mentions = this.extractMentions(data);
+    
+    // Extract URLs from multiple sources
+    const urls = this.extractUrls(data);
+    
+    // Extract media URLs and photo data
+    const { mediaUrls, photoData } = this.extractMediaData(data);
+
+    // Parse creation date with multiple fallbacks
+    const createdAt = this.parseCreatedAtEnhanced(data, now);
+
+    // Extract location data
+    const locationData = this.extractLocationData(data);
+
     return {
       id: tweetId,
       tweetId,
+      conversationId,
       content,
       author,
       metrics: rawMetrics,
-      hashtags: data.hashtags ?? extractHashtags(content),
-      mentions: (data.mentions ?? []).map((m) => m.screen_name ?? m.username ?? '').filter(Boolean),
-      urls: (data.urls ?? []).map((u) => u.expanded_url ?? u.url ?? '').filter(Boolean),
-      mediaUrls: (data.media ?? []).map((m) => m.media_url_https ?? m.url ?? '').filter(Boolean),
-      isRetweet: Boolean(data.is_retweet ?? data.isRetweet),
-      isReply: content.startsWith('@'),
-      isQuote: Boolean(data.is_quote_status ?? data.isQuote),
+      hashtags,
+      mentions,
+      urls,
+      mediaUrls,
+      photoData, // New field for rich photo data
+      isRetweet: Boolean(
+        data.isRetweet || 
+        data.is_retweet || 
+        data.__raw_UNSTABLE?.retweeted
+      ),
+      isReply: Boolean(
+        data.isReply || 
+        content.startsWith('@') ||
+        (data.__raw_UNSTABLE?.display_text_range && data.__raw_UNSTABLE?.display_text_range[0] > 0)
+      ),
+      isQuote: Boolean(
+        data.isQuoted || 
+        data.isQuote || 
+        data.is_quote_status || 
+        data.__raw_UNSTABLE?.is_quote_status
+      ),
+      isEdited: Boolean(data.isEdited),
+      isPinned: Boolean(data.isPin),
+      isSensitive: Boolean(
+        data.sensitiveContent || 
+        data.possibly_sensitive || 
+        data.__raw_UNSTABLE?.possibly_sensitive
+      ),
       language: this.detectTweetLanguage(data),
+      location: locationData,
+      permanentUrl: data.permanentUrl,
+      htmlContent: data.html, // New field for HTML representation
       scrapedAt: now,
-      createdAt: this.parseCreatedAt(data, now),
+      createdAt,
       updatedAt: now,
       sentiment: createDefaultSentiment(now),
     };
   }
 
   private extractAuthorData(data: ScrapedTweetData, now: Date) {
-    const directUser = (data as any).userId
+    // Extract user data from direct fields (preferred)
+    const directUser = data.userId && data.username && data.name
       ? {
-          id: (data as any).userId,
-          username: (data as any).username,
-          displayName: (data as any).name,
+          id: data.userId,
+          username: data.username,
+          displayName: data.name,
         }
       : null;
 
-    const user = directUser ?? data.user ?? (data as any).author ?? (data as any).account;
+    // Try multiple user data sources
+    const user = directUser || 
+                 data.user || 
+                 (data as any).author || 
+                 (data as any).account;
 
     if (!user) {
       return this.createDefaultAuthor(now);
     }
 
     return {
-      id: user.id_str ?? user.id ?? user.userId ?? 'unknown',
-      username: user.screen_name ?? user.username ?? user.handle ?? 'unknown',
-      displayName: user.name ?? user.displayName ?? user.display_name ?? 'Unknown User',
-      avatar: user.profile_image_url_https ?? user.profile_image_url ?? user.avatar ?? '',
-      verified: Boolean(user.verified ?? user.is_verified),
+      id: user.id_str || user.id || user.userId || 'unknown',
+      username: user.screen_name || user.username || user.handle || 'unknown',
+      displayName: user.name || user.displayName || user.display_name || 'Unknown User',
+      avatar: user.profile_image_url_https || user.profile_image_url || user.avatar || '',
+      verified: Boolean(user.verified || user.is_verified),
       followersCount: Math.max(
         0,
-        user.followers_count ?? user.followersCount ?? user.followers ?? 0
+        user.followers_count || user.followersCount || user.followers || 0
       ),
       followingCount: Math.max(
         0,
-        user.following_count ?? user.followingCount ?? user.following ?? 0
+        user.following_count || user.followingCount || user.following || 0
       ),
-      tweetsCount: Math.max(0, user.statuses_count ?? user.statusesCount ?? user.tweets_count ?? 0),
-      location: user.location ?? '',
-      bio: user.description ?? user.bio ?? '',
-      website: user.url ?? user.website ?? '',
+      tweetsCount: Math.max(0, user.statuses_count || user.statusesCount || user.tweets_count || 0),
+      location: user.location || '',
+      bio: user.description || user.bio || '',
+      website: user.url || user.website || '',
       joinedDate: now,
     };
   }
@@ -503,6 +585,148 @@ export class TwitterRealScraperService {
 
     const parsed = new Date(createdAt);
     return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+  }
+
+  private parseCreatedAtEnhanced(data: ScrapedTweetData, fallback: Date): Date {
+    // Try multiple timestamp sources
+    if (data.timeParsed) {
+      const parsed = new Date(data.timeParsed);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    
+    if (data.timestamp) {
+      // Handle both seconds and milliseconds timestamps
+      const timestampMs = data.timestamp > 1e10 ? data.timestamp : data.timestamp * 1000;
+      const parsed = new Date(timestampMs);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    
+    if (data.__raw_UNSTABLE?.created_at) {
+      const parsed = new Date(data.__raw_UNSTABLE.created_at);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    
+    // Fallback to original method
+    return this.parseCreatedAt(data, fallback);
+  }
+
+  private extractHashtags(data: ScrapedTweetData, content: string): string[] {
+    const hashtags: string[] = [];
+    
+    // Extract from structured data
+    if (data.hashtags) {
+      if (Array.isArray(data.hashtags)) {
+        hashtags.push(...data.hashtags.map((h: any) => typeof h === 'string' ? h : h.text));
+      }
+    }
+    
+    // Extract from raw data
+    if (data.__raw_UNSTABLE?.entities?.hashtags) {
+      hashtags.push(...data.__raw_UNSTABLE.entities.hashtags.map((h: any) => h.text));
+    }
+    
+    // Fallback: extract from content
+    if (hashtags.length === 0) {
+      hashtags.push(...extractHashtags(content));
+    }
+    
+    return [...new Set(hashtags)]; // Remove duplicates
+  }
+
+  private extractMentions(data: ScrapedTweetData): string[] {
+    const mentions: string[] = [];
+    
+    // Extract from structured data
+    if (data.mentions && Array.isArray(data.mentions)) {
+      mentions.push(...data.mentions.map((m: any) => m.screen_name || m.username || '').filter(Boolean));
+    }
+    
+    // Extract from raw data
+    if (data.__raw_UNSTABLE?.entities?.user_mentions) {
+      mentions.push(...data.__raw_UNSTABLE.entities.user_mentions.map((m: any) => m.screen_name || '').filter(Boolean));
+    }
+    
+    return [...new Set(mentions)]; // Remove duplicates
+  }
+
+  private extractUrls(data: ScrapedTweetData): string[] {
+    const urls: string[] = [];
+    
+    // Extract from structured data
+    if (data.urls && Array.isArray(data.urls)) {
+      urls.push(...data.urls.map((u: any) => typeof u === 'string' ? u : u.expanded_url || u.url || '').filter(Boolean));
+    }
+    
+    // Extract from raw data
+    if (data.__raw_UNSTABLE?.entities?.urls) {
+      urls.push(...data.__raw_UNSTABLE.entities.urls.map((u: any) => u.expanded_url || u.url || '').filter(Boolean));
+    }
+    
+    return [...new Set(urls)]; // Remove duplicates
+  }
+
+  private extractMediaData(data: ScrapedTweetData): { mediaUrls: string[]; photoData?: any[] } {
+    const mediaUrls: string[] = [];
+    const photoData: any[] = [];
+    
+    // Extract from photos array
+    if (data.photos && Array.isArray(data.photos)) {
+      photoData.push(...data.photos);
+      mediaUrls.push(...data.photos.map((p: any) => p.url).filter(Boolean));
+    }
+    
+    // Extract from raw media data
+    if (data.__raw_UNSTABLE?.entities?.media) {
+      photoData.push(...data.__raw_UNSTABLE.entities.media);
+      mediaUrls.push(...data.__raw_UNSTABLE.entities.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+    }
+    
+    // Extract from extended_entities for higher quality
+    if (data.__raw_UNSTABLE?.extended_entities?.media) {
+      photoData.push(...data.__raw_UNSTABLE.extended_entities.media);
+      mediaUrls.push(...data.__raw_UNSTABLE.extended_entities.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+    }
+    
+    // Legacy media field
+    if (data.media && Array.isArray(data.media)) {
+      mediaUrls.push(...data.media.map((m: any) => m.media_url_https || m.url || '').filter(Boolean));
+    }
+    
+    return {
+      mediaUrls: [...new Set(mediaUrls)], // Remove duplicates
+      photoData: photoData.length > 0 ? photoData : undefined
+    };
+  }
+
+  private extractLocationData(data: ScrapedTweetData): any {
+    if (data.place) {
+      return {
+        id: data.place.id,
+        name: data.place.name,
+        fullName: data.place.full_name,
+        country: data.place.country,
+        countryCode: data.place.country_code,
+        placeType: data.place.place_type,
+        boundingBox: data.place.bounding_box,
+        url: data.place.url
+      };
+    }
+    
+    if (data.__raw_UNSTABLE?.place) {
+      const place = data.__raw_UNSTABLE.place;
+      return {
+        id: place.id,
+        name: place.name,
+        fullName: place.full_name,
+        country: place.country,
+        countryCode: place.country_code,
+        placeType: place.place_type,
+        boundingBox: place.bounding_box,
+        url: place.url
+      };
+    }
+    
+    return undefined;
   }
 
   // ==================== Validation & Error Handling ====================

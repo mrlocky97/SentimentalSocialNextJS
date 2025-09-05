@@ -11,6 +11,7 @@ import { Label } from "../../enums/sentiment.enum";
 export interface Tweet {
   id: string;
   tweetId: string; // Twitter's original tweet ID
+  conversationId?: string; // Conversation thread ID
   content: string;
   text?: string; // Alias de content para compatibilidad
   author: TwitterUser;
@@ -20,19 +21,28 @@ export interface Tweet {
   mentions: string[];
   urls: string[];
   mediaUrls?: string[];
+  photoData?: any[]; // Rich photo/media data
   campaignId?: string; // Associated campaign
 
   // Tweet Classification
   isRetweet: boolean;
   isReply: boolean;
   isQuote: boolean;
+  isEdited?: boolean; // If tweet was edited
+  isPinned?: boolean; // If tweet is pinned
+  isSensitive?: boolean; // If content is sensitive
   parentTweetId?: string; // If it's a reply or quote
 
   // Geographic Data
   geoLocation?: GeoLocation;
+  location?: any; // Rich location data
 
   // Language Detection
   language: string; // ISO code
+
+  // URLs and Rich Content
+  permanentUrl?: string; // Permanent URL to tweet
+  htmlContent?: string; // HTML representation
 
   // Timestamps
   scrapedAt: Date;
@@ -70,6 +80,7 @@ export interface TweetMetrics {
   likes: number;
   replies: number;
   quotes: number;
+  bookmarks?: number; // Bookmark count
   views?: number;
   engagement: number; // Calculated engagement rate
 }

@@ -7,36 +7,231 @@ import { TweetCookieSameSite } from "../../enums/tweet.enum";
 import { Tweet } from "./core";
 
 /**
+ * Media Face Detection Data
+ */
+export interface MediaFace {
+  x: number;
+  y: number;
+  h: number;
+  w: number;
+}
+
+/**
+ * Media Size Information
+ */
+export interface MediaSize {
+  h: number;
+  w: number;
+  resize: "fit" | "crop";
+}
+
+/**
+ * Media Features (face detection)
+ */
+export interface MediaFeatures {
+  large?: { faces: MediaFace[] };
+  medium?: { faces: MediaFace[] };
+  small?: { faces: MediaFace[] };
+  orig?: { faces: MediaFace[] };
+}
+
+/**
+ * Media Original Info
+ */
+export interface MediaOriginalInfo {
+  height: number;
+  width: number;
+  focus_rects?: Array<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>;
+}
+
+/**
+ * Photo/Media Data
+ */
+export interface PhotoData {
+  id: string;
+  url: string;
+  alt_text?: string;
+  display_url?: string;
+  expanded_url?: string;
+  media_key?: string;
+  type?: "photo" | "video" | "animated_gif";
+  indices?: [number, number];
+  ext_media_availability?: {
+    status: string;
+  };
+  features?: MediaFeatures;
+  sizes?: {
+    large?: MediaSize;
+    medium?: MediaSize;
+    small?: MediaSize;
+    thumb?: MediaSize;
+  };
+  original_info?: MediaOriginalInfo;
+}
+
+/**
+ * Place/Location Data
+ */
+export interface PlaceData {
+  id: string;
+  name: string;
+  full_name: string;
+  country: string;
+  country_code: string;
+  place_type: string;
+  url?: string;
+  bounding_box?: {
+    type: "Polygon";
+    coordinates: number[][][];
+  };
+}
+
+/**
+ * Hashtag Data
+ */
+export interface HashtagData {
+  text: string;
+  indices?: [number, number];
+}
+
+/**
+ * URL Data
+ */
+export interface UrlData {
+  url: string;
+  expanded_url?: string;
+  display_url?: string;
+  indices?: [number, number];
+}
+
+/**
+ * User Mention Data
+ */
+export interface UserMentionData {
+  id_str?: string;
+  screen_name?: string;
+  name?: string;
+  indices?: [number, number];
+}
+
+/**
+ * Raw Tweet Data from __raw_UNSTABLE
+ */
+export interface RawTweetData {
+  bookmark_count?: number;
+  bookmarked?: boolean;
+  created_at?: string;
+  conversation_id_str?: string;
+  display_text_range?: [number, number];
+  entities?: {
+    media?: PhotoData[];
+    user_mentions?: UserMentionData[];
+    urls?: UrlData[];
+    hashtags?: HashtagData[];
+    symbols?: any[];
+  };
+  extended_entities?: {
+    media?: PhotoData[];
+  };
+  favorite_count?: number;
+  favorited?: boolean;
+  full_text?: string;
+  is_quote_status?: boolean;
+  lang?: string;
+  possibly_sensitive?: boolean;
+  possibly_sensitive_editable?: boolean;
+  place?: PlaceData;
+  quote_count?: number;
+  reply_count?: number;
+  retweet_count?: number;
+  retweeted?: boolean;
+  user_id_str?: string;
+  id_str?: string;
+}
+
+/**
  * Scraped Tweet Data interface - raw data from scraping operations
- * Handles multiple possible field names from different data sources
+ * Updated to handle the complete structure from @the-convocation/twitter-scraper
  */
 export interface ScrapedTweetData {
+  // Core identifiers
   id?: string;
+  conversationId?: string;
+  userId?: string;
+  
+  // Content
   text?: string;
-  content?: string; // Alternative field name
-  user?: ScrapedUserData;
-  author?: any; // Alternative user object name
-  account?: any; // Another alternative
+  content?: string;
+  full_text?: string;
+  html?: string;
+  
+  // Engagement metrics
+  likes?: number;
   favorite_count?: number;
   favoriteCount?: number;
+  retweets?: number;
   retweet_count?: number;
   retweetCount?: number;
+  replies?: number;
   reply_count?: number;
   replyCount?: number;
   quote_count?: number;
   quoteCount?: number;
+  bookmarkCount?: number;
+  views?: number;
+  
+  // User data
+  name?: string;
+  username?: string;
+  user?: ScrapedUserData;
+  author?: any;
+  account?: any;
+  
+  // Content metadata
+  hashtags?: string[] | HashtagData[];
+  mentions?: UserMentionData[];
+  urls?: string[] | UrlData[];
+  photos?: PhotoData[];
+  videos?: any[];
+  media?: PhotoData[];
+  
+  // Status flags
+  isRetweet?: boolean;
+  is_retweet?: boolean;
+  isReply?: boolean;
+  isQuoted?: boolean;
+  isQuote?: boolean;
+  is_quote_status?: boolean;
+  isEdited?: boolean;
+  isPin?: boolean;
+  sensitiveContent?: boolean;
+  possibly_sensitive?: boolean;
+  
+  // Temporal data
   created_at?: string;
   createdAt?: string;
-  hashtags?: string[];
-  mentions?: any[];
-  urls?: any[];
-  media?: any[];
-  is_retweet?: boolean;
-  isRetweet?: boolean;
-  is_quote_status?: boolean;
-  isQuote?: boolean;
+  timeParsed?: string;
+  timestamp?: number;
+  
+  // Language and location
   lang?: string;
   language?: string;
+  place?: PlaceData;
+  
+  // Conversation data
+  thread?: any[];
+  versions?: string[];
+  
+  // URLs and links
+  permanentUrl?: string;
+  
+  // Raw data access
+  __raw_UNSTABLE?: RawTweetData;
 }
 
 /**
