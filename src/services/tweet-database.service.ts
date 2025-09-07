@@ -8,6 +8,7 @@ import { logger } from "../lib/observability/logger";
 import { ITweetDocument, TweetModel } from "../models/Tweet.model";
 import { MongoTweetRepository } from "../repositories/mongo-tweet.repository";
 import { Tweet } from "../types/twitter";
+import { processTweetContent } from "../utils/text-cleaner";
 
 // ==================== Constants & Configuration ====================
 const BATCH_SIZE = 100; // Increased from 50 for better throughput
@@ -399,9 +400,12 @@ export class TweetDatabaseService {
   ): Partial<ITweetDocument> {
     const now = new Date();
 
+    // Clean and process the tweet content before saving
+    const processedContent = processTweetContent(tweet.content || "");
+
     return {
       tweetId: tweet.tweetId,
-      content: tweet.content?.trim() || "",
+      content: processedContent,
       author: {
         id: tweet.author?.id || "",
         username: tweet.author?.username || "",
