@@ -15,8 +15,8 @@ import {
 import { tokenBlacklistService } from "../../../lib/security/token-blacklist";
 import {
   AuthenticatedRequest,
-  verifyRefreshToken,
   generateToken,
+  verifyRefreshToken,
 } from "../../../middleware/express-auth";
 import { AuthService } from "../../../services/auth.service";
 import { LoginRequest, RegisterRequest } from "../../../types/auth";
