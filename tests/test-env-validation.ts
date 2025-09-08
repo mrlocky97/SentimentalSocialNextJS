@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-import { logger } from "./src/lib/observability/logger";
+import { logger } from "../src/lib/observability/logger";
 dotenv.config({ path: [".env.local", ".env"] });
 
-import { validateEnv } from "./src/lib/config/validate-env";
+import { validateEnv } from "../src/lib/config/validate-env";
 
 try {
   validateEnv();

@@ -252,7 +252,15 @@ export const batchRateLimit = new IntelligentRateLimiter({
 });
 
 // Export middleware functions
-export const generalRateLimitMiddleware = generalRateLimit.middleware();
+export const generalRateLimitMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Skip rate limiting for scraping routes (they have their own rate limit)
+  if (req.path.startsWith('/api/v1/scraping')) {
+    return next();
+  }
+  
+  return generalRateLimit.middleware()(req, res, next);
+};
+
 export const heavyAnalysisRateLimitMiddleware =
   heavyAnalysisRateLimit.middleware();
 export const batchRateLimitMiddleware = batchRateLimit.middleware();

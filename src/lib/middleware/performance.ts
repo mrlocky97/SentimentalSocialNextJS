@@ -35,6 +35,7 @@ export const createRateLimit = (options?: {
   max?: number;
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
+  handler?: (req: Request, res: Response) => void;
 }) => {
   const config = {
     windowMs: options?.windowMs || appConfig.api.rateLimit.windowMs,
@@ -50,7 +51,7 @@ export const createRateLimit = (options?: {
       const userId = (req as unknown as { user?: { id?: string } }).user?.id;
       return userId ? `${ip}-${userId}` : ip;
     },
-    handler: (req: Request, res: Response) => {
+    handler: options?.handler || ((req: Request, res: Response) => {
       res.status(429).json({
         success: false,
         error: {
@@ -60,7 +61,7 @@ export const createRateLimit = (options?: {
           timestamp: new Date().toISOString(),
         },
       });
-    },
+    }),
   };
 
   return rateLimit(config);
@@ -74,9 +75,11 @@ export const authRateLimit = createRateLimit({
   max: 300, // 300 requests per 5 min = supports 30 users × 10 auth requests each
 });
 
-export const scrapingRateLimit = createRateLimit({
+export const scrapingRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 5, // Limit scraping requests
+  max: process.env.NODE_ENV === 'development' ? 100 : 30, // More permissive in development
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 export const analyticsRateLimit = createRateLimit({

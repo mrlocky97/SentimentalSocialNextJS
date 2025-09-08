@@ -6,10 +6,10 @@ import dotenv from "dotenv";
 dotenv.config({ path: [".env.local", ".env"] });
 
 import mongoose from "mongoose";
-import { TweetDatabaseService } from "./src/services/tweet-database.service";
-import DatabaseConnection from "./src/lib/database/connection";
-import { Tweet } from "./src/types/twitter";
-import { TweetModel } from "./src/models/Tweet.model";
+import DatabaseConnection from "../src/lib/database/connection";
+import { TweetModel } from "../src/models/Tweet.model";
+import { TweetDatabaseService } from "../src/services/tweet-database.service";
+import { Tweet } from "../src/types/twitter";
 
 async function testCompletePersistence() {
   console.log("🔍 Iniciando pruebas completas de persistencia...");
