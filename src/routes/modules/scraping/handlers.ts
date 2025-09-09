@@ -3,8 +3,8 @@
  * Streamlined request processing with efficient batch operations
  */
 
-import { Request, Response } from "express";
-import { toStringArray } from "../../../lib/utils";
+import { Request, Response } from 'express';
+import { toStringArray } from '../../../lib/utils';
 import {
   getScraperService,
   handleScrapingError,
@@ -13,41 +13,41 @@ import {
   twitterAuth,
   type ScrapingContext,
   type ScrapingRequestOptions,
-} from "./helpers";
+} from './helpers';
 
 // ==================== Configuration & Types ====================
 const SCRAPING_CONFIGS = Object.freeze({
   hashtag: {
-    context: { type: "hashtag" as const, exampleValue: "JustDoIt" },
+    context: { type: 'hashtag' as const, exampleValue: 'JustDoIt' },
     options: { languageFilter: true },
-    stripPrefix: "#",
-    errorField: "hashtag or hashtags",
-    examples: { 
-      hashtag: "JustDoIt", 
-      campaignId: "nike_campaign_2024",
-      hashtags: ["JustDoIt", "Marketing", "#Nike"] 
+    stripPrefix: '#',
+    errorField: 'hashtag or hashtags',
+    examples: {
+      hashtag: 'JustDoIt',
+      campaignId: 'nike_campaign_2024',
+      hashtags: ['JustDoIt', 'Marketing', '#Nike'],
     },
   },
   user: {
-    context: { type: "user" as const, exampleValue: "nike" },
+    context: { type: 'user' as const, exampleValue: 'nike' },
     options: { maxTweets: 500, defaultTweets: 30 },
-    stripPrefix: "@",
-    errorField: "username or usernames",
-    examples: { 
-      username: "nike", 
-      campaignId: "nike_campaign_2024",
-      usernames: ["nike", "adidas", "@puma"] 
+    stripPrefix: '@',
+    errorField: 'username or usernames',
+    examples: {
+      username: 'nike',
+      campaignId: 'nike_campaign_2024',
+      usernames: ['nike', 'adidas', '@puma'],
     },
   },
   search: {
-    context: { type: "search" as const, exampleValue: "nike shoes" },
+    context: { type: 'search' as const, exampleValue: 'nike shoes' },
     options: { languageFilter: true },
-    stripPrefix: "",
-    errorField: "query or queries",
-    examples: { 
-      query: "nike shoes", 
-      campaignId: "nike_campaign_2024",
-      queries: ["nike shoes", "adidas sneakers"] 
+    stripPrefix: '',
+    errorField: 'query or queries',
+    examples: {
+      query: 'nike shoes',
+      campaignId: 'nike_campaign_2024',
+      queries: ['nike shoes', 'adidas sneakers'],
     },
   },
 } as const);
@@ -87,9 +87,12 @@ interface BatchResponse {
 
 // ==================== Utility Functions ====================
 const truncateContent = (content: string): string =>
-  content.length > TWEET_CONTENT_MAX_LENGTH ? `${content.substring(0, TWEET_CONTENT_MAX_LENGTH)}...` : content;
+  content.length > TWEET_CONTENT_MAX_LENGTH
+    ? `${content.substring(0, TWEET_CONTENT_MAX_LENGTH)}...`
+    : content;
 
-const formatIdentifier = (identifier: string, prefix: string): string => prefix ? `${prefix}${identifier}` : identifier;
+const formatIdentifier = (identifier: string, prefix: string): string =>
+  prefix ? `${prefix}${identifier}` : identifier;
 
 const createValidationError = (errorField: string, examples: Record<string, unknown>) => ({
   success: false,
@@ -99,10 +102,10 @@ const createValidationError = (errorField: string, examples: Record<string, unkn
 
 const createCampaignIdValidationError = () => ({
   success: false,
-  error: "campaignId is required and must be a non-empty string",
+  error: 'campaignId is required and must be a non-empty string',
   example: {
-    campaignId: "my_marketing_campaign_2024",
-    description: "Campaign ID helps organize and track your scraped tweets"
+    campaignId: 'my_marketing_campaign_2024',
+    description: 'Campaign ID helps organize and track your scraped tweets',
   },
 });
 
@@ -115,15 +118,18 @@ async function processSingleIdentifier(
   req: Request,
   res: Response,
   identifier: string,
-  context: Omit<ScrapingContext, "identifier">,
-  options: ScrapingRequestOptions,
+  context: Omit<ScrapingContext, 'identifier'>,
+  options: ScrapingRequestOptions
 ): Promise<BatchScrapingResult> {
   try {
     const result = await handleScrapingRequest(req, res, { ...context, identifier }, options, true);
 
     if (result?.success) {
       return {
-        identifier: formatIdentifier(identifier, SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix),
+        identifier: formatIdentifier(
+          identifier,
+          SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
+        ),
         tweetCount: result.data.tweets.length,
         totalFound: result.data.totalFound,
         sentiment_summary: result.data.sentiment_summary,
@@ -131,15 +137,21 @@ async function processSingleIdentifier(
     }
 
     return {
-      identifier: formatIdentifier(identifier, SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix),
+      identifier: formatIdentifier(
+        identifier,
+        SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
+      ),
       tweetCount: 0,
-      error: "Request failed",
+      error: 'Request failed',
     };
   } catch (err) {
     return {
-      identifier: formatIdentifier(identifier, SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix),
+      identifier: formatIdentifier(
+        identifier,
+        SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
+      ),
       tweetCount: 0,
-      error: err instanceof Error ? err.message : "Unknown error",
+      error: err instanceof Error ? err.message : 'Unknown error',
     };
   }
 }
@@ -148,7 +160,7 @@ async function processBatchScraping(
   req: Request,
   res: Response,
   identifiers: string[],
-  scrapingType: ScrapingType,
+  scrapingType: ScrapingType
 ): Promise<BatchResponse> {
   const config = SCRAPING_CONFIGS[scrapingType];
   const results: BatchScrapingResult[] = [];
@@ -162,14 +174,14 @@ async function processBatchScraping(
   const resolvedResults = await Promise.allSettled(processingPromises);
 
   for (const result of resolvedResults) {
-    if (result.status === "fulfilled") {
+    if (result.status === 'fulfilled') {
       results.push(result.value);
       totalTweets += result.value.tweetCount;
     } else {
       results.push({
-        identifier: "unknown",
+        identifier: 'unknown',
         tweetCount: 0,
-        error: result.reason instanceof Error ? result.reason.message : "Processing failed",
+        error: result.reason instanceof Error ? result.reason.message : 'Processing failed',
       });
     }
   }
@@ -182,7 +194,7 @@ async function processBatchScraping(
       totalTweets,
       campaignId: req.body.campaignId, // ✅ Now guaranteed to exist
     },
-    message: `Scraped ${totalTweets} tweets from ${identifiers.length} ${scrapingType}${identifiers.length > 1 ? "s" : ""}`,
+    message: `Scraped ${totalTweets} tweets from ${identifiers.length} ${scrapingType}${identifiers.length > 1 ? 's' : ''}`,
   };
 }
 
@@ -191,7 +203,7 @@ async function handleGenericScraping(
   req: Request,
   res: Response,
   scrapingType: ScrapingType,
-  identifierKeys: string[],
+  identifierKeys: string[]
 ): Promise<void> {
   const config = SCRAPING_CONFIGS[scrapingType];
 
@@ -202,9 +214,14 @@ async function handleGenericScraping(
   }
 
   // Extract identifiers from request body
-  const identifiers = identifierKeys
-    .map((key) => toStringArray(req.body[key], { stripPrefix: config.stripPrefix || undefined }))
-    .find((arr) => arr.length > 0) || [];
+  const identifiers =
+    identifierKeys
+      .map((key) => {
+        const value = req.body[key];
+        const result = toStringArray(value, { stripPrefix: config.stripPrefix || undefined });
+        return result;
+      })
+      .find((arr) => arr.length > 0) || [];
 
   if (identifiers.length === 0) {
     res.status(400).json(createValidationError(config.errorField, config.examples));
@@ -213,7 +230,12 @@ async function handleGenericScraping(
 
   // Single identifier optimization
   if (identifiers.length === 1) {
-    await handleScrapingRequest(req, res, { ...config.context, identifier: identifiers[0] }, config.options);
+    await handleScrapingRequest(
+      req,
+      res,
+      { ...config.context, identifier: identifiers[0] },
+      config.options
+    );
     return;
   }
 
@@ -224,15 +246,15 @@ async function handleGenericScraping(
 
 // ==================== Main Handler Functions ====================
 export const scrapeHashtag = async (req: Request, res: Response): Promise<void> => {
-  await handleGenericScraping(req, res, "hashtag", ["hashtags", "hashtag"]);
+  await handleGenericScraping(req, res, 'hashtag', ['hashtags', 'hashtag']);
 };
 
 export const scrapeUser = async (req: Request, res: Response): Promise<void> => {
-  await handleGenericScraping(req, res, "user", ["usernames", "username"]);
+  await handleGenericScraping(req, res, 'user', ['usernames', 'username']);
 };
 
 export const scrapeSearch = async (req: Request, res: Response): Promise<void> => {
-  await handleGenericScraping(req, res, "search", ["queries", "query"]);
+  await handleGenericScraping(req, res, 'search', ['queries', 'query']);
 };
 
 // ==================== Status & Management Handlers ====================
@@ -245,9 +267,11 @@ export async function getScrapingStatus(req: Request, res: Response): Promise<vo
     const statusResponse = {
       success: true,
       data: {
-        service_status: "operational" as const,
+        service_status: 'operational' as const,
         authentication: {
-          status: authStatusDetail.isAuthenticated ? "authenticated" as const : "failed" as const,
+          status: authStatusDetail.isAuthenticated
+            ? ('authenticated' as const)
+            : ('failed' as const),
           last_check: authStatusDetail.lastCheck,
           consecutive_failures: authStatusDetail.consecutiveFailures,
         },
@@ -257,17 +281,17 @@ export async function getScrapingStatus(req: Request, res: Response): Promise<vo
           request_count: rateLimitStatus.requestCount,
         },
         scraper_info: {
-          type: "@the-convocation/twitter-scraper" as const,
+          type: '@the-convocation/twitter-scraper' as const,
           max_tweets_per_request: 1000,
-          rate_limit_window: "1 hour" as const,
+          rate_limit_window: '1 hour' as const,
         },
       },
-      message: "Scraping service operational",
+      message: 'Scraping service operational',
     } as const;
 
     res.json(statusResponse);
   } catch (error) {
-    handleScrapingError(res, error, "status check");
+    handleScrapingError(res, error, 'status check');
   }
 }
 
@@ -278,28 +302,31 @@ export async function forceReauth(req: Request, res: Response): Promise<void> {
 
     const reauthResponse = {
       success: status.ready,
-      message: status.ready ? "Re-authentication successful" : "Re-authentication failed",
+      message: status.ready ? 'Re-authentication successful' : 'Re-authentication failed',
       error: status.error,
       timestamp: new Date().toISOString(),
     } as const;
 
     res.json(reauthResponse);
   } catch (error) {
-    handleScrapingError(res, error, "re-authentication");
+    handleScrapingError(res, error, 're-authentication');
   }
 }
 
 export async function listTweets(req: Request, res: Response): Promise<void> {
   try {
     const { campaignId, limit = DEFAULT_TWEET_LIMIT } = req.query;
-    const parsedLimit = Math.max(1, Math.min(1000, parseInt(limit as string, 10) || DEFAULT_TWEET_LIMIT));
+    const parsedLimit = Math.max(
+      1,
+      Math.min(1000, parseInt(limit as string, 10) || DEFAULT_TWEET_LIMIT)
+    );
 
     let tweets: BasicTweet[];
 
-    if (campaignId && typeof campaignId === "string") {
+    if (campaignId && typeof campaignId === 'string') {
       tweets = await tweetDatabaseService.getTweetsByCampaign(campaignId, parsedLimit);
     } else {
-      tweets = await tweetDatabaseService.getTweetsByHashtag("", parsedLimit);
+      tweets = await tweetDatabaseService.getTweetsByHashtag('', parsedLimit);
     }
 
     const transformedTweets = tweets.map((tweet) => ({
@@ -315,7 +342,7 @@ export async function listTweets(req: Request, res: Response): Promise<void> {
       success: true,
       data: {
         total: tweets.length,
-        campaignId: campaignId || "all",
+        campaignId: campaignId || 'all',
         tweets: transformedTweets,
       },
       message: `Found ${tweets.length} tweets in database`,
@@ -323,6 +350,6 @@ export async function listTweets(req: Request, res: Response): Promise<void> {
 
     res.json(listResponse);
   } catch (error) {
-    handleScrapingError(res, error, "database tweets list");
+    handleScrapingError(res, error, 'database tweets list');
   }
 }

@@ -302,13 +302,39 @@ function buildInternalParams<B extends ScrapingRequestBody>(
   context: ScrapingContext,
   defaultTweets: number
 ): InternalParams {
-  const identifierCandidate = (body as Record<string, unknown>)[context.type];
-  const identifier =
-    (typeof identifierCandidate === 'string' && identifierCandidate) ||
-    body.query ||
-    body.username ||
-    body.hashtag ||
-    '';
+  // Try to get identifier from multiple possible fields
+  let identifier = '';
+  const bodyAny = body as any; // Type assertion for accessing additional properties
+
+  if (context.type === 'hashtag') {
+    // For hashtag, check both 'hashtag' (singular) and 'hashtags' (plural)
+    const hashtagSingular = body.hashtag;
+    const hashtagPlural = Array.isArray(bodyAny.hashtags) ? bodyAny.hashtags[0] : bodyAny.hashtags;
+    identifier = hashtagSingular || hashtagPlural || '';
+  } else if (context.type === 'user') {
+    // For user, check both 'username' and 'usernames'
+    const usernameSingular = body.username;
+    const usernamePlural = Array.isArray(bodyAny.usernames)
+      ? bodyAny.usernames[0]
+      : bodyAny.usernames;
+    identifier = usernameSingular || usernamePlural || '';
+  } else if (context.type === 'search') {
+    // For search, check both 'query' and 'queries'
+    const querySingular = body.query;
+    const queryPlural = Array.isArray(bodyAny.queries) ? bodyAny.queries[0] : bodyAny.queries;
+    identifier = querySingular || queryPlural || '';
+  }
+
+  // Fallback to the original logic if none of the above worked
+  if (!identifier) {
+    const identifierCandidate = (body as Record<string, unknown>)[context.type];
+    identifier =
+      (typeof identifierCandidate === 'string' && identifierCandidate) ||
+      body.query ||
+      body.username ||
+      body.hashtag ||
+      '';
+  }
 
   const language =
     body.language && SCRAPING_CONFIG.LANGUAGES.includes(body.language as any)
@@ -316,7 +342,11 @@ function buildInternalParams<B extends ScrapingRequestBody>(
       : 'en';
 
   // ✅ Validate required campaignId
-  if (!body.campaignId || typeof body.campaignId !== 'string' || body.campaignId.trim().length === 0) {
+  if (
+    !body.campaignId ||
+    typeof body.campaignId !== 'string' ||
+    body.campaignId.trim().length === 0
+  ) {
     throw new Error('campaignId is required and must be a non-empty string');
   }
 
