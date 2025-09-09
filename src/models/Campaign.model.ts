@@ -217,9 +217,9 @@ const campaignSchema = new Schema<ICampaignDocument>(
     maxTweets: {
       type: Number,
       required: [true, "Max tweets limit is required"],
-      min: [100, "Minimum tweets collection is 100"],
-      max: [1000000, "Maximum tweets collection is 1,000,000"],
-      default: 10000,
+      min: [10, "Minimum tweets collection is 10"],
+      max: [10000, "Maximum tweets collection is 10,000"],
+      default: 100,
     },
 
     collectImages: { type: Boolean, default: true },

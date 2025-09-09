@@ -103,13 +103,13 @@ export interface CreateCampaignRequest {
 
   // Tracking Parameters
   hashtags: string[];
-  keywords: string[];
-  mentions: string[];
+  keywords?: string[];
+  mentions?: string[];
 
   // Time Configuration
   startDate: string; // ISO string
   endDate: string; // ISO string
-  timezone: string;
+  timezone?: string;
 
   // Collection Settings
   maxTweets: number;
@@ -130,7 +130,7 @@ export interface CreateCampaignRequest {
   };
 
   // Language and Analysis
-  languages: string[];
+  languages?: string[];
   sentimentAnalysis?: boolean;
   emotionAnalysis?: boolean;
   topicsAnalysis?: boolean;
@@ -138,6 +138,7 @@ export interface CreateCampaignRequest {
 
   // Assignment
   organizationId: string;
+  createdBy?: string; // Optional, will be set by handler or defaulted
   assignedTo?: string[];
 }
 

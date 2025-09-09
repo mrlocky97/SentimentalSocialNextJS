@@ -19,11 +19,19 @@ export class MongoCampaignRepository {
     campaignData: CreateCampaignRequest,
   ): Promise<ICampaignDocument> {
     try {
-      // Convert date strings to Date objects
+      // Convert date strings to Date objects and ensure required arrays are initialized
       const campaignToCreate = {
         ...campaignData,
         startDate: new Date(campaignData.startDate),
         endDate: new Date(campaignData.endDate),
+        // Ensure tracking parameter arrays are properly initialized
+        hashtags: campaignData.hashtags ?? [],
+        keywords: campaignData.keywords ?? [],
+        mentions: campaignData.mentions ?? [],
+        languages: campaignData.languages ?? ["en"],
+        timezone: campaignData.timezone ?? "UTC",
+        // Ensure required fields have valid values
+        createdBy: campaignData.createdBy ?? "system", // Fallback if not provided
         // Set default values
         collectImages: campaignData.collectImages ?? true,
         collectVideos: campaignData.collectVideos ?? true,
@@ -42,6 +50,13 @@ export class MongoCampaignRepository {
       return savedCampaign;
     } catch (error) {
       if (error instanceof Error) {
+        console.error("Detailed campaign creation error:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          campaignData: JSON.stringify(campaignData, null, 2)
+        });
+        
         if (error.message.includes("validation failed")) {
           throw new Error("VALIDATION_ERROR");
         }

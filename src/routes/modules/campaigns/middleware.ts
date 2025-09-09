@@ -181,19 +181,6 @@ export const validateCreateCampaignRequest = (
       });
     }
 
-    // Validate future date ranges (campaigns shouldn't start in the past)
-    const now = new Date();
-    if (startDate < now) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: "Campaign start date cannot be in the past",
-          code: "PAST_START_DATE",
-          timestamp: new Date().toISOString(),
-        },
-      });
-    }
-
     next();
   } catch (error) {
     logger.error("Validation error:", { error });
