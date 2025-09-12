@@ -22,13 +22,13 @@ import specs from './lib/swagger';
 
 // Import performance middleware
 import {
-    analyticsRateLimit,
-    authRateLimit,
-    cacheControlMiddleware,
-    compressionMiddleware,
-    performanceMiddleware,
-    sanitizeMiddleware,
-    scrapingRateLimit,
+  analyticsRateLimit,
+  authRateLimit,
+  cacheControlMiddleware,
+  compressionMiddleware,
+  performanceMiddleware,
+  sanitizeMiddleware,
+  scrapingRateLimit,
 } from './lib/middleware/performance';
 
 // Import performance services
@@ -71,9 +71,9 @@ import { checkContainerHealth, configureServices } from './lib/dependency-inject
 // Import observability middleware
 import { logger as systemLogger } from './lib/observability/logger';
 import {
-    errorLoggingMiddleware,
-    performanceLoggingMiddleware,
-    requestLoggingMiddleware,
+  errorLoggingMiddleware,
+  performanceLoggingMiddleware,
+  requestLoggingMiddleware,
 } from './middleware/request-logging';
 
 import { features } from './lib/config/feature-flags';
@@ -101,43 +101,66 @@ async function initializeDatabase() {
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
   systemLogger.info('\n🔄 Received SIGINT, shutting down gracefully...');
-
-  // Shutdown queue manager first
-  if (queueManager) {
-    systemLogger.info('🛑 Shutting down queue manager...');
-    await queueManager.gracefulShutdown(30000); // 30 seconds timeout
-  }
-
-  // Close WebSocket service
-  if (websocketService) {
-    systemLogger.info('🔌 Closing WebSocket connections...');
-    await websocketService.close();
-  }
-
-  await DatabaseConnection.disconnect();
-  systemLogger.info('✅ MongoDB connection closed');
-  process.exit(0);
+  await performGracefulShutdown();
 });
 
 process.on('SIGTERM', async () => {
-  systemLogger.info('\n🔄 Received SIGTERM, shutting down gracefully...');
-
-  // Shutdown queue manager first
-  if (queueManager) {
-    systemLogger.info('🛑 Shutting down queue manager...');
-    await queueManager.gracefulShutdown(30000); // 30 seconds timeout
-  }
-
-  // Close WebSocket service
-  if (websocketService) {
-    systemLogger.info('🔌 Closing WebSocket connections...');
-    await websocketService.close();
-  }
-
-  await DatabaseConnection.disconnect();
-  systemLogger.info('✅ MongoDB connection closed');
-  process.exit(0);
+  systemLogger.info('\n� Received SIGTERM, shutting down gracefully...');
+  await performGracefulShutdown();
 });
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  systemLogger.error('Unhandled Rejection', { 
+    reason: reason instanceof Error ? reason.message : String(reason),
+    promise: String(promise)
+  });
+  // Application specific logging, throwing an error, or other logic here
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  systemLogger.error('Uncaught Exception', { error: error.message, stack: error.stack });
+  process.exit(1);
+});
+
+async function performGracefulShutdown(): Promise<void> {
+  try {
+    // Shutdown queue manager first
+    if (queueManager) {
+      systemLogger.info('🛑 Shutting down queue manager...');
+      try {
+        await queueManager.gracefulShutdown(30000); // 30 seconds timeout
+      } catch (error) {
+        systemLogger.error('Error shutting down queue manager:', error);
+      }
+    }
+
+    // Close WebSocket service
+    if (websocketService) {
+      systemLogger.info('🔌 Closing WebSocket connections...');
+      try {
+        await websocketService.close();
+      } catch (error) {
+        systemLogger.error('Error closing WebSocket service:', error);
+      }
+    }
+
+    // Close database connection
+    try {
+      await DatabaseConnection.disconnect();
+      systemLogger.info('✅ MongoDB connection closed');
+    } catch (error) {
+      systemLogger.error('Error closing MongoDB connection:', error);
+    }
+
+    systemLogger.info('✅ Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    systemLogger.error('❌ Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+}
 
 // Security middleware
 app.use(helmet());

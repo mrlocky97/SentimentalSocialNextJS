@@ -319,9 +319,16 @@ export class ProgressWebSocketService {
    * Close WebSocket service
    */
   async close(): Promise<void> {
-    this.io.close();
-    this.clients.clear();
-    this.jobSubscriptions.clear();
-    logger.info('WebSocket service closed');
+    try {
+      if (this.io) {
+        this.io.close();
+      }
+      this.clients.clear();
+      this.jobSubscriptions.clear();
+      logger.info('WebSocket service closed');
+    } catch (error) {
+      logger.error('Error closing WebSocket service', { error });
+      // Don't re-throw to avoid unhandled promise rejection
+    }
   }
 }

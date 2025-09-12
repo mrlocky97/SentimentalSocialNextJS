@@ -758,9 +758,16 @@ export class ScrapingQueueService {
    * Cleanup method
    */
   async close(): Promise<void> {
-    if (this.queue) {
-      await this.queue.close();
+    try {
+      if (this.queue) {
+        await this.queue.close();
+        this.queue = null;
+      }
+      this.activeJobs.clear();
+      logger.info('ScrapingQueueService closed successfully');
+    } catch (error) {
+      logger.error('Error closing ScrapingQueueService', { error });
+      // Don't re-throw to avoid unhandled promise rejection
     }
-    this.activeJobs.clear();
   }
 }

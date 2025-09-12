@@ -422,16 +422,29 @@ export class QueueManager {
 
       // Broadcast shutdown notification
       if (this.websocketService) {
-        this.websocketService.broadcastSystemNotification(
-          'System maintenance in progress. All active jobs will be paused.',
-          'warning'
-        );
+        try {
+          this.websocketService.broadcastSystemNotification(
+            'System maintenance in progress. All active jobs will be paused.',
+            'warning'
+          );
+        } catch (error) {
+          logger.warn('Failed to broadcast shutdown notification', { error });
+        }
       }
 
-      // Close services
-      await this.queueService.close();
+      // Close services with error handling
+      try {
+        await this.queueService.close();
+      } catch (error) {
+        logger.error('Error closing queue service', { error });
+      }
+
       if (this.websocketService) {
-        await this.websocketService.close();
+        try {
+          await this.websocketService.close();
+        } catch (error) {
+          logger.error('Error closing WebSocket service', { error });
+        }
       }
 
       this.isInitialized = false;
@@ -439,6 +452,7 @@ export class QueueManager {
 
     } catch (error) {
       logger.error('Error during emergency shutdown', { error });
+      // Don't re-throw to avoid unhandled promise rejection
     }
   }
 
@@ -453,24 +467,34 @@ export class QueueManager {
     try {
       // Notify clients about shutdown
       if (this.websocketService) {
-        this.websocketService.broadcastSystemNotification(
-          'System shutdown initiated. Current jobs will complete, new jobs will be rejected.',
-          'info'
-        );
+        try {
+          this.websocketService.broadcastSystemNotification(
+            'System shutdown initiated. Current jobs will complete, new jobs will be rejected.',
+            'info'
+          );
+        } catch (error) {
+          logger.warn('Failed to notify clients about shutdown', { error });
+        }
       }
 
       // Wait for active jobs to complete or timeout
       while (Date.now() - startTime < timeoutMs) {
-        const stats = await this.getQueueManagerStats();
-        if (stats.queueStats.active === 0) {
-          logger.info('All jobs completed, proceeding with shutdown');
+        try {
+          const stats = await this.getQueueManagerStats();
+          if (stats.queueStats.active === 0) {
+            logger.info('All jobs completed, proceeding with shutdown');
+            break;
+          }
+
+          logger.info('Waiting for jobs to complete', {
+            activeJobs: stats.queueStats.active,
+            elapsed: Date.now() - startTime,
+          });
+        } catch (error) {
+          logger.warn('Error checking queue stats during shutdown', { error });
+          // Continue with shutdown process even if stats check fails
           break;
         }
-
-        logger.info('Waiting for jobs to complete', {
-          activeJobs: stats.queueStats.active,
-          elapsed: Date.now() - startTime,
-        });
 
         await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
       }
@@ -480,7 +504,12 @@ export class QueueManager {
 
     } catch (error) {
       logger.error('Error during graceful shutdown, falling back to emergency shutdown', { error });
-      await this.emergencyShutdown();
+      try {
+        await this.emergencyShutdown();
+      } catch (emergencyError) {
+        logger.error('Error during emergency shutdown', { error: emergencyError });
+        // Don't throw here to avoid unhandled promise rejection
+      }
     }
   }
 }
