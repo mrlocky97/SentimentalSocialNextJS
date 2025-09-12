@@ -3,8 +3,8 @@
  * Provides live updates to clients about job progress
  */
 
-import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import { logger } from '../../lib/observability/logger';
 import { ScrapingJobProgress } from '../queue/scraping-queue.service';
 

@@ -6,11 +6,11 @@
 import Bull, { Job, Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../lib/observability/logger';
-import { ScrapingOptions, ScrapingResult } from '../../types/twitter';
-import { TwitterRealScraperService } from '../twitter-scraper.service';
-import { TweetSentimentAnalysisManager } from '../tweet-sentiment-analysis.manager.service';
-import { TweetDatabaseService } from '../tweet-database.service';
 import { processSentimentAnalysis } from '../../routes/modules/scraping/helpers';
+import { ScrapingOptions, ScrapingResult } from '../../types/twitter';
+import { TweetDatabaseService } from '../tweet-database.service';
+import { TweetSentimentAnalysisManager } from '../tweet-sentiment-analysis.manager.service';
+import { TwitterRealScraperService } from '../twitter-scraper.service';
 
 export interface ScrapingJobData {
   id: string;

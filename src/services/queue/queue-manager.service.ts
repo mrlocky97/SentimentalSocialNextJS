@@ -3,11 +3,11 @@
  * Integrates queue service with WebSocket progress tracking
  */
 
-import { ScrapingQueueService, ScrapingJobProgress } from './scraping-queue.service';
-import { SimpleScrapingService } from './simple-scraping.service';
-import { ProgressWebSocketService } from '../websocket/progress-websocket.service';
 import { logger } from '../../lib/observability/logger';
 import { ScrapingOptions } from '../../types/twitter';
+import { ProgressWebSocketService } from '../websocket/progress-websocket.service';
+import { ScrapingJobProgress, ScrapingQueueService } from './scraping-queue.service';
+import { SimpleScrapingService } from './simple-scraping.service';
 
 export interface QueueManagerStats {
   queueStats: {

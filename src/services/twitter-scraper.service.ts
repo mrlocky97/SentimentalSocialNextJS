@@ -8,12 +8,12 @@ import { Label } from '../enums/sentiment.enum';
 import { logger } from '../lib/observability/logger';
 import { defaultMetrics } from '../lib/observability/metrics';
 import {
-  AuthenticationStatus,
-  ScrapedTweetData,
-  ScrapingConfig,
-  ScrapingOptions,
-  ScrapingResult,
-  Tweet,
+    AuthenticationStatus,
+    ScrapedTweetData,
+    ScrapingConfig,
+    ScrapingOptions,
+    ScrapingResult,
+    Tweet,
 } from '../types/twitter';
 
 // ==================== Constants & Configuration ====================

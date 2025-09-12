@@ -22,13 +22,13 @@ import specs from './lib/swagger';
 
 // Import performance middleware
 import {
-  analyticsRateLimit,
-  authRateLimit,
-  cacheControlMiddleware,
-  compressionMiddleware,
-  performanceMiddleware,
-  sanitizeMiddleware,
-  scrapingRateLimit,
+    analyticsRateLimit,
+    authRateLimit,
+    cacheControlMiddleware,
+    compressionMiddleware,
+    performanceMiddleware,
+    sanitizeMiddleware,
+    scrapingRateLimit,
 } from './lib/middleware/performance';
 
 // Import performance services
@@ -71,9 +71,9 @@ import { checkContainerHealth, configureServices } from './lib/dependency-inject
 // Import observability middleware
 import { logger as systemLogger } from './lib/observability/logger';
 import {
-  errorLoggingMiddleware,
-  performanceLoggingMiddleware,
-  requestLoggingMiddleware,
+    errorLoggingMiddleware,
+    performanceLoggingMiddleware,
+    requestLoggingMiddleware,
 } from './middleware/request-logging';
 
 import { features } from './lib/config/feature-flags';
