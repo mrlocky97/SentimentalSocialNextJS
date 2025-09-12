@@ -5,6 +5,7 @@
 
 import { logger } from '../../lib/observability/logger';
 import { ScrapingOptions } from '../../types/twitter';
+import { jobPersistenceService } from '../job-persistence.service';
 import { ProgressWebSocketService } from '../websocket/progress-websocket.service';
 import { ScrapingJobProgress, ScrapingQueueService } from './scraping-queue.service';
 import { SimpleScrapingService } from './simple-scraping.service';
@@ -112,6 +113,37 @@ export class QueueManager {
         campaignId
       );
       logger.info('Job added to fallback service (Redis unavailable)', { jobId });
+    }
+
+    // Persist job to database
+    try {
+      const estimatedTime = Math.ceil(targetCount / 10) * 3; // ~3 seconds per batch of 10
+      
+      await jobPersistenceService.createJob({
+        jobId,
+        userId,
+        type,
+        query,
+        targetCount,
+        priority,
+        analyzeSentiment,
+        campaignId,
+        estimatedTime,
+        options: {
+          includeReplies: options.includeReplies,
+          includeRetweets: options.includeRetweets,
+          maxAgeHours: options.maxAgeHours,
+          language: options.language,
+        },
+      });
+
+      logger.info('Job persisted to database', { jobId });
+    } catch (error) {
+      // Log error but don't fail the job creation
+      logger.error('Failed to persist job to database', {
+        jobId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Send immediate job creation notification via WebSocket

@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { scrapingRateLimit } from '../../../lib/middleware/performance';
 import { logger } from '../../../lib/observability/logger';
+import { jobPersistenceService } from '../../../services/job-persistence.service';
 import { queueManager } from '../../../services/queue/queue-manager.service';
 import { simpleScrapingService } from '../../../services/queue/simple-scraping.service';
 
@@ -366,6 +367,8 @@ router.get('/jobs', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const statusFilter = req.query.status as string;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
 
     if (!userId) {
       return res.status(401).json({
@@ -374,12 +377,13 @@ router.get('/jobs', async (req: Request, res: Response) => {
       });
     }
 
-    let jobs = queueManager.getUserJobs(userId);
+    // Get jobs from memory (active queue)
+    let memoryJobs = queueManager.getUserJobs(userId);
     
     // If no jobs found in queue manager, try simple service
-    if (jobs.length === 0) {
+    if (memoryJobs.length === 0) {
       const simpleJobs = simpleScrapingService.getUserJobs(userId);
-      jobs = simpleJobs.map(job => ({
+      memoryJobs = simpleJobs.map(job => ({
         ...job,
         phase: 'scraping' as const,
         sentimentAnalyzed: 0,
@@ -387,15 +391,103 @@ router.get('/jobs', async (req: Request, res: Response) => {
       }));
     }
 
+    // Get jobs from database (persistent storage)
+    const persistedJobs = await jobPersistenceService.getUserJobs(userId, {
+      limit,
+      offset,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+
+    // Merge jobs from memory and database, avoiding duplicates
+    const allJobsMap = new Map();
+
+    // Add memory jobs first (these are the most current)
+    memoryJobs.forEach(job => {
+      allJobsMap.set(job.jobId, {
+        id: job.jobId,
+        jobId: job.jobId,
+        userId: userId, // Use the current user ID
+        type: 'unknown', // Memory jobs don't have all fields
+        query: '',
+        targetCount: job.total || 0,
+        priority: 'medium',
+        analyzeSentiment: true,
+        campaignId: undefined,
+        status: job.status,
+        currentProgress: job.percentage || 0,
+        phase: job.phase,
+        tweetsCollected: job.tweetsCollected || job.current || 0,
+        sentimentAnalyzed: job.sentimentAnalyzed || 0,
+        savedToDatabase: job.savedToDatabase || 0,
+        estimatedTime: job.estimatedTimeRemaining || 0,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        jobErrors: job.errors || [],
+        options: {
+          includeReplies: false,
+          includeRetweets: false,
+        },
+        createdAt: job.startedAt || new Date(),
+        updatedAt: new Date(),
+        source: 'memory',
+      });
+    });
+
+    // Add database jobs if not already in memory
+    persistedJobs.forEach(job => {
+      if (!allJobsMap.has(job.jobId)) {
+        allJobsMap.set(job.jobId, {
+          ...job,
+          source: 'database',
+        });
+      } else {
+        // Update with database information if available
+        const memoryJob = allJobsMap.get(job.jobId);
+        allJobsMap.set(job.jobId, {
+          ...memoryJob,
+          // Keep memory data for active status, but update from database for historical info
+          ...(memoryJob.status === 'pending' || memoryJob.status === 'running' ? {} : {
+            status: job.status,
+            completedAt: job.completedAt,
+            resultSummary: job.resultSummary,
+          }),
+          source: 'hybrid',
+        });
+      }
+    });
+
+    // Convert to array and sort by creation date
+    let jobs = Array.from(allJobsMap.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     // Apply status filter if provided
     if (statusFilter) {
-      jobs = jobs.filter((job: any) => job.status === statusFilter);
+      jobs = jobs.filter(job => job.status === statusFilter);
+    }
+
+    // Apply pagination if needed (since we might have fetched more than needed)
+    const totalJobs = jobs.length;
+    if (offset > 0 || limit < totalJobs) {
+      jobs = jobs.slice(offset, offset + limit);
     }
 
     res.json({
       success: true,
       jobs,
       count: jobs.length,
+      total: totalJobs,
+      pagination: {
+        offset,
+        limit,
+        hasMore: offset + limit < totalJobs,
+      },
+      sources: {
+        memory: memoryJobs.length,
+        database: persistedJobs.length,
+        total: totalJobs,
+      },
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -430,23 +522,85 @@ router.get('/jobs', async (req: Request, res: Response) => {
  */
 router.get('/stats', async (req: Request, res: Response) => {
   try {
-    let stats;
+    let queueStats;
     
     try {
       // Try queue manager first
-      stats = await queueManager.getQueueManagerStats();
+      queueStats = await queueManager.getQueueManagerStats();
     } catch {
       // Fall back to simple service
-      stats = await simpleScrapingService.getSimpleManagerStats();
+      queueStats = await simpleScrapingService.getSimpleManagerStats();
     }
+
+    // Get database statistics
+    const dbStats = await jobPersistenceService.getJobStats();
+
+    const combinedStats = {
+      queue: queueStats,
+      database: dbStats,
+      combined: {
+        totalJobsEverCreated: dbStats.overall.totalJobs || 0,
+        totalTweetsCollected: dbStats.overall.totalTweetsCollected || 0,
+        totalSentimentAnalyzed: dbStats.overall.totalSentimentAnalyzed || 0,
+        currentActiveJobs: queueStats.queueStats?.active || 0,
+      },
+    };
 
     res.json({
       success: true,
-      stats,
+      stats: combinedStats,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Failed to get queue stats', { error: errorMessage });
+
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v1/scraping/advanced/job/{jobId}/history:
+ *   get:
+ *     tags: [Advanced Scraping]
+ *     summary: Get job history from database
+ *     description: Get comprehensive job information from persistent storage
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Job ID
+ *     responses:
+ *       200:
+ *         description: Job history retrieved successfully
+ *       404:
+ *         description: Job not found in database
+ */
+router.get('/job/:jobId/history', async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await jobPersistenceService.getJob(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job not found in database',
+      });
+    }
+
+    res.json({
+      success: true,
+      job,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to get job history', { jobId: req.params.jobId, error: errorMessage });
 
     res.status(500).json({
       success: false,
