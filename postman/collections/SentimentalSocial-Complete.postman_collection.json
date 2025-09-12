@@ -1144,7 +1144,516 @@
       ]
     },
     {
-      "name": "🔑 TWITTER AUTH",
+      "name": "� ADVANCED SCRAPING",
+      "description": "Advanced scraping endpoints with queue management, progress tracking, and real-time monitoring",
+      "item": [
+        {
+          "name": "Queue System Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Queue status retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('queueStats');",
+                  "    pm.expect(jsonData.data).to.have.property('systemHealth');",
+                  "    console.log('📊 Queue Stats:', JSON.stringify(jsonData.data.queueStats, null, 2));",
+                  "    console.log('🏥 System Health:', jsonData.data.systemHealth.status || 'healthy');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "status"]
+            },
+            "description": "Get advanced scraping queue system status and statistics"
+          }
+        },
+        {
+          "name": "Create Large Hashtag Scraping Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Hashtag scraping job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.environment.set('scrapingJobId', jsonData.data.jobId);",
+                  "    console.log('✅ Hashtag Scraping Job Created:', jsonData.data.jobId);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "    console.log('🏷️ Hashtag:', jsonData.data.query);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"hashtag\",\n  \"query\": \"#javascript\",\n  \"targetCount\": 500,\n  \"priority\": \"medium\",\n  \"options\": {\n    \"includeReplies\": false,\n    \"includeImages\": true,\n    \"minLikes\": 1,\n    \"language\": \"en\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a large-scale hashtag scraping job with advanced options"
+          }
+        },
+        {
+          "name": "Create User Timeline Scraping Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User scraping job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.environment.set('userScrapingJobId', jsonData.data.jobId);",
+                  "    console.log('✅ User Scraping Job Created:', jsonData.data.jobId);",
+                  "    console.log('👤 User:', jsonData.data.query);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"user\",\n  \"query\": \"elonmusk\",\n  \"targetCount\": 200,\n  \"priority\": \"high\",\n  \"options\": {\n    \"includeRetweets\": false,\n    \"includeReplies\": true,\n    \"maxAge\": 2592000000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a user timeline scraping job with advanced filtering"
+          }
+        },
+        {
+          "name": "Create Search Query Scraping Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Search scraping job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.environment.set('searchScrapingJobId', jsonData.data.jobId);",
+                  "    console.log('✅ Search Scraping Job Created:', jsonData.data.jobId);",
+                  "    console.log('🔍 Query:', jsonData.data.query);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"search\",\n  \"query\": \"artificial intelligence OR machine learning OR AI\",\n  \"targetCount\": 1000,\n  \"priority\": \"urgent\",\n  \"options\": {\n    \"language\": \"en\",\n    \"minLikes\": 5,\n    \"minRetweets\": 2,\n    \"includeImages\": true,\n    \"verifiedUsersOnly\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a complex search query scraping job for 1000+ tweets"
+          }
+        },
+        {
+          "name": "Get Job Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Job progress retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    if (jsonData.data) {",
+                  "        pm.expect(jsonData.data).to.have.property('jobId');",
+                  "        pm.expect(jsonData.data).to.have.property('status');",
+                  "        pm.expect(jsonData.data).to.have.property('percentage');",
+                  "        console.log('📊 Progress:', jsonData.data.percentage + '%');",
+                  "        console.log('📈 Status:', jsonData.data.status);",
+                  "        console.log('🐦 Tweets Collected:', jsonData.data.tweetsCollected);",
+                  "        console.log('⏱️ Current Batch:', jsonData.data.currentBatch + '/' + jsonData.data.totalBatches);",
+                  "        if (jsonData.data.estimatedTimeRemaining) {",
+                  "            console.log('⏰ ETA:', Math.round(jsonData.data.estimatedTimeRemaining / 1000) + ' seconds');",
+                  "        }",
+                  "        if (jsonData.data.throughput) {",
+                  "            console.log('🚀 Throughput:', jsonData.data.throughput.toFixed(2) + ' tweets/sec');",
+                  "        }",
+                  "    } else {",
+                  "        console.log('❌ Job not found or completed');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job/{{scrapingJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job", "{{scrapingJobId}}"]
+            },
+            "description": "Get detailed progress information for a specific scraping job"
+          }
+        },
+        {
+          "name": "Get All User Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User jobs retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    console.log('📋 Total Jobs:', jsonData.data.length);",
+                  "    jsonData.data.forEach((job, index) => {",
+                  "        console.log(`Job ${index + 1}: ${job.jobId} - ${job.status} (${job.percentage}%)`);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/jobs/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "jobs", "user", "{{userId}}"]
+            },
+            "description": "Get all scraping jobs for the current user"
+          }
+        },
+        {
+          "name": "Cancel Scraping Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Job cancelled successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('cancelled');",
+                  "    pm.expect(jsonData.data.cancelled).to.be.true;",
+                  "    console.log('❌ Job cancelled:', jsonData.data.jobId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job/{{scrapingJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job", "{{scrapingJobId}}"]
+            },
+            "description": "Cancel a running or pending scraping job"
+          }
+        },
+        {
+          "name": "Get Queue Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Queue statistics retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('queueStats');",
+                  "    const stats = jsonData.data.queueStats;",
+                  "    console.log('📊 Queue Statistics:');",
+                  "    console.log('  ⏳ Waiting:', stats.waiting);",
+                  "    console.log('  🔄 Active:', stats.active);",
+                  "    console.log('  ✅ Completed:', stats.completed);",
+                  "    console.log('  ❌ Failed:', stats.failed);",
+                  "    console.log('  📈 Total:', stats.total);",
+                  "    if (jsonData.data.connectionStats) {",
+                  "        console.log('🔌 WebSocket Connections:', jsonData.data.connectionStats.totalConnections);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/queue/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "queue", "stats"]
+            },
+            "description": "Get comprehensive queue system statistics"
+          }
+        },
+        {
+          "name": "Health Check Advanced System",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Advanced scraping health check successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    console.log('🏥 System Status:', jsonData.data.status);",
+                  "    if (jsonData.data.details) {",
+                  "        console.log('🧠 Memory Usage:', Math.round(jsonData.data.details.memoryUsagePercent) + '%');",
+                  "        console.log('⚡ Redis Available:', jsonData.data.details.redisAvailable ? 'Yes' : 'No (using fallback)');",
+                  "        console.log('🔌 WebSocket Enabled:', jsonData.data.details.websocketEnabled ? 'Yes' : 'No');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "health"]
+            },
+            "description": "Health check for advanced scraping system components"
+          }
+        },
+        {
+          "name": "📊 Test Progress Tracking (Run After Creating Job)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// This test polls the job progress multiple times",
+                  "const maxPolls = 10;",
+                  "let pollCount = 0;",
+                  "",
+                  "function pollProgress() {",
+                  "    if (pollCount >= maxPolls) {",
+                  "        console.log('⏰ Polling completed after', maxPolls, 'attempts');",
+                  "        return;",
+                  "    }",
+                  "    ",
+                  "    pollCount++;",
+                  "    ",
+                  "    pm.sendRequest({",
+                  "        url: pm.request.url.toString(),",
+                  "        method: 'GET',",
+                  "        header: pm.request.headers.toObject()",
+                  "    }, (err, response) => {",
+                  "        if (err) {",
+                  "            console.log('❌ Error polling progress:', err);",
+                  "            return;",
+                  "        }",
+                  "        ",
+                  "        const data = response.json();",
+                  "        if (data.success && data.data) {",
+                  "            console.log(`📊 Poll ${pollCount}/${maxPolls} - Progress: ${data.data.percentage}% - Status: ${data.data.status} - Tweets: ${data.data.tweetsCollected}`);",
+                  "            ",
+                  "            if (data.data.status === 'completed' || data.data.status === 'failed') {",
+                  "                console.log('🏁 Job finished with status:', data.data.status);",
+                  "                return;",
+                  "            }",
+                  "            ",
+                  "            // Continue polling every 3 seconds",
+                  "            setTimeout(pollProgress, 3000);",
+                  "        } else {",
+                  "            console.log('❌ Job not found or no data');",
+                  "        }",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('Progress tracking test initialized', function () {",
+                  "    const jobId = pm.environment.get('scrapingJobId');",
+                  "    pm.expect(jobId).to.not.be.undefined;",
+                  "    console.log('🚀 Starting progress tracking for job:', jobId);",
+                  "    console.log('📊 Will poll progress every 3 seconds for', maxPolls, 'attempts');",
+                  "    ",
+                  "    // Start polling",
+                  "    setTimeout(pollProgress, 1000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job/{{scrapingJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job", "{{scrapingJobId}}"]
+            },
+            "description": "Test real-time progress tracking by polling job status multiple times"
+          }
+        }
+      ]
+    },
+    {
+      "name": "�🔑 TWITTER AUTH",
       "description": "Twitter authentication management endpoints",
       "item": [
         {
@@ -2378,6 +2887,42 @@
       "value": "I love this amazing product! It works perfectly.",
       "type": "string",
       "description": "Test text for sentiment analysis"
+    },
+    {
+      "key": "scrapingJobId",
+      "value": "",
+      "type": "string",
+      "description": "ID of the currently active scraping job (auto-set by tests)"
+    },
+    {
+      "key": "userScrapingJobId",
+      "value": "",
+      "type": "string",
+      "description": "ID of the user scraping job (auto-set by tests)"
+    },
+    {
+      "key": "searchScrapingJobId",
+      "value": "",
+      "type": "string",
+      "description": "ID of the search scraping job (auto-set by tests)"
+    },
+    {
+      "key": "largeScrapeTarget",
+      "value": "1000",
+      "type": "number",
+      "description": "Target count for large-scale scraping jobs"
+    },
+    {
+      "key": "mediumScrapeTarget",
+      "value": "500",
+      "type": "number",
+      "description": "Target count for medium-scale scraping jobs"
+    },
+    {
+      "key": "smallScrapeTarget",
+      "value": "100",
+      "type": "number",
+      "description": "Target count for small-scale scraping jobs"
     }
   ]
 }

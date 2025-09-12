@@ -151,6 +151,14 @@ export class TwitterRealScraperService {
     });
   }
 
+  async scrapeBySearch(searchQuery: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
+    return this.executeScraping('search', searchQuery, options, async (scraper, query, maxTweets) => {
+      // Use searchTweets without hashtag prefix for general search
+      const searchResults = scraper.searchTweets(query, maxTweets);
+      return this.collectTweets(searchResults, maxTweets);
+    });
+  }
+
   /**
    * Scrape with exact count guarantee - will continue until exact number is found
    * @param type - 'user' | 'hashtag'

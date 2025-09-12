@@ -1,10 +1,20 @@
 {
   "info": {
-    "_postman_id": "automated-tests-collection",
-    "name": "SentimentalSocial - Automated Test Suite",
-    "description": "Comprehensive automated test suite for all SentimentalSocial API endpoints. Run this collection to validate complete API functionality including authentication, sentiment analysis, scraping, campaigns, templates, security, and admin features.",
+    "_postman_id": "automated-tests-advanced-scraping",
+    "name": "SentimentalSocial - Automated Advanced Scraping Tests",
+    "description": "Automated test suite for advanced scraping functionality with queue management, progress tracking, and WebSocket support. This collection tests the new large-scale scraping capabilities.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "2.0.0"
+    "version": "3.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
   },
   "event": [
     {
@@ -12,8 +22,17 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "console.log('🧪 Running test:', pm.info.requestName);",
-          "console.log('🕒 Test started at:', new Date().toISOString());"
+          "// Global pre-request setup",
+          "console.log('🚀 Advanced Scraping Test -', pm.info.requestName);",
+          "console.log('� Target URL:', pm.request.url.toString());",
+          "",
+          "// Ensure auth token is available",
+          "if (!pm.environment.get('authToken')) {",
+          "    console.warn('⚠️ No auth token found. Please run login first.');",
+          "}",
+          "",
+          "// Set dynamic timestamp for unique data",
+          "pm.environment.set('testTimestamp', Date.now());"
         ]
       }
     },
@@ -22,586 +41,643 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Global test for all requests",
-          "if (pm.response.code !== 404 && pm.response.code !== 503) {",
-          "    pm.test('Response time is acceptable', function () {",
-          "        pm.expect(pm.response.responseTime).to.be.below(15000);",
-          "    });",
-          "}",
+          "// Global test assertions",
+          "pm.test('✅ Response received successfully', function () {",
+          "    pm.response.to.have.status.oneOf([200, 201, 202]);",
+          "});",
           "",
-          "// Log the response status",
-          "console.log('📊 Response:', pm.response.code, pm.response.status);",
-          "console.log('⏱️ Response time:', pm.response.responseTime + 'ms');"
+          "pm.test('📊 Response time acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+          "});",
+          "",
+          "pm.test('📋 Valid JSON response', function () {",
+          "    pm.response.to.be.json;",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "",
+          "// Log response summary",
+          "const jsonData = pm.response.json();",
+          "console.log('📊 Status:', pm.response.code, pm.response.status);",
+          "console.log('⚡ Time:', pm.response.responseTime + 'ms');",
+          "console.log('✅ Success:', jsonData.success);"
         ]
       }
     }
   ],
   "item": [
     {
-      "name": "Setup - Register Admin User",
-      "event": [
+      "name": "🔐 Setup: Authentication",
+      "description": "Authentication setup for automated tests",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Admin user registration successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    if (jsonData.data && jsonData.data.user) {",
-              "        pm.environment.set('userId', jsonData.data.user.id);",
-              "        console.log('✅ Admin user created with ID:', jsonData.data.user.id);",
-              "        pm.expect(jsonData.data.user.role).to.eql('admin');",
-              "    }",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"username\": \"admin_user\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\",\n  \"confirmPassword\": \"{{userPassword}}\",\n  \"displayName\": \"Admin User\",\n  \"role\": \"admin\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "auth", "register"]
-        }
-      }
-    },
-    {
-      "name": "Setup - Login Admin User",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Admin login successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    if (jsonData.data && jsonData.data.token) {",
-              "        pm.environment.set('authToken', jsonData.data.token);",
-              "        console.log('🔐 Admin auth token saved');",
-              "    }",
-              "    if (jsonData.data && jsonData.data.refreshToken) {",
-              "        pm.environment.set('refreshToken', jsonData.data.refreshToken);",
-              "        console.log('🔄 Refresh token saved');",
-              "    }",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "auth", "login"]
-        }
-      }
-    },
-    {
-      "name": "Test - Database Health",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Database health check successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    pm.expect(jsonData.data.status).to.eql('healthy');",
-              "    console.log('💚 Database is healthy');",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+          "name": "Login and Get Token",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🔐 Login successful', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    ",
+                  "    // Save auth data",
+                  "    pm.environment.set('authToken', jsonData.data.token);",
+                  "    pm.environment.set('userId', jsonData.data.user.id);",
+                  "    ",
+                  "    console.log('🔑 Auth token saved');",
+                  "    console.log('👤 User ID:', jsonData.data.user.id);",
+                  "    console.log('📧 Email:', jsonData.data.user.email);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/admin/database/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "admin", "database", "health"]
-        }
-      }
-    },
-    {
-      "name": "Test - Security Status",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Security status check successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    pm.expect(jsonData.data).to.have.property('jwtSecurity');",
-              "    console.log('🔒 Security status retrieved');",
-              "});"
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "login"]
+            },
+            "description": "Authenticate user and get JWT token for subsequent requests"
           }
         }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+      ]
+    },
+    {
+      "name": "🚀 Advanced Scraping Tests",
+      "description": "Comprehensive tests for advanced scraping functionality",
+      "item": [
+        {
+          "name": "Test 1: System Status Check",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🏥 System status is healthy', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('queueStats');",
+                  "    pm.expect(jsonData.data).to.have.property('systemHealth');",
+                  "    ",
+                  "    console.log('📊 Queue Stats:', JSON.stringify(jsonData.data.queueStats, null, 2));",
+                  "    console.log('🏥 System Health Status:', jsonData.data.systemHealth.status || 'healthy');",
+                  "    ",
+                  "    // Check if Redis is available",
+                  "    const redisAvailable = jsonData.data.queueStats.redisAvailable !== false;",
+                  "    console.log('🔴 Redis Available:', redisAvailable ? 'Yes' : 'No (using fallback)');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/security/status",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "security", "status"]
-        }
-      }
-    },
-    {
-      "name": "Test - Sentiment Analysis",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Sentiment analysis successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    pm.expect(jsonData.data).to.have.property('sentiment');",
-              "    console.log('🎯 Sentiment analysis working:', jsonData.data.sentiment);",
-              "});"
-            ],
-            "type": "text/javascript"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "status"]
+            },
+            "description": "Check that the advanced scraping system is operational"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 2: Create Small Hashtag Job (100 tweets)",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🏷️ Small hashtag job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.expect(jsonData.data.targetCount).to.equal(100);",
+                  "    pm.expect(jsonData.data.type).to.equal('hashtag');",
+                  "    ",
+                  "    // Save job ID for tracking",
+                  "    pm.environment.set('smallHashtagJobId', jsonData.data.jobId);",
+                  "    ",
+                  "    console.log('✅ Small hashtag job created:', jsonData.data.jobId);",
+                  "    console.log('🏷️ Hashtag:', jsonData.data.query);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "    console.log('⚡ Priority:', jsonData.data.priority);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"text\": \"{{testSentimentText}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/analyze-text",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "sentiment", "analyze-text"]
-        }
-      }
-    },
-    {
-      "name": "Test - User Profile",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('User profile retrieved', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    pm.expect(jsonData.data).to.have.property('user');",
-              "    console.log('👤 User profile:', jsonData.data.user.email);",
-              "});"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"hashtag\",\n  \"query\": \"#{{advancedHashtag}}\",\n  \"targetCount\": {{smallScrapeTarget}},\n  \"priority\": \"medium\",\n  \"options\": {\n    \"includeReplies\": false,\n    \"includeImages\": true,\n    \"language\": \"en\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a small hashtag scraping job to test basic functionality"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 3: Track Small Job Progress",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('📊 Job progress tracking works', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    ",
+                  "    if (jsonData.data) {",
+                  "        pm.expect(jsonData.data).to.have.property('jobId');",
+                  "        pm.expect(jsonData.data).to.have.property('status');",
+                  "        pm.expect(jsonData.data).to.have.property('percentage');",
+                  "        pm.expect(jsonData.data).to.have.property('currentBatch');",
+                  "        pm.expect(jsonData.data).to.have.property('totalBatches');",
+                  "        ",
+                  "        console.log('📊 Progress:', jsonData.data.percentage + '%');",
+                  "        console.log('📈 Status:', jsonData.data.status);",
+                  "        console.log('🐦 Tweets:', jsonData.data.tweetsCollected);",
+                  "        console.log('🔢 Batch:', jsonData.data.currentBatch + '/' + jsonData.data.totalBatches);",
+                  "        ",
+                  "        if (jsonData.data.throughput) {",
+                  "            console.log('🚀 Throughput:', jsonData.data.throughput.toFixed(2) + ' tweets/sec');",
+                  "        }",
+                  "        ",
+                  "        if (jsonData.data.estimatedTimeRemaining) {",
+                  "            console.log('⏰ ETA:', Math.round(jsonData.data.estimatedTimeRemaining / 1000) + ' seconds');",
+                  "        }",
+                  "    } else {",
+                  "        console.log('ℹ️ Job completed or not found');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "users", "profile"]
-        }
-      }
-    },
-    {
-      "name": "Test - Create Campaign",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Campaign created successfully', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    if (jsonData.data && jsonData.data.campaign) {",
-              "        pm.environment.set('campaignId', jsonData.data.campaign.id);",
-              "        console.log('📊 Campaign created with ID:', jsonData.data.campaign.id);",
-              "    }",
-              "});"
-            ],
-            "type": "text/javascript"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job/{{smallHashtagJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job", "{{smallHashtagJobId}}"]
+            },
+            "description": "Track progress of the small hashtag job"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 4: Create Medium User Job (500 tweets)",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('👤 Medium user job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.expect(jsonData.data.targetCount).to.equal(500);",
+                  "    pm.expect(jsonData.data.type).to.equal('user');",
+                  "    ",
+                  "    // Save job ID for tracking",
+                  "    pm.environment.set('mediumUserJobId', jsonData.data.jobId);",
+                  "    ",
+                  "    console.log('✅ Medium user job created:', jsonData.data.jobId);",
+                  "    console.log('👤 User:', jsonData.data.query);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "    console.log('⚡ Priority:', jsonData.data.priority);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Test Campaign - {{$timestamp}}\",\n  \"description\": \"Automated test campaign\",\n  \"keywords\": [\"test\", \"automation\"],\n  \"hashtags\": [\"{{testHashtag}}\"],\n  \"mentions\": [],\n  \"isActive\": true\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/campaigns",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "campaigns"]
-        }
-      }
-    },
-    {
-      "name": "Test - Get Templates",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Templates retrieved', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    console.log('📋 Templates available:', jsonData.data ? jsonData.data.length : 0);",
-              "});"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"user\",\n  \"query\": \"{{testUsername}}\",\n  \"targetCount\": {{mediumScrapeTarget}},\n  \"priority\": \"high\",\n  \"options\": {\n    \"includeRetweets\": false,\n    \"includeReplies\": true,\n    \"maxAge\": 2592000000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a medium-scale user timeline scraping job"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 5: Create Large Search Job (1000 tweets)",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🔍 Large search job created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    pm.expect(jsonData.data.targetCount).to.equal(1000);",
+                  "    pm.expect(jsonData.data.type).to.equal('search');",
+                  "    ",
+                  "    // Save job ID for tracking",
+                  "    pm.environment.set('largeSearchJobId', jsonData.data.jobId);",
+                  "    ",
+                  "    console.log('✅ Large search job created:', jsonData.data.jobId);",
+                  "    console.log('🔍 Query:', jsonData.data.query);",
+                  "    console.log('🎯 Target:', jsonData.data.targetCount, 'tweets');",
+                  "    console.log('⚡ Priority:', jsonData.data.priority);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/templates",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "templates"]
-        }
-      }
-    },
-    {
-      "name": "Test - Twitter Auth Status",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Twitter auth status retrieved', function () {",
-              "    const jsonData = pm.response.json();",
-              "    // We expect this to work even if not authenticated to Twitter",
-              "    pm.expect(jsonData).to.have.property('success');",
-              "    console.log('🐦 Twitter auth status checked');",
-              "});"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "type": "text/javascript"
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"search\",\n  \"query\": \"{{advancedSearchQuery}}\",\n  \"targetCount\": {{largeScrapeTarget}},\n  \"priority\": \"urgent\",\n  \"options\": {\n    \"language\": \"en\",\n    \"minLikes\": 5,\n    \"minRetweets\": 2,\n    \"includeImages\": true,\n    \"verifiedUsersOnly\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create a large-scale search scraping job for stress testing"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 6: Get All User Jobs",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('📋 User jobs retrieved successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.data.length).to.be.at.least(3); // We created 3 jobs",
+                  "    ",
+                  "    console.log('📊 Total user jobs:', jsonData.data.length);",
+                  "    ",
+                  "    // Analyze job statuses",
+                  "    const statusCounts = {};",
+                  "    jsonData.data.forEach((job, index) => {",
+                  "        console.log(`Job ${index + 1}: ${job.jobId.substring(0, 8)}... - ${job.status} (${job.percentage}%) - ${job.tweetsCollected} tweets`);",
+                  "        statusCounts[job.status] = (statusCounts[job.status] || 0) + 1;",
+                  "    });",
+                  "    ",
+                  "    console.log('📊 Status Summary:', JSON.stringify(statusCounts, null, 2));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/twitter-auth/status",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "twitter-auth", "status"]
-        }
-      }
-    },
-    {
-      "name": "Test - Scraping Status",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Scraping status retrieved', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('success');",
-              "    console.log('🕷️ Scraping status checked');",
-              "});"
-            ],
-            "type": "text/javascript"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/jobs/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "jobs", "user", "{{userId}}"]
+            },
+            "description": "Retrieve all scraping jobs for the current user"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 7: Queue Statistics Check",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('📊 Queue statistics available', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('queueStats');",
+                  "    ",
+                  "    const stats = jsonData.data.queueStats;",
+                  "    pm.expect(stats).to.have.property('waiting');",
+                  "    pm.expect(stats).to.have.property('active');",
+                  "    pm.expect(stats).to.have.property('completed');",
+                  "    pm.expect(stats).to.have.property('failed');",
+                  "    pm.expect(stats).to.have.property('total');",
+                  "    ",
+                  "    console.log('📊 Queue Statistics:');",
+                  "    console.log('  ⏳ Waiting:', stats.waiting);",
+                  "    console.log('  🔄 Active:', stats.active);",
+                  "    console.log('  ✅ Completed:', stats.completed);",
+                  "    console.log('  ❌ Failed:', stats.failed);",
+                  "    console.log('  📈 Total:', stats.total);",
+                  "    ",
+                  "    if (jsonData.data.connectionStats) {",
+                  "        console.log('🔌 WebSocket Connections:', jsonData.data.connectionStats.totalConnections);",
+                  "        console.log('📡 Job Subscriptions:', jsonData.data.connectionStats.totalJobSubscriptions);",
+                  "    }",
+                  "    ",
+                  "    if (jsonData.data.systemHealth) {",
+                  "        console.log('🏥 System Health:');",
+                  "        console.log('  ⏱️ Uptime:', Math.round(jsonData.data.systemHealth.uptime / 1000) + 's');",
+                  "        console.log('  💾 Memory:', Math.round(jsonData.data.systemHealth.memoryUsage.heapUsed / 1024 / 1024) + 'MB');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/status",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "scraping", "status"]
-        }
-      }
-    },
-    {
-      "name": "Test - Model Status",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Model status retrieved', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    console.log('🧠 Sentiment model status checked');",
-              "});"
-            ],
-            "type": "text/javascript"
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/queue/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "queue", "stats"]
+            },
+            "description": "Check queue system statistics and performance"
           }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+        },
+        {
+          "name": "Test 8: Health Check Advanced System",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🏥 Advanced system health check passed', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    ",
+                  "    console.log('🏥 System Status:', jsonData.data.status);",
+                  "    ",
+                  "    if (jsonData.data.details) {",
+                  "        const details = jsonData.data.details;",
+                  "        console.log('🔧 System Details:');",
+                  "        console.log('  🧠 Memory Usage:', Math.round(details.memoryUsagePercent || 0) + '%');",
+                  "        console.log('  🔴 Redis Available:', details.redisAvailable ? 'Yes' : 'No (using fallback)');",
+                  "        console.log('  🔌 WebSocket Enabled:', details.websocketEnabled ? 'Yes' : 'No');",
+                  "        console.log('  ⚙️ Initialized:', details.isInitialized ? 'Yes' : 'No');",
+                  "        ",
+                  "        // Validate system health",
+                  "        if (details.memoryUsagePercent && details.memoryUsagePercent > 90) {",
+                  "            console.warn('⚠️ High memory usage detected:', details.memoryUsagePercent + '%');",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "health"]
+            },
+            "description": "Comprehensive health check of the advanced scraping system"
+          }
         },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/sentiment/model-status",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "sentiment", "model-status"]
-        }
-      }
-    },
-    {
-      "name": "Test - Dashboard Overview",
-      "event": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Dashboard overview retrieved', function () {",
-              "    if (pm.response.code === 200) {",
-              "        const jsonData = pm.response.json();",
-              "        pm.expect(jsonData).to.have.property('success');",
-              "        if (jsonData.success && jsonData.data) {",
-              "            pm.expect(jsonData.data).to.have.property('requestsPerMinute');",
-              "            console.log('📈 RPM:', jsonData.data.requestsPerMinute);",
-              "        }",
-              "    } else {",
-              "        console.log('Dashboard overview not available (status ' + pm.response.code + ')');",
-              "    }",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/overview",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "dashboard", "overview"]
-        }
-      }
-    },
-    {
-      "name": "Test - Dashboard Metrics",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/metrics",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "dashboard", "metrics"]
-        }
-      }
-    },
-    {
-      "name": "Test - Cross-Validation Metrics",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Cross-validation metrics retrieved', function () {",
-              "    if (pm.response.code === 200) {",
-              "        const jsonData = pm.response.json();",
-              "        pm.expect(jsonData.status).to.eql('success');",
-              "        pm.expect(jsonData.data).to.have.property('folds');",
-              "        pm.expect(jsonData.data).to.have.property('aggregate');",
-              "        console.log('📊 K-fold CV metrics retrieved successfully');",
-              "        console.log('🧮 Number of folds:', jsonData.data.k);",
-              "        console.log('📈 Avg accuracy:', jsonData.data.aggregate.accuracy.mean);",
-              "    } else if (pm.response.code === 404) {",
-              "        console.log('❕ Cross-validation metrics not available. Need to run k-fold CV first.');",
-              "    } else {",
-              "        pm.expect.fail('Unexpected response code: ' + pm.response.code);",
-              "    }",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/metrics/cv",
-          "host": ["{{baseUrl}}"],
-          "path": ["metrics", "cv"]
-        },
-        "description": "Get cross-validation metrics for sentiment analysis model"
-      }
-    },
-    {
-      "name": "Cleanup - Logout",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Logout successful', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.be.true;",
-              "    console.log('🚪 User logged out successfully');",
-              "    // Clear tokens",
-              "    pm.environment.unset('authToken');",
-              "    pm.environment.unset('refreshToken');",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+          "name": "Test 9: Cancel Large Job (Cleanup)",
+          "event": [
             {
-              "key": "token",
-              "value": "{{authToken}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('❌ Large job cancelled successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('cancelled');",
+                  "    pm.expect(jsonData.data.cancelled).to.be.true;",
+                  "    ",
+                  "    console.log('❌ Large search job cancelled:', jsonData.data.jobId);",
+                  "    console.log('🧹 Cleanup completed to prevent resource usage');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "method": "POST",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "{{apiVersion}}", "auth", "logout"]
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job/{{largeSearchJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job", "{{largeSearchJobId}}"]
+            },
+            "description": "Cancel the large search job to cleanup resources"
+          }
         }
-      }
+      ]
+    },
+    {
+      "name": "🚄 Performance Tests",
+      "description": "Performance and stress tests for the advanced scraping system",
+      "item": [
+        {
+          "name": "Stress Test: Multiple Concurrent Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🚄 Concurrent job creation works', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('jobId');",
+                  "    ",
+                  "    console.log('🚄 Stress test job created:', jsonData.data.jobId);",
+                  "    console.log('⚡ This job will run concurrently with others');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"hashtag\",\n  \"query\": \"#test{{testTimestamp}}\",\n  \"targetCount\": 50,\n  \"priority\": \"low\",\n  \"options\": {\n    \"includeReplies\": false,\n    \"language\": \"en\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/scraping/advanced/job",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "scraping", "advanced", "job"]
+            },
+            "description": "Create multiple small jobs to test concurrent processing"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string",
+      "description": "Base URL for the SentimentalSocial API"
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "type": "string",
+      "description": "API version"
     }
   ]
 }
