@@ -4,26 +4,26 @@
  */
 
 import {
-  AssistantRecommendationType,
-  AssistantRecommendationUrgency,
-  CampaignCategory,
-  CampaignHealthScoreGrade,
-  CampaignRole,
-  CampaignStatus,
-  CampaignType,
-  DataSource,
+    AssistantRecommendationType,
+    AssistantRecommendationUrgency,
+    CampaignCategory,
+    CampaignHealthScoreGrade,
+    CampaignRole,
+    CampaignStatus,
+    CampaignType,
+    DataSource,
 } from "../enums/campaign.enum";
 
 // Re-export enums for easier access
 export {
-  AssistantRecommendationType,
-  AssistantRecommendationUrgency,
-  CampaignCategory,
-  CampaignHealthScoreGrade,
-  CampaignRole,
-  CampaignStatus,
-  CampaignType,
-  DataSource,
+    AssistantRecommendationType,
+    AssistantRecommendationUrgency,
+    CampaignCategory,
+    CampaignHealthScoreGrade,
+    CampaignRole,
+    CampaignStatus,
+    CampaignType,
+    DataSource
 };
 
 export interface Campaign {
@@ -245,34 +245,6 @@ export interface CampaignMetrics {
   generatedAt: Date;
   periodStart: Date;
   periodEnd: Date;
-}
-
-// Campaign Templates for quick setup
-export interface CampaignTemplate {
-  id: string;
-  name: string;
-  description: string;
-  type: CampaignType;
-  category: CampaignCategory;
-
-  // Default Configuration
-  defaultDuration: number; // Days
-  defaultMaxTweets: number;
-  defaultDataSources: DataSource[];
-  defaultAnalysis: {
-    sentiment: boolean;
-    emotion: boolean;
-    topics: boolean;
-    influencer: boolean;
-  };
-
-  // Suggested Parameters
-  suggestedHashtags: string[];
-  suggestedKeywords: string[];
-  suggestedLanguages: string[];
-
-  createdAt: Date;
-  isActive: boolean;
 }
 
 export interface CampaignAccess {

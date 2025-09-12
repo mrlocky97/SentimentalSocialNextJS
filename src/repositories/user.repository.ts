@@ -3,13 +3,13 @@
  * Following Interface Segregation Principle
  */
 
-import { BaseRepository, QueryOptions } from "./base.repository";
 import {
-  User,
-  UserAuth,
   CreateUserRequest,
   UpdateUserRequest,
+  User,
+  UserAuth,
 } from "../types/user";
+import { BaseRepository, QueryOptions } from "./base.repository";
 
 export interface UserRepository
   extends BaseRepository<User, CreateUserRequest, UpdateUserRequest> {
@@ -23,16 +23,7 @@ export interface UserRepository
   findAuthByEmail(email: string): Promise<UserAuth | null>;
   updatePassword(id: string, passwordHash: string): Promise<boolean>;
 
-  // Social features
-  followUser(followerId: string, followingId: string): Promise<boolean>;
-  unfollowUser(followerId: string, followingId: string): Promise<boolean>;
-  getFollowers(userId: string, options?: QueryOptions): Promise<User[]>;
-  getFollowing(userId: string, options?: QueryOptions): Promise<User[]>;
-  isFollowing(followerId: string, followingId: string): Promise<boolean>;
-
   // Statistics
-  getFollowersCount(userId: string): Promise<number>;
-  getFollowingCount(userId: string): Promise<number>;
   getPostsCount(userId: string): Promise<number>;
   getCampaignsCount(userId: string): Promise<number>;
 

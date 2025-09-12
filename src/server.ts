@@ -48,7 +48,6 @@ import configureMetricsRoutes from './routes/metrics.routes';
 import { scrapingRoutes } from './routes/scraping';
 import securityRoutes from './routes/security';
 import sentimentRoutes from './routes/sentiment';
-import templateRoutes from './routes/templates';
 import twitterAuthRoutes from './routes/twitter-auth';
 import userRoutes from './routes/users';
 
@@ -267,7 +266,6 @@ if (process.env.ENABLE_SWAGGER_UI === 'true') {
 app.use('/api/v1/auth', authRateLimit, authRoutes);
 app.use('/api/v1/users', analyticsRateLimit, userRoutes);
 app.use('/api/v1/campaigns', analyticsRateLimit, campaignRoutes);
-app.use('/api/v1/templates', analyticsRateLimit, templateRoutes);
 app.use('/api/v1/twitter-auth', authRateLimit, twitterAuthRoutes);
 app.use('/api/v1/sentiment', analyticsRateLimit, cacheControlMiddleware(300), sentimentRoutes);
 app.use('/api/v1/security', authRateLimit, securityRoutes);
@@ -286,7 +284,6 @@ app.get('/api/v1', (req, res) => {
       auth: '/api/v1/auth',
       users: '/api/v1/users',
       campaigns: '/api/v1/campaigns',
-      templates: '/api/v1/templates',
       scraping: '/api/v1/scraping',
       sentiment: '/api/v1/sentiment',
       security: '/api/v1/security',
