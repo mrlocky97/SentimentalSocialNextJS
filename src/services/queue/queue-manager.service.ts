@@ -77,7 +77,9 @@ export class QueueManager {
     priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium',
     userId?: string,
     analyzeSentiment: boolean = true,
-    campaignId?: string
+    campaignId?: string,
+    name?: string,
+    description?: string
   ): Promise<string> {
     if (!this.isInitialized) {
       throw new Error('Queue manager not initialized. Call initialize() first.');
@@ -122,6 +124,8 @@ export class QueueManager {
       await jobPersistenceService.createJob({
         jobId,
         userId,
+        name,
+        description,
         type,
         query,
         targetCount,

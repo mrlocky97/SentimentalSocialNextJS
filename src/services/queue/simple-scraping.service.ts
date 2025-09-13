@@ -5,6 +5,7 @@
 
 import { logger } from '../../lib/observability/logger';
 import { ScrapingOptions } from '../../types/twitter';
+import { jobPersistenceService } from '../job-persistence.service';
 import { TwitterRealScraperService } from '../twitter-scraper.service';
 
 interface SimpleJobProgress {
@@ -49,13 +50,12 @@ export class SimpleScrapingService {
     query: string,
     targetCount: number,
     options: ScrapingOptions = {},
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     priority: string = 'medium',
     userId?: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     analyzeSentiment: boolean = true,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    campaignId?: string
+    campaignId?: string,
+    name?: string,
+    description?: string
   ): Promise<string> {
     const jobId = `simple-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -78,6 +78,39 @@ export class SimpleScrapingService {
     };
 
     this.jobs.set(jobId, job);
+
+    // Persist job to database
+    try {
+      const estimatedTime = Math.ceil(targetCount / 10) * 3; // ~3 seconds per batch of 10
+      
+      await jobPersistenceService.createJob({
+        jobId,
+        userId,
+        name,
+        description,
+        type,
+        query,
+        targetCount,
+        priority: priority as any,
+        analyzeSentiment,
+        campaignId,
+        estimatedTime,
+        options: {
+          includeReplies: options.includeReplies,
+          includeRetweets: options.includeRetweets,
+          maxAgeHours: options.maxAgeHours,
+          language: options.language,
+        },
+      });
+      
+      logger.info('Job persisted to database', { jobId, userId, type, query });
+    } catch (error) {
+      logger.error('Failed to persist job to database', { 
+        jobId, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      // Continue with job processing even if persistence fails
+    }
 
     // Start processing immediately (asynchronously)
     setImmediate(() => {

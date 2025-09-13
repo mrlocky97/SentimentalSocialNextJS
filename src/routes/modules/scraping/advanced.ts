@@ -50,6 +50,16 @@ router.use(scrapingRateLimit);
  *                 type: string
  *                 description: Campaign identifier
  *                 example: "tech_analysis_2024"
+ *               name:
+ *                 type: string
+ *                 maxLength: 200
+ *                 description: Optional job name for easier identification
+ *                 example: "Technology sentiment analysis"
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 description: Optional job description providing more details
+ *                 example: "Weekly analysis of technology-related tweets for market research"
  *               analyzeSentiment:
  *                 type: boolean
  *                 default: true
@@ -105,7 +115,9 @@ router.post('/job', async (req: Request, res: Response) => {
       type, 
       query, 
       targetCount, 
-      campaignId, 
+      campaignId,
+      name,
+      description,
       priority = 'medium', 
       options = {},
       analyzeSentiment = true 
@@ -140,7 +152,9 @@ router.post('/job', async (req: Request, res: Response) => {
         priority,
         userId,
         analyzeSentiment,
-        campaignId
+        campaignId,
+        name,
+        description
       );
     } else {
       // Use simple service as fallback
@@ -153,7 +167,9 @@ router.post('/job', async (req: Request, res: Response) => {
         priority, 
         userId,
         analyzeSentiment,
-        campaignId
+        campaignId,
+        name,
+        description
       );
     }
 

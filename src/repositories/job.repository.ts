@@ -9,6 +9,8 @@ export interface Job {
   id?: string;
   jobId: string;
   userId?: string;
+  name?: string;
+  description?: string;
   type: 'hashtag' | 'user' | 'search';
   query: string;
   targetCount: number;
@@ -63,6 +65,8 @@ export interface Job {
 export interface CreateJobRequest {
   jobId: string;
   userId?: string;
+  name?: string;
+  description?: string;
   type: 'hashtag' | 'user' | 'search';
   query: string;
   targetCount: number;
@@ -79,6 +83,8 @@ export interface CreateJobRequest {
 }
 
 export interface UpdateJobRequest {
+  name?: string;
+  description?: string;
   status?: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'paused';
   currentProgress?: number;
   phase?: 'scraping' | 'analyzing' | 'saving' | 'completed';

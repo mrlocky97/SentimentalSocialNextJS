@@ -6,10 +6,10 @@
 import JobModel, { IJobDocument } from '../models/Job.model';
 import { QueryOptions } from './base.repository';
 import {
-    CreateJobRequest,
-    Job,
-    JobRepository,
-    UpdateJobRequest,
+  CreateJobRequest,
+  Job,
+  JobRepository,
+  UpdateJobRequest,
 } from './job.repository';
 
 export class MongoJobRepository implements JobRepository {
@@ -18,6 +18,8 @@ export class MongoJobRepository implements JobRepository {
     const jobData = {
       jobId: data.jobId,
       userId: data.userId,
+      name: data.name,
+      description: data.description,
       type: data.type,
       query: data.query,
       targetCount: data.targetCount,
@@ -415,6 +417,8 @@ export class MongoJobRepository implements JobRepository {
       id: (doc._id as any).toString(),
       jobId: doc.jobId,
       userId: doc.userId,
+      name: doc.name,
+      description: doc.description,
       type: doc.type,
       query: doc.query,
       targetCount: doc.targetCount,
