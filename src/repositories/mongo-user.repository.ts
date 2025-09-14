@@ -264,7 +264,7 @@ export class MongoUserRepository implements UserRepository {
       const follows = await FollowModel.find({ followingId: targetId })
         .select("followerId")
         .lean();
-      const followerIds = follows.map((f) => f.followerId);
+      const followerIds = follows.map((f: any) => f.followerId);
       if (followerIds.length === 0) return [];
 
       const query = UserModel.find({
@@ -289,7 +289,7 @@ export class MongoUserRepository implements UserRepository {
       const follows = await FollowModel.find({ followerId: sourceId })
         .select("followingId")
         .lean();
-      const followingIds = follows.map((f) => f.followingId);
+      const followingIds = follows.map((f: any) => f.followingId);
       if (followingIds.length === 0) return [];
 
       const query = UserModel.find({
