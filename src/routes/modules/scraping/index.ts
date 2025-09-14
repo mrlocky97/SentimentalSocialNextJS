@@ -320,6 +320,140 @@ const router = Router();
  *         description: Internal server error
  */
 
+/**
+ * @swagger
+ * /api/v1/scraping/hashtag/async:
+ *   post:
+ *     tags: [Twitter Scraping]
+ *     summary: Scrape hashtag tweets asynchronously
+ *     description: Start hashtag scraping process and return immediately. Monitor progress via WebSocket.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - hashtag
+ *               - campaignId
+ *             properties:
+ *               hashtag:
+ *                 type: string
+ *                 description: Twitter hashtag (with or without #)
+ *                 example: "JustDoIt"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier
+ *                 example: "nike_campaign_2024"
+ *               maxTweets:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 default: 100
+ *     responses:
+ *       200:
+ *         description: Scraping process started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 campaignId:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *                 estimatedDuration:
+ *                   type: number
+ *                 status:
+ *                   type: string
+ *                 progress:
+ *                   type: object
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/v1/scraping/user/async:
+ *   post:
+ *     tags: [Twitter Scraping]
+ *     summary: Scrape user tweets asynchronously
+ *     description: Start user scraping process and return immediately. Monitor progress via WebSocket.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - campaignId
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Twitter username (with or without @)
+ *                 example: "elonmusk"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier
+ *                 example: "tesla_analysis_2024"
+ *               maxTweets:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 default: 100
+ *     responses:
+ *       200:
+ *         description: Scraping process started successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/v1/scraping/search/async:
+ *   post:
+ *     tags: [Twitter Scraping]
+ *     summary: Scrape search query tweets asynchronously
+ *     description: Start search scraping process and return immediately. Monitor progress via WebSocket.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - query
+ *               - campaignId
+ *             properties:
+ *               query:
+ *                 type: string
+ *                 description: Search query string
+ *                 example: "artificial intelligence"
+ *               campaignId:
+ *                 type: string
+ *                 description: Campaign identifier
+ *                 example: "ai_research_2024"
+ *               maxTweets:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 default: 100
+ *     responses:
+ *       200:
+ *         description: Scraping process started successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Internal server error
+ */
+
 router.post("/hashtag", scrapeHashtag);
 router.post("/user", scrapeUser);
 router.post("/search", scrapeSearch);

@@ -14,7 +14,9 @@ validateEnv();
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import http from "http";
 import morgan from "morgan";
+import { Server as SocketIOServer } from "socket.io";
 import swaggerUi from "swagger-ui-express";
 import { appConfig } from "./lib/config/app";
 import specs from "./lib/swagger";
@@ -293,6 +295,24 @@ app.use("*", notFoundHandler);
 // Global error handler
 app.use(mainErrorHandler);
 
+// WebSocket initialization function
+async function initializeWebSocket(io: SocketIOServer): Promise<void> {
+  try {
+    // Import and initialize WebSocket service
+    const { webSocketService } = await import('./services/websocket.service');
+    webSocketService.initialize(io);
+
+    // Import and initialize progress service with WebSocket
+    const { scrapingProgressService } = await import('./services/scraping-progress.service');
+    scrapingProgressService.initialize(io);
+
+    systemLogger.info('✅ WebSocket services initialized successfully');
+  } catch (error) {
+    systemLogger.error('❌ Failed to initialize WebSocket services:', error);
+    throw error;
+  }
+}
+
 // Start server
 async function startServer() {
   try {
@@ -452,17 +472,35 @@ async function startServer() {
     // Error logging middleware (must be last)
     app.use(errorLoggingMiddleware);
 
-    // Start Express server
-    app.listen(PORT, () => {
+    // Create HTTP server
+    const server = http.createServer(app);
+
+    // Configure Socket.IO
+    const io = new SocketIOServer(server, {
+      cors: {
+        origin: process.env.FRONTEND_URL || "http://localhost:4200",
+        methods: ["GET", "POST"],
+        credentials: true
+      },
+      transports: ['websocket', 'polling']
+    });
+
+    // Initialize WebSocket service
+    await initializeWebSocket(io);
+
+    // Start server
+    server.listen(PORT, () => {
       systemLogger.info("Server started successfully", {
         port: PORT,
         environment: process.env.NODE_ENV || "development",
         apiDocs: `http://localhost:${PORT}/api-docs`,
+        websocket: "enabled"
       });
       systemLogger.info(`🚀 Server running on port ${PORT}`);
       systemLogger.info(
         `📖 API Documentation: http://localhost:${PORT}/api-docs`,
       );
+      systemLogger.info(`🔌 WebSocket server ready for connections`);
     });
   } catch (error) {
     systemLogger.error("❌ Failed to start server:", { error });

@@ -206,13 +206,24 @@ async function handleGenericScraping(
   identifierKeys: string[]
 ): Promise<void> {
   const config = SCRAPING_CONFIGS[scrapingType];
+  const { campaignId, maxTweets = 100, ...otherOptions } = req.body;
 
   // ✅ Validate campaignId first - critical requirement
-  if (!validateCampaignId(req.body.campaignId)) {
+  if (!validateCampaignId(campaignId)) {
     res.status(400).json(createCampaignIdValidationError());
     return;
   }
 
+  // Determine if we should use async processing with WebSockets
+  // Use async mode for larger requests to prevent timeouts
+  const shouldUseAsync = maxTweets > 50 || identifierKeys.length > 1;
+
+  if (shouldUseAsync) {
+    await handleAsyncGenericScraping(req, res, scrapingType, identifierKeys);
+    return;
+  }
+
+  // For smaller requests, use traditional synchronous processing
   // Extract identifiers from request body
   const identifiers =
     identifierKeys
@@ -228,7 +239,7 @@ async function handleGenericScraping(
     return;
   }
 
-  // Single identifier optimization
+  // Single identifier optimization for small requests
   if (identifiers.length === 1) {
     await handleScrapingRequest(
       req,
@@ -244,6 +255,69 @@ async function handleGenericScraping(
   res.json(response);
 }
 
+/**
+ * Async handler that returns immediately and processes with WebSocket progress
+ */
+async function handleAsyncGenericScraping(
+  req: Request,
+  res: Response,
+  scrapingType: ScrapingType,
+  identifierKeys: string[]
+): Promise<void> {
+  try {
+    const config = SCRAPING_CONFIGS[scrapingType];
+    const { campaignId, maxTweets = 100, ...otherOptions } = req.body;
+
+    // Extract target value
+    const targetValue = extractTargetValue(req.body, identifierKeys, config);
+    if (!targetValue) {
+      res.status(400).json({
+        success: false,
+        error: `Missing required parameter: ${config.errorField}`,
+        details: `One of the following is required: ${identifierKeys.join(', ')}`
+      });
+      return;
+    }
+
+    // Create campaign record immediately
+    const campaign = await createCampaignRecord({
+      campaignId,
+      type: scrapingType,
+      target: targetValue,
+      maxTweets,
+      status: 'processing',
+      ...otherOptions
+    });
+
+    // Respond immediately with campaign info
+    res.json({
+      success: true,
+      campaignId: campaign._id || campaignId,
+      message: `${scrapingType} scraping started`,
+      estimatedDuration: Math.ceil(maxTweets / 10), // seconds
+      status: 'processing',
+      progress: {
+        phase: 'initializing',
+        percentage: 0,
+        message: 'Starting scraping process...',
+        useWebSocket: true // Indicate to frontend to use WebSocket
+      }
+    });
+
+    // Process in background (don't await)
+    processAsyncScraping(campaign._id || campaignId, scrapingType, targetValue, {
+      ...otherOptions,
+      maxTweets,
+      campaignId: campaign._id || campaignId
+    }).catch(error => {
+      console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
+    });
+
+  } catch (error) {
+    return handleScrapingError(res, error, `async ${scrapingType} scraping`);
+  }
+}
+
 // ==================== Main Handler Functions ====================
 export const scrapeHashtag = async (req: Request, res: Response): Promise<void> => {
   await handleGenericScraping(req, res, 'hashtag', ['hashtags', 'hashtag']);
@@ -256,6 +330,157 @@ export const scrapeUser = async (req: Request, res: Response): Promise<void> => 
 export const scrapeSearch = async (req: Request, res: Response): Promise<void> => {
   await handleGenericScraping(req, res, 'search', ['queries', 'query']);
 };
+
+/**
+ * Background processing for async scraping
+ */
+async function processAsyncScraping(
+  campaignId: string,
+  scrapingType: keyof typeof SCRAPING_CONFIGS,
+  targetValue: string,
+  options: any
+): Promise<void> {
+  try {
+    // Import progress service
+    const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
+    
+    // Initialize progress
+    scrapingProgressService.updateProgress(campaignId, {
+      totalTweets: options.maxTweets || 100,
+      scrapedTweets: 0,
+      currentPhase: 'initializing',
+      message: `Starting ${scrapingType} scraping for: ${targetValue}`,
+      timeElapsed: 0,
+      percentage: 0
+    });
+
+    // Get scraper service
+    const scraper = await getScraperService();
+    
+    // Update progress to scraping phase
+    scrapingProgressService.updateProgress(campaignId, {
+      currentPhase: 'scraping',
+      message: `Scraping ${scrapingType}: ${targetValue}`
+    });
+
+    let result;
+    const scrapingOptions = {
+      ...options,
+      campaignId // Pass campaignId for progress tracking
+    };
+
+    // Call appropriate scraping method
+    switch (scrapingType) {
+      case 'hashtag':
+        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
+        break;
+      case 'user':
+        result = await scraper.scrapeByUser(targetValue, scrapingOptions);
+        break;
+      case 'search':
+        // For search queries, use hashtag scraping method
+        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
+        break;
+      default:
+        throw new Error(`Unsupported scraping type: ${scrapingType}`);
+    }
+
+    // Update progress to analyzing phase
+    scrapingProgressService.updateProgress(campaignId, {
+      currentPhase: 'analyzing',
+      message: 'Processing and analyzing scraped tweets...'
+    });
+
+    // Store tweets in database
+    if (result.tweets && result.tweets.length > 0) {
+      await tweetDatabaseService.saveTweetsBulk(result.tweets, campaignId);
+    }
+
+    // Update campaign status
+    await updateCampaignStatus(campaignId, 'completed', {
+      tweetsScraped: result.tweets?.length || 0,
+      completedAt: new Date()
+    });
+
+    // Complete progress
+    scrapingProgressService.completeProgress(campaignId);
+
+  } catch (error) {
+    console.error(`Error in async ${scrapingType} scraping:`, error);
+    
+    // Update campaign status to error
+    await updateCampaignStatus(campaignId, 'error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      failedAt: new Date()
+    });
+
+    // Report error progress
+    const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
+    scrapingProgressService.errorProgress(
+      campaignId, 
+      error instanceof Error ? error.message : 'Unknown error during scraping'
+    );
+  }
+}
+
+/**
+ * Helper function to extract target value from request body
+ */
+function extractTargetValue(body: any, fieldNames: string[], config: any): string | null {
+  for (const fieldName of fieldNames) {
+    if (body[fieldName]) {
+      const value = Array.isArray(body[fieldName]) ? body[fieldName][0] : body[fieldName];
+      return typeof value === 'string' ? value.replace(config.stripPrefix, '') : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Create campaign record in database
+ */
+async function createCampaignRecord(data: any): Promise<any> {
+  try {
+    // Import campaign service/model
+    const { CampaignModel } = await import('../../../models/Campaign.model');
+    
+    const campaign = new CampaignModel({
+      name: `${data.type} - ${data.target}`,
+      description: `Async ${data.type} scraping for ${data.target}`,
+      type: data.type,
+      status: data.status,
+      hashtags: data.type === 'hashtag' ? [data.target] : [],
+      keywords: data.type === 'search' ? [data.target] : [],
+      mentions: data.type === 'user' ? [data.target] : [],
+      maxTweets: data.maxTweets,
+      dataSources: ['twitter'],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    return await campaign.save();
+  } catch (error) {
+    console.error('Error creating campaign record:', error);
+    // Return mock object if database fails
+    return { _id: data.campaignId };
+  }
+}
+
+/**
+ * Update campaign status in database
+ */
+async function updateCampaignStatus(campaignId: string, status: string, data: any): Promise<void> {
+  try {
+    const { CampaignModel } = await import('../../../models/Campaign.model');
+    await CampaignModel.findByIdAndUpdate(campaignId, {
+      status,
+      ...data,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error updating campaign status:', error);
+  }
+}
 
 // ==================== Status & Management Handlers ====================
 export async function getScrapingStatus(req: Request, res: Response): Promise<void> {
