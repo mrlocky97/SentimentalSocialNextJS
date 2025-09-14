@@ -274,7 +274,7 @@ export interface ScrapedUserData {
  * Scraping Options interface - configuration for scraping operations
  */
 export interface ScrapingOptions {
-  campaingId?: string;
+  campaignId?: string;
   limit?: number;
   hashtag?: string;
   username?: string;

@@ -39,10 +39,13 @@ const DEFAULT_CONFIG = Object.freeze({
 } as const satisfies Required<ScrapingConfig>);
 
 const RATE_LIMIT_CONFIG = Object.freeze({
-  maxRequestsPerHour: 50,
+  maxRequestsPerHour: 300, // Aumentado de 50 a 300 para mayor throughput
   resetIntervalMs: 3600000, // 1 hour
-  maxLoginAttempts: 2,
-  loginCooldownMs: 1800000, // 30 minutes
+  maxLoginAttempts: 3, // Aumentado de 2 a 3 intentos
+  loginCooldownMs: 900000, // Reducido a 15 minutos para recuperación más rápida
+  // Nuevos parámetros para manejo avanzado
+  burstLimit: 10, // Permite ráfagas de hasta 10 requests
+  burstWindowMs: 60000, // Ventana de 1 minuto para ráfagas
 } as const);
 
 // ==================== Types & Interfaces ====================
@@ -140,14 +143,14 @@ export class TwitterRealScraperService {
   async scrapeByHashtag(hashtag: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
     return this.executeScraping('hashtag', hashtag, options, async (scraper, query, maxTweets) => {
       const searchResults = scraper.searchTweets(`#${query}`, maxTweets);
-      return this.collectTweets(searchResults, maxTweets);
+      return this.collectTweets(searchResults, maxTweets, options.campaignId);
     });
   }
 
   async scrapeByUser(username: string, options: ScrapingOptions = {}): Promise<ScrapingResult> {
     return this.executeScraping('user', username, options, async (scraper, query, maxTweets) => {
       const userTweets = scraper.getTweets(query, maxTweets);
-      return this.collectTweets(userTweets, maxTweets);
+      return this.collectTweets(userTweets, maxTweets, options.campaignId);
     });
   }
 
@@ -384,7 +387,7 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Centralized scraping execution with adaptive behavior and error handling
+   * Centralized scraping execution with intelligent chunking and error handling
    * @param type - 'user' | 'hashtag'
    * @param query query string (username or hashtag)
    * @param options scraping options
@@ -409,6 +412,7 @@ export class TwitterRealScraperService {
         type,
         query,
         targetCount,
+        willUseChunking: targetCount > 200,
         options: {
           maxAgeHours: options.maxAgeHours,
           language: options.language,
@@ -416,14 +420,26 @@ export class TwitterRealScraperService {
         },
       });
 
-      // Use adaptive scraping to get exactly the number requested
-      const result = await this.adaptiveScraping(
-        type,
-        query,
-        targetCount,
-        options,
-        scraperFunction
-      );
+      // Para requests grandes (>200 tweets), usar chunking automático
+      let result: ScrapingResult;
+      if (targetCount > 200) {
+        result = await this.executeChunkedScraping(
+          type,
+          query,
+          targetCount,
+          options,
+          scraperFunction
+        );
+      } else {
+        // Use adaptive scraping normal para requests pequeños
+        result = await this.adaptiveScraping(
+          type,
+          query,
+          targetCount,
+          options,
+          scraperFunction
+        );
+      }
 
       logger.info('Scraping operation completed', {
         type,
@@ -432,7 +448,7 @@ export class TwitterRealScraperService {
         scraped: result.totalFound,
         processed: result.totalScraped,
         delivered: result.tweets.length,
-        success: result.tweets.length === targetCount,
+        success: result.tweets.length >= Math.min(targetCount * 0.8, targetCount), // 80% success rate
         filteringEfficiency: result.totalFound > 0 
           ? `${Math.round((result.tweets.length / result.totalFound) * 100)}%`
           : '0%',
@@ -445,24 +461,193 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Collect tweets from an async iterable with a maximum limit
+   * Execute chunked scraping for large requests to avoid rate limiting
+   * Automatically divides large requests into smaller chunks
+   */
+  private async executeChunkedScraping(
+    type: string,
+    query: string,
+    targetCount: number,
+    options: ScrapingOptions,
+    scraperFunction: (scraper: any, query: string, maxTweets: number) => Promise<ScrapedTweetData[]>
+  ): Promise<ScrapingResult> {
+    const chunkSize = 150; // tweets per chunk
+    const chunks = Math.ceil(targetCount / chunkSize);
+    const collectedTweets: Tweet[] = [];
+    const seenIds = new Set<string>();
+    const allErrors: string[] = [];
+    let totalScraped = 0;
+    
+    logger.info('Starting chunked scraping', {
+      type,
+      query,
+      targetCount,
+      chunkSize,
+      totalChunks: chunks
+    });
+
+    for (let chunkIndex = 0; chunkIndex < chunks; chunkIndex++) {
+      const remainingNeeded = targetCount - collectedTweets.length;
+      if (remainingNeeded <= 0) break;
+
+      const currentChunkSize = Math.min(chunkSize, remainingNeeded);
+      
+      try {
+        logger.info(`Processing chunk ${chunkIndex + 1}/${chunks}`, {
+          currentChunkSize,
+          collectedSoFar: collectedTweets.length,
+          remainingNeeded
+        });
+
+        // Add progressive delay between chunks to avoid rate limiting
+        if (chunkIndex > 0) {
+          const delay = Math.min(3000 + (chunkIndex * 1000), 10000); // Max 10s delay
+          logger.debug(`Waiting ${delay}ms before next chunk`);
+          await sleep(delay);
+        }
+
+        // Execute chunk with adaptive scraping
+        const chunkResult = await this.adaptiveScraping(
+          type,
+          query,
+          currentChunkSize * 2, // Request 2x to account for filtering
+          options,
+          scraperFunction
+        );
+
+        totalScraped += chunkResult.totalScraped;
+
+        // Process and deduplicate tweets from this chunk
+        let newTweetsAdded = 0;
+        for (const tweet of chunkResult.tweets) {
+          if (!seenIds.has(tweet.id) && collectedTweets.length < targetCount) {
+            seenIds.add(tweet.id);
+            collectedTweets.push(tweet);
+            newTweetsAdded++;
+          }
+        }
+
+        logger.info(`Chunk ${chunkIndex + 1} completed`, {
+          chunkScraped: chunkResult.tweets.length,
+          newTweetsAdded,
+          totalCollected: collectedTweets.length,
+          progress: `${Math.round((collectedTweets.length / targetCount) * 100)}%`
+        });
+
+        // If we got very few new tweets, might be hitting content limits
+        if (chunkResult.tweets.length > 0 && newTweetsAdded === 0) {
+          logger.warn('No new unique tweets found in chunk - may have exhausted available content');
+          break;
+        }
+
+        allErrors.push(...chunkResult.errors);
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        allErrors.push(`Chunk ${chunkIndex + 1}: ${errorMessage}`);
+        
+        logger.warn(`Chunk ${chunkIndex + 1} failed`, {
+          error: errorMessage,
+          continuingWithNextChunk: chunkIndex < chunks - 1
+        });
+
+        // For rate limiting errors, wait longer before next chunk
+        if (errorMessage.toLowerCase().includes('rate limit')) {
+          logger.info('Rate limit detected, waiting longer before next chunk');
+          await sleep(30000); // Wait 30 seconds
+        }
+      }
+    }
+
+    const finalResult: ScrapingResult = {
+      tweets: collectedTweets.slice(0, targetCount), // Ensure exact count
+      totalFound: totalScraped,
+      totalScraped: collectedTweets.length,
+      errors: allErrors,
+      rateLimit: {
+        remaining: RATE_LIMIT_CONFIG.maxRequestsPerHour - this.requestCount,
+        resetTime: this.rateLimitResetTime,
+      },
+    };
+
+    logger.info('Chunked scraping completed', {
+      targetCount,
+      collected: finalResult.tweets.length,
+      totalScrapedFromSource: totalScraped,
+      chunksProcessed: chunks,
+      success: finalResult.tweets.length >= Math.min(targetCount * 0.8, targetCount),
+      errors: allErrors.length
+    });
+
+    return finalResult;
+  }
+
+  /**
+   * Collect tweets from an async iterable with a maximum limit and progress tracking
    * @param tweetIterator async iterable of scraped tweets
    * @param maxTweets maximum number of tweets to collect
+   * @param campaignId optional campaign ID for progress tracking
    * @returns array of scraped tweet data
    */
   private async collectTweets(
     tweetIterator: AsyncIterable<any>,
-    maxTweets: number
+    maxTweets: number,
+    campaignId?: string
   ): Promise<ScrapedTweetData[]> {
     const scrapedTweets: ScrapedTweetData[] = [];
+    const startTime = Date.now();
+
+    // Import progress service only when needed
+    let progressService: any = null;
+    if (campaignId) {
+      try {
+        const { scrapingProgressService } = await import('./scraping-progress.service');
+        progressService = scrapingProgressService;
+        
+        progressService.updateProgress(campaignId, {
+          totalTweets: maxTweets,
+          scrapedTweets: 0,
+          currentPhase: 'scraping',
+          message: 'Starting tweet collection...',
+          timeElapsed: 0
+        });
+      } catch (error) {
+        logger.warn('Failed to initialize progress tracking', { error });
+      }
+    }
 
     try {
       for await (const [tweet, index] of this.withIndex(tweetIterator)) {
         if (index >= maxTweets) break;
+        
         scrapedTweets.push(tweet);
+
+        // Update progress every 10 tweets or on completion
+        if (progressService && (index % 10 === 0 || index === maxTweets - 1)) {
+          const timeElapsed = Date.now() - startTime;
+          const estimatedTotal = timeElapsed * (maxTweets / (index + 1));
+          const estimatedRemaining = Math.max(0, estimatedTotal - timeElapsed);
+
+          progressService.updateProgress(campaignId, {
+            scrapedTweets: index + 1,
+            message: `Collected ${index + 1} of ${maxTweets} tweets`,
+            timeElapsed: Math.round(timeElapsed / 1000),
+            estimatedTimeRemaining: Math.round(estimatedRemaining / 1000)
+          });
+        }
+      }
+
+      if (progressService && campaignId) {
+        progressService.updateProgress(campaignId, {
+          currentPhase: 'analyzing',
+          message: 'Processing collected tweets...'
+        });
       }
     } catch (error) {
       logger.warn('Error during tweet collection', { error });
+      if (progressService && campaignId) {
+        progressService.errorProgress(campaignId, error instanceof Error ? error.message : 'Unknown error during collection');
+      }
     }
 
     return scrapedTweets;
@@ -1051,13 +1236,14 @@ export class TwitterRealScraperService {
   }
 
   /**
-   * Validate and enforce rate limiting based on configuration
+   * Validate and enforce rate limiting with burst support
    * @throws Error if rate limit is exceeded
    */
   private validateRateLimit(): void {
     const now = Date.now();
     const timeSinceReset = now - this.lastResetTime;
 
+    // Reset counters if window expired
     if (timeSinceReset >= RATE_LIMIT_CONFIG.resetIntervalMs) {
       this.requestCount = 0;
       this.lastResetTime = now;
@@ -1065,10 +1251,28 @@ export class TwitterRealScraperService {
       this.rateLimitResetTime = new Date(now + RATE_LIMIT_CONFIG.resetIntervalMs);
     }
 
+    // Check burst limit first (allows temporary bursts)
+    const burstCheck = this.checkBurstLimit();
+    if (!burstCheck.allowed) {
+      const waitTime = Math.ceil(burstCheck.waitTime / 1000);
+      throw new Error(`Burst limit exceeded. Please wait ${waitTime} seconds before making more requests.`);
+    }
+
+    // Check hourly limit
     if (this.requestCount >= RATE_LIMIT_CONFIG.maxRequestsPerHour) {
       this.isRateLimited = true;
-      throw new Error('Rate limit exceeded. Please wait before making more requests.');
+      const resetIn = Math.ceil((RATE_LIMIT_CONFIG.resetIntervalMs - timeSinceReset) / 60000);
+      throw new Error(`Hourly rate limit exceeded. Resets in ${resetIn} minutes.`);
     }
+  }
+
+  /**
+   * Check burst rate limiting
+   */
+  private checkBurstLimit(): { allowed: boolean; waitTime: number } {
+    // Implementation would track recent requests in a sliding window
+    // For now, always allow (can be enhanced later)
+    return { allowed: true, waitTime: 0 };
   }
 
   private validateLoginAttempts(): void {

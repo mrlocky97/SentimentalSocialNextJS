@@ -27,13 +27,14 @@ const truncate = (str: string, max: number) =>
 
 export const SCRAPING_CONFIG = {
   CONCURRENCY: {
-    MAX_CONCURRENT_BY_IP: 1,
-    INFLIGHT_TTL_MS: 2 * 60 * 1000, // 2 minutes
+    MAX_CONCURRENT_BY_IP: 5, // Aumentado de 1 a 5 para mejor throughput
+    INFLIGHT_TTL_MS: 5 * 60 * 1000, // Aumentado a 5 minutos para requests largos
   },
   LIMITS: {
     MIN_TWEETS: 1, // Mínimo tweets por request
     MAX_TWEETS: 1000, // Máximo tweets por request
     DEFAULT_TWEETS: 50, // Default si no se especifica
+    CHUNK_SIZE: 100, // Nuevo: tamaño de chunk para requests grandes
   },
   SANITIZATION: {
     HASHTAG_MAX,

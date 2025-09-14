@@ -130,9 +130,10 @@ class ConcurrencyManager {
     if (concurrent >= MAX_CONCURRENT_BY_IP) {
       res.status(429).json({
         success: false,
-        error: 'Too many concurrent scraping requests from this IP. Please wait.',
+        error: `Too many concurrent scraping requests from this IP (${concurrent}/${MAX_CONCURRENT_BY_IP}). Please wait for current requests to complete.`,
         code: 'CONCURRENCY_LIMIT',
-      } satisfies ErrorResponse);
+        suggestion: 'Wait for current requests to complete or reduce the number of simultaneous requests.'
+      } as any);
       return false;
     }
     return true;
@@ -611,6 +612,52 @@ export async function handleScrapingRequest<B extends ScrapingRequestBody = Scra
 
     return returnResultInsteadOfSending ? response : void res.json(response);
   } catch (err) {
+    // Enhanced error handling for rate limiting and other common issues
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const body = req.body as B;
+    const maxTweetsRequested = body.maxTweets || body.limit || defaultTweets;
+    
+    // Check for rate limiting errors
+    if (errorMessage.toLowerCase().includes('rate limit') || 
+        errorMessage.toLowerCase().includes('too many requests')) {
+      
+      const rateLimitResponse = {
+        success: false,
+        error: 'Rate limit exceeded. The system is processing too many requests.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        suggestion: maxTweetsRequested && maxTweetsRequested > 100 
+          ? 'For large requests (>100 tweets), try reducing the number or waiting a few minutes before retrying.'
+          : 'Please wait a moment before making another request.',
+        retryAfter: 60, // seconds
+        maxTweetsRecommended: 100
+      } as any;
+
+      if (!returnResultInsteadOfSending) {
+        res.status(429).json(rateLimitResponse);
+        return;
+      }
+      return buildErrorResponse(err, context);
+    }
+
+    // Check for authentication errors
+    if (errorMessage.toLowerCase().includes('authentication') || 
+        errorMessage.toLowerCase().includes('not logged-in')) {
+      
+      const authResponse = {
+        success: false,
+        error: 'Twitter authentication failed. Please try again in a few minutes.',
+        code: 'AUTHENTICATION_FAILED',
+        suggestion: 'The system will automatically retry authentication. Large requests may take longer.'
+      } as any;
+
+      if (!returnResultInsteadOfSending) {
+        res.status(503).json(authResponse);
+        return;
+      }
+      return buildErrorResponse(err, context);
+    }
+
+    // General error handling
     if (!returnResultInsteadOfSending) {
       handleScrapingError(res, err, `${context.type} scraping`);
       return;
