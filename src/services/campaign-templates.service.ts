@@ -4,7 +4,6 @@
  */
 
 import { CampaignCategory } from "../enums/campaign.enum";
-import { CampaignTemplateModel } from "../models/CampaignTemplate.model";
 import { CampaignTemplate, CampaignType, DataSource } from "../types/campaign";
 
 export class CampaignTemplatesService {
@@ -119,132 +118,22 @@ export class CampaignTemplatesService {
   ];
 
   /**
-   * Ensure DB has default templates seeded. Safe to call on startup.
-   */
-  static async ensureSeeded() {
-    try {
-      const count = await CampaignTemplateModel.estimatedDocumentCount();
-      if (count === 0) {
-        const docs = this.defaultTemplates.map((t) => ({
-          templateId: t.id,
-          name: t.name,
-          description: t.description,
-          type: t.type as string,
-          category: t.category as string,
-          defaultDuration: t.defaultDuration,
-          defaultMaxTweets: t.defaultMaxTweets,
-          defaultDataSources: t.defaultDataSources,
-          defaultAnalysis: t.defaultAnalysis,
-          suggestedHashtags: t.suggestedHashtags,
-          suggestedKeywords: t.suggestedKeywords,
-          suggestedLanguages: t.suggestedLanguages,
-          createdAt: t.createdAt,
-          isActive: t.isActive,
-        }));
-
-        await CampaignTemplateModel.insertMany(docs);
-      }
-    } catch (err) {
-      // Non-fatal: log and continue; fallback to in-memory defaults exists
-      console.error("Failed seeding campaign templates:", err);
-    }
-  }
-
-  /**
-   * Get all available campaign templates (from DB). Falls back to defaults if DB unavailable.
+   * Get all available campaign templates (from in-memory defaults only)
    */
   static async getTemplates(): Promise<CampaignTemplate[]> {
-    try {
-      await this.ensureSeeded();
-      const docs = await CampaignTemplateModel.find({}).lean();
-       
-      return docs.map((d: unknown) => {
-        const doc = d as any;
-        return {
-          id: doc.templateId,
-          name: doc.name,
-          description: doc.description || "",
-          type: doc.type as CampaignType,
-          category: doc.category as CampaignCategory,
-          defaultDuration: doc.defaultDuration,
-          defaultMaxTweets: doc.defaultMaxTweets,
-          defaultDataSources: doc.defaultDataSources as DataSource[],
-          defaultAnalysis: doc.defaultAnalysis,
-          suggestedHashtags: doc.suggestedHashtags,
-          suggestedKeywords: doc.suggestedKeywords,
-          suggestedLanguages: doc.suggestedLanguages,
-          createdAt: doc.createdAt,
-          isActive: doc.isActive,
-        };
-      });
-    } catch (err) {
-      console.error("Error reading templates from DB, using defaults:", err);
-      return this.defaultTemplates;
-    }
+    return this.defaultTemplates;
   }
 
   static async getTemplate(id: string): Promise<CampaignTemplate | null> {
-    try {
-      const d = await CampaignTemplateModel.findOne({ templateId: id }).lean();
-      if (!d) return null;
-      const doc = d as any;
-      return {
-        id: doc.templateId,
-        name: doc.name,
-        description: doc.description || "",
-        type: doc.type as CampaignType,
-        category: doc.category as CampaignCategory,
-        defaultDuration: doc.defaultDuration,
-        defaultMaxTweets: doc.defaultMaxTweets,
-        defaultDataSources: doc.defaultDataSources as DataSource[],
-        defaultAnalysis: doc.defaultAnalysis,
-        suggestedHashtags: doc.suggestedHashtags,
-        suggestedKeywords: doc.suggestedKeywords,
-        suggestedLanguages: doc.suggestedLanguages,
-        createdAt: doc.createdAt,
-        isActive: doc.isActive,
-      };
-    } catch (err) {
-      console.error("Error fetching template from DB, falling back:", err);
-      return this.defaultTemplates.find((t) => t.id === id) || null;
-    }
+    return this.defaultTemplates.find((t) => t.id === id) || null;
   }
 
   static async getTemplatesByCategory(
     category: string,
   ): Promise<CampaignTemplate[]> {
-    try {
-      await this.ensureSeeded();
-      const docs = await CampaignTemplateModel.find({ category }).lean();
-       
-      return docs.map((d: unknown) => {
-        const doc = d as any;
-        return {
-          id: doc.templateId,
-          name: doc.name,
-          description: doc.description || "",
-          type: doc.type as CampaignType,
-          category: doc.category as CampaignCategory,
-          defaultDuration: doc.defaultDuration,
-          defaultMaxTweets: doc.defaultMaxTweets,
-          defaultDataSources: doc.defaultDataSources as DataSource[],
-          defaultAnalysis: doc.defaultAnalysis,
-          suggestedHashtags: doc.suggestedHashtags,
-          suggestedKeywords: doc.suggestedKeywords,
-          suggestedLanguages: doc.suggestedLanguages,
-          createdAt: doc.createdAt,
-          isActive: doc.isActive,
-        };
-      });
-    } catch (err) {
-      console.error(
-        "Error fetching templates by category, using defaults:",
-        err,
-      );
-      return this.defaultTemplates.filter(
-        (t) => t.category === (category as any),
-      );
-    }
+    return this.defaultTemplates.filter(
+      (t) => t.category === (category as any),
+    );
   }
 
   /**
