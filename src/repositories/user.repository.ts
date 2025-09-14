@@ -3,13 +3,13 @@
  * Following Interface Segregation Principle
  */
 
-import { BaseRepository, QueryOptions } from "./base.repository";
 import {
-  User,
-  UserAuth,
   CreateUserRequest,
   UpdateUserRequest,
+  User,
+  UserAuth,
 } from "../types/user";
+import { BaseRepository, QueryOptions } from "./base.repository";
 
 export interface UserRepository
   extends BaseRepository<User, CreateUserRequest, UpdateUserRequest> {

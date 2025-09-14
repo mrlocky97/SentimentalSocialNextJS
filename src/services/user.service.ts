@@ -3,8 +3,8 @@
  * Business logic for user operations following Single Responsibility Principle
  */
 
-import { UserRepository } from "../repositories/user.repository";
 import { MongoCampaignRepository } from "../repositories/mongo-campaign.repository";
+import { UserRepository } from "../repositories/user.repository";
 import { PaginatedResponse, PaginationParams } from "../types/api";
 import {
   CreateUserRequest,
