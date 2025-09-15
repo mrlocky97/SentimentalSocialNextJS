@@ -113,6 +113,19 @@ const validateCampaignId = (campaignId: any): boolean => {
   return typeof campaignId === 'string' && campaignId.trim().length > 0;
 };
 
+const validateUserId = (userId: any): boolean => {
+  return typeof userId === 'string' && userId.trim().length > 0;
+};
+
+const createUserIdValidationError = () => ({
+  success: false,
+  error: 'userId is required and must be a non-empty string',
+  example: {
+    userId: 'user-12345',
+    description: 'User ID is required to track who initiated the scraping',
+  },
+});
+
 // ==================== Core Processing Logic ====================
 async function processSingleIdentifier(
   req: Request,
@@ -192,7 +205,7 @@ async function processBatchScraping(
       identifiers: identifiers.map((id) => formatIdentifier(id, config.stripPrefix)),
       items: results,
       totalTweets,
-      campaignId: req.body.campaignId, // ✅ Now guaranteed to exist
+      campaignId: req.body.campaignId,
     },
     message: `Scraped ${totalTweets} tweets from ${identifiers.length} ${scrapingType}${identifiers.length > 1 ? 's' : ''}`,
   };
@@ -206,11 +219,15 @@ async function handleGenericScraping(
   identifierKeys: string[]
 ): Promise<void> {
   const config = SCRAPING_CONFIGS[scrapingType];
-  const { campaignId, maxTweets = 100, ...otherOptions } = req.body;
+  const { campaignId, maxTweets = 100, userId, ...otherOptions } = req.body;
 
-  // ✅ Validate campaignId first - critical requirement
   if (!validateCampaignId(campaignId)) {
     res.status(400).json(createCampaignIdValidationError());
+    return;
+  }
+
+  if (!validateUserId(userId)) {
+    res.status(400).json(createUserIdValidationError());
     return;
   }
 
@@ -266,7 +283,19 @@ async function handleAsyncGenericScraping(
 ): Promise<void> {
   try {
     const config = SCRAPING_CONFIGS[scrapingType];
-    const { campaignId, maxTweets = 100, ...otherOptions } = req.body;
+    const {
+      campaignId,
+      maxTweets = 100,
+      userId,
+      organizationId,
+      language,
+      ...requestOptions
+    } = req.body;
+
+    if (!validateUserId(userId)) {
+      res.status(400).json(createUserIdValidationError());
+      return;
+    }
 
     // Extract target value
     const targetValue = extractTargetValue(req.body, identifierKeys, config);
@@ -274,7 +303,7 @@ async function handleAsyncGenericScraping(
       res.status(400).json({
         success: false,
         error: `Missing required parameter: ${config.errorField}`,
-        details: `One of the following is required: ${identifierKeys.join(', ')}`
+        details: `One of the following is required: ${identifierKeys.join(', ')}`,
       });
       return;
     }
@@ -285,8 +314,11 @@ async function handleAsyncGenericScraping(
       type: scrapingType,
       target: targetValue,
       maxTweets,
-      status: 'processing',
-      ...otherOptions
+      status: 'active', // Use valid status
+      userId: userId, // Required field, no fallback
+      organizationId: organizationId || 'default-org',
+      language: language || 'en',
+      ...requestOptions,
     });
 
     // Respond immediately with campaign info
@@ -300,19 +332,20 @@ async function handleAsyncGenericScraping(
         phase: 'initializing',
         percentage: 0,
         message: 'Starting scraping process...',
-        useWebSocket: true // Indicate to frontend to use WebSocket
-      }
+        useWebSocket: true, // Indicate to frontend to use WebSocket
+      },
     });
 
     // Process in background (don't await)
     processAsyncScraping(campaign._id || campaignId, scrapingType, targetValue, {
-      ...otherOptions,
+      ...requestOptions,
       maxTweets,
-      campaignId: campaign._id || campaignId
-    }).catch(error => {
+      campaignId: campaign._id || campaignId,
+      userId: userId, // Required field, no fallback
+      organizationId: organizationId || 'default-org',
+    }).catch((error) => {
       console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
     });
-
   } catch (error) {
     return handleScrapingError(res, error, `async ${scrapingType} scraping`);
   }
@@ -343,7 +376,7 @@ async function processAsyncScraping(
   try {
     // Import progress service
     const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
-    
+
     // Initialize progress
     scrapingProgressService.updateProgress(campaignId, {
       totalTweets: options.maxTweets || 100,
@@ -351,22 +384,22 @@ async function processAsyncScraping(
       currentPhase: 'initializing',
       message: `Starting ${scrapingType} scraping for: ${targetValue}`,
       timeElapsed: 0,
-      percentage: 0
+      percentage: 0,
     });
 
     // Get scraper service
     const scraper = await getScraperService();
-    
+
     // Update progress to scraping phase
     scrapingProgressService.updateProgress(campaignId, {
       currentPhase: 'scraping',
-      message: `Scraping ${scrapingType}: ${targetValue}`
+      message: `Scraping ${scrapingType}: ${targetValue}`,
     });
 
     let result;
     const scrapingOptions = {
       ...options,
-      campaignId // Pass campaignId for progress tracking
+      campaignId, // Pass campaignId for progress tracking
     };
 
     // Call appropriate scraping method
@@ -388,7 +421,7 @@ async function processAsyncScraping(
     // Update progress to analyzing phase
     scrapingProgressService.updateProgress(campaignId, {
       currentPhase: 'analyzing',
-      message: 'Processing and analyzing scraped tweets...'
+      message: 'Processing and analyzing scraped tweets...',
     });
 
     // Store tweets in database
@@ -399,25 +432,24 @@ async function processAsyncScraping(
     // Update campaign status
     await updateCampaignStatus(campaignId, 'completed', {
       tweetsScraped: result.tweets?.length || 0,
-      completedAt: new Date()
+      completedAt: new Date(),
     });
 
     // Complete progress
     scrapingProgressService.completeProgress(campaignId);
-
   } catch (error) {
     console.error(`Error in async ${scrapingType} scraping:`, error);
-    
+
     // Update campaign status to error
     await updateCampaignStatus(campaignId, 'error', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      failedAt: new Date()
+      failedAt: new Date(),
     });
 
     // Report error progress
     const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
     scrapingProgressService.errorProgress(
-      campaignId, 
+      campaignId,
       error instanceof Error ? error.message : 'Unknown error during scraping'
     );
   }
@@ -443,19 +475,55 @@ async function createCampaignRecord(data: any): Promise<any> {
   try {
     // Import campaign service/model
     const { CampaignModel } = await import('../../../models/Campaign.model');
-    
+    const { CampaignStatus, CampaignType, DataSource } = await import(
+      '../../../enums/campaign.enum'
+    );
+
+    // Generate default dates for the campaign
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(startDate.getDate() + 30); // 30 days duration by default
+
+    // Map scraping type to campaign type
+    const typeMapping = {
+      hashtag: CampaignType.hashtag,
+      user: CampaignType.mention,
+      search: CampaignType.keyword,
+    };
+
     const campaign = new CampaignModel({
       name: `${data.type} - ${data.target}`,
       description: `Async ${data.type} scraping for ${data.target}`,
-      type: data.type,
-      status: data.status,
+      type: typeMapping[data.type as keyof typeof typeMapping] || CampaignType.hashtag,
+      status: CampaignStatus.active, // Use valid enum value instead of 'processing'
       hashtags: data.type === 'hashtag' ? [data.target] : [],
       keywords: data.type === 'search' ? [data.target] : [],
       mentions: data.type === 'user' ? [data.target] : [],
-      maxTweets: data.maxTweets,
-      dataSources: ['twitter'],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      maxTweets: data.maxTweets || 100,
+      dataSources: [DataSource.twitter],
+
+      // Required fields - no fallbacks for mandatory data
+      startDate,
+      endDate,
+      organizationId: data.organizationId || 'default-org', // Should come from auth context
+      createdBy: data.userId, // Required field, no fallback
+      userId: data.userId, // Required field, no fallback
+      assignedTo: [],
+
+      // Collection settings with defaults
+      collectImages: true,
+      collectVideos: true,
+      collectReplies: false,
+      collectRetweets: true,
+
+      // Language settings
+      languages: data.language ? [data.language] : ['en'],
+
+      // Analysis settings
+      sentimentAnalysis: true,
+      emotionAnalysis: false,
+      topicsAnalysis: false,
+      influencerAnalysis: false,
     });
 
     return await campaign.save();
@@ -472,10 +540,23 @@ async function createCampaignRecord(data: any): Promise<any> {
 async function updateCampaignStatus(campaignId: string, status: string, data: any): Promise<void> {
   try {
     const { CampaignModel } = await import('../../../models/Campaign.model');
+    const { CampaignStatus } = await import('../../../enums/campaign.enum');
+
+    // Map status to valid enum value
+    const statusMapping = {
+      completed: CampaignStatus.completed,
+      error: CampaignStatus.archived, // Use archived for error state
+      processing: CampaignStatus.active,
+      active: CampaignStatus.active,
+    };
+
+    const validStatus =
+      statusMapping[status as keyof typeof statusMapping] || CampaignStatus.active;
+
     await CampaignModel.findByIdAndUpdate(campaignId, {
-      status,
+      status: validStatus,
       ...data,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
   } catch (error) {
     console.error('Error updating campaign status:', error);

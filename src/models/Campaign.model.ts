@@ -27,7 +27,6 @@ export interface ICampaignDocument extends Document {
   // Time Configuration
   startDate: Date;
   endDate: Date;
-  timezone: string;
 
   // Collection Settings
   maxTweets: number;
@@ -35,17 +34,6 @@ export interface ICampaignDocument extends Document {
   collectVideos: boolean;
   collectReplies: boolean;
   collectRetweets: boolean;
-
-  // Geographic Filters
-  geoLocation?: {
-    country?: string;
-    city?: string;
-    radius?: number;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
-  };
 
   // Language Filters
   languages: string[];
@@ -59,6 +47,7 @@ export interface ICampaignDocument extends Document {
   // Organization & Permissions
   organizationId: string;
   createdBy: string;
+  userId: string;  // User ID who initiated the campaign/scraping
   assignedTo: string[];
 
   // Metadata
@@ -81,19 +70,6 @@ export interface ICampaignDocument extends Document {
   getDurationInDays(): number;
   isActive(): boolean;
 }
-
-const geoLocationSchema = new Schema(
-  {
-    country: { type: String, maxlength: 2 },
-    city: { type: String, maxlength: 100 },
-    radius: { type: Number, min: 1, max: 1000 },
-    coordinates: {
-      lat: { type: Number, min: -90, max: 90 },
-      lng: { type: Number, min: -180, max: 180 },
-    },
-  },
-  { _id: false },
-);
 
 const statsSchema = new Schema(
   {
@@ -208,12 +184,6 @@ const campaignSchema = new Schema<ICampaignDocument>(
       index: true,
     },
 
-    timezone: {
-      type: String,
-      required: [true, "Timezone is required"],
-      default: "UTC",
-    },
-
     maxTweets: {
       type: Number,
       required: [true, "Max tweets limit is required"],
@@ -226,8 +196,6 @@ const campaignSchema = new Schema<ICampaignDocument>(
     collectVideos: { type: Boolean, default: true },
     collectReplies: { type: Boolean, default: false },
     collectRetweets: { type: Boolean, default: true },
-
-    geoLocation: geoLocationSchema,
 
     languages: [
       {
@@ -255,6 +223,12 @@ const campaignSchema = new Schema<ICampaignDocument>(
     createdBy: {
       type: String,
       required: [true, "Creator user ID is required"],
+      index: true,
+    },
+
+    userId: {
+      type: String,
+      required: [true, "User ID is required"],
       index: true,
     },
 
