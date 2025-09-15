@@ -47,7 +47,7 @@ export interface ICampaignDocument extends Document {
   // Organization & Permissions
   organizationId: string;
   createdBy: string;
-  userId: string;  // User ID who initiated the campaign/scraping
+  userId?: string;  // Optional User ID who initiated the campaign/scraping
   assignedTo: string[];
 
   // Metadata
@@ -228,7 +228,8 @@ const campaignSchema = new Schema<ICampaignDocument>(
 
     userId: {
       type: String,
-      required: [true, "User ID is required"],
+      required: false, // Optional field
+      default: 'system-user', // Default value when not provided
       index: true,
     },
 

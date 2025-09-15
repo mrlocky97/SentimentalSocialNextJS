@@ -113,19 +113,6 @@ const validateCampaignId = (campaignId: any): boolean => {
   return typeof campaignId === 'string' && campaignId.trim().length > 0;
 };
 
-const validateUserId = (userId: any): boolean => {
-  return typeof userId === 'string' && userId.trim().length > 0;
-};
-
-const createUserIdValidationError = () => ({
-  success: false,
-  error: 'userId is required and must be a non-empty string',
-  example: {
-    userId: 'user-12345',
-    description: 'User ID is required to track who initiated the scraping',
-  },
-});
-
 // ==================== Core Processing Logic ====================
 async function processSingleIdentifier(
   req: Request,
@@ -219,15 +206,10 @@ async function handleGenericScraping(
   identifierKeys: string[]
 ): Promise<void> {
   const config = SCRAPING_CONFIGS[scrapingType];
-  const { campaignId, maxTweets = 100, userId, ...otherOptions } = req.body;
+  const { campaignId, maxTweets = 100 } = req.body;
 
   if (!validateCampaignId(campaignId)) {
     res.status(400).json(createCampaignIdValidationError());
-    return;
-  }
-
-  if (!validateUserId(userId)) {
-    res.status(400).json(createUserIdValidationError());
     return;
   }
 
@@ -292,11 +274,6 @@ async function handleAsyncGenericScraping(
       ...requestOptions
     } = req.body;
 
-    if (!validateUserId(userId)) {
-      res.status(400).json(createUserIdValidationError());
-      return;
-    }
-
     // Extract target value
     const targetValue = extractTargetValue(req.body, identifierKeys, config);
     if (!targetValue) {
@@ -315,7 +292,7 @@ async function handleAsyncGenericScraping(
       target: targetValue,
       maxTweets,
       status: 'active', // Use valid status
-      userId: userId, // Required field, no fallback
+      userId: userId || 'system-user', // Fallback if no userId provided
       organizationId: organizationId || 'default-org',
       language: language || 'en',
       ...requestOptions,
@@ -341,7 +318,7 @@ async function handleAsyncGenericScraping(
       ...requestOptions,
       maxTweets,
       campaignId: campaign._id || campaignId,
-      userId: userId, // Required field, no fallback
+      userId: userId || 'system-user', // Fallback if no userId provided
       organizationId: organizationId || 'default-org',
     }).catch((error) => {
       console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
@@ -502,12 +479,12 @@ async function createCampaignRecord(data: any): Promise<any> {
       maxTweets: data.maxTweets || 100,
       dataSources: [DataSource.twitter],
 
-      // Required fields - no fallbacks for mandatory data
+      // Required fields with fallbacks for optional userId
       startDate,
       endDate,
       organizationId: data.organizationId || 'default-org', // Should come from auth context
-      createdBy: data.userId, // Required field, no fallback
-      userId: data.userId, // Required field, no fallback
+      createdBy: data.userId || 'system-user', // Fallback if no userId provided
+      userId: data.userId || 'system-user', // Fallback if no userId provided
       assignedTo: [],
 
       // Collection settings with defaults
