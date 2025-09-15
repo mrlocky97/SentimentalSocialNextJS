@@ -109,9 +109,36 @@ const createCampaignIdValidationError = () => ({
   },
 });
 
+const createCampaignNotFoundError = (campaignId: string) => ({
+  success: false,
+  error: 'Campaign not found',
+  details: `Campaign with ID '${campaignId}' does not exist. Please create the campaign first.`,
+  suggestion: 'Create the campaign using POST /api/v1/campaigns before starting scraping',
+});
+
 const validateCampaignId = (campaignId: any): boolean => {
   return typeof campaignId === 'string' && campaignId.trim().length > 0;
 };
+
+/**
+ * Verify that a campaign exists before processing scraping
+ */
+async function validateCampaignExists(campaignId: string): Promise<{ exists: boolean; campaign?: any }> {
+  try {
+    const { CampaignModel } = await import('../../../models/Campaign.model');
+    
+    // Try to find campaign by ID
+    const campaign = await CampaignModel.findById(campaignId);
+
+    return {
+      exists: !!campaign,
+      campaign: campaign || null
+    };
+  } catch (error) {
+    console.error('Error validating campaign existence:', error);
+    return { exists: false };
+  }
+}
 
 // ==================== Core Processing Logic ====================
 async function processSingleIdentifier(
@@ -213,6 +240,13 @@ async function handleGenericScraping(
     return;
   }
 
+  // ✅ Verify that campaign exists before processing
+  const campaignValidation = await validateCampaignExists(campaignId);
+  if (!campaignValidation.exists) {
+    res.status(404).json(createCampaignNotFoundError(campaignId));
+    return;
+  }
+
   // Determine if we should use async processing with WebSockets
   // Use async mode for larger requests to prevent timeouts
   const shouldUseAsync = maxTweets > 50 || identifierKeys.length > 1;
@@ -270,9 +304,15 @@ async function handleAsyncGenericScraping(
       maxTweets = 100,
       userId,
       organizationId,
-      language,
       ...requestOptions
     } = req.body;
+
+    // ✅ Verify that campaign exists before processing
+    const campaignValidation = await validateCampaignExists(campaignId);
+    if (!campaignValidation.exists) {
+      res.status(404).json(createCampaignNotFoundError(campaignId));
+      return;
+    }
 
     // Extract target value
     const targetValue = extractTargetValue(req.body, identifierKeys, config);
@@ -285,23 +325,16 @@ async function handleAsyncGenericScraping(
       return;
     }
 
-    // Create campaign record immediately
-    const campaign = await createCampaignRecord({
-      campaignId,
-      type: scrapingType,
-      target: targetValue,
+    // ✅ Update existing campaign status to active (no new campaign creation)
+    await updateCampaignStatus(campaignId, 'active', {
       maxTweets,
-      status: 'active', // Use valid status
-      userId: userId || 'system-user', // Fallback if no userId provided
-      organizationId: organizationId || 'default-org',
-      language: language || 'en',
-      ...requestOptions,
+      startedAt: new Date(),
     });
 
     // Respond immediately with campaign info
     res.json({
       success: true,
-      campaignId: campaign._id || campaignId,
+      campaignId: campaignId, // ✅ Use original campaignId from request
       message: `${scrapingType} scraping started`,
       estimatedDuration: Math.ceil(maxTweets / 10), // seconds
       status: 'processing',
@@ -314,11 +347,11 @@ async function handleAsyncGenericScraping(
     });
 
     // Process in background (don't await)
-    processAsyncScraping(campaign._id || campaignId, scrapingType, targetValue, {
+    processAsyncScraping(campaignId, scrapingType, targetValue, {
       ...requestOptions,
       maxTweets,
-      campaignId: campaign._id || campaignId,
-      userId: userId || 'system-user', // Fallback if no userId provided
+      campaignId: campaignId, // ✅ Use original campaignId
+      userId: userId || 'system-user',
       organizationId: organizationId || 'default-org',
     }).catch((error) => {
       console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
@@ -443,72 +476,6 @@ function extractTargetValue(body: any, fieldNames: string[], config: any): strin
     }
   }
   return null;
-}
-
-/**
- * Create campaign record in database
- */
-async function createCampaignRecord(data: any): Promise<any> {
-  try {
-    // Import campaign service/model
-    const { CampaignModel } = await import('../../../models/Campaign.model');
-    const { CampaignStatus, CampaignType, DataSource } = await import(
-      '../../../enums/campaign.enum'
-    );
-
-    // Generate default dates for the campaign
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(startDate.getDate() + 30); // 30 days duration by default
-
-    // Map scraping type to campaign type
-    const typeMapping = {
-      hashtag: CampaignType.hashtag,
-      user: CampaignType.mention,
-      search: CampaignType.keyword,
-    };
-
-    const campaign = new CampaignModel({
-      name: `${data.type} - ${data.target}`,
-      description: `Async ${data.type} scraping for ${data.target}`,
-      type: typeMapping[data.type as keyof typeof typeMapping] || CampaignType.hashtag,
-      status: CampaignStatus.active, // Use valid enum value instead of 'processing'
-      hashtags: data.type === 'hashtag' ? [data.target] : [],
-      keywords: data.type === 'search' ? [data.target] : [],
-      mentions: data.type === 'user' ? [data.target] : [],
-      maxTweets: data.maxTweets || 100,
-      dataSources: [DataSource.twitter],
-
-      // Required fields with fallbacks for optional userId
-      startDate,
-      endDate,
-      organizationId: data.organizationId || 'default-org', // Should come from auth context
-      createdBy: data.userId || 'system-user', // Fallback if no userId provided
-      userId: data.userId || 'system-user', // Fallback if no userId provided
-      assignedTo: [],
-
-      // Collection settings with defaults
-      collectImages: true,
-      collectVideos: true,
-      collectReplies: false,
-      collectRetweets: true,
-
-      // Language settings
-      languages: data.language ? [data.language] : ['en'],
-
-      // Analysis settings
-      sentimentAnalysis: true,
-      emotionAnalysis: false,
-      topicsAnalysis: false,
-      influencerAnalysis: false,
-    });
-
-    return await campaign.save();
-  } catch (error) {
-    console.error('Error creating campaign record:', error);
-    // Return mock object if database fails
-    return { _id: data.campaignId };
-  }
 }
 
 /**
