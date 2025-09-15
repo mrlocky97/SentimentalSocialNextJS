@@ -4,8 +4,9 @@
  */
 
 import dotenv from "dotenv";
-// Load environment variables first - prioritize .env over .env.local
-dotenv.config({ path: [".env.local", ".env"] });
+// Load environment variables first - prioritize .env.local over .env
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
 
 // Validate required environment variables
 import { validateEnv } from "./lib/config/validate-env";
@@ -18,8 +19,19 @@ import http from "http";
 import morgan from "morgan";
 import { Server as SocketIOServer } from "socket.io";
 import swaggerUi from "swagger-ui-express";
+
+// Global types for WebSocket rate limiting
+declare global {
+  var wsHandshakeTracker: Map<string, { count: number; resetTime: number }> | undefined;
+}
+
+// JWT type imports
+import * as jwt from "jsonwebtoken";
+
+// Import Socket.IO type extensions
 import { appConfig } from "./lib/config/app";
 import specs from "./lib/swagger";
+import './types/socket';
 
 // Import performance middleware
 import {
@@ -85,7 +97,11 @@ const modelPath = path.join(
 const app = express();
 const PORT = appConfig.app.port || 3001;
 
-// Initialize MongoDB connection before mounting routes
+// Global server instances for graceful shutdown
+let httpServer: http.Server | null = null;
+let socketIOServer: SocketIOServer | null = null;
+
+// Database initialization function (called once in initializeApplication)
 async function initializeDatabase() {
   try {
     await DatabaseConnection.connect();
@@ -96,20 +112,39 @@ async function initializeDatabase() {
   }
 }
 
-// Graceful shutdown handlers
-process.on("SIGINT", async () => {
-  systemLogger.info("\n🔄 Received SIGINT, shutting down gracefully...");
+// Graceful shutdown function
+async function gracefulShutdown(signal: string) {
+  systemLogger.info(`\n🔄 Received ${signal}, shutting down gracefully...`);
+  
+  // Close WebSocket server first
+  if (socketIOServer) {
+    systemLogger.info("🔌 Closing WebSocket server...");
+    socketIOServer.close();
+    systemLogger.info("✅ WebSocket server closed");
+  }
+  
+  // Close HTTP server
+  if (httpServer) {
+    systemLogger.info("🌐 Closing HTTP server...");
+    await new Promise<void>((resolve) => {
+      httpServer!.close(() => {
+        systemLogger.info("✅ HTTP server closed");
+        resolve();
+      });
+    });
+  }
+  
+  // Close database connection
   await DatabaseConnection.disconnect();
   systemLogger.info("✅ MongoDB connection closed");
+  
+  systemLogger.info("✅ Graceful shutdown completed");
   process.exit(0);
-});
+}
 
-process.on("SIGTERM", async () => {
-  systemLogger.info("\n🔄 Received SIGTERM, shutting down gracefully...");
-  await DatabaseConnection.disconnect();
-  systemLogger.info("✅ MongoDB connection closed");
-  process.exit(0);
-});
+// Graceful shutdown handlers
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 // Security middleware
 app.use(helmet());
@@ -292,7 +327,10 @@ import { mainErrorHandler, notFoundHandler } from "./core/errors/error-handler";
 // 404 handler for unmatched routes
 app.use("*", notFoundHandler);
 
-// Global error handler
+// Error logging middleware (before main error handler)
+app.use(errorLoggingMiddleware);
+
+// Global error handler (must be last)
 app.use(mainErrorHandler);
 
 // WebSocket initialization function
@@ -316,9 +354,6 @@ async function initializeWebSocket(io: SocketIOServer): Promise<void> {
 // Start server
 async function startServer() {
   try {
-    // Initialize database connection first
-    await initializeDatabase();
-
     // Initialize Twitter authentication
     const twitterAuth = TwitterAuthManager.getInstance();
     await twitterAuth.initializeOnStartup();
@@ -469,27 +504,144 @@ async function startServer() {
       }
     }
 
-    // Error logging middleware (must be last)
-    app.use(errorLoggingMiddleware);
-
     // Create HTTP server
-    const server = http.createServer(app);
+    httpServer = http.createServer(app);
 
-    // Configure Socket.IO
-    const io = new SocketIOServer(server, {
+    // Configure Socket.IO with authentication and hardening
+    socketIOServer = new SocketIOServer(httpServer, {
       cors: {
         origin: process.env.FRONTEND_URL || "http://localhost:4200",
         methods: ["GET", "POST"],
         credentials: true
       },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      // Connection state recovery for reliability
+      connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+        skipMiddlewares: true,
+      },
+      // Security and performance settings
+      pingTimeout: 60000, // 60 seconds
+      pingInterval: 25000, // 25 seconds
+      connectTimeout: 45000, // 45 seconds
+      allowRequest: (req, callback) => {
+        // Basic rate limiting for handshakes
+        const clientIP = req.socket.remoteAddress || 'unknown';
+        
+        // Simple in-memory rate limiting (consider Redis for production)
+        if (!global.wsHandshakeTracker) {
+          global.wsHandshakeTracker = new Map();
+        }
+        
+        const now = Date.now();
+        const windowMs = 60000; // 1 minute window
+        const maxConnections = 10; // Max 10 connections per minute per IP
+        
+        const clientData = global.wsHandshakeTracker.get(clientIP) || { count: 0, resetTime: now + windowMs };
+        
+        if (now > clientData.resetTime) {
+          clientData.count = 0;
+          clientData.resetTime = now + windowMs;
+        }
+        
+        if (clientData.count >= maxConnections) {
+          systemLogger.warn(`WebSocket handshake rate limit exceeded for IP: ${clientIP}`);
+          callback('Rate limit exceeded', false);
+          return;
+        }
+        
+        clientData.count++;
+        global.wsHandshakeTracker.set(clientIP, clientData);
+        
+        callback(null, true);
+      }
+      // TODO: For production multi-instance deployment:
+      // 1. Install Redis adapter: npm install @socket.io/redis-adapter redis
+      // 2. Add Redis adapter configuration:
+      //    const { createAdapter } = require("@socket.io/redis-adapter");
+      //    const { createClient } = require("redis");
+      //    const pubClient = createClient({ url: "redis://localhost:6379" });
+      //    const subClient = pubClient.duplicate();
+      //    socketIOServer.adapter(createAdapter(pubClient, subClient));
+      // 3. Configure sticky sessions in load balancer (nginx/AWS ALB)
+      //    - Use IP hash or session affinity
+      //    - Ensure same client connects to same server instance
+      // 4. Move rate limiting to Redis for shared state across instances
+    });
+
+    // WebSocket authentication middleware
+    socketIOServer.use(async (socket, next) => {
+      try {
+        // Extract token from auth header or query params
+        const token = socket.handshake.auth?.token || 
+                     socket.handshake.headers?.authorization?.split(' ')[1] ||
+                     socket.handshake.query?.token;
+
+        if (!token) {
+          systemLogger.warn(`WebSocket connection rejected: No token provided from ${socket.handshake.address}`);
+          return next(new Error('Authentication token required'));
+        }
+
+        // Import JWT utilities
+        const jwt = await import('jsonwebtoken');
+        const { tokenBlacklistService } = await import('./lib/security/token-blacklist');
+
+        // Check if token is blacklisted
+        if (tokenBlacklistService.isTokenBlacklisted(token as string)) {
+          systemLogger.warn(`WebSocket connection rejected: Blacklisted token from ${socket.handshake.address}`);
+          return next(new Error('Token has been invalidated'));
+        }
+
+        // Verify JWT token
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+          systemLogger.error('JWT_SECRET not configured for WebSocket authentication');
+          return next(new Error('Server configuration error'));
+        }
+
+        const decoded = jwt.verify(token as string, JWT_SECRET) as {
+          id: string;
+          email: string;
+          role: string;
+          fullName: string;
+          iat?: number;
+          exp?: number;
+        };
+
+        // Attach user data to socket
+        socket.data.user = {
+          id: decoded.id,
+          email: decoded.email,
+          role: decoded.role,
+          fullName: decoded.fullName,
+          connectedAt: new Date(),
+          ipAddress: socket.handshake.address
+        };
+
+        systemLogger.info(`WebSocket authenticated user: ${decoded.email} (${decoded.id}) from ${socket.handshake.address}`);
+        next();
+
+      } catch (error) {
+        if (error instanceof jwt.TokenExpiredError) {
+          systemLogger.warn(`WebSocket connection rejected: Expired token from ${socket.handshake.address}`);
+          return next(new Error('Access token has expired'));
+        }
+
+        if (error instanceof jwt.JsonWebTokenError) {
+          systemLogger.warn(`WebSocket connection rejected: Invalid token from ${socket.handshake.address}`);
+          return next(new Error('Invalid access token'));
+        }
+
+        systemLogger.error('WebSocket authentication error:', error);
+        return next(new Error('Authentication failed'));
+      }
     });
 
     // Initialize WebSocket service
-    await initializeWebSocket(io);
+    await initializeWebSocket(socketIOServer);
 
     // Start server
-    server.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       systemLogger.info("Server started successfully", {
         port: PORT,
         environment: process.env.NODE_ENV || "development",

@@ -30,7 +30,7 @@ class WebSocketService {
    */
   initialize(io: SocketIOServer): void {
     this.io = io;
-    
+
     io.on('connection', (socket: Socket) => {
       this.handleConnection(socket);
     });
@@ -44,19 +44,19 @@ class WebSocketService {
   private handleConnection(socket: Socket): void {
     const clientId = socket.id;
     
-    // Store client info
+    // Get authenticated user data from socket.data (set by authentication middleware)
+    const userData = socket.data.user;
+
+    // Store client info with authenticated user data
     this.clients.set(clientId, {
       id: clientId,
+      userId: userData?.id,
+      organizationId: userData?.organizationId, // Add if available in your user model
       joinedRooms: [],
-      connectedAt: new Date()
+      connectedAt: new Date(),
     });
 
-    systemLogger.info(`WebSocket client connected: ${clientId}`);
-
-    // Handle authentication
-    socket.on('authenticate', (data: { userId?: string; organizationId?: string }) => {
-      this.handleAuthentication(socket, data);
-    });
+    systemLogger.info(`WebSocket client connected: ${clientId} (User: ${userData?.email || 'unknown'})`);
 
     // Handle joining campaign room
     socket.on('join-campaign', (campaignId: string) => {
@@ -66,6 +66,17 @@ class WebSocketService {
     // Handle leaving campaign room
     socket.on('leave-campaign', (campaignId: string) => {
       this.leaveCampaignRoom(socket, campaignId);
+    });
+
+    // Handle user info request
+    socket.on('get-user-info', () => {
+      socket.emit('user-info', {
+        userId: userData?.id,
+        email: userData?.email,
+        role: userData?.role,
+        fullName: userData?.fullName,
+        connectedAt: userData?.connectedAt
+      });
     });
 
     // Handle disconnection
@@ -80,32 +91,13 @@ class WebSocketService {
   }
 
   /**
-   * Handle client authentication
-   */
-  private handleAuthentication(socket: Socket, data: { userId?: string; organizationId?: string }): void {
-    const clientInfo = this.clients.get(socket.id);
-    if (clientInfo) {
-      clientInfo.userId = data.userId;
-      clientInfo.organizationId = data.organizationId;
-      this.clients.set(socket.id, clientInfo);
-      
-      systemLogger.info(`Client ${socket.id} authenticated`, { 
-        userId: data.userId, 
-        organizationId: data.organizationId 
-      });
-      
-      socket.emit('authenticated', { success: true });
-    }
-  }
-
-  /**
    * Join campaign room for progress updates
    */
   private joinCampaignRoom(socket: Socket, campaignId: string): void {
     const roomName = `campaign-${campaignId}`;
-    
+
     socket.join(roomName);
-    
+
     // Update client info
     const clientInfo = this.clients.get(socket.id);
     if (clientInfo) {
@@ -128,13 +120,13 @@ class WebSocketService {
    */
   private leaveCampaignRoom(socket: Socket, campaignId: string): void {
     const roomName = `campaign-${campaignId}`;
-    
+
     socket.leave(roomName);
-    
+
     // Update client info
     const clientInfo = this.clients.get(socket.id);
     if (clientInfo) {
-      clientInfo.joinedRooms = clientInfo.joinedRooms.filter(room => room !== roomName);
+      clientInfo.joinedRooms = clientInfo.joinedRooms.filter((room) => room !== roomName);
       this.clients.set(socket.id, clientInfo);
     }
 
@@ -156,10 +148,10 @@ class WebSocketService {
    */
   private handleDisconnection(socket: Socket): void {
     const clientInfo = this.clients.get(socket.id);
-    
+
     if (clientInfo) {
       // Remove from all rooms
-      clientInfo.joinedRooms.forEach(roomName => {
+      clientInfo.joinedRooms.forEach((roomName) => {
         const roomMembers = this.roomMembers.get(roomName);
         if (roomMembers) {
           roomMembers.delete(socket.id);
@@ -168,7 +160,7 @@ class WebSocketService {
           }
         }
       });
-      
+
       this.clients.delete(socket.id);
     }
 
@@ -186,10 +178,10 @@ class WebSocketService {
 
     const roomName = `campaign-${campaignId}`;
     this.io.to(roomName).emit(event, data);
-    
-    systemLogger.debug(`Emitted ${event} to campaign ${campaignId}`, { 
-      roomName, 
-      data: typeof data 
+
+    systemLogger.debug(`Emitted ${event} to campaign ${campaignId}`, {
+      roomName,
+      data: typeof data,
     });
   }
 
@@ -210,13 +202,13 @@ class WebSocketService {
       }
     });
 
-    userSockets.forEach(socketId => {
+    userSockets.forEach((socketId) => {
       this.io!.to(socketId).emit(event, data);
     });
 
-    systemLogger.debug(`Emitted ${event} to user ${userId}`, { 
+    systemLogger.debug(`Emitted ${event} to user ${userId}`, {
       socketsCount: userSockets.length,
-      data: typeof data 
+      data: typeof data,
     });
   }
 
@@ -237,13 +229,13 @@ class WebSocketService {
       }
     });
 
-    orgSockets.forEach(socketId => {
+    orgSockets.forEach((socketId) => {
       this.io!.to(socketId).emit(event, data);
     });
 
-    systemLogger.debug(`Emitted ${event} to organization ${organizationId}`, { 
+    systemLogger.debug(`Emitted ${event} to organization ${organizationId}`, {
       socketsCount: orgSockets.length,
-      data: typeof data 
+      data: typeof data,
     });
   }
 
@@ -276,7 +268,7 @@ class WebSocketService {
     return {
       connectedClients: this.clients.size,
       activeRooms: this.roomMembers.size,
-      roomDetails
+      roomDetails,
     };
   }
 
