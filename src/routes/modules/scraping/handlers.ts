@@ -427,7 +427,7 @@ async function handleAsyncGenericScraping(
     await updateCampaignStatus(campaignId, 'active', {
       maxTweets,
       startedAt: new Date(),
-      status: 'processing',
+      processingStatus: 'processing', // ✅ Cambiado a processingStatus para evitar conflicto
     });
 
     // Respond immediately
@@ -642,9 +642,13 @@ async function updateCampaignStatus(campaignId: string, status: string, data: an
     const validStatus =
       statusMapping[status as keyof typeof statusMapping] || CampaignStatus.active;
 
+    // ✅ Crear updateData sin sobrescribir el status válido
+    const { status: _, ...dataWithoutStatus } = data || {};
+    void _; // Suppress unused variable warning
+
     const updateData = {
       status: validStatus,
-      ...data,
+      ...dataWithoutStatus, // ✅ Solo datos sin status
       updatedAt: new Date(),
     };
 
