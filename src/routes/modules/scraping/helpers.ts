@@ -239,6 +239,14 @@ export function validateRequestParams(
 
 // ==================== Sentiment Processing ====================
 const normalizeSentimentLabel = (label: string): Label => {
+  console.log('🏷️ LABEL NORMALIZATION:', {
+    inputLabel: label,
+    isPositive: POSITIVE_LABELS.has(label as any),
+    isNegative: NEGATIVE_LABELS.has(label as any),
+    positiveLabels: Array.from(POSITIVE_LABELS),
+    negativeLabels: Array.from(NEGATIVE_LABELS),
+  });
+  
   if (POSITIVE_LABELS.has(label as any)) return Label.POSITIVE;
   if (NEGATIVE_LABELS.has(label as any)) return Label.NEGATIVE;
   return Label.NEUTRAL;
@@ -261,6 +269,17 @@ export function processSentimentAnalysis(
     }
 
     const src = analysis.analysis.sentiment;
+    
+    // 🔍 DEBUG: Log para diagnosticar el problema de sentimiento
+    console.log('🔍 SENTIMENT DEBUG:', {
+      tweetContent: tweet.content?.substring(0, 50) + '...',
+      originalLabel: src.label,
+      originalScore: src.score,
+      originalConfidence: src.confidence,
+      analysisExists: !!analysis,
+      sentimentExists: !!src,
+    });
+    
     const normalized = normalizeSentimentLabel(src.label as string);
 
     const sentiment: SentimentAnalysis = {
@@ -429,7 +448,7 @@ async function performScraping(
  * @param campaignId - optional campaign ID for tracking
  * @returns processed tweets and sentiment summary
  */
-async function processAndPersistSentiment(
+export async function processAndPersistSentiment(
   tweets: readonly Tweet[],
   analyzeSentiment: boolean,
   campaignId?: string
@@ -442,7 +461,23 @@ async function processAndPersistSentiment(
 
   if (analyzeSentiment && tweetsWithSentiment.length > 0) {
     try {
+      console.log('🧠 STARTING SENTIMENT ANALYSIS:', {
+        tweetCount: tweetsWithSentiment.length,
+        campaignId: campaignId,
+        firstTweetContent: tweetsWithSentiment[0]?.content?.substring(0, 50) + '...',
+      });
+      
       const analyses = await sentimentManager.analyzeTweetsBatch(tweetsWithSentiment);
+      
+      console.log('📊 SENTIMENT ANALYSIS COMPLETED:', {
+        analysesCount: analyses.length,
+        firstAnalysis: analyses[0] ? {
+          sentiment: analyses[0].analysis?.sentiment?.label,
+          score: analyses[0].analysis?.sentiment?.score,
+          confidence: analyses[0].analysis?.sentiment?.confidence,
+        } : 'NO_ANALYSIS',
+      });
+      
       sentimentSummary = sentimentManager.generateStatistics(analyses);
       tweetsWithSentiment = processSentimentAnalysis(tweetsWithSentiment, analyses);
     } catch (sentimentError) {

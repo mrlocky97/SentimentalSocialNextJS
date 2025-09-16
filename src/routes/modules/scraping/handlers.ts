@@ -572,11 +572,28 @@ async function processAsyncScraping(
       timeElapsed: Date.now() - startTime,
     });
 
-    // Store tweets if any were found
     if (tweets.length > 0) {
-      await withRetry(async () => {
-        await tweetDatabaseService.saveTweetsBulk(tweets, campaignId);
-      });
+      try {
+        // Import sentiment processing function from helpers
+        const { processAndPersistSentiment } = await import('./helpers');
+        
+        // Process tweets with sentiment analysis
+        const { tweetsWithSentiment } = await processAndPersistSentiment(
+          tweets,
+          options.analyzeSentiment !== false, // Default to true
+          campaignId
+        );
+
+        console.log(`✅ Processed ${tweetsWithSentiment.length} tweets with sentiment analysis`);
+        
+      } catch (sentimentError) {
+        console.error('Sentiment analysis failed in async mode:', sentimentError);
+        
+        // Fallback: save tweets without sentiment
+        await withRetry(async () => {
+          await tweetDatabaseService.saveTweetsBulk(tweets, campaignId);
+        });
+      }
     }
 
     // Update campaign to completed status
