@@ -254,6 +254,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
 
 // Pre-save middleware
 campaignSchema.pre("save", function (this: ICampaignDocument, next) {
+  // ✅ Validate search criteria
   if (
     this.hashtags.length === 0 &&
     this.keywords.length === 0 &&
@@ -265,16 +266,28 @@ campaignSchema.pre("save", function (this: ICampaignDocument, next) {
     return;
   }
 
+  // Validate data sources
   if (this.dataSources.length === 0) {
     next(new Error("At least one data source must be selected"));
     return;
   }
 
-  const daysDiff = Math.ceil(
-    (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  if (daysDiff > 365) {
-    next(new Error("Campaign duration cannot exceed 365 days"));
+  // Validate dates exist
+  if (!this.startDate || !this.endDate) {
+    next(new Error("Both start date and end date are required"));
+    return;
+  }
+
+  // Validate end date is after start date
+  if (this.startDate >= this.endDate) {
+    next(new Error("End date must be after start date"));
+    return;
+  }
+
+  // Validate end date is in the future (not past)
+  const now = new Date();
+  if (this.endDate <= now) {
+    next(new Error("End date must be in the future. Cannot create campaigns that have already ended."));
     return;
   }
 
