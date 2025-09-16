@@ -87,6 +87,7 @@ export interface ScrapingResponse {
   };
   readonly execution_time: number;
   readonly message: string;
+  readonly error?: string;
 }
 
 type ErrorResponse = {

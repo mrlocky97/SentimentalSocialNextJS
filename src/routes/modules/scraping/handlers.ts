@@ -1,6 +1,5 @@
 /**
- * Optimized Scraping Handlers - Production Ready v3.0
- * Streamlined request processing with efficient batch operations
+ * Enhanced error handling, performance optimizations, and bug fixes
  */
 
 import { Request, Response } from 'express';
@@ -9,13 +8,14 @@ import {
   getScraperService,
   handleScrapingError,
   handleScrapingRequest,
+  ScrapingResponse,
   tweetDatabaseService,
   twitterAuth,
   type ScrapingContext,
   type ScrapingRequestOptions,
 } from './helpers';
 
-// ==================== Configuration & Types ====================
+// ==================== Constants & Configuration ====================
 const SCRAPING_CONFIGS = Object.freeze({
   hashtag: {
     context: { type: 'hashtag' as const, exampleValue: 'JustDoIt' },
@@ -54,7 +54,11 @@ const SCRAPING_CONFIGS = Object.freeze({
 
 const TWEET_CONTENT_MAX_LENGTH = 100;
 const DEFAULT_TWEET_LIMIT = 10;
+const ASYNC_THRESHOLD_TWEETS = 50;
+const MAX_CONCURRENT_REQUESTS = 5; // Limit concurrent processing
+const MAX_RETRY_ATTEMPTS = 3;
 
+// ==================== Types ====================
 type ScrapingType = keyof typeof SCRAPING_CONFIGS;
 
 interface BasicTweet {
@@ -85,6 +89,21 @@ interface BatchResponse {
   readonly message: string;
 }
 
+interface CampaignValidationResult {
+  exists: boolean;
+  campaign?: any;
+  error?: string;
+}
+
+interface ProgressData {
+  totalTweets: number;
+  scrapedTweets: number;
+  currentPhase: string;
+  message: string;
+  timeElapsed: number;
+  percentage: number;
+}
+
 // ==================== Utility Functions ====================
 const truncateContent = (content: string): string =>
   content.length > TWEET_CONTENT_MAX_LENGTH
@@ -92,7 +111,9 @@ const truncateContent = (content: string): string =>
     : content;
 
 const formatIdentifier = (identifier: string, prefix: string): string =>
-  prefix ? `${prefix}${identifier}` : identifier;
+  prefix && !identifier.startsWith(prefix) ? `${prefix}${identifier}` : identifier;
+
+const sanitizeString = (str: string): string => str.trim().replace(/[^\w\s#@.-]/g, '');
 
 const createValidationError = (errorField: string, examples: Record<string, unknown>) => ({
   success: false,
@@ -120,27 +141,66 @@ const validateCampaignId = (campaignId: any): boolean => {
   return typeof campaignId === 'string' && campaignId.trim().length > 0;
 };
 
-/**
- * Verify that a campaign exists before processing scraping
- */
-async function validateCampaignExists(campaignId: string): Promise<{ exists: boolean; campaign?: any }> {
+// ==================== Enhanced Campaign Validation ====================
+async function validateCampaignExists(campaignId: string): Promise<CampaignValidationResult> {
+  if (!campaignId || typeof campaignId !== 'string') {
+    return { exists: false, error: 'Invalid campaign ID format' };
+  }
+
   try {
     const { CampaignModel } = await import('../../../models/Campaign.model');
-    
-    // Try to find campaign by ID
-    const campaign = await CampaignModel.findById(campaignId);
+
+    // Add timeout to prevent hanging queries
+    const campaign = await Promise.race([
+      CampaignModel.findById(sanitizeString(campaignId)),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Campaign lookup timeout')), 5000)
+      ),
+    ]);
 
     return {
       exists: !!campaign,
-      campaign: campaign || null
+      campaign: campaign || null,
     };
   } catch (error) {
-    console.error('Error validating campaign existence:', error);
-    return { exists: false };
+    console.error(`Error validating campaign existence for ID ${campaignId}:`, error);
+    return {
+      exists: false,
+      error: error instanceof Error ? error.message : 'Database error',
+    };
   }
 }
 
-// ==================== Core Processing Logic ====================
+// ==================== Enhanced Error Handling & Retry Logic ====================
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxAttempts: number = MAX_RETRY_ATTEMPTS,
+  backoffMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt === maxAttempts) {
+        throw lastError;
+      }
+
+      // Exponential backoff
+      const delay = backoffMs * Math.pow(2, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms:`, lastError.message);
+    }
+  }
+
+  throw lastError;
+}
+
+// ==================== Optimized Processing Logic ====================
 async function processSingleIdentifier(
   req: Request,
   res: Response,
@@ -148,41 +208,55 @@ async function processSingleIdentifier(
   context: Omit<ScrapingContext, 'identifier'>,
   options: ScrapingRequestOptions
 ): Promise<BatchScrapingResult> {
-  try {
-    const result = await handleScrapingRequest(req, res, { ...context, identifier }, options, true);
+  const config = SCRAPING_CONFIGS[context.type as ScrapingType];
+  const sanitizedIdentifier = sanitizeString(identifier);
 
-    if (result?.success) {
+  if (!sanitizedIdentifier) {
+    return {
+      identifier: formatIdentifier(identifier, config.stripPrefix),
+      tweetCount: 0,
+      error: 'Invalid identifier format',
+    };
+  }
+
+  try {
+    const result: ScrapingResponse | void = await withRetry(async () => {
+      return await handleScrapingRequest(
+        req,
+        res,
+        { ...context, identifier: sanitizedIdentifier },
+        options,
+        true
+      );
+    });
+
+    if (result?.success && result.data?.tweets) {
       return {
-        identifier: formatIdentifier(
-          identifier,
-          SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
-        ),
-        tweetCount: result.data.tweets.length,
-        totalFound: result.data.totalFound,
+        identifier: formatIdentifier(sanitizedIdentifier, config.stripPrefix),
+        tweetCount: Array.isArray(result.data.tweets) ? result.data.tweets.length : 0,
+        totalFound: result.data.totalFound || 0,
         sentiment_summary: result.data.sentiment_summary,
       };
     }
 
     return {
-      identifier: formatIdentifier(
-        identifier,
-        SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
-      ),
+      identifier: formatIdentifier(sanitizedIdentifier, config.stripPrefix),
       tweetCount: 0,
-      error: 'Request failed',
+      error: result?.error || 'Request failed',
     };
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`Error processing identifier ${sanitizedIdentifier}:`, errorMessage);
+
     return {
-      identifier: formatIdentifier(
-        identifier,
-        SCRAPING_CONFIGS[context.type as ScrapingType].stripPrefix
-      ),
+      identifier: formatIdentifier(sanitizedIdentifier, config.stripPrefix),
       tweetCount: 0,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: errorMessage,
     };
   }
 }
 
+// ==================== Optimized Batch Processing ====================
 async function processBatchScraping(
   req: Request,
   res: Response,
@@ -193,104 +267,128 @@ async function processBatchScraping(
   const results: BatchScrapingResult[] = [];
   let totalTweets = 0;
 
-  // Process identifiers concurrently
-  const processingPromises = identifiers.map((identifier) =>
-    processSingleIdentifier(req, res, identifier, config.context, config.options)
-  );
+  // Validate identifiers
+  const validIdentifiers = identifiers
+    .map((id) => sanitizeString(id))
+    .filter((id) => id.length > 0);
 
-  const resolvedResults = await Promise.allSettled(processingPromises);
+  if (validIdentifiers.length === 0) {
+    throw new Error('No valid identifiers provided');
+  }
 
-  for (const result of resolvedResults) {
-    if (result.status === 'fulfilled') {
-      results.push(result.value);
-      totalTweets += result.value.tweetCount;
-    } else {
-      results.push({
-        identifier: 'unknown',
-        tweetCount: 0,
-        error: result.reason instanceof Error ? result.reason.message : 'Processing failed',
-      });
+  // Process in chunks to avoid overwhelming the system
+  const chunkSize = Math.min(MAX_CONCURRENT_REQUESTS, validIdentifiers.length);
+  const chunks = [];
+
+  for (let i = 0; i < validIdentifiers.length; i += chunkSize) {
+    chunks.push(validIdentifiers.slice(i, i + chunkSize));
+  }
+
+  // Process chunks sequentially but items within chunks concurrently
+  for (const chunk of chunks) {
+    const chunkPromises = chunk.map((identifier) =>
+      processSingleIdentifier(req, res, identifier, config.context, config.options)
+    );
+
+    const chunkResults = await Promise.allSettled(chunkPromises);
+
+    for (const result of chunkResults) {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+        totalTweets += result.value.tweetCount;
+      } else {
+        const errorMessage =
+          result.reason instanceof Error ? result.reason.message : 'Processing failed';
+
+        console.error('Batch processing error:', errorMessage);
+        results.push({
+          identifier: 'unknown',
+          tweetCount: 0,
+          error: errorMessage,
+        });
+      }
+    }
+
+    // Small delay between chunks to be respectful to rate limits
+    if (chunks.length > 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
   return {
     success: true,
     data: {
-      identifiers: identifiers.map((id) => formatIdentifier(id, config.stripPrefix)),
+      identifiers: validIdentifiers.map((id) => formatIdentifier(id, config.stripPrefix)),
       items: results,
       totalTweets,
       campaignId: req.body.campaignId,
     },
-    message: `Scraped ${totalTweets} tweets from ${identifiers.length} ${scrapingType}${identifiers.length > 1 ? 's' : ''}`,
+    message: `Scraped ${totalTweets} tweets from ${validIdentifiers.length} ${scrapingType}${validIdentifiers.length > 1 ? 's' : ''}`,
   };
 }
 
-// ==================== Generic Scraping Handler ====================
+// ==================== Enhanced Generic Scraping Handler ====================
 async function handleGenericScraping(
   req: Request,
   res: Response,
   scrapingType: ScrapingType,
   identifierKeys: string[]
 ): Promise<void> {
-  const config = SCRAPING_CONFIGS[scrapingType];
-  const { campaignId, maxTweets = 100 } = req.body;
+  try {
+    const config = SCRAPING_CONFIGS[scrapingType];
+    const { campaignId, maxTweets = 100 } = req.body;
 
-  if (!validateCampaignId(campaignId)) {
-    res.status(400).json(createCampaignIdValidationError());
-    return;
+    // Validate campaign ID format
+    if (!validateCampaignId(campaignId)) {
+      res.status(400).json(createCampaignIdValidationError());
+      return;
+    }
+
+    // Validate campaign exists
+    const campaignValidation = await validateCampaignExists(campaignId);
+    if (!campaignValidation.exists) {
+      const statusCode = campaignValidation.error?.includes('timeout') ? 503 : 404;
+      res.status(statusCode).json(createCampaignNotFoundError(campaignId));
+      return;
+    }
+
+    // Extract and validate identifiers
+    const identifiers = extractIdentifiers(req.body, identifierKeys, config);
+
+    if (identifiers.length === 0) {
+      res.status(400).json(createValidationError(config.errorField, config.examples));
+      return;
+    }
+
+    // Determine processing strategy
+    const shouldUseAsync = maxTweets > ASYNC_THRESHOLD_TWEETS || identifiers.length > 3;
+
+    if (shouldUseAsync) {
+      await handleAsyncGenericScraping(req, res, scrapingType, identifierKeys);
+      return;
+    }
+
+    // Synchronous processing for smaller requests
+    if (identifiers.length === 1) {
+      await handleScrapingRequest(
+        req,
+        res,
+        { ...config.context, identifier: identifiers[0] },
+        config.options
+      );
+      return;
+    }
+
+    // Batch processing
+    const response = await processBatchScraping(req, res, identifiers, scrapingType);
+    res.json(response);
+  } catch (error) {
+    console.error(`Error in ${scrapingType} scraping:`, error);
+    handleScrapingError(res, error, `${scrapingType} scraping`);
   }
-
-  // ✅ Verify that campaign exists before processing
-  const campaignValidation = await validateCampaignExists(campaignId);
-  if (!campaignValidation.exists) {
-    res.status(404).json(createCampaignNotFoundError(campaignId));
-    return;
-  }
-
-  // Determine if we should use async processing with WebSockets
-  // Use async mode for larger requests to prevent timeouts
-  const shouldUseAsync = maxTweets > 50 || identifierKeys.length > 1;
-
-  if (shouldUseAsync) {
-    await handleAsyncGenericScraping(req, res, scrapingType, identifierKeys);
-    return;
-  }
-
-  // For smaller requests, use traditional synchronous processing
-  // Extract identifiers from request body
-  const identifiers =
-    identifierKeys
-      .map((key) => {
-        const value = req.body[key];
-        const result = toStringArray(value, { stripPrefix: config.stripPrefix || undefined });
-        return result;
-      })
-      .find((arr) => arr.length > 0) || [];
-
-  if (identifiers.length === 0) {
-    res.status(400).json(createValidationError(config.errorField, config.examples));
-    return;
-  }
-
-  // Single identifier optimization for small requests
-  if (identifiers.length === 1) {
-    await handleScrapingRequest(
-      req,
-      res,
-      { ...config.context, identifier: identifiers[0] },
-      config.options
-    );
-    return;
-  }
-
-  // Multiple identifiers - batch processing
-  const response = await processBatchScraping(req, res, identifiers, scrapingType);
-  res.json(response);
 }
 
-/**
- * Async handler that returns immediately and processes with WebSocket progress
- */
+// ==================== Enhanced Async Handler ====================
 async function handleAsyncGenericScraping(
   req: Request,
   res: Response,
@@ -302,19 +400,19 @@ async function handleAsyncGenericScraping(
     const {
       campaignId,
       maxTweets = 100,
-      userId,
-      organizationId,
+      userId = 'system-user',
+      organizationId = 'default-org',
       ...requestOptions
     } = req.body;
 
-    // ✅ Verify that campaign exists before processing
+    // Double-check campaign exists (redundant safety check)
     const campaignValidation = await validateCampaignExists(campaignId);
     if (!campaignValidation.exists) {
       res.status(404).json(createCampaignNotFoundError(campaignId));
       return;
     }
 
-    // Extract target value
+    // Extract target value safely
     const targetValue = extractTargetValue(req.body, identifierKeys, config);
     if (!targetValue) {
       res.status(400).json({
@@ -325,39 +423,242 @@ async function handleAsyncGenericScraping(
       return;
     }
 
-    // ✅ Update existing campaign status to active (no new campaign creation)
+    // Update campaign status atomically
     await updateCampaignStatus(campaignId, 'active', {
       maxTweets,
       startedAt: new Date(),
+      status: 'processing',
     });
 
-    // Respond immediately with campaign info
+    // Respond immediately
     res.json({
       success: true,
-      campaignId: campaignId, // ✅ Use original campaignId from request
+      campaignId,
       message: `${scrapingType} scraping started`,
-      estimatedDuration: Math.ceil(maxTweets / 10), // seconds
+      estimatedDuration: Math.ceil(maxTweets / 10),
       status: 'processing',
       progress: {
         phase: 'initializing',
         percentage: 0,
         message: 'Starting scraping process...',
-        useWebSocket: true, // Indicate to frontend to use WebSocket
+        useWebSocket: true,
       },
     });
 
-    // Process in background (don't await)
-    processAsyncScraping(campaignId, scrapingType, targetValue, {
-      ...requestOptions,
-      maxTweets,
-      campaignId: campaignId, // ✅ Use original campaignId
-      userId: userId || 'system-user',
-      organizationId: organizationId || 'default-org',
-    }).catch((error) => {
-      console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
+    // Process asynchronously with proper error handling
+    setImmediate(() => {
+      processAsyncScraping(campaignId, scrapingType, targetValue, {
+        ...requestOptions,
+        maxTweets,
+        campaignId,
+        userId,
+        organizationId,
+      }).catch((error) => {
+        console.error(`Async ${scrapingType} scraping failed for campaign ${campaignId}:`, error);
+        // Ensure campaign status is updated on failure
+        updateCampaignStatus(campaignId, 'error', {
+          error: error.message,
+          failedAt: new Date(),
+        }).catch(console.error);
+      });
     });
   } catch (error) {
     return handleScrapingError(res, error, `async ${scrapingType} scraping`);
+  }
+}
+
+// ==================== Helper Functions ====================
+function extractIdentifiers(body: any, identifierKeys: string[], config: any): string[] {
+  return (
+    identifierKeys
+      .map((key) => {
+        const value = body[key];
+        return toStringArray(value, {
+          stripPrefix: config.stripPrefix || undefined,
+        });
+      })
+      .find((arr) => arr.length > 0) || []
+  );
+}
+
+function extractTargetValue(body: any, fieldNames: string[], config: any): string | null {
+  for (const fieldName of fieldNames) {
+    if (body[fieldName]) {
+      const value = Array.isArray(body[fieldName]) ? body[fieldName][0] : body[fieldName];
+      if (typeof value === 'string' && value.trim()) {
+        return sanitizeString(value.replace(config.stripPrefix || '', ''));
+      }
+    }
+  }
+  return null;
+}
+
+// ==================== Enhanced Background Processing ====================
+async function processAsyncScraping(
+  campaignId: string,
+  scrapingType: keyof typeof SCRAPING_CONFIGS,
+  targetValue: string,
+  options: any
+): Promise<void> {
+  let progressService: any = null;
+  const startTime = Date.now();
+
+  try {
+    // Import services with error handling
+    const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
+    progressService = scrapingProgressService;
+
+    // Initialize progress tracking
+    const initialProgress: ProgressData = {
+      totalTweets: options.maxTweets || 100,
+      scrapedTweets: 0,
+      currentPhase: 'initializing',
+      message: `Starting ${scrapingType} scraping for: ${targetValue}`,
+      timeElapsed: 0,
+      percentage: 0,
+    };
+
+    progressService.updateProgress(campaignId, initialProgress);
+
+    // Get scraper with timeout
+    const scraper = await withRetry(
+      async () => {
+        return await getScraperService();
+      },
+      2,
+      2000
+    );
+
+    // Update to scraping phase
+    progressService.updateProgress(campaignId, {
+      currentPhase: 'scraping',
+      message: `Scraping ${scrapingType}: ${targetValue}`,
+      timeElapsed: Date.now() - startTime,
+    });
+
+    // Execute scraping operation
+    const scrapingOptions = {
+      ...options,
+      campaignId,
+    };
+
+    let result;
+    switch (scrapingType) {
+      case 'hashtag':
+        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
+        break;
+      case 'user':
+        result = await scraper.scrapeByUser(targetValue, scrapingOptions);
+        break;
+      case 'search':
+        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
+        break;
+      default:
+        throw new Error(`Unsupported scraping type: ${scrapingType}`);
+    }
+
+    // Validate result
+    if (!result || typeof result !== 'object') {
+      throw new Error('Invalid scraping result received');
+    }
+
+    const tweets = Array.isArray(result.tweets) ? result.tweets : [];
+
+    // Update to analysis phase
+    progressService.updateProgress(campaignId, {
+      currentPhase: 'analyzing',
+      message: 'Processing and analyzing scraped tweets...',
+      scrapedTweets: tweets.length,
+      timeElapsed: Date.now() - startTime,
+    });
+
+    // Store tweets if any were found
+    if (tweets.length > 0) {
+      await withRetry(async () => {
+        await tweetDatabaseService.saveTweetsBulk(tweets, campaignId);
+      });
+    }
+
+    // Update campaign to completed status
+    await updateCampaignStatus(campaignId, 'completed', {
+      tweetsScraped: tweets.length,
+      completedAt: new Date(),
+      processingTime: Date.now() - startTime,
+    });
+
+    // Complete progress tracking
+    progressService.completeProgress(campaignId);
+
+    console.log(
+      `Successfully completed ${scrapingType} scraping for campaign ${campaignId}: ${tweets.length} tweets`
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(
+      `Error in async ${scrapingType} scraping for campaign ${campaignId}:`,
+      errorMessage
+    );
+
+    // Update campaign status to error
+    await updateCampaignStatus(campaignId, 'error', {
+      error: errorMessage,
+      failedAt: new Date(),
+      processingTime: Date.now() - startTime,
+    }).catch(console.error);
+
+    // Report error in progress if service is available
+    if (progressService) {
+      try {
+        progressService.errorProgress(campaignId, errorMessage);
+      } catch (progressError) {
+        console.error('Failed to update progress with error:', progressError);
+      }
+    }
+
+    throw error;
+  }
+}
+
+// ==================== Enhanced Campaign Status Management ====================
+async function updateCampaignStatus(campaignId: string, status: string, data: any): Promise<void> {
+  if (!campaignId || typeof campaignId !== 'string') {
+    console.error('Invalid campaignId provided to updateCampaignStatus:', campaignId);
+    return;
+  }
+
+  try {
+    const [{ CampaignModel }, { CampaignStatus }] = await Promise.all([
+      import('../../../models/Campaign.model'),
+      import('../../../enums/campaign.enum'),
+    ]);
+
+    const statusMapping = {
+      completed: CampaignStatus.completed,
+      error: CampaignStatus.archived,
+      processing: CampaignStatus.active,
+      active: CampaignStatus.active,
+    } as const;
+
+    const validStatus =
+      statusMapping[status as keyof typeof statusMapping] || CampaignStatus.active;
+
+    const updateData = {
+      status: validStatus,
+      ...data,
+      updatedAt: new Date(),
+    };
+
+    const result = await CampaignModel.findByIdAndUpdate(sanitizeString(campaignId), updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!result) {
+      console.warn(`Campaign ${campaignId} not found during status update`);
+    }
+  } catch (error) {
+    console.error(`Error updating campaign ${campaignId} status to ${status}:`, error);
+    throw error; // Re-throw to allow caller to handle
   }
 }
 
@@ -374,169 +675,49 @@ export const scrapeSearch = async (req: Request, res: Response): Promise<void> =
   await handleGenericScraping(req, res, 'search', ['queries', 'query']);
 };
 
-/**
- * Background processing for async scraping
- */
-async function processAsyncScraping(
-  campaignId: string,
-  scrapingType: keyof typeof SCRAPING_CONFIGS,
-  targetValue: string,
-  options: any
-): Promise<void> {
-  try {
-    // Import progress service
-    const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
-
-    // Initialize progress
-    scrapingProgressService.updateProgress(campaignId, {
-      totalTweets: options.maxTweets || 100,
-      scrapedTweets: 0,
-      currentPhase: 'initializing',
-      message: `Starting ${scrapingType} scraping for: ${targetValue}`,
-      timeElapsed: 0,
-      percentage: 0,
-    });
-
-    // Get scraper service
-    const scraper = await getScraperService();
-
-    // Update progress to scraping phase
-    scrapingProgressService.updateProgress(campaignId, {
-      currentPhase: 'scraping',
-      message: `Scraping ${scrapingType}: ${targetValue}`,
-    });
-
-    let result;
-    const scrapingOptions = {
-      ...options,
-      campaignId, // Pass campaignId for progress tracking
-    };
-
-    // Call appropriate scraping method
-    switch (scrapingType) {
-      case 'hashtag':
-        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
-        break;
-      case 'user':
-        result = await scraper.scrapeByUser(targetValue, scrapingOptions);
-        break;
-      case 'search':
-        // For search queries, use hashtag scraping method
-        result = await scraper.scrapeByHashtag(targetValue, scrapingOptions);
-        break;
-      default:
-        throw new Error(`Unsupported scraping type: ${scrapingType}`);
-    }
-
-    // Update progress to analyzing phase
-    scrapingProgressService.updateProgress(campaignId, {
-      currentPhase: 'analyzing',
-      message: 'Processing and analyzing scraped tweets...',
-    });
-
-    // Store tweets in database
-    if (result.tweets && result.tweets.length > 0) {
-      await tweetDatabaseService.saveTweetsBulk(result.tweets, campaignId);
-    }
-
-    // Update campaign status
-    await updateCampaignStatus(campaignId, 'completed', {
-      tweetsScraped: result.tweets?.length || 0,
-      completedAt: new Date(),
-    });
-
-    // Complete progress
-    scrapingProgressService.completeProgress(campaignId);
-  } catch (error) {
-    console.error(`Error in async ${scrapingType} scraping:`, error);
-
-    // Update campaign status to error
-    await updateCampaignStatus(campaignId, 'error', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      failedAt: new Date(),
-    });
-
-    // Report error progress
-    const { scrapingProgressService } = await import('../../../services/scraping-progress.service');
-    scrapingProgressService.errorProgress(
-      campaignId,
-      error instanceof Error ? error.message : 'Unknown error during scraping'
-    );
-  }
-}
-
-/**
- * Helper function to extract target value from request body
- */
-function extractTargetValue(body: any, fieldNames: string[], config: any): string | null {
-  for (const fieldName of fieldNames) {
-    if (body[fieldName]) {
-      const value = Array.isArray(body[fieldName]) ? body[fieldName][0] : body[fieldName];
-      return typeof value === 'string' ? value.replace(config.stripPrefix, '') : null;
-    }
-  }
-  return null;
-}
-
-/**
- * Update campaign status in database
- */
-async function updateCampaignStatus(campaignId: string, status: string, data: any): Promise<void> {
-  try {
-    const { CampaignModel } = await import('../../../models/Campaign.model');
-    const { CampaignStatus } = await import('../../../enums/campaign.enum');
-
-    // Map status to valid enum value
-    const statusMapping = {
-      completed: CampaignStatus.completed,
-      error: CampaignStatus.archived, // Use archived for error state
-      processing: CampaignStatus.active,
-      active: CampaignStatus.active,
-    };
-
-    const validStatus =
-      statusMapping[status as keyof typeof statusMapping] || CampaignStatus.active;
-
-    await CampaignModel.findByIdAndUpdate(campaignId, {
-      status: validStatus,
-      ...data,
-      updatedAt: new Date(),
-    });
-  } catch (error) {
-    console.error('Error updating campaign status:', error);
-  }
-}
-
-// ==================== Status & Management Handlers ====================
+// ==================== Enhanced Status & Management Handlers ====================
 export async function getScrapingStatus(req: Request, res: Response): Promise<void> {
   try {
-    const scraper = await getScraperService();
+    const [scraper, authStatusDetail] = await Promise.all([
+      getScraperService(),
+      (async () => {
+        try {
+          const scraper = await getScraperService();
+          return scraper.getAuthenticationStatus();
+        } catch {
+          return { isAuthenticated: false, lastCheck: null, consecutiveFailures: 0 };
+        }
+      })(),
+    ]);
+
     const rateLimitStatus = scraper.getRateLimitStatus();
-    const authStatusDetail = scraper.getAuthenticationStatus();
 
     const statusResponse = {
       success: true,
       data: {
         service_status: 'operational' as const,
         authentication: {
-          status: authStatusDetail.isAuthenticated
-            ? ('authenticated' as const)
-            : ('failed' as const),
+          status: authStatusDetail.isAuthenticated ? 'authenticated' : 'failed',
           last_check: authStatusDetail.lastCheck,
           consecutive_failures: authStatusDetail.consecutiveFailures,
         },
         rate_limit: {
-          remaining: rateLimitStatus.remaining,
-          reset_time: rateLimitStatus.resetTime,
-          request_count: rateLimitStatus.requestCount,
+          remaining: rateLimitStatus.remaining ?? 'unknown',
+          reset_time: rateLimitStatus.resetTime ?? null,
+          request_count: rateLimitStatus.requestCount ?? 0,
         },
         scraper_info: {
-          type: '@the-convocation/twitter-scraper' as const,
+          type: '@the-convocation/twitter-scraper',
           max_tweets_per_request: 1000,
-          rate_limit_window: '1 hour' as const,
+          rate_limit_window: '1 hour',
+        },
+        system_health: {
+          memory_usage: process.memoryUsage(),
+          uptime: process.uptime(),
         },
       },
       message: 'Scraping service operational',
+      timestamp: new Date().toISOString(),
     } as const;
 
     res.json(statusResponse);
@@ -547,17 +728,23 @@ export async function getScrapingStatus(req: Request, res: Response): Promise<vo
 
 export async function forceReauth(req: Request, res: Response): Promise<void> {
   try {
-    await twitterAuth.forceReauth();
-    const status = twitterAuth.getStatus();
+    const reauthResult = await withRetry(
+      async () => {
+        await twitterAuth.forceReauth();
+        return twitterAuth.getStatus();
+      },
+      2,
+      3000
+    );
 
     const reauthResponse = {
-      success: status.ready,
-      message: status.ready ? 'Re-authentication successful' : 'Re-authentication failed',
-      error: status.error,
+      success: reauthResult.ready,
+      message: reauthResult.ready ? 'Re-authentication successful' : 'Re-authentication failed',
+      error: reauthResult.error || null,
       timestamp: new Date().toISOString(),
     } as const;
 
-    res.json(reauthResponse);
+    res.status(reauthResult.ready ? 200 : 500).json(reauthResponse);
   } catch (error) {
     handleScrapingError(res, error, 're-authentication');
   }
@@ -568,13 +755,24 @@ export async function listTweets(req: Request, res: Response): Promise<void> {
     const { campaignId, limit = DEFAULT_TWEET_LIMIT } = req.query;
     const parsedLimit = Math.max(
       1,
-      Math.min(1000, parseInt(limit as string, 10) || DEFAULT_TWEET_LIMIT)
+      Math.min(1000, parseInt(String(limit), 10) || DEFAULT_TWEET_LIMIT)
     );
+
+    // Validate campaignId if provided
+    if (campaignId && typeof campaignId === 'string' && !validateCampaignId(campaignId)) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid campaignId format',
+        message: 'Campaign ID must be a non-empty string',
+      });
+      return;
+    }
 
     let tweets: BasicTweet[];
 
     if (campaignId && typeof campaignId === 'string') {
-      tweets = await tweetDatabaseService.getTweetsByCampaign(campaignId, parsedLimit);
+      const sanitizedCampaignId = sanitizeString(campaignId);
+      tweets = await tweetDatabaseService.getTweetsByCampaign(sanitizedCampaignId, parsedLimit);
     } else {
       tweets = await tweetDatabaseService.getTweetsByHashtag('', parsedLimit);
     }
@@ -594,8 +792,13 @@ export async function listTweets(req: Request, res: Response): Promise<void> {
         total: tweets.length,
         campaignId: campaignId || 'all',
         tweets: transformedTweets,
+        metadata: {
+          limit: parsedLimit,
+          hasMore: tweets.length === parsedLimit,
+        },
       },
       message: `Found ${tweets.length} tweets in database`,
+      timestamp: new Date().toISOString(),
     } as const;
 
     res.json(listResponse);
