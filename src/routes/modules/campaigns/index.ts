@@ -5,24 +5,24 @@
 
 import { Router } from "express";
 import {
-  authenticateToken,
-  requireRole,
+    authenticateToken,
+    requireRole,
 } from "../../../middleware/express-auth";
 import {
-  createCampaignHandler,
-  deleteCampaignHandler,
-  getCampaignByIdHandler,
-  getCampaignTweetsHandler,
-  getCampaignsHandler,
-  getCampaignsOverviewHandler,
-  updateCampaignHandler,
+    createCampaignHandler,
+    deleteCampaignHandler,
+    getCampaignByIdHandler,
+    getCampaignTweetsHandler,
+    getCampaignsHandler,
+    getCampaignsOverviewHandler,
+    updateCampaignHandler,
 } from "./handlers";
 import {
-  logCampaignRequest,
-  validateCampaignId,
-  validateCreateCampaignRequest,
-  validatePagination,
-  validateUpdateCampaignRequest,
+    logCampaignRequest,
+    validateCampaignId,
+    validateCreateCampaignRequest,
+    validatePagination,
+    validateUpdateCampaignRequest,
 } from "./middleware";
 
 const router = Router();
@@ -549,7 +549,6 @@ router.delete(
  *         schema:
  *           type: integer
  *           minimum: 1
- *           maximum: 100
  *           default: 20
  *         description: Number of tweets per page
  *       - in: query

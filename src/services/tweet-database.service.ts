@@ -102,7 +102,7 @@ export class TweetDatabaseService {
     const normalizedHashtag = normalizeHashtag(hashtag);
     const safePagination = {
       page: Math.max(1, pagination.page),
-      limit: Math.min(1000, Math.max(1, pagination.limit)),
+      limit: Math.max(1, pagination.limit),
     };
 
     return this.repository.findByHashtag(normalizedHashtag, safePagination);
@@ -119,7 +119,7 @@ export class TweetDatabaseService {
 
     const safePagination = {
       page: Math.max(1, pagination.page),
-      limit: Math.min(1000, Math.max(1, pagination.limit)),
+      limit: Math.max(1, pagination.limit),
     };
 
     return this.repository.searchByText(
@@ -461,7 +461,7 @@ export class TweetDatabaseService {
       throw new DatabaseError("Campaign ID is required", "getTweetsByCampaign");
     }
 
-    const safeLimit = Math.min(1000, Math.max(1, limit));
+    const safeLimit = Math.max(1, limit);
 
     try {
       return await TweetModel.find({ campaignId: campaignId.trim() })
@@ -481,7 +481,7 @@ export class TweetDatabaseService {
     hashtag: string,
     limit = 100,
   ): Promise<ITweetDocument[]> {
-    const safeLimit = Math.min(1000, Math.max(1, limit));
+    const safeLimit = Math.max(1, limit);
 
     try {
       const normalizedHashtag = hashtag ? normalizeHashtag(hashtag) : "";

@@ -776,7 +776,7 @@ export async function listTweets(req: Request, res: Response): Promise<void> {
     const { campaignId, limit = DEFAULT_TWEET_LIMIT } = req.query;
     const parsedLimit = Math.max(
       1,
-      Math.min(1000, parseInt(String(limit), 10) || DEFAULT_TWEET_LIMIT)
+      parseInt(String(limit), 10) || DEFAULT_TWEET_LIMIT
     );
 
     // Validate campaignId if provided

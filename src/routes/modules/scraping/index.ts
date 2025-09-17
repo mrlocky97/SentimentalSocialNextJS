@@ -1,10 +1,10 @@
 import { Router } from "express";
 import {
-  getScrapingStatus,
-  listTweets,
-  scrapeHashtag,
-  scrapeSearch,
-  scrapeUser,
+    getScrapingStatus,
+    listTweets,
+    scrapeHashtag,
+    scrapeSearch,
+    scrapeUser,
 } from "./handlers";
 
 const router = Router();
@@ -263,7 +263,6 @@ const router = Router();
  *         schema:
  *           type: number
  *           minimum: 1
- *           maximum: 100
  *           default: 20
  *         description: Number of tweets to retrieve
  *       - in: query
