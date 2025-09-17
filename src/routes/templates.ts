@@ -4,9 +4,9 @@
  */
 
 import express from "express";
-import { CampaignTemplatesService } from "../services/campaign-templates.service";
-import { AICampaignAssistantService } from "../services/ai-campaign-assistant.service";
 import { authenticateToken, requireRole } from "../middleware/express-auth";
+import { AICampaignAssistantService } from "../services/ai-campaign-assistant.service";
+import { CampaignTemplatesService } from "../services/campaign-templates.service";
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ const router = express.Router();
  *         name: category
  *         schema:
  *           type: string
- *           enum: [marketing, brand-monitoring, competitor-analysis, crisis-management]
+ *           enum: [marketing, brand-monitoring, crisis-management]
  *         description: Filter templates by category
  *     responses:
  *       200:
@@ -67,7 +67,6 @@ router.get(
           categories: [
             "marketing",
             "brand-monitoring",
-            "competitor-analysis",
             "crisis-management",
           ],
         },

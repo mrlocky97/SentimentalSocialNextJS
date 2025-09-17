@@ -352,7 +352,6 @@ setInterval(async () => {
 
 - **Campaign Performance**: Análisis en tiempo real de campañas
 - **Brand Monitoring**: Monitoreo 24/7 de menciones de marca
-- **Competitor Analysis**: Comparación con competidores
 - **Crisis Detection**: Detección temprana de crisis de reputación
 
 ### Para Data Analysts

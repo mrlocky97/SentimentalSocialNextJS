@@ -99,7 +99,6 @@ export interface MarketingInsights {
   engagementPotential: number;
   viralityIndicators: string[];
   targetDemographics: string[];
-  competitorMentions: string[];
   trendAlignment: number;
   brandRisk: "low" | "medium" | "high";
   opportunityScore: number;

@@ -120,7 +120,7 @@ const campaignSchema = new Schema<ICampaignDocument>(
       required: [true, "Campaign type is required"],
       enum: {
         values: Object.values(CampaignType),
-        message: "Type must be one of: hashtag, keyword, mention, competitor",
+        message: "Type must be one of: hashtag, keyword, mention",
       },
       index: true,
     },

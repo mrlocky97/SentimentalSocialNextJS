@@ -12,8 +12,8 @@ import { ValidationError } from "../../../core/errors/error-types";
 import { SentimentAnalysisErrorFactory as SentimentAnalysisError } from "../../../core/errors/sentiment-errors";
 import { Method } from "../../../enums/sentiment.enum";
 import { SentimentAnalysisOrchestrator } from "../../../lib/sentiment/orchestrator";
+import { LanguageCode, TweetDTO } from "../../../lib/sentiment/types";
 import { sentimentService } from "../../../services/sentiment.service";
-import { TweetDTO, LanguageCode } from "../../../lib/sentiment/types";
 
 /**
  * Analyze text sentiment handler
@@ -186,7 +186,6 @@ export const analyzeTweetHandler = async (req: Request, res: Response) => {
         engagementPotential: 0.7,
         viralityIndicators: [],
         targetDemographics: [],
-        competitorMentions: [],
         trendAlignment: 0.5,
         brandRisk: "low",
         opportunityScore: 0.6,
@@ -283,7 +282,6 @@ export const batchAnalyzeHandler = async (req: Request, res: Response) => {
         engagementPotential: 0.5,
         viralityIndicators: [],
         targetDemographics: [],
-        competitorMentions: [],
         trendAlignment: 0,
         brandRisk: "low",
         opportunityScore: 0,

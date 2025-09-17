@@ -82,7 +82,6 @@ export interface SentimentAnalysisConfig {
   enableEntityExtraction: boolean;
   enableBrandMentionDetection: boolean;
   brandKeywords: string[];
-  competitorKeywords: string[];
   customKeywords: string[];
   minConfidenceThreshold: number;
   languageSupport: string[];

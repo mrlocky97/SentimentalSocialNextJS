@@ -42,7 +42,6 @@ export function isValidCampaignType(type: string): type is CampaignType {
     CampaignTypeEnum.hashtag,
     CampaignTypeEnum.keyword,
     CampaignTypeEnum.mention,
-    CampaignTypeEnum.competitor,
   ];
   return validTypes.includes(type as CampaignType);
 }

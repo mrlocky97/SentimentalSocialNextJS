@@ -11,7 +11,6 @@ export enum CampaignType {
   hashtag = "hashtag", // Hashtag-based campaign (#JustDoIt)
   keyword = "keyword", // Keyword-based campaign
   mention = "mention", // Mention-based campaign (@brand)
-  competitor = "competitor", // Competitor analysis
 }
 
 export enum DataSource {

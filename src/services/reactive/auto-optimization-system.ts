@@ -4,21 +4,21 @@
  */
 
 import {
-    BehaviorSubject,
-    combineLatest,
-    Observable,
-    Subject,
-    timer,
+  BehaviorSubject,
+  combineLatest,
+  Observable,
+  Subject,
+  timer,
 } from "rxjs";
 import {
-    catchError,
-    debounceTime,
-    distinctUntilChanged,
-    filter,
-    map,
-    mergeMap,
-    shareReplay,
-    tap,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  map,
+  mergeMap,
+  shareReplay,
+  tap,
 } from "rxjs/operators";
 import { logger } from "../../lib/observability/logger";
 import { notificationSystem } from "./notification-system";
@@ -356,7 +356,6 @@ class SmartAutoOptimizationSystem {
   private generateRecommendations(data: any): string[] {
     const recommendations = [
       "Consider A/B testing different content styles",
-      "Monitor competitor hashtag performance",
       "Increase posting frequency during peak hours",
       "Focus on high-engagement content types",
       "Analyze audience feedback for content optimization",

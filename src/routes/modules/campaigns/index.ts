@@ -60,7 +60,7 @@ router.use(logCampaignRequest);
  *           example: Track brand mentions during summer promotion
  *         type:
  *           type: string
- *           enum: [hashtag, keyword, mention, competitor]
+ *           enum: [hashtag, keyword, mention]
  *           example: hashtag
  *         status:
  *           type: string
@@ -132,7 +132,7 @@ router.use(logCampaignRequest);
  *           example: Track brand mentions during summer promotion
  *         type:
  *           type: string
- *           enum: [hashtag, keyword, mention, competitor]
+ *           enum: [hashtag, keyword, mention]
  *           example: hashtag
  *         dataSources:
  *           type: array
@@ -246,7 +246,7 @@ router.use(logCampaignRequest);
  *         name: type
  *         schema:
  *           type: string
- *           enum: [hashtag, keyword, mention, competitor]
+ *           enum: [hashtag, keyword, mention]
  *         description: Filter by campaign type
  *       - in: query
  *         name: organizationId
