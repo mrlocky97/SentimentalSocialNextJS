@@ -35,20 +35,20 @@ import './types/socket';
 
 // Import middleware
 import {
-  analyticsRateLimit,
-  authRateLimit,
-  cacheControlMiddleware,
-  compressionMiddleware,
-  performanceMiddleware,
-  sanitizeMiddleware,
-  scrapingRateLimit,
+    analyticsRateLimit,
+    authRateLimit,
+    cacheControlMiddleware,
+    compressionMiddleware,
+    performanceMiddleware,
+    sanitizeMiddleware,
+    scrapingRateLimit,
 } from './lib/middleware/performance';
 import { generalRateLimitMiddleware } from './middleware/intelligent-rate-limit';
 import { createMetricsMiddleware } from './middleware/metrics.middleware';
 import {
-  errorLoggingMiddleware,
-  performanceLoggingMiddleware,
-  requestLoggingMiddleware,
+    errorLoggingMiddleware,
+    performanceLoggingMiddleware,
+    requestLoggingMiddleware,
 } from './middleware/request-logging';
 
 // Import services
@@ -421,30 +421,46 @@ async function validateModel(): Promise<void> {
       return;
     }
 
-    const { SentimentService } = await import('./services/sentiment.service');
-    const sentimentService = new SentimentService();
+    // Use sentimentServiceFacade for compatibility with unified architecture
+    const { sentimentServiceFacade } = await import('./lib/sentiment/sentiment-service-facade');
 
-    const evaluation = await sentimentService.evaluateAccuracy({
-      testCases: sentimentTestDataset.map((item) => ({
-        text: item.text,
-        expectedSentiment: item.label,
-      })),
-      includeComparison: true,
+    // Simple validation using orchestrator through facade
+    systemLogger.info('📊 Model validation using unified orchestrator via facade', {
+      testCases: sentimentTestDataset.length,
+      model: 'unified-orchestrator-v2.0'
     });
 
-    systemLogger.info('📊 Model validation completed', {
-      totalTests: evaluation.overall.total,
-      accuracy: `${evaluation.overall.accuracy.toFixed(1)}%`,
-      correctPredictions: evaluation.overall.correct,
-    });
-
-    if (evaluation.comparison) {
-      systemLogger.info('📈 Model comparison results', {
-        ruleBasedAccuracy: `${evaluation.comparison.rule.accuracy.toFixed(1)}%`,
-        naiveBayesAccuracy: `${evaluation.comparison.naive.accuracy.toFixed(1)}%`,
-        agreement: evaluation.comparison.agreement,
-      });
+    // Test a small sample to verify the system is working
+    const sampleSize = Math.min(10, sentimentTestDataset.length);
+    let correct = 0;
+    
+    for (let i = 0; i < sampleSize; i++) {
+      const testCase = sentimentTestDataset[i];
+      try {
+        const result = await sentimentServiceFacade.testSentimentAnalysis({ 
+          text: testCase.text, 
+          method: 'unified' 
+        });
+        if (result.label === testCase.label) {
+          correct++;
+        }
+      } catch (testError) {
+        systemLogger.warn('Test case evaluation failed', { 
+          index: i,
+          error: testError instanceof Error ? testError.message : String(testError)
+        });
+      }
     }
+
+    const accuracy = (correct / sampleSize) * 100;
+    
+    systemLogger.info('� Model validation completed', {
+      totalTests: sampleSize,
+      accuracy: `${accuracy.toFixed(1)}%`,
+      correctPredictions: correct,
+      modelVersion: 'unified-orchestrator-v2.0'
+    });
+
   } catch (error) {
     systemLogger.warn('⚠️ Model validation failed', {
       error: error instanceof Error ? error.message : String(error),

@@ -76,10 +76,19 @@ export const container = new DIContainer();
 
 // Service tokens
 export const TOKENS = {
-  // Core Services
+  // 🎯 CORE SENTIMENT SERVICES (Post-Refactoring)
   SENTIMENT_ENGINE: Symbol("SentimentEngine"),
-  SENTIMENT_ORCHESTRATOR: Symbol("SentimentOrchestrator"),
+  SENTIMENT_ORCHESTRATOR: Symbol("SentimentOrchestrator"), // ← ÚNICO PUNTO DE ENTRADA
   SENTIMENT_MAPPERS: Symbol("SentimentMappers"),
+
+  // 🏛️ LEGACY SERVICES (Deprecated - Mantener para compatibility)
+  LEGACY_SENTIMENT_SERVICE: Symbol("LegacySentimentService"), // Former SentimentService
+  LEGACY_TWEET_SENTIMENT_MANAGER: Symbol("LegacyTweetSentimentManager"), // Simplified wrapper
+  
+  // 🔧 COMPONENT SERVICES (Internal - No direct injection)
+  NAIVE_BAYES_SERVICE: Symbol("NaiveBayesService"),
+  HYBRID_ANALYZER: Symbol("HybridAnalyzer"),
+  BERT_ANALYZER: Symbol("BertAnalyzer"),
 
   // Cache Services
   CACHE_SERVICE: Symbol("CacheService"),
@@ -89,12 +98,7 @@ export const TOKENS = {
   CORRELATION_SERVICE: Symbol("CorrelationService"),
   LOGGER_FACTORY: Symbol("LoggerFactory"),
 
-  // Analysis Services
-  NAIVE_BAYES_SERVICE: Symbol("NaiveBayesService"),
-  HYBRID_ANALYZER: Symbol("HybridAnalyzer"),
-
   // Managers
-  TWEET_SENTIMENT_MANAGER: Symbol("TweetSentimentManager"),
   MODEL_PERSISTENCE: Symbol("ModelPersistence"),
 
   // External Services
