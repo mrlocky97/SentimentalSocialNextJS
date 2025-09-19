@@ -1,6 +1,6 @@
 # Sistema Unificado de Análisis de Sentimiento
 
-Esta carpeta contiene el núcleo del sistema unificado de análisis de sentimiento, desarrollado según el ADR-001.
+Esta carpeta contiene el núcleo del sistema unificado de análisis de sentimiento
 
 ## Arquitectura
 
