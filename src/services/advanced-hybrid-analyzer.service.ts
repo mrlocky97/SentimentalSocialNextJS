@@ -622,64 +622,105 @@ export class AdvancedHybridAnalyzer {
   }
 
   /**
-   * Automatically adjust weights based on context
+   * Automatically adjust weights based on context with improved validation
    */
   adjustWeights(
     features: ContextualFeatures,
     naiveResult: { label: string; confidence: number },
     ruleResult: { label: string; confidence: number }
   ): { naiveWeight: number; ruleWeight: number; confidence: number } {
+    // Start with base weights
     let naiveWeight = this.baseConfig.naiveWeight;
     let ruleWeight = this.baseConfig.ruleWeight;
 
-    // Sarcasm detected - trust rule-based more
+    // Calculate adjustment factors (multiplicative approach for better control)
+    let ruleBoost = 1.0;
+    let naiveBoost = 1.0;
+
+    // Sarcasm detection - significantly favor rules
     if (features.sarcasmIndicators > 1) {
-      ruleWeight += 0.3;
-      naiveWeight -= 0.3;
+      ruleBoost *= 2.5; // Strong boost for rules
+      naiveBoost *= 0.4; // Reduce naive confidence
     }
 
-    // Short text - trust rule-based more (better for simple expressions)
+    // Text length adjustments
     if (features.textLength < 50) {
-      ruleWeight += 0.2;
-      naiveWeight -= 0.2;
+      // Short text - rules handle better
+      ruleBoost *= 1.6;
+      naiveBoost *= 0.7;
+    } else if (features.textLength > 200 && features.complexity > 0.8) {
+      // Long complex text - naive bayes excels
+      naiveBoost *= 1.8;
+      ruleBoost *= 0.6;
     }
 
-    // Long complex text - trust naive bayes more
-    if (features.textLength > 200 && features.complexity > 0.8) {
-      naiveWeight += 0.2;
-      ruleWeight -= 0.2;
-    }
-
-    // High emotional intensity - trust the method with higher confidence
-    if (features.emotionalWords > 2) {
+    // Confidence-based adjustments
+    const confidenceDiff = Math.abs(naiveResult.confidence - ruleResult.confidence);
+    if (confidenceDiff > 0.3) {
+      // Significant confidence difference - trust the more confident model
       if (naiveResult.confidence > ruleResult.confidence) {
-        naiveWeight += 0.15;
-        ruleWeight -= 0.15;
+        naiveBoost *= 1.3;
+        ruleBoost *= 0.8;
       } else {
-        ruleWeight += 0.15;
-        naiveWeight -= 0.15;
+        ruleBoost *= 1.3;
+        naiveBoost *= 0.8;
       }
     }
 
-    // Emoji presence - trust rule-based more (emojis are handled explicitly)
-    if (features.hasEmojis) {
-      ruleWeight += 0.1;
-      naiveWeight -= 0.1;
+    // Emotional intensity adjustments
+    if (features.emotionalWords > 2) {
+      // High emotional content - both models can be useful
+      if (naiveResult.confidence > 0.7) naiveBoost *= 1.2;
+      if (ruleResult.confidence > 0.7) ruleBoost *= 1.2;
     }
 
-    // Normalize weights
-    const total = naiveWeight + ruleWeight;
-    naiveWeight = Math.max(0.1, Math.min(0.9, naiveWeight / total));
-    ruleWeight = Math.max(0.1, Math.min(0.9, ruleWeight / total));
+    // Emoji adjustments
+    if (features.hasEmojis) {
+      ruleBoost *= 1.3; // Rules handle emojis explicitly
+      naiveBoost *= 0.9;
+    }
 
-    // Calculate adjusted confidence
-    const weightedConfidence =
-      naiveResult.confidence * naiveWeight + ruleResult.confidence * ruleWeight;
+    // Apply boosts to base weights
+    naiveWeight *= naiveBoost;
+    ruleWeight *= ruleBoost;
+
+    // Normalize to ensure weights sum to 1
+    const total = naiveWeight + ruleWeight;
+    if (total > 0) {
+      naiveWeight = naiveWeight / total;
+      ruleWeight = ruleWeight / total;
+    } else {
+      // Fallback to equal weights if something went wrong
+      naiveWeight = 0.5;
+      ruleWeight = 0.5;
+    }
+
+    // Apply minimum thresholds to prevent complete dominance
+    const minWeight = 0.05; // Minimum 5% weight
+    const maxWeight = 0.95; // Maximum 95% weight
+
+    if (naiveWeight < minWeight) {
+      naiveWeight = minWeight;
+      ruleWeight = 1.0 - minWeight;
+    } else if (naiveWeight > maxWeight) {
+      naiveWeight = maxWeight;
+      ruleWeight = 1.0 - maxWeight;
+    }
+
+    // Calculate weighted confidence with validation
+    const weightedConfidence = Math.min(
+      1.0,
+      Math.max(0.0, naiveResult.confidence * naiveWeight + ruleResult.confidence * ruleWeight)
+    );
+
+    // Apply confidence boost only if both models are reasonably confident
+    const avgConfidence = (naiveResult.confidence + ruleResult.confidence) / 2;
+    const confidenceBoost = avgConfidence > 0.6 ? 1.05 : 1.0; // Modest 5% boost
 
     return {
-      naiveWeight,
-      ruleWeight,
-      confidence: Math.min(1.0, weightedConfidence * 1.1), // Slight boost for weighted approach
+      naiveWeight: Math.round(naiveWeight * 1000) / 1000, // Round to 3 decimals
+      ruleWeight: Math.round(ruleWeight * 1000) / 1000,
+      confidence: Math.min(1.0, weightedConfidence * confidenceBoost),
     };
   }
 
