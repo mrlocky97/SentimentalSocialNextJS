@@ -5,26 +5,26 @@
  * It combines rule-based, machine learning (Naive Bayes), and hybrid analysis techniques.
  * Enhanced with multiple open-source models for superior accuracy.
  */
-import natural from "natural";
-import { Language } from "../../enums/sentiment.enum";
+import natural from 'natural';
+import { Language } from '../../enums/sentiment.enum';
 import {
   AdvancedHybridAnalyzer,
   ContextualFeatures,
-} from "../../services/advanced-hybrid-analyzer.service";
-import { BertSentimentAnalyzerService } from "../../services/bert-sentiment-analyzer.service";
+} from '../../services/advanced-hybrid-analyzer.service';
+import { BertSentimentAnalyzerService } from '../../services/bert-sentiment-analyzer.service';
 import {
   NaiveBayesSentimentService,
   NaiveBayesTrainingExample,
   SentimentLabel,
-} from "../../services/naive-bayes-sentiment.service";
-import { TextAnalysis } from "../../types/sentiment";
+} from '../../services/naive-bayes-sentiment.service';
+import { TextAnalysis } from '../../types/sentiment';
 import {
   AnalysisRequest,
   AnalysisResult,
   AnalyzerEngine,
   LanguageCode,
   SignalBreakdown,
-} from "./types";
+} from './types';
 
 /**
  * Consolidated internal rule-based analyzer
@@ -33,130 +33,440 @@ import {
 class ConsolidatedRuleAnalyzer {
   analyze(text: string): Promise<TextAnalysis> {
     return new Promise((resolve) => {
-      const lowerText = text.toLowerCase();
+      // --- Normalización y tokenización robusta ---
+      const lower = text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, ''); // quita acentos (ES/FR/DE)
+      const tokens = lower.match(/\p{L}+/gu) || []; // solo secuencias de letras
+      // Nota: usamos tokens + Sets (O(1)) en vez de includes()
 
-      // Consolidated lexicons from internal analyzer
-      const positiveWords = [
-        "good",
-        "great",
-        "excellent",
-        "amazing",
-        "love",
-        "fantastic",
-        "awesome",
-        "perfect",
-        "wonderful",
-        "best",
-        "bueno",
-        "excelente",
-        "increíble",
-        "fantástico",
-        "perfecto",
-        "maravilloso",
-        "mejor",
-      ];
+      // --- Léxicos ampliados (multilingüe EN/ES/FR/DE) ---
+      const POS_SET = new Set<string>([
+        // EN
+        'good',
+        'great',
+        'excellent',
+        'amazing',
+        'awesome',
+        'love',
+        'like',
+        'loved',
+        'liked',
+        'loving',
+        'fantastic',
+        'perfect',
+        'wonderful',
+        'best',
+        'happy',
+        'glad',
+        'satisfied',
+        'recommend',
+        'recommended',
+        'enjoy',
+        'enjoyed',
+        'enjoyable',
+        'brilliant',
+        'superb',
+        'outstanding',
+        'incredible',
+        'beautiful',
+        'nice',
+        'cool',
+        'sweet',
+        'lovely',
+        'impressive',
+        'epic',
+        'legit',
+        'solid',
+        'stable',
+        'fast',
+        'faster',
+        'improved',
+        'improve',
+        'fix',
+        'fixed',
+        'win',
+        'winner',
+        'wow',
+        'yay',
+        'thanks',
+        'thank',
+        'grateful',
+        'proud',
+        // ES
+        'bueno',
+        'buena',
+        'buenos',
+        'buenas',
+        'genial',
+        'excelente',
+        'increible',
+        'fantastico',
+        'fantastica',
+        'maravilloso',
+        'maravillosa',
+        'perfecto',
+        'perfecta',
+        'encanta',
+        'amo',
+        'amor',
+        'recomendable',
+        'recomendado',
+        'satisfecho',
+        'satisfecha',
+        'feliz',
+        'contento',
+        'contenta',
+        'brutal',
+        'espectacular',
+        'tremendo',
+        'top',
+        'rapido',
+        'rapida',
+        'mejora',
+        'mejorado',
+        'mejor',
+        'arreglado',
+        'funciona',
+        'estable',
+        // FR
+        'bon',
+        'bonne',
+        'exellent',
+        'excellent',
+        'excellente',
+        'genial',
+        'génial',
+        'incroyable',
+        'fantastique',
+        'parfait',
+        'parfaite',
+        'merveilleux',
+        'merveilleuse',
+        'jadore',
+        'adore',
+        'aimer',
+        'satisfait',
+        'satisfaisant',
+        'content',
+        'heureux',
+        'super',
+        'top',
+        'rapide',
+        'fiable',
+        'ameliore',
+        'améliore',
+        'reussi',
+        'réussi',
+        'correct',
+        // DE
+        'gut',
+        'gute',
+        'guter',
+        'guten',
+        'grossartig',
+        'großartig',
+        'ausgezeichnet',
+        'fantastisch',
+        'unglaublich',
+        'perfekt',
+        'wunderbar',
+        'liebe',
+        'mag',
+        'zufrieden',
+        'glucklich',
+        'glücklich',
+        'super',
+        'toll',
+        'klasse',
+        'top',
+        'schnell',
+        'schneller',
+        'stabil',
+        'zuverlassig',
+        'zuverlässig',
+        'verbessert',
+        'gelungen',
+        'prima',
+      ]);
 
-      const negativeWords = [
-        "bad",
-        "terrible",
-        "horrible",
-        "hate",
-        "worst",
-        "awful",
-        "disgusting",
-        "pathetic",
-        "useless",
-        "fail",
-        "malo",
-        "terrible",
-        "horrible",
-        "odio",
-        "peor",
-        "fatal",
-        "desastre",
-      ];
+      // Negativos comunes (con variantes frecuentes):
+      const NEG_SET = new Set<string>([
+        // EN
+        'bad',
+        'terrible',
+        'horrible',
+        'hate',
+        'worst',
+        'awful',
+        'disgusting',
+        'gross',
+        'pathetic',
+        'useless',
+        'fail',
+        'failed',
+        'failure',
+        'broken',
+        'bug',
+        'bugs',
+        'buggy',
+        'crash',
+        'crashed',
+        'crashes',
+        'slow',
+        'slower',
+        'lag',
+        'laggy',
+        'scam',
+        'fraud',
+        'fake',
+        'poor',
+        'boring',
+        'annoying',
+        'disappointed',
+        'disappointing',
+        'sad',
+        'angry',
+        'upset',
+        'frustrating',
+        'frustration',
+        'stupid',
+        'dumb',
+        'sucks',
+        'trash',
+        'garbage',
+        'nonsense',
+        // ES
+        'malo',
+        'mala',
+        'malos',
+        'malas',
+        'terrible',
+        'horrible',
+        'odio',
+        'peor',
+        'pesimo',
+        'pésimo',
+        'fatal',
+        'asco',
+        'basura',
+        'inutil',
+        'inútil',
+        'falla',
+        'fallas',
+        'error',
+        'errores',
+        'roto',
+        'rota',
+        'lento',
+        'lenta',
+        'crashea',
+        'estafa',
+        'falso',
+        'falsa',
+        'aburrido',
+        'aburrida',
+        'molesto',
+        'molesta',
+        'decepcionado',
+        'decepcionada',
+        'frustrado',
+        'frustrada',
+        'verguenza',
+        'vergüenza',
+        'problema',
+        'problemas',
+        // FR
+        'mauvais',
+        'mauvaise',
+        'pire',
+        'terrible',
+        'horrible',
+        'deteste',
+        'déteste',
+        'nul',
+        'degueulasse',
+        'dégueulasse',
+        'honteux',
+        'inutile',
+        'echec',
+        'échec',
+        'bug',
+        'lent',
+        'lente',
+        'plante',
+        'plantee',
+        'planté',
+        'plantée',
+        'arnaque',
+        'faux',
+        'fausse',
+        'ennuyeux',
+        'decevant',
+        'décevant',
+        'deception',
+        'déception',
+        'frustrant',
+        'casse',
+        'cassé',
+        'cassée',
+        // DE
+        'schlecht',
+        'schlechte',
+        'schlechter',
+        'schlimm',
+        'schrecklich',
+        'furchtbar',
+        'hasse',
+        'mies',
+        'eklig',
+        'nutzlos',
+        'fehler',
+        'fehlerhaft',
+        'bug',
+        'absturz',
+        'abgesturzt',
+        'abgestürzt',
+        'langsam',
+        'kaputt',
+        'betrug',
+        'fake',
+        'enttauscht',
+        'enttäuscht',
+        'enttauschend',
+        'enttäuschend',
+        'frustrierend',
+        'langweilig',
+        'miserabel',
+        'problem',
+        'probleme',
+      ]);
 
-      // Simplified emoji sentiment mapping
-      const emojiSentiment: Record<string, number> = {
-        "😀": 1,
-        "😃": 1,
-        "😄": 1,
-        "😁": 1,
-        "😊": 0.8,
-        "😍": 1,
-        "🥰": 1,
-        "👍": 0.7,
-        "❤️": 1,
-        "😢": -1,
-        "😭": -1,
-        "😞": -0.8,
-        "😔": -0.8,
-        "😡": -1,
-        "😠": -1,
-        "👎": -0.7,
-        "💔": -1,
+      // --- Emojis mucho más completos (valencia en [-1, 1]) ---
+      const EMOJI: Record<string, number> = {
+        // positivos
+        '😀': 1,
+        '😃': 1,
+        '😄': 1,
+        '😁': 1,
+        '🙂': 0.7,
+        '😊': 0.8,
+        '😍': 1,
+        '🥰': 1,
+        '🤩': 1,
+        '😎': 0.8,
+        '😂': 0.6,
+        '🤣': 0.7,
+        '👍': 0.7,
+        '👍🏻': 0.7,
+        '👍🏼': 0.7,
+        '👍🏽': 0.7,
+        '👍🏾': 0.7,
+        '👍🏿': 0.7,
+        '❤️': 1,
+        '❤': 1,
+        '♥️': 1,
+        '💖': 1,
+        '💗': 1,
+        '💕': 0.9,
+        '💞': 0.9,
+        '💘': 0.9,
+        '💝': 0.9,
+        '🎉': 0.9,
+        '🎊': 0.9,
+        '👏': 0.8,
+        '🙌': 0.8,
+        '🙏': 0.5,
+        '✨': 0.7,
+        '🌟': 0.8,
+        '🔥': 0.8,
+        '💯': 1,
+        '🚀': 0.9,
+        // negativos
+        '☹️': -0.7,
+        '🙁': -0.6,
+        '😟': -0.6,
+        '😞': -0.7,
+        '😣': -0.7,
+        '😖': -0.7,
+        '😫': -0.8,
+        '😩': -0.8,
+        '😢': -0.9,
+        '😭': -1,
+        '😤': -0.8,
+        '😠': -0.9,
+        '😡': -1,
+        '🤬': -1,
+        '😨': -0.8,
+        '😰': -0.8,
+        '😱': -0.9,
+        '🤢': -0.9,
+        '🤮': -1,
+        '😷': -0.6,
+        '👎': -0.7,
+        '👎🏻': -0.7,
+        '👎🏼': -0.7,
+        '👎🏽': -0.7,
+        '👎🏾': -0.7,
+        '👎🏿': -0.7,
+        '💔': -1,
+        '💀': -0.9,
+        '💩': -0.8,
+        '⚠️': -0.6,
+        '😿': -0.7
       };
 
-      let positiveScore = 0,
-        negativeScore = 0,
-        emojiScore = 0,
+      // --- Conteo léxico con límites de palabra ---
+      let pos = 0,
+        neg = 0;
+      for (const t of tokens) {
+        if (POS_SET.has(t)) pos++;
+        if (NEG_SET.has(t)) neg++;
+      }
+
+      // --- Emojis (promedio ponderado por cantidad) ---
+      let emojiScore = 0,
         emojiCount = 0;
-
-      positiveWords.forEach((word) => {
-        if (lowerText.includes(word)) positiveScore++;
-      });
-      negativeWords.forEach((word) => {
-        if (lowerText.includes(word)) negativeScore++;
-      });
-
-      // Process emojis
-      const emojiMatches = Array.from(
-        text.matchAll(
-          /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]/gu,
-        ),
+      const graphemes = Array.from(
+        text.matchAll(/(\p{Extended_Pictographic}\p{Emoji_Modifier}?)/gu)
       );
-
-      if (emojiMatches.length > 0) {
-        for (const match of emojiMatches) {
-          const emoji = match[0];
+      for (const m of graphemes) {
+        const e = m[0];
+        if (EMOJI[e] !== undefined) {
+          emojiScore += EMOJI[e];
           emojiCount++;
-          if (emojiSentiment[emoji] !== undefined) {
-            emojiScore += emojiSentiment[emoji];
-          }
         }
       }
+      const emojiAvg = emojiCount ? emojiScore / emojiCount : 0;
 
-      let score = positiveScore * 0.2 - negativeScore * 0.2;
-      if (emojiCount > 0) {
-        score += (emojiScore / emojiCount) * Math.min(1, emojiCount * 0.5);
-      }
+      // --- Puntuación simple y estable ---
+      // léxico aporta ±0.25 por match; emojis aportan hasta ±0.5 (suavizado)
+      let score = pos * 0.25 - neg * 0.25;
+      score += emojiAvg * Math.min(0.5, emojiCount * 0.15);
 
-      let label: "positive" | "negative" | "neutral" = "neutral";
+      // --- Clasificación ---
+      let label: 'positive' | 'negative' | 'neutral' = 'neutral';
       let confidence = 0.5;
-
       if (score > 0.15) {
-        label = "positive";
+        label = 'positive';
         confidence = Math.min(0.99, 0.6 + Math.abs(score));
       } else if (score < -0.15) {
-        label = "negative";
+        label = 'negative';
         confidence = Math.min(0.99, 0.6 + Math.abs(score));
       }
 
-      const words = text.split(/\s+/).filter((word) => word.length > 3);
-      const keywords = words.slice(0, 5);
+      // --- Keywords (muy básicas) ---
+      const keywords = tokens.filter((w) => w.length > 3).slice(0, 5);
 
-      const spanishWords = [
-        "el",
-        "la",
-        "que",
-        "de",
-        "es",
-        "y",
-        "pero",
-        "con",
-        "por",
-      ];
-      const isSpanish = spanishWords.some((word) => lowerText.includes(word));
+      // Detección simple de idioma (mejorable)
+      const spanishHints = new Set(['el', 'la', 'que', 'de', 'pero', 'con', 'por', 'y', 'es']);
+      const frenchHints = new Set(['le', 'la', 'les', 'et', 'des', 'que', 'pour', 'dans']);
+      const germanHints = new Set(['der', 'die', 'und', 'nicht', 'mit', 'ein', 'eine']);
+      let lang = Language.ENGLISH;
+      if (tokens.some((t) => spanishHints.has(t))) lang = Language.SPANISH;
+      else if (tokens.some((t) => frenchHints.has(t))) lang = Language.FRENCH;
+      else if (tokens.some((t) => germanHints.has(t))) lang = Language.GERMAN;
 
       const result: TextAnalysis = {
         sentiment: {
@@ -165,30 +475,29 @@ class ConsolidatedRuleAnalyzer {
           label,
           confidence,
           emotions: {
-            joy: label === "positive" ? confidence : 0,
-            sadness: label === "negative" ? confidence * 0.7 : 0,
-            anger: label === "negative" ? confidence * 0.8 : 0,
-            fear: label === "negative" ? confidence * 0.5 : 0,
-            surprise: 0.1,
-            disgust: label === "negative" ? confidence * 0.6 : 0,
+            joy: label === 'positive' ? confidence : 0,
+            sadness: label === 'negative' ? confidence * 0.7 : 0,
+            anger: label === 'negative' ? confidence * 0.8 : 0,
+            fear: label === 'negative' ? confidence * 0.5 : 0,
+            surprise: Math.abs(score) > 0.8 ? 0.3 * confidence : 0.1,
+            disgust: label === 'negative' ? confidence * 0.6 : 0,
           },
         },
         keywords,
         entities: [],
-        language: isSpanish ? Language.SPANISH : Language.ENGLISH,
+        language: lang,
       };
 
       resolve(result);
     });
   }
 }
-
 export class SentimentAnalysisEngine implements AnalyzerEngine {
   private ruleBasedAnalyzer: ConsolidatedRuleAnalyzer;
   private naiveBayesAnalyzer: NaiveBayesSentimentService;
   private bertAnalyzer: BertSentimentAnalyzerService | null = null;
   private hybridAnalyzer: AdvancedHybridAnalyzer;
-  private engineVersion = "2.0.0";
+  private engineVersion = '2.0.0';
   private bertEnabled: boolean = false;
 
   constructor() {
@@ -207,7 +516,7 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
       this.bertAnalyzer = new BertSentimentAnalyzerService();
       await this.bertAnalyzer.loadModel();
       this.bertEnabled = true;
-      console.log("[SentimentEngine] BERT model successfully loaded");
+      console.log('[SentimentEngine] BERT model successfully loaded');
     }
   }
 
@@ -266,10 +575,8 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
   /**
    * Enhanced hybrid analysis method with BERT integration
    */
-  private async analyzeBasic(
-    request: AnalysisRequest,
-  ): Promise<AnalysisResult> {
-    const { text, language = "en" } = request;
+  private async analyzeBasic(request: AnalysisRequest): Promise<AnalysisResult> {
+    const { text, language = 'en' } = request;
 
     // 1. Get predictions from rule-based and Naive Bayes analyzers.
     const ruleResultPromise = this.ruleBasedAnalyzer.analyze(text);
@@ -280,13 +587,11 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
     if (this.isBertEnabled() && this.bertAnalyzer) {
       try {
         bertResult = await this.bertAnalyzer.predict(text);
-        console.log(
-          `[SentimentEngine] BERT prediction: ${JSON.stringify(bertResult)}`,
-        );
+        console.log(`[SentimentEngine] BERT prediction: ${JSON.stringify(bertResult)}`);
       } catch (error) {
         console.error(
-          "[SentimentEngine] BERT analysis failed, falling back to standard hybrid analysis",
-          error,
+          '[SentimentEngine] BERT analysis failed, falling back to standard hybrid analysis',
+          error
         );
       }
     }
@@ -322,7 +627,7 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
             weight: 0.5,
           },
         ],
-        language,
+        language
       );
     } else {
       // Fall back to original hybrid analysis without BERT
@@ -334,26 +639,17 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
           confidence: ruleResult.sentiment.confidence,
           score: ruleResult.sentiment.score,
         },
-        language,
+        language
       );
     }
 
     // 4. Construct the final, unified AnalysisResult.
-    const signals = this.buildSignalBreakdown(
-      hybridPrediction.features,
-      ruleResult.keywords,
-    );
+    const signals = this.buildSignalBreakdown(hybridPrediction.features, ruleResult.keywords);
 
     const lang = hybridPrediction.features.language;
-    const detectedLanguage: LanguageCode = [
-      "en",
-      "es",
-      "fr",
-      "de",
-      "unknown",
-    ].includes(lang)
+    const detectedLanguage: LanguageCode = ['en', 'es', 'fr', 'de', 'unknown'].includes(lang)
       ? (lang as LanguageCode)
-      : "unknown";
+      : 'unknown';
 
     return {
       sentiment: {
@@ -363,42 +659,24 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
         confidence: hybridPrediction.confidence,
         emotions: {
           joy: hybridPrediction.score > 0.5 ? hybridPrediction.confidence : 0,
-          sadness:
-            hybridPrediction.score < -0.5
-              ? hybridPrediction.confidence * 0.7
-              : 0,
-          anger:
-            hybridPrediction.score < -0.5
-              ? hybridPrediction.confidence * 0.8
-              : 0,
-          fear:
-            hybridPrediction.score < -0.3
-              ? hybridPrediction.confidence * 0.5
-              : 0,
-          surprise:
-            Math.abs(hybridPrediction.score) > 0.8
-              ? hybridPrediction.confidence * 0.3
-              : 0,
-          disgust:
-            hybridPrediction.score < -0.6
-              ? hybridPrediction.confidence * 0.6
-              : 0,
+          sadness: hybridPrediction.score < -0.5 ? hybridPrediction.confidence * 0.7 : 0,
+          anger: hybridPrediction.score < -0.5 ? hybridPrediction.confidence * 0.8 : 0,
+          fear: hybridPrediction.score < -0.3 ? hybridPrediction.confidence * 0.5 : 0,
+          surprise: Math.abs(hybridPrediction.score) > 0.8 ? hybridPrediction.confidence * 0.3 : 0,
+          disgust: hybridPrediction.score < -0.6 ? hybridPrediction.confidence * 0.6 : 0,
         },
       },
       keywords: ruleResult.keywords,
       language: detectedLanguage,
       signals,
-      version: bertResult ? "2.0.0-bert-hybrid" : "1.0.0-unified",
+      version: bertResult ? '2.0.0-bert-hybrid' : '1.0.0-unified',
     };
   }
 
   /**
    * Helper to assemble the signal breakdown from various analysis features.
    */
-  private buildSignalBreakdown(
-    features: ContextualFeatures,
-    keywords: string[],
-  ): SignalBreakdown {
+  private buildSignalBreakdown(features: ContextualFeatures, keywords: string[]): SignalBreakdown {
     return {
       tokens: keywords,
       ngrams: {}, // Placeholder for future n-gram analysis
