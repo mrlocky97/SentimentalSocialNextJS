@@ -1,6 +1,7 @@
 /**
  * Advanced Hybrid Sentiment Analyzer
  * Implements automatic weight adjustment and contextual analysis
+ * Optimized version with precomputed data structures
  */
 
 export interface HybridConfig {
@@ -35,6 +36,466 @@ export interface PredictionWithWeight {
   weight: number;
 }
 
+// Precargar léxicos y estructuras de datos fuera de la clase
+const EMOTIONAL_WORDS = {
+  POS: new Set([
+    // EN
+    'good',
+    'great',
+    'excellent',
+    'amazing',
+    'awesome',
+    'love',
+    'loved',
+    'loving',
+    'like',
+    'liked',
+    'fantastic',
+    'perfect',
+    'wonderful',
+    'best',
+    'brilliant',
+    'superb',
+    'incredible',
+    'nice',
+    'cool',
+    'beautiful',
+    'enjoy',
+    'enjoyed',
+    'outstanding',
+    'stable',
+    'fast',
+    'improved',
+    'fix',
+    'fixed',
+    // ES
+    'bueno',
+    'buena',
+    'buenos',
+    'buenas',
+    'genial',
+    'excelente',
+    'increible',
+    'fantastico',
+    'fantastica',
+    'maravilloso',
+    'maravillosa',
+    'perfecto',
+    'perfecta',
+    'mejor',
+    'mejora',
+    'mejorado',
+    'encanta',
+    'amo',
+    'amor',
+    'rapido',
+    'rapida',
+    'estable',
+    'funciona',
+    'brutal',
+    'espectacular',
+    'tremendo',
+    'top',
+    // FR
+    'bon',
+    'bonne',
+    'excellent',
+    'excellente',
+    'genial',
+    'genial',
+    'génial',
+    'incroyable',
+    'fantastique',
+    'parfait',
+    'parfaite',
+    'merveilleux',
+    'merveilleuse',
+    'jador',
+    'jadore',
+    'aimer',
+    'satisfait',
+    'super',
+    'rapide',
+    'fiable',
+    'ameliore',
+    'améliore',
+    // DE
+    'gut',
+    'gute',
+    'guter',
+    'guten',
+    'grossartig',
+    'großartig',
+    'ausgezeichnet',
+    'fantastisch',
+    'unglaublich',
+    'perfekt',
+    'wunderbar',
+    'liebe',
+    'mag',
+    'zufrieden',
+    'glucklich',
+    'glücklich',
+    'super',
+    'toll',
+    'top',
+    'schnell',
+    'stabil',
+    'zuverlassig',
+    'zuverlässig',
+    'verbessert',
+  ]),
+  NEG: new Set([
+    // EN
+    'bad',
+    'terrible',
+    'horrible',
+    'hate',
+    'worst',
+    'awful',
+    'disgusting',
+    'gross',
+    'useless',
+    'pathetic',
+    'fail',
+    'failed',
+    'failure',
+    'broken',
+    'bug',
+    'bugs',
+    'buggy',
+    'crash',
+    'crashed',
+    'crashes',
+    'slow',
+    'lag',
+    'laggy',
+    'scam',
+    'fraud',
+    'fake',
+    'boring',
+    'annoying',
+    'disappointed',
+    'disappointing',
+    'sad',
+    'angry',
+    'upset',
+    'frustrating',
+    'stupid',
+    'dumb',
+    'sucks',
+    'trash',
+    'garbage',
+    // ES
+    'malo',
+    'mala',
+    'malos',
+    'malas',
+    'terrible',
+    'horrible',
+    'odio',
+    'peor',
+    'pesimo',
+    'pésimo',
+    'fatal',
+    'asco',
+    'basura',
+    'inutil',
+    'inútil',
+    'falla',
+    'fallas',
+    'error',
+    'errores',
+    'roto',
+    'rota',
+    'lento',
+    'lenta',
+    'crashea',
+    'estafa',
+    'falso',
+    'falsa',
+    'aburrido',
+    'aburrida',
+    'decepcionado',
+    'decepcionada',
+    'frustrado',
+    'frustrada',
+    'problema',
+    'problemas',
+    'vergüenza',
+    'verguenza',
+    // FR
+    'mauvais',
+    'mauvaise',
+    'pire',
+    'terrible',
+    'horrible',
+    'deteste',
+    'déteste',
+    'nul',
+    'degoutant',
+    'dégoutant',
+    'degueulasse',
+    'dégueulasse',
+    'honteux',
+    'inutile',
+    'echec',
+    'échec',
+    'bug',
+    'lent',
+    'lente',
+    'plante',
+    'plantee',
+    'planté',
+    'plantée',
+    'arnaque',
+    'faux',
+    'fausse',
+    'ennuyeux',
+    'decevant',
+    'décevant',
+    'deception',
+    'déception',
+    'frustrant',
+    'casse',
+    'cassé',
+    'cassée',
+    // DE
+    'schlecht',
+    'schlechte',
+    'schlechter',
+    'schlimm',
+    'schrecklich',
+    'furchtbar',
+    'hasse',
+    'mies',
+    'eklig',
+    'nutzlos',
+    'fehler',
+    'fehlerhaft',
+    'bug',
+    'absturz',
+    'abgesturzt',
+    'abgestürzt',
+    'langsam',
+    'kaputt',
+    'betrug',
+    'fake',
+    'enttauscht',
+    'enttäuscht',
+    'enttauschend',
+    'enttäuschend',
+    'frustrierend',
+    'langweilig',
+    'miserabel',
+    'problem',
+    'probleme',
+  ]),
+};
+
+// Crear un único Set con todas las palabras emocionales
+const ALL_EMOTIONAL_WORDS = new Set([...EMOTIONAL_WORDS.POS, ...EMOTIONAL_WORDS.NEG]);
+
+// Precargar patrones de sarcasmo
+const SARCASTIC_EMOJIS = /[🙃😉😏😒🙄🤨😬😑]/u;
+const EMOJI_PATTERN =
+  /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/u;
+const ELLIPSIS_PATTERN = /\.\.\.|…/u;
+const POSITIVE_WORDS_QUOTED =
+  /(['"“”«»])\s*(great|awesome|amazing|perfect|nice|genial|excelente|increible|parfait|wunderbar|toll)\s*\1/iu;
+const ELONGATED_POSITIVE =
+  /(so+|very+|re+|ta+n)\s+(good|great|amazing|nice|bueno|genial|excelente|increible|toll|wunderbar)/iu;
+const GENERIC_IRONY = /(\breally|\bsure|\btotally)\s+\p{L}+/iu;
+
+// Precargar conjuntos para detección de contraste
+
+const ADVERSATIVE_CONNECTORS = new Set([
+  'but',
+  'though',
+  'yet', // EN
+  'pero',
+  'aunque', // ES
+  'mais',
+  'pourtant', // FR
+  'aber',
+  'jedoch',
+  'obwohl', // DE
+]);
+
+// Precargar patrones de sarcasmo por idioma
+const SARCASTIC_PATTERNS = {
+  en: [
+    /oh\s+(great|wonderful|perfect|amazing|fantastic|awesome)/iu,
+    /just\s+what\s+i\s+needed/iu,
+    /how\s+(wonderful|lovely|nice)/iu,
+    /really\s+know\s+how\s+to/iu,
+    /exactly\s+what\s+i\s+wanted/iu,
+    /yeah[\s,]*right/iu,
+    /\bas\s+if\b/iu,
+    /thanks\s+(a\s+lot|so\s+much)/iu,
+    /great\s+job(?:\s+(everyone|team))?/iu,
+    /love\s+that\s+for\s+me/iu,
+    /what\s+could\s+possibly\s+go\s+wrong/iu,
+    /can['’]t\s+wait\b/iu,
+    /(nice|awesome|brilliant)\s*(\.\.\.|…)/iu,
+    /thanks\s+for\s+nothing/iu,
+  ],
+  es: [
+    /que\s+(maravilloso|genial|perfecto|lindo|bonito)/iu,
+    /justo\s+lo\s+que\s+necesitaba/iu,
+    /realmente\s+saben?\s+como/iu,
+    /exactamente\s+lo\s+que\s+queria/iu,
+    /si[\s,]*claro/iu,
+    /aja|aj[aá]/iu,
+    /gracias\s+por\s+nada/iu,
+    /lo\s+que\s+me\s+faltaba/iu,
+    /me\s+encanta\s+cuando/iu,
+    /que\s+bien\s*(\.\.\.|…)/iu,
+    /buenisimo|buenísimo\s*(\.\.\.|…)/iu,
+    /no[\s,]*si\s+/iu,
+    /que\s+podria\s+salir\s+mal/iu,
+    /perfecto\s*(\.\.\.|…)/iu,
+  ],
+  fr: [
+    /oh\s+(genial|génial|parfait|merveilleux)/iu,
+    /juste\s+ce\s+qu(?:'|’)?il\s+me\s+fallait/iu,
+    /vraiment\s+savoir\s+comment/iu,
+    /oui[\s,]*bien\s+sur|oui[\s,]*bien\s+sûr/iu,
+    /bah\s+oui/iu,
+    /merci\s+(bien|du\s+cadeau)/iu,
+    /fallait\s+pas/iu,
+    /ca\s+promet|ça\s+promet/iu,
+    /j(?:'|’)?adore\s+quand/iu,
+    /(super|genial|génial)\s*(\.\.\.|…)/iu,
+    /quelle\s+surprise/iu,
+  ],
+  de: [
+    /oh\s+(toll|perfekt|wunderbar|klasse)/iu,
+    /genau\s+was\s+ich\s+brauchte|genau\s+was\s+ich\s+gebraucht\s+habe/iu,
+    /wirklich\s+wissen\s+wie/iu,
+    /ja[\s,]*klar/iu,
+    /na\s+(toll|prima)/iu,
+    /ganz\s+toll/iu,
+    /danke\s+auch/iu,
+    /herzlichen\s+gluckwunsch|herzlichen\s+glückwunsch/iu,
+    /freu\s+mich\s+ja\s+so+(\.*|…)?/iu,
+    /das\s+ist\s+ja\s+super/iu,
+    /wie\s+uberraschend|wie\s+überraschend/iu,
+    /was\s+kann\s+da\s+schiefgehen/iu,
+    /laeuft|läuft/iu,
+    /klasse\s*(\.\.\.|…)/iu,
+  ],
+};
+
+// Precargar intensificadores emocionales
+const EMOTIONAL_INTENSIFIERS = {
+  high: new Set([
+    // EN
+    'absolutely',
+    'completely',
+    'totally',
+    'extremely',
+    'incredibly',
+    'utterly',
+    'highly',
+    'insanely',
+    'ridiculously',
+    'unbelievably',
+    'super',
+    'ultra',
+    'mega',
+    // ES
+    'absolutamente',
+    'completamente',
+    'totalmente',
+    'extremadamente',
+    'increiblemente',
+    'increíblemente',
+    'súper',
+    'super',
+    'hiper',
+    'ultra',
+    're',
+    // FR
+    'absolument',
+    'complètement',
+    'totalement',
+    'extrêmement',
+    'incroyablement',
+    'hyper',
+    'super',
+    'ultra',
+    'archi',
+    // DE
+    'absolut',
+    'vollkommen',
+    'völlig',
+    'total',
+    'äußerst',
+    'aeusserst',
+    'extrem',
+    'unglaublich',
+    'mega',
+    'super',
+    'ultra',
+  ]),
+  medium: new Set([
+    // EN
+    'very',
+    'really',
+    'quite',
+    'pretty',
+    'fairly',
+    'rather',
+    'so',
+    // ES
+    'muy',
+    'bastante',
+    'tan',
+    're',
+    'bien',
+    // FR
+    'très',
+    'vraiment',
+    'assez',
+    'plutôt',
+    'tellement',
+    // DE
+    'sehr',
+    'wirklich',
+    'ziemlich',
+    'recht',
+    'ganz',
+    'echt',
+    'so',
+  ]),
+  low: new Set([
+    // EN
+    'somewhat',
+    'kind of',
+    'sort of',
+    'a bit',
+    'a little',
+    'slightly',
+    // ES
+    'algo',
+    'un poco',
+    'poquito',
+    'medio',
+    'mas o menos',
+    'más o menos',
+    // FR
+    'un peu',
+    'quelque peu',
+    'légèrement',
+    // DE
+    'etwas',
+    'ein bisschen',
+    'bisschen',
+    'leicht',
+  ]),
+};
+
 export class AdvancedHybridAnalyzer {
   private baseConfig: HybridConfig = {
     naiveWeight: 0.5,
@@ -48,438 +509,6 @@ export class AdvancedHybridAnalyzer {
     },
   };
 
-  // Precargar léxicos y estructuras de datos fuera de la función
-  EMOTIONAL_WORDS = {
-    POS: new Set([
-      // EN
-      'good',
-      'great',
-      'excellent',
-      'amazing',
-      'awesome',
-      'love',
-      'loved',
-      'loving',
-      'like',
-      'liked',
-      'fantastic',
-      'perfect',
-      'wonderful',
-      'best',
-      'brilliant',
-      'superb',
-      'incredible',
-      'nice',
-      'cool',
-      'beautiful',
-      'enjoy',
-      'enjoyed',
-      'outstanding',
-      'stable',
-      'fast',
-      'improved',
-      'fix',
-      'fixed',
-      // ES
-      'bueno',
-      'buena',
-      'buenos',
-      'buenas',
-      'genial',
-      'excelente',
-      'increible',
-      'fantastico',
-      'fantastica',
-      'maravilloso',
-      'maravillosa',
-      'perfecto',
-      'perfecta',
-      'mejor',
-      'mejora',
-      'mejorado',
-      'encanta',
-      'amo',
-      'amor',
-      'rapido',
-      'rapida',
-      'estable',
-      'funciona',
-      'brutal',
-      'espectacular',
-      'tremendo',
-      'top',
-      // FR
-      'bon',
-      'bonne',
-      'excellent',
-      'excellente',
-      'genial',
-      'genial',
-      'génial',
-      'incroyable',
-      'fantastique',
-      'parfait',
-      'parfaite',
-      'merveilleux',
-      'merveilleuse',
-      'jador',
-      'jadore',
-      'aimer',
-      'satisfait',
-      'super',
-      'rapide',
-      'fiable',
-      'ameliore',
-      'améliore',
-      // DE
-      'gut',
-      'gute',
-      'guter',
-      'guten',
-      'grossartig',
-      'großartig',
-      'ausgezeichnet',
-      'fantastisch',
-      'unglaublich',
-      'perfekt',
-      'wunderbar',
-      'liebe',
-      'mag',
-      'zufrieden',
-      'glucklich',
-      'glücklich',
-      'super',
-      'toll',
-      'top',
-      'schnell',
-      'stabil',
-      'zuverlassig',
-      'zuverlässig',
-      'verbessert',
-    ]),
-    NEG: new Set([
-      // EN
-      'bad',
-      'terrible',
-      'horrible',
-      'hate',
-      'worst',
-      'awful',
-      'disgusting',
-      'gross',
-      'useless',
-      'pathetic',
-      'fail',
-      'failed',
-      'failure',
-      'broken',
-      'bug',
-      'bugs',
-      'buggy',
-      'crash',
-      'crashed',
-      'crashes',
-      'slow',
-      'lag',
-      'laggy',
-      'scam',
-      'fraud',
-      'fake',
-      'boring',
-      'annoying',
-      'disappointed',
-      'disappointing',
-      'sad',
-      'angry',
-      'upset',
-      'frustrating',
-      'stupid',
-      'dumb',
-      'sucks',
-      'trash',
-      'garbage',
-      // ES
-      'malo',
-      'mala',
-      'malos',
-      'malas',
-      'terrible',
-      'horrible',
-      'odio',
-      'peor',
-      'pesimo',
-      'pésimo',
-      'fatal',
-      'asco',
-      'basura',
-      'inutil',
-      'inútil',
-      'falla',
-      'fallas',
-      'error',
-      'errores',
-      'roto',
-      'rota',
-      'lento',
-      'lenta',
-      'crashea',
-      'estafa',
-      'falso',
-      'falsa',
-      'aburrido',
-      'aburrida',
-      'decepcionado',
-      'decepcionada',
-      'frustrado',
-      'frustrada',
-      'problema',
-      'problemas',
-      'vergüenza',
-      'verguenza',
-      // FR
-      'mauvais',
-      'mauvaise',
-      'pire',
-      'terrible',
-      'horrible',
-      'deteste',
-      'déteste',
-      'nul',
-      'degoutant',
-      'dégoutant',
-      'degueulasse',
-      'dégueulasse',
-      'honteux',
-      'inutile',
-      'echec',
-      'échec',
-      'bug',
-      'lent',
-      'lente',
-      'plante',
-      'plantee',
-      'planté',
-      'plantée',
-      'arnaque',
-      'faux',
-      'fausse',
-      'ennuyeux',
-      'decevant',
-      'décevant',
-      'deception',
-      'déception',
-      'frustrant',
-      'casse',
-      'cassé',
-      'cassée',
-      // DE
-      'schlecht',
-      'schlechte',
-      'schlechter',
-      'schlimm',
-      'schrecklich',
-      'furchtbar',
-      'hasse',
-      'mies',
-      'eklig',
-      'nutzlos',
-      'fehler',
-      'fehlerhaft',
-      'bug',
-      'absturz',
-      'abgesturzt',
-      'abgestürzt',
-      'langsam',
-      'kaputt',
-      'betrug',
-      'fake',
-      'enttauscht',
-      'enttäuscht',
-      'enttauschend',
-      'enttäuschend',
-      'frustrierend',
-      'langweilig',
-      'miserabel',
-      'problem',
-      'probleme',
-    ]),
-  };
-
-  // Crear un único Set con todas las palabras emocionales
-  ALL_EMOTIONAL_WORDS = new Set([...this.EMOTIONAL_WORDS.POS, ...this.EMOTIONAL_WORDS.NEG]);
-
-  private sarcasmPatterns = {
-    en: [
-      /oh\s+(great|wonderful|perfect|amazing|fantastic|awesome)/iu,
-      /just\s+what\s+i\s+needed/iu,
-      /how\s+(wonderful|lovely|nice)/iu,
-      /really\s+know\s+how\s+to/iu,
-      /exactly\s+what\s+i\s+wanted/iu,
-      /yeah[\s,]*right/iu,
-      /\bas\s+if\b/iu,
-      /thanks\s+(a\s+lot|so\s+much)/iu,
-      /great\s+job(?:\s+(everyone|team))?/iu,
-      /love\s+that\s+for\s+me/iu,
-      /what\s+could\s+possibly\s+go\s+wrong/iu,
-      /can['’]t\s+wait\b/iu,
-      /(nice|awesome|brilliant)\s*(\.\.\.|…)/iu,
-      /thanks\s+for\s+nothing/iu,
-    ],
-    es: [
-      /que\s+(maravilloso|genial|perfecto|lindo|bonito)/iu,
-      /justo\s+lo\s+que\s+necesitaba/iu,
-      /realmente\s+saben?\s+como/iu,
-      /exactamente\s+lo\s+que\s+queria/iu,
-      /si[\s,]*claro/iu,
-      /aja|aj[aá]/iu,
-      /gracias\s+por\s+nada/iu,
-      /lo\s+que\s+me\s+faltaba/iu,
-      /me\s+encanta\s+cuando/iu,
-      /que\s+bien\s*(\.\.\.|…)/iu,
-      /buenisimo|buenísimo\s*(\.\.\.|…)/iu,
-      /no[\s,]*si\s+/iu,
-      /que\s+podria\s+salir\s+mal/iu,
-      /perfecto\s*(\.\.\.|…)/iu,
-    ],
-    fr: [
-      /oh\s+(genial|génial|parfait|merveilleux)/iu,
-      /juste\s+ce\s+qu(?:'|’)?il\s+me\s+fallait/iu,
-      /vraiment\s+savoir\s+comment/iu,
-      /oui[\s,]*bien\s+sur|oui[\s,]*bien\s+sûr/iu,
-      /bah\s+oui/iu,
-      /merci\s+(bien|du\s+cadeau)/iu,
-      /fallait\s+pas/iu,
-      /ca\s+promet|ça\s+promet/iu,
-      /j(?:'|’)?adore\s+quand/iu,
-      /(super|genial|génial)\s*(\.\.\.|…)/iu,
-      /quelle\s+surprise/iu,
-    ],
-    de: [
-      /oh\s+(toll|perfekt|wunderbar|klasse)/iu,
-      /genau\s+was\s+ich\s+brauchte|genau\s+was\s+ich\s+gebraucht\s+habe/iu,
-      /wirklich\s+wissen\s+wie/iu,
-      /ja[\s,]*klar/iu,
-      /na\s+(toll|prima)/iu,
-      /ganz\s+toll/iu,
-      /danke\s+auch/iu,
-      /herzlichen\s+gluckwunsch|herzlichen\s+glückwunsch/iu,
-      /freu\s+mich\s+ja\s+so+(\.*|…)?/iu,
-      /das\s+ist\s+ja\s+super/iu,
-      /wie\s+uberraschend|wie\s+überraschend/iu,
-      /was\s+kann\s+da\s+schiefgehen/iu,
-      /laeuft|läuft/iu,
-      /klasse\s*(\.\.\.|…)/iu,
-    ],
-  };
-
-  private emotionalIntensifiers = {
-    high: [
-      // EN
-      'absolutely',
-      'completely',
-      'totally',
-      'extremely',
-      'incredibly',
-      'utterly',
-      'highly',
-      'insanely',
-      'ridiculously',
-      'unbelievably',
-      'super',
-      'ultra',
-      'mega',
-      // ES
-      'absolutamente',
-      'completamente',
-      'totalmente',
-      'extremadamente',
-      'increiblemente',
-      'increíblemente',
-      'súper',
-      'super',
-      'hiper',
-      'ultra',
-      're',
-      // FR
-      'absolument',
-      'complètement',
-      'totalement',
-      'extrêmement',
-      'incroyablement',
-      'hyper',
-      'super',
-      'ultra',
-      'archi',
-      // DE
-      'absolut',
-      'vollkommen',
-      'völlig',
-      'total',
-      'äußerst',
-      'aeusserst',
-      'extrem',
-      'unglaublich',
-      'mega',
-      'super',
-      'ultra',
-    ],
-    medium: [
-      // EN
-      'very',
-      'really',
-      'quite',
-      'pretty',
-      'fairly',
-      'rather',
-      'so',
-      // ES
-      'muy',
-      'bastante',
-      'tan',
-      're',
-      'bien',
-      // FR
-      'très',
-      'vraiment',
-      'assez',
-      'plutôt',
-      'tellement',
-      // DE
-      'sehr',
-      'wirklich',
-      'ziemlich',
-      'recht',
-      'ganz',
-      'echt',
-      'so',
-    ],
-    low: [
-      // EN
-      'somewhat',
-      'kind of',
-      'sort of',
-      'a bit',
-      'a little',
-      'slightly',
-      // ES
-      'algo',
-      'un poco',
-      'poquito',
-      'medio',
-      'mas o menos',
-      'más o menos',
-      // FR
-      'un peu',
-      'quelque peu',
-      'légèrement',
-      // DE
-      'etwas',
-      'ein bisschen',
-      'bisschen',
-      'leicht',
-    ],
-  };
-
   /**
    * Extract contextual features from text
    */
@@ -488,10 +517,7 @@ export class AdvancedHybridAnalyzer {
 
     return {
       textLength: text.length,
-      hasEmojis:
-        /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(
-          text
-        ),
+      hasEmojis: EMOJI_PATTERN.test(text),
       hasExclamation: text.includes('!'),
       hasQuestion: text.includes('?'),
       emotionalWords: this.countEmotionalWords(lowerText),
@@ -502,25 +528,56 @@ export class AdvancedHybridAnalyzer {
   }
 
   /**
-   * Detect sarcasm indicators in multiple languages
+   * Detect sarcasm indicators in multiple languages (robust)
    */
   private detectSarcasmIndicators(text: string, language: string): number {
     const patterns =
-      this.sarcasmPatterns[language as keyof typeof this.sarcasmPatterns] ||
-      this.sarcasmPatterns.en;
-    let indicators = 0;
+      SARCASTIC_PATTERNS[language as keyof typeof SARCASTIC_PATTERNS] || SARCASTIC_PATTERNS.en;
 
-    // Pattern-based detection
-    patterns.forEach((pattern) => {
-      if (pattern.test(text)) indicators += 2;
-    });
+    // Normaliza: minúsculas + quita acentos para checks auxiliares
+    const normalizedText = text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
 
-    // Contextual indicators
-    if (text.includes('...')) indicators += 1;
-    if (/\s+😒|\s+🙄|\s+😏/.test(text)) indicators += 2;
-    if (/really\s+\w+|sure\s+\w+|totally\s+\w+/.test(text)) indicators += 1;
+    const tokens = normalizedText.match(/\p{L}+/gu) || [];
+    let score = 0;
 
-    return indicators;
+    // 1) Patrones directos
+    for (const pattern of patterns) {
+      if (pattern.test(text) || pattern.test(normalizedText)) {
+        score += 2;
+      }
+    }
+
+    // 2) Elipsis y pausa dramática
+    if (ELLIPSIS_PATTERN.test(text)) score += 1;
+
+    // 3) Emojis típicos de sarcasmo
+    if (SARCASTIC_EMOJIS.test(text)) score += 2;
+
+    // 4) Comillas irónicas alrededor de palabras positivas
+    if (POSITIVE_WORDS_QUOTED.test(text) || POSITIVE_WORDS_QUOTED.test(normalizedText)) score += 2;
+
+    // 5) Alargamientos como "sooo good", "taaaan bueno"
+    if (ELONGATED_POSITIVE.test(text) || ELONGATED_POSITIVE.test(normalizedText)) score += 1;
+
+    // 6) Contraste: positivo + conector adversativo + negativo
+    const hasPos = tokens.some((token) => EMOTIONAL_WORDS.POS.has(token));
+    const hasNeg = tokens.some((token) => EMOTIONAL_WORDS.NEG.has(token));
+    const hasAdv = tokens.some((token) => ADVERSATIVE_CONNECTORS.has(token));
+
+    if (hasPos && hasNeg && hasAdv) score += 2;
+
+    // 7) Positivo + emoji/gesto negativo
+    const hasNegEmoji = SARCASTIC_EMOJIS.test(text);
+    if (hasPos && hasNegEmoji) score += 2;
+
+    // 8) Frases genéricas en EN que suenan a ironía
+    if (GENERIC_IRONY.test(normalizedText)) score += 1;
+
+    // 9) Clamp para mantener una escala razonable (0–10)
+    return Math.max(0, Math.min(10, score));
   }
 
   /**
@@ -543,7 +600,7 @@ export class AdvancedHybridAnalyzer {
     // Count emotional words
     let count = 0;
     for (const token of tokens) {
-      if (this.ALL_EMOTIONAL_WORDS.has(token)) count++;
+      if (ALL_EMOTIONAL_WORDS.has(token)) count++;
     }
 
     return count;
@@ -553,9 +610,12 @@ export class AdvancedHybridAnalyzer {
    * Calculate text complexity
    */
   private calculateTextComplexity(text: string): number {
-    const words = text.split(/\s+/);
+    const words = text.split(/\s+/).filter((word) => word.length > 0);
+    if (words.length === 0) return 0;
+
     const avgWordLength = words.reduce((sum, word) => sum + word.length, 0) / words.length;
-    const sentenceCount = text.split(/[.!?]+/).length;
+    const sentences = text.split(/[.!?]+/).filter((s) => s.length > 0);
+    const sentenceCount = Math.max(1, sentences.length);
     const avgSentenceLength = words.length / sentenceCount;
 
     return (avgWordLength + avgSentenceLength) / 10; // Normalized complexity score
@@ -643,17 +703,16 @@ export class AdvancedHybridAnalyzer {
     const adjustedWeights = this.adjustWeights(features, naiveResult, ruleResult);
 
     // Calculate weighted score
-    let naiveScore = 0;
-    if (naiveResult.label === 'positive') naiveScore = 0.7;
-    else if (naiveResult.label === 'negative') naiveScore = -0.7;
+    const naiveScore =
+      naiveResult.label === 'positive' ? 0.7 : naiveResult.label === 'negative' ? -0.7 : 0;
 
     const ruleScore = ruleResult.score || 0;
     const weightedScore =
       naiveScore * adjustedWeights.naiveWeight + ruleScore * adjustedWeights.ruleWeight;
 
     // Determine final label with adjusted thresholds for sarcasm
+    const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15;
     let finalLabel = 'neutral';
-    const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15; // Slightly higher threshold when sarcasm present
 
     if (weightedScore > threshold) {
       finalLabel = 'positive';
@@ -661,30 +720,26 @@ export class AdvancedHybridAnalyzer {
       finalLabel = 'negative';
     }
 
-    // Sarcasm override: if sarcasm is detected and sentiment trends positive by any method, flip to negative
+    // Sarcasm override
     if (features.sarcasmIndicators > 1) {
       const rulePositive = ruleResult.label === 'positive' || (ruleResult.score ?? 0) > 0;
       const naivePositive = naiveResult.label === 'positive';
       const scorePositive = weightedScore > 0.05;
+
       if (rulePositive || naivePositive || scorePositive) {
         finalLabel = 'negative';
       }
     }
 
     // Generate explanation
-    let explanation = `Auto-adjusted weights (Naive: ${adjustedWeights.naiveWeight.toFixed(
-      2
-    )}, Rule: ${adjustedWeights.ruleWeight.toFixed(2)})`;
+    const explanationParts = [
+      `Auto-adjusted weights (Naive: ${adjustedWeights.naiveWeight.toFixed(2)}, Rule: ${adjustedWeights.ruleWeight.toFixed(2)})`,
+    ];
 
-    if (features.sarcasmIndicators > 1) {
-      explanation += '; Sarcasm detected - biasing toward negative';
-    }
-    if (features.emotionalWords > 2) {
-      explanation += '; High emotional intensity detected';
-    }
-    if (features.hasEmojis) {
-      explanation += '; Emoji analysis applied';
-    }
+    if (features.sarcasmIndicators > 1)
+      explanationParts.push('Sarcasm detected - biasing toward negative');
+    if (features.emotionalWords > 2) explanationParts.push('High emotional intensity detected');
+    if (features.hasEmojis) explanationParts.push('Emoji analysis applied');
 
     return {
       label: finalLabel,
@@ -695,16 +750,12 @@ export class AdvancedHybridAnalyzer {
         rule: adjustedWeights.ruleWeight,
       },
       features,
-      explanation,
+      explanation: explanationParts.join('; '),
     };
   }
 
   /**
    * Enhanced hybrid prediction with custom weighted models
-   * @param text Text to analyze
-   * @param predictionsWithWeights Array of predictions with their weights
-   * @param language Language code
-   * @returns Enhanced sentiment prediction
    */
   predictWithCustomWeights(
     text: string,
@@ -749,8 +800,8 @@ export class AdvancedHybridAnalyzer {
     });
 
     // Determine final label with contextual adjustments
-    let finalLabel = 'neutral';
     const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15;
+    let finalLabel = 'neutral';
 
     if (weightedScore > threshold) {
       finalLabel = 'positive';
@@ -777,17 +828,12 @@ export class AdvancedHybridAnalyzer {
       .map((p, i) => `Model_${i}: ${p.weight.toFixed(2)}`)
       .join(', ');
 
-    let explanation = `Custom weights (${weightExplanation})`;
-
-    if (features.sarcasmIndicators > 1) {
-      explanation += '; Sarcasm detected - biasing toward negative';
-    }
-    if (features.emotionalWords > 2) {
-      explanation += '; High emotional intensity detected';
-    }
-    if (features.hasEmojis) {
-      explanation += '; Emoji analysis applied';
-    }
+    const explanationParts = [
+      `Custom weights (${weightExplanation})`,
+      features.sarcasmIndicators > 1 ? 'Sarcasm detected - biasing toward negative' : '',
+      features.emotionalWords > 2 ? 'High emotional intensity detected' : '',
+      features.hasEmojis ? 'Emoji analysis applied' : '',
+    ].filter(Boolean);
 
     return {
       label: finalLabel,
@@ -795,7 +841,7 @@ export class AdvancedHybridAnalyzer {
       score: weightedScore,
       weights,
       features,
-      explanation,
+      explanation: explanationParts.join('; '),
     };
   }
 }
