@@ -22,9 +22,16 @@ export interface ContextualFeatures {
   hasExclamation: boolean;
   hasQuestion: boolean;
   emotionalWords: number;
+  emotionalIntensity: number; // Nueva propiedad para intensidad emocional
   sarcasmIndicators: number;
   language: string;
   complexity: number;
+  // New contextual features
+  isPromotional?: boolean;
+  isCryptoHype?: boolean;
+  isActivismBoycott?: boolean;
+  hasProfanityEmphasis?: boolean;
+  contextualScore?: number;
 }
 
 export interface PredictionWithWeight {
@@ -68,6 +75,39 @@ const EMOTIONAL_WORDS = {
     'improved',
     'fix',
     'fixed',
+    // Hype/Finanzas/Meme
+    'send',
+    'moon',
+    'holders',
+    'increasing',
+    'looks',
+    'trending',
+    'energy',
+    'believe',
+    '100%',
+    'pump',
+    'boost',
+    'active',
+    'smash',
+    'cooking',
+    'bag',
+    'stack',
+    'stacking',
+    // Promociones/Productos
+    'launches',
+    'launched',
+    'limited-edition',
+    'limited',
+    'edition',
+    'collab',
+    'collaboration',
+    'collection',
+    'stands',
+    'out',
+    'new',
+    'fresh',
+    'drops',
+    'dropped',
     // ES
     'bueno',
     'buena',
@@ -96,6 +136,19 @@ const EMOTIONAL_WORDS = {
     'espectacular',
     'tremendo',
     'top',
+    // Promociones ES
+    'lanza',
+    'lanzar',
+    'lanzó',
+    'lanzado',
+    'nuevo',
+    'nueva',
+    'edición',
+    'limitada',
+    'colección',
+    'destaca',
+    'unieron',
+    'fuerzas',
     // FR
     'bon',
     'bonne',
@@ -186,6 +239,22 @@ const EMOTIONAL_WORDS = {
     'sucks',
     'trash',
     'garbage',
+    // Activismo/Boicot
+    'avoid',
+    'boycott',
+    'violence',
+    'rip',
+    'off',
+    'chemicals',
+    'scam',
+    'fraud',
+    'corrupt',
+    'lies',
+    'devil',
+    'bite',
+    'dangerous',
+    'toxic',
+    'harmful',
     // ES
     'malo',
     'mala',
@@ -496,6 +565,70 @@ const EMOTIONAL_INTENSIFIERS = {
   ]),
 };
 
+// Contextos específicos para mejor clasificación
+const CONTEXTUAL_PATTERNS = {
+  // Promociones/Productos
+  PROMOTIONAL_POSITIVE: [
+    /\b(launches?|launch|launched|launching)\b.*\b(limited|edition|new|fresh|collection|collab|collaboration)\b/i,
+    /\b(new|fresh)\b.*\b(product|flavor|taste|item|snack|chip)\b/i,
+    /\b(collection|collab|collaboration)\b.*\b(that\s+stands?\s+out|outstanding|amazing|incredible)\b/i,
+    /\b(limited[-\s]?edition|exclusive|special)\b.*\b(drop|release|launch)\b/i,
+    /\bunieron\s+fuerzas\s+para\s+lanzar\s+una\s+colección\s+que\s+destaca/i,
+  ],
+
+  // Hype/Finanzas/Cripto
+  CRYPTO_HYPE: [
+    /\b(send|sending)\b.*\b(100%|to\s+the\s+moon|moon)\b/i,
+    /\b(holders?\s+increasing|growing|boost\s+active)\b/i,
+    /\b(looks?\s+good|looking\s+good|chart\s+looking)\b/i,
+    /\b(amazing|incredible|fantastic)\b.*\b(community|holders?|project)\b/i,
+    /\b(believe|trust|diamond\s+hands)\b.*\b(HODL|hold|bag)\b/i,
+    /\b(energy|pump|moon|rocket|lambo)\b/i,
+  ],
+
+  // Activismo/Boicot (siempre negativo)
+  ACTIVISM_BOYCOTT: [
+    /\b(avoid|boycott)\b.*\b(crisps?|chips?|snacks?|products?)\b/i,
+    /\b(violence|chemicals|toxic|harmful)\b.*\b(against\s+people|in\s+food|ingredients?)\b/i,
+    /\b(rip\s+off|scam|fraud|corrupt)\b/i,
+    /\bmeet\s+the\s+devil'?s\s+bite/i,
+    /\b(boycott|avoid|dangerous)\b/i,
+  ],
+
+  // Profanidad contextual (énfasis, no negativo)
+  PROFANITY_EMPHASIS: [
+    /\b(f\*+|fuck|fucking)\s+(it|hell|yeah),?\s+i'?m\s+(buying|getting|going)/i,
+    /\b(damn|shit|hell)\s+(good|great|amazing|awesome|incredible)/i,
+    /\bso\s+(f\*+|fucking|damn)\s+(good|great|tasty|delicious)/i,
+    /\b(f\*+|fucking)\s+(love|adore|enjoy)\b/i,
+  ],
+};
+
+// Patrones de detección de idiomas mejorados
+const LANGUAGE_PATTERNS = {
+  es: [
+    /\b(que|qué|el|la|los|las|es|son|está|están|muy|pero|con|por|para|desde|hasta|como|cuando|donde|dónde)\b/i,
+    /\b(después|despues|años|año|también|tambien|sólo|solo|ahora|aquí|aqui|allí|alli)\b/i,
+    /\b(nuevo|nueva|buenos|buenas|mejor|peor|grande|pequeño|pequeña)\b/i,
+    /ñ/,
+    /¿|¡/,
+  ],
+  de: [
+    /\b(der|die|das|den|dem|des|ein|eine|einen|einem|einer|eines)\b/i,
+    /\b(ist|sind|war|waren|hat|haben|wird|werden|kann|können|soll|sollen)\b/i,
+    /\b(und|oder|aber|wenn|weil|dass|daß|mit|von|zu|für|auf|in|an|über|unter)\b/i,
+    /\b(nicht|kein|keine|sehr|auch|nur|noch|schon|immer|nie|wieder)\b/i,
+    /ß|ä|ö|ü/,
+  ],
+  fr: [
+    /\b(le|la|les|un|une|des|de|du|de\s+la|ce|cette|ces)\b/i,
+    /\b(est|sont|était|étaient|etait|etaient|a|ont|sera|seront|peut|peuvent)\b/i,
+    /\b(et|ou|mais|si|parce\s+que|avec|pour|dans|sur|sous|entre|chez)\b/i,
+    /\b(ne|pas|non|très|tres|aussi|seulement|déjà|deja|jamais|toujours)\b/i,
+    /ç|é|è|ê|à|ù|ô|î|ï|ë/,
+  ],
+};
+
 export class AdvancedHybridAnalyzer {
   private baseConfig: HybridConfig = {
     naiveWeight: 0.5,
@@ -510,10 +643,204 @@ export class AdvancedHybridAnalyzer {
   };
 
   /**
+   * Utility method to normalize text (lowercase + remove accents)
+   */
+  private normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
+  }
+
+  /**
+   * Utility method to tokenize text into words
+   */
+  private tokenizeText(text: string): string[] {
+    return text.match(/\p{L}+/gu) || [];
+  }
+
+  /**
+   * Utility method to clamp a value between min and max
+   */
+  private clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  /**
+   * Utility method to determine sentiment threshold based on sarcasm indicators
+   */
+  private getSentimentThreshold(sarcasmIndicators: number): number {
+    return sarcasmIndicators > 1 ? 0.18 : 0.15;
+  }
+
+  /**
+   * Utility method to determine final sentiment label from score and threshold
+   */
+  private determineSentimentLabel(score: number, threshold: number): string {
+    if (score > threshold) return 'positive';
+    if (score < -threshold) return 'negative';
+    return 'neutral';
+  }
+
+  /**
+   * Utility method to apply sarcasm override logic
+   */
+  private applySarcasmOverride(
+    features: ContextualFeatures,
+    finalLabel: string,
+    naiveResult?: { label: string; confidence: number },
+    ruleResult?: { label: string; confidence: number; score?: number },
+    weightedScore?: number
+  ): string {
+    if (features.sarcasmIndicators <= 1) return finalLabel;
+
+    if (naiveResult && ruleResult && weightedScore !== undefined) {
+      // For predictWithAutoWeights
+      const rulePositive = ruleResult.label === 'positive' || (ruleResult.score ?? 0) > 0;
+      const naivePositive = naiveResult.label === 'positive';
+      const scorePositive = weightedScore > 0.05;
+
+      if (rulePositive || naivePositive || scorePositive) {
+        return 'negative';
+      }
+    }
+
+    return finalLabel;
+  }
+
+  /**
+   * Detect language with improved patterns for ES, DE, FR
+   */
+  private detectLanguageImproved(text: string): string {
+    const normalizedText = text.toLowerCase();
+
+    const languageScores: Record<string, number> = {
+      es: 0,
+      de: 0,
+      fr: 0,
+      en: 0,
+    };
+
+    // Test each language pattern
+    for (const [lang, patterns] of Object.entries(LANGUAGE_PATTERNS)) {
+      for (const pattern of patterns) {
+        const matches = normalizedText.match(pattern);
+        if (matches) {
+          languageScores[lang] += matches.length;
+        }
+      }
+    }
+
+    // English fallback scoring
+    const commonEnglishWords = [
+      'the',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+    ];
+    for (const word of commonEnglishWords) {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = normalizedText.match(regex);
+      if (matches) {
+        languageScores.en += matches.length;
+      }
+    }
+
+    // Find language with highest score
+    let detectedLang = 'en';
+    let maxScore = languageScores.en;
+
+    for (const [lang, score] of Object.entries(languageScores)) {
+      if (score > maxScore) {
+        maxScore = score;
+        detectedLang = lang;
+      }
+    }
+
+    return detectedLang;
+  }
+
+  /**
+   * Analyze contextual sentiment patterns
+   */
+  private analyzeContextualPatterns(text: string): {
+    isPromotional: boolean;
+    isCryptoHype: boolean;
+    isActivismBoycott: boolean;
+    hasProfanityEmphasis: boolean;
+    contextualScore: number;
+  } {
+    let isPromotional = false;
+    let isCryptoHype = false;
+    let isActivismBoycott = false;
+    let hasProfanityEmphasis = false;
+    let contextualScore = 0;
+
+    // Check promotional patterns
+    for (const pattern of CONTEXTUAL_PATTERNS.PROMOTIONAL_POSITIVE) {
+      if (pattern.test(text)) {
+        isPromotional = true;
+        contextualScore += 0.3; // Boost positive sentiment
+        break;
+      }
+    }
+
+    // Check crypto hype patterns
+    for (const pattern of CONTEXTUAL_PATTERNS.CRYPTO_HYPE) {
+      if (pattern.test(text)) {
+        isCryptoHype = true;
+        contextualScore += 0.4; // Strong positive boost
+        break;
+      }
+    }
+
+    // Check activism/boycott patterns (always negative)
+    for (const pattern of CONTEXTUAL_PATTERNS.ACTIVISM_BOYCOTT) {
+      if (pattern.test(text)) {
+        isActivismBoycott = true;
+        contextualScore -= 0.6; // Strong negative score
+        break;
+      }
+    }
+
+    // Check profanity as emphasis (neutral to positive context)
+    for (const pattern of CONTEXTUAL_PATTERNS.PROFANITY_EMPHASIS) {
+      if (pattern.test(text)) {
+        hasProfanityEmphasis = true;
+        contextualScore += 0.2; // Slight positive boost for emphasis
+        break;
+      }
+    }
+
+    return {
+      isPromotional,
+      isCryptoHype,
+      isActivismBoycott,
+      hasProfanityEmphasis,
+      contextualScore,
+    };
+  }
+
+  /**
    * Extract contextual features from text
    */
   extractContextualFeatures(text: string, language: string = 'en'): ContextualFeatures {
     const lowerText = text.toLowerCase();
+
+    // Improved language detection
+    const detectedLanguage = this.detectLanguageImproved(text);
+    const finalLanguage = language !== 'en' ? language : detectedLanguage;
+
+    // Analyze contextual patterns
+    const contextualAnalysis = this.analyzeContextualPatterns(text);
 
     return {
       textLength: text.length,
@@ -521,9 +848,16 @@ export class AdvancedHybridAnalyzer {
       hasExclamation: text.includes('!'),
       hasQuestion: text.includes('?'),
       emotionalWords: this.countEmotionalWords(lowerText),
-      sarcasmIndicators: this.detectSarcasmIndicators(lowerText, language),
-      language,
+      emotionalIntensity: this.analyzeEmotionalIntensity(lowerText),
+      sarcasmIndicators: this.detectSarcasmIndicators(lowerText, finalLanguage),
+      language: finalLanguage,
       complexity: this.calculateTextComplexity(text),
+      // Add new contextual features
+      isPromotional: contextualAnalysis.isPromotional,
+      isCryptoHype: contextualAnalysis.isCryptoHype,
+      isActivismBoycott: contextualAnalysis.isActivismBoycott,
+      hasProfanityEmphasis: contextualAnalysis.hasProfanityEmphasis,
+      contextualScore: contextualAnalysis.contextualScore,
     };
   }
 
@@ -534,13 +868,9 @@ export class AdvancedHybridAnalyzer {
     const patterns =
       SARCASTIC_PATTERNS[language as keyof typeof SARCASTIC_PATTERNS] || SARCASTIC_PATTERNS.en;
 
-    // Normaliza: minúsculas + quita acentos para checks auxiliares
-    const normalizedText = text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '');
-
-    const tokens = normalizedText.match(/\p{L}+/gu) || [];
+    // Use utility method for normalization
+    const normalizedText = this.normalizeText(text);
+    const tokens = this.tokenizeText(normalizedText);
     let score = 0;
 
     // 1) Patrones directos
@@ -577,7 +907,7 @@ export class AdvancedHybridAnalyzer {
     if (GENERIC_IRONY.test(normalizedText)) score += 1;
 
     // 9) Clamp para mantener una escala razonable (0–10)
-    return Math.max(0, Math.min(10, score));
+    return this.clamp(score, 0, 10);
   }
 
   /**
@@ -588,14 +918,9 @@ export class AdvancedHybridAnalyzer {
     // Early return for empty text
     if (!text || text.trim().length === 0) return 0;
 
-    // Normalize: lowercase + remove accents
-    const normalizedText = text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '');
-
-    // Tokenize words (Unicode letters)
-    const tokens = normalizedText.match(/\p{L}+/gu) || [];
+    // Use utility methods for normalization and tokenization
+    const normalizedText = this.normalizeText(text);
+    const tokens = this.tokenizeText(normalizedText);
 
     // Count emotional words
     let count = 0;
@@ -604,6 +929,61 @@ export class AdvancedHybridAnalyzer {
     }
 
     return count;
+  }
+
+  /**
+   * Analyze emotional intensity using intensifiers that amplify emotional words
+   */
+  private analyzeEmotionalIntensity(text: string): number {
+    // Early return for empty text
+    if (!text || text.trim().length === 0) return 0;
+
+    const normalizedText = this.normalizeText(text);
+    const tokens = this.tokenizeText(normalizedText);
+    let intensityScore = 0;
+
+    // Look for intensifier + emotional word patterns
+    for (let i = 0; i < tokens.length - 1; i++) {
+      const currentToken = tokens[i];
+      const nextToken = tokens[i + 1];
+
+      // Check if current token is an intensifier and next token is emotional
+      if (ALL_EMOTIONAL_WORDS.has(nextToken)) {
+        if (EMOTIONAL_INTENSIFIERS.high.has(currentToken)) {
+          intensityScore += 3; // High intensity multiplier
+        } else if (EMOTIONAL_INTENSIFIERS.medium.has(currentToken)) {
+          intensityScore += 2; // Medium intensity multiplier
+        } else if (EMOTIONAL_INTENSIFIERS.low.has(currentToken)) {
+          intensityScore += 1; // Low intensity multiplier
+        }
+      }
+    }
+
+    // Also check for multi-word intensifiers (like "kind of", "a bit", etc.)
+    const multiWordIntensifiers = [
+      { pattern: /\b(kind\s+of|sort\s+of)\b/i, level: 'low' },
+      { pattern: /\b(a\s+bit|a\s+little)\b/i, level: 'low' },
+      { pattern: /\b(un\s+poco|mas\s+o\s+menos|más\s+o\s+menos)\b/i, level: 'low' },
+      { pattern: /\b(un\s+peu|quelque\s+peu)\b/i, level: 'low' },
+      { pattern: /\b(ein\s+bisschen)\b/i, level: 'low' },
+    ];
+
+    for (const { pattern, level } of multiWordIntensifiers) {
+      const matches = normalizedText.match(pattern);
+      if (matches) {
+        // Count nearby emotional words (within 3 tokens)
+        const nearbyEmotionalWords = tokens.filter((token, index) => {
+          const distance = Math.abs(index - tokens.findIndex((t) => matches[0].includes(t)));
+          return distance <= 3 && ALL_EMOTIONAL_WORDS.has(token);
+        }).length;
+
+        if (nearbyEmotionalWords > 0) {
+          intensityScore += level === 'low' ? nearbyEmotionalWords : nearbyEmotionalWords * 2;
+        }
+      }
+    }
+
+    return intensityScore;
   }
 
   /**
@@ -667,11 +1047,16 @@ export class AdvancedHybridAnalyzer {
       }
     }
 
-    // Emotional intensity adjustments
-    if (features.emotionalWords > 2) {
-      // High emotional content - both models can be useful
+    // Emotional intensity adjustments - use new emotionalIntensity feature
+    if (features.emotionalWords > 2 || features.emotionalIntensity > 3) {
+      // High emotional content or strong intensifiers detected - both models can be useful
       if (naiveResult.confidence > 0.7) naiveBoost *= 1.2;
       if (ruleResult.confidence > 0.7) ruleBoost *= 1.2;
+
+      // If very high intensity, favor rules slightly more as they handle context better
+      if (features.emotionalIntensity > 6) {
+        ruleBoost *= 1.1;
+      }
     }
 
     // Emoji adjustments
@@ -708,9 +1093,10 @@ export class AdvancedHybridAnalyzer {
     }
 
     // Calculate weighted confidence with validation
-    const weightedConfidence = Math.min(
-      1.0,
-      Math.max(0.0, naiveResult.confidence * naiveWeight + ruleResult.confidence * ruleWeight)
+    const weightedConfidence = this.clamp(
+      naiveResult.confidence * naiveWeight + ruleResult.confidence * ruleWeight,
+      0.0,
+      1.0
     );
 
     // Apply confidence boost only if both models are reasonably confident
@@ -720,7 +1106,7 @@ export class AdvancedHybridAnalyzer {
     return {
       naiveWeight: Math.round(naiveWeight * 1000) / 1000, // Round to 3 decimals
       ruleWeight: Math.round(ruleWeight * 1000) / 1000,
-      confidence: Math.min(1.0, weightedConfidence * confidenceBoost),
+      confidence: this.clamp(weightedConfidence * confidenceBoost, 0.0, 1.0),
     };
   }
 
@@ -743,34 +1129,49 @@ export class AdvancedHybridAnalyzer {
     const features = this.extractContextualFeatures(text, language);
     const adjustedWeights = this.adjustWeights(features, naiveResult, ruleResult);
 
-    // Calculate weighted score
+    // Calculate weighted score with contextual adjustments
     const naiveScore =
       naiveResult.label === 'positive' ? 0.7 : naiveResult.label === 'negative' ? -0.7 : 0;
 
     const ruleScore = ruleResult.score || 0;
-    const weightedScore =
+    const baseWeightedScore =
       naiveScore * adjustedWeights.naiveWeight + ruleScore * adjustedWeights.ruleWeight;
 
+    // Apply contextual score adjustments
+    let contextualAdjustment = features.contextualScore || 0;
+
+    // Strong contextual overrides
+    if (features.isActivismBoycott) {
+      // Activism/boycott content should be negative regardless of other signals
+      contextualAdjustment = -0.8;
+    } else if (features.isCryptoHype && baseWeightedScore >= -0.1) {
+      // Crypto hype should be positive unless clearly negative
+      contextualAdjustment = Math.max(contextualAdjustment, 0.4);
+    } else if (features.isPromotional && baseWeightedScore >= -0.2) {
+      // Promotional content should be positive unless clearly negative
+      contextualAdjustment = Math.max(contextualAdjustment, 0.3);
+    }
+
+    // Apply profanity emphasis correction
+    if (features.hasProfanityEmphasis && baseWeightedScore < 0) {
+      // If profanity is used for emphasis in positive context, boost score
+      contextualAdjustment += 0.4;
+    }
+
+    const weightedScore = baseWeightedScore + contextualAdjustment;
+
     // Determine final label with adjusted thresholds for sarcasm
-    const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15;
-    let finalLabel = 'neutral';
+    const threshold = this.getSentimentThreshold(features.sarcasmIndicators);
+    let finalLabel = this.determineSentimentLabel(weightedScore, threshold);
 
-    if (weightedScore > threshold) {
-      finalLabel = 'positive';
-    } else if (weightedScore < -threshold) {
-      finalLabel = 'negative';
-    }
-
-    // Sarcasm override
-    if (features.sarcasmIndicators > 1) {
-      const rulePositive = ruleResult.label === 'positive' || (ruleResult.score ?? 0) > 0;
-      const naivePositive = naiveResult.label === 'positive';
-      const scorePositive = weightedScore > 0.05;
-
-      if (rulePositive || naivePositive || scorePositive) {
-        finalLabel = 'negative';
-      }
-    }
+    // Apply sarcasm override
+    finalLabel = this.applySarcasmOverride(
+      features,
+      finalLabel,
+      naiveResult,
+      ruleResult,
+      weightedScore
+    );
 
     // Generate explanation
     const explanationParts = [
@@ -780,7 +1181,18 @@ export class AdvancedHybridAnalyzer {
     if (features.sarcasmIndicators > 1)
       explanationParts.push('Sarcasm detected - biasing toward negative');
     if (features.emotionalWords > 2) explanationParts.push('High emotional intensity detected');
+    if (features.emotionalIntensity > 3)
+      explanationParts.push(`Strong intensifiers detected (score: ${features.emotionalIntensity})`);
     if (features.hasEmojis) explanationParts.push('Emoji analysis applied');
+    if (features.isActivismBoycott)
+      explanationParts.push('Activism/boycott content detected - classified as negative');
+    if (features.isCryptoHype)
+      explanationParts.push('Crypto hype/financial content detected - boosted positive');
+    if (features.isPromotional)
+      explanationParts.push('Promotional content detected - boosted positive');
+    if (features.hasProfanityEmphasis)
+      explanationParts.push('Profanity used for emphasis - not negative');
+    if (features.language !== 'en') explanationParts.push(`Language: ${features.language}`);
 
     return {
       label: finalLabel,
@@ -841,16 +1253,10 @@ export class AdvancedHybridAnalyzer {
     });
 
     // Determine final label with contextual adjustments
-    const threshold = features.sarcasmIndicators > 1 ? 0.18 : 0.15;
-    let finalLabel = 'neutral';
+    const threshold = this.getSentimentThreshold(features.sarcasmIndicators);
+    let finalLabel = this.determineSentimentLabel(weightedScore, threshold);
 
-    if (weightedScore > threshold) {
-      finalLabel = 'positive';
-    } else if (weightedScore < -threshold) {
-      finalLabel = 'negative';
-    }
-
-    // Sarcasm override
+    // Apply sarcasm override for custom weights
     if (features.sarcasmIndicators > 1) {
       const positiveSignals = normalizedPredictions.filter(
         (p) => p.prediction.label === 'positive' || (p.prediction.score ?? 0) > 0
@@ -873,6 +1279,9 @@ export class AdvancedHybridAnalyzer {
       `Custom weights (${weightExplanation})`,
       features.sarcasmIndicators > 1 ? 'Sarcasm detected - biasing toward negative' : '',
       features.emotionalWords > 2 ? 'High emotional intensity detected' : '',
+      features.emotionalIntensity > 3
+        ? `Strong intensifiers detected (score: ${features.emotionalIntensity})`
+        : '',
       features.hasEmojis ? 'Emoji analysis applied' : '',
     ].filter(Boolean);
 
