@@ -341,4 +341,4 @@ if (require.main === module) {
     });
 }
 
-export { SimpleEvaluator, runQuickEvaluation };
+export { runQuickEvaluation, SimpleEvaluator };

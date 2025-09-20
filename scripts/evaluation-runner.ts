@@ -8,9 +8,9 @@
  * - Evaluación personalizada
  */
 
-import { runQuickEvaluation } from './quick-cross-validation';
-import { runConfigurationComparison } from './model-configuration-comparison';
 import { runEvaluationSuite } from './evaluation-methodologies';
+import { runConfigurationComparison } from './model-configuration-comparison';
+import { runQuickEvaluation } from './quick-cross-validation';
 
 interface EvaluationOption {
   id: string;

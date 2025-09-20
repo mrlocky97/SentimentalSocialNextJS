@@ -1,6 +1,77 @@
-# Scripts para SentimentalSocial
+# 🎯 Scripts para SentimentalSocial
 
-Este directorio contiene scripts útiles para entrenar, evaluar y administrar diversas funcionalidades de la aplicación SentimentalSocial.
+Este directorio contiene scripts para entrenar, evaluar y administrar funcionalidades de la aplicación SentimentalSocial, **incluyendo un sistema completo de evaluación con metodologías avanzadas**.
+
+## 🚀 Sistema de Evaluación con Metodologías Avanzadas
+
+### Script Principal de Evaluación
+```bash
+# Ejecutar evaluación por defecto (validación cruzada simple)
+node scripts/run-evaluation.js
+
+# Mostrar ayuda completa
+node scripts/run-evaluation.js help
+
+# Ejecutar test específico de slang moderno
+node scripts/run-evaluation.js slang
+
+# Ejecutar validación cruzada simple (3-fold)
+node scripts/run-evaluation.js simple
+
+# Ejecutar todas las evaluaciones
+node scripts/run-evaluation.js all
+```
+
+### 📊 Scripts de Evaluación Disponibles
+
+#### 1. **Validación Cruzada Simple** (`simple-cross-validation.js`)
+- ✅ **Listo para usar** - No requiere compilación
+- 🔄 **K-Fold Cross Validation** (3-fold por defecto)
+- 📈 **Métricas completas**: Accuracy, Precision, Recall, F1-Score
+- 🎯 **Intervalos de confianza** (95%)
+- 🔍 **Análisis detallado de errores**
+
+#### 2. **Test de Slang Moderno** (`test-enhanced-system.js`)
+- 🔥 **Evaluación especializada** en expresiones modernas
+- 💯 **10 casos de test** con slang actual ("fire", "bussin", "no cap")
+- ⚡ **Ejecución rápida** (< 1 minuto)
+- 📊 **80% de precisión** en nuestro sistema enhanced
+
+#### 3. **Validación Cruzada Avanzada** (`quick-cross-validation.ts`)
+- 🔧 **TypeScript** con tipos estrictos
+- 📊 **5-fold validation** con estratificación
+- 🗃️ **Dataset completo** (hasta 1000 ejemplos)
+- 📈 **Estadísticas avanzadas**
+
+#### 4. **Suite Completa de Evaluación** (`evaluation-methodologies.ts`)
+- 🎯 **Metodologías múltiples**: K-Fold, Hold-out, Bootstrap
+- 📊 **Comparación exhaustiva** de modelos
+- 📈 **Intervalos de confianza** estadísticos
+- 📋 **Reportes detallados**
+
+### 🎯 Metodologías Implementadas
+- **K-Fold Cross Validation** con estratificación
+- **Hold-out Validation** (70/15/15 split)
+- **Bootstrap Sampling** con out-of-bag validation
+- **Stratified Sampling** para datasets desbalanceados
+
+### 📈 Métricas Calculadas
+- **Accuracy, Precision, Recall, F1-Score**
+- **Desviación estándar** e **intervalos de confianza**
+- **Matriz de confusión** y **análisis de errores**
+- **Tiempo de procesamiento** y **confianza promedio**
+
+### 🔧 Configuraciones Probadas
+- **Enhanced Engine**: Con preprocesamiento avanzado y slang moderno
+- **Base Engine**: Motor básico sin enhancements
+- **Unified Orchestrator**: Sistema optimizado para producción
+
+### 📊 Resultados de Ejemplo
+```
+📈 ENHANCED SYSTEM RESULTS:
+🎯 Accuracy: 8/10 (80.0%)
+🎉 EXCELLENT! Enhanced system is performing well with modern slang!
+```
 
 ## Sistema de Análisis de Sentimiento (Actuales)
 

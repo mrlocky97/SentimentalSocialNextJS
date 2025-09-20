@@ -12,8 +12,8 @@
  */
 
 import { enhancedTrainingDataV3Clean, SentimentTrainingItem } from '../src/data/enhanced-training-data-v3-clean';
-import { EnhancedSentimentEngine } from '../src/lib/sentiment/enhanced-engine';
 import { SentimentAnalysisEngine } from '../src/lib/sentiment/engine';
+import { EnhancedSentimentEngine } from '../src/lib/sentiment/enhanced-engine';
 import { SentimentAnalysisOrchestrator } from '../src/lib/sentiment/orchestrator';
 
 // Tipos para evaluación
@@ -662,9 +662,6 @@ if (require.main === module) {
 }
 
 export {
-  EvaluationFramework,
-  runEvaluationSuite,
-  createEnhancedEngine,
-  createBaseEngine,
-  createOrchestrator
+  createBaseEngine, createEnhancedEngine, createOrchestrator, EvaluationFramework,
+  runEvaluationSuite
 };
