@@ -29,6 +29,21 @@ export const modernSlangVocabulary: SlangMapping[] = [
   { term: "say less", sentiment: "positive", weight: 1.1 },
   { term: "valid", sentiment: "positive", weight: 1.2 },
   { term: "based", sentiment: "positive", weight: 1.3 },
+  { term: "goated", sentiment: "positive", weight: 1.5 }, // GOAT (Greatest Of All Time)
+  { term: "lowkey goated", sentiment: "positive", weight: 1.4 },
+  { term: "highkey goated", sentiment: "positive", weight: 1.5 },
+  { term: "sick", sentiment: "positive", weight: 1.4 }, // cool/awesome context
+  { term: "lit", sentiment: "positive", weight: 1.4 },
+  { term: "dope", sentiment: "positive", weight: 1.3 },
+  { term: "W", sentiment: "positive", weight: 1.3 }, // Win
+  { term: "massive W", sentiment: "positive", weight: 1.5 },
+  { term: "big W", sentiment: "positive", weight: 1.4 },
+  { term: "absolute W", sentiment: "positive", weight: 1.5 },
+  { term: "clean", sentiment: "positive", weight: 1.2 },
+  { term: "crisp", sentiment: "positive", weight: 1.2 },
+  { term: "smooth", sentiment: "positive", weight: 1.2 },
+  { term: "immaculate", sentiment: "positive", weight: 1.5 },
+  { term: "fr fr", sentiment: "positive", weight: 1.1 }, // for real for real (emphasis)
   
   // Expresiones negativas modernas
   { term: "mid", sentiment: "negative", weight: 1.3 }, // mediocre
@@ -47,6 +62,20 @@ export const modernSlangVocabulary: SlangMapping[] = [
   { term: "massive L", sentiment: "negative", weight: 1.5 },
   { term: "down bad", sentiment: "negative", weight: 1.4 },
   { term: "fell off", sentiment: "negative", weight: 1.3 },
+  { term: "trash", sentiment: "negative", weight: 1.4 },
+  { term: "garbage", sentiment: "negative", weight: 1.4 },
+  { term: "wack", sentiment: "negative", weight: 1.3 },
+  { term: "whack", sentiment: "negative", weight: 1.3 },
+  { term: "fumbled the bag", sentiment: "negative", weight: 1.4 },
+  { term: "fumbled", sentiment: "negative", weight: 1.2 },
+  { term: "straight up broken", sentiment: "negative", weight: 1.5 },
+  { term: "L", sentiment: "negative", weight: 1.2 }, // Loss
+  { term: "big L", sentiment: "negative", weight: 1.4 },
+  { term: "yikes", sentiment: "negative", weight: 1.3 },
+  { term: "oof", sentiment: "negative", weight: 1.2 },
+  { term: "rip", sentiment: "negative", weight: 1.2 }, // Rest In Peace (context dependent)
+  { term: "rekt", sentiment: "negative", weight: 1.3 },
+  { term: "broken", sentiment: "negative", weight: 1.3 },
   
   // Expresiones neutrales modernas
   { term: "periodt", sentiment: "neutral", weight: 1.0, contexts: ["statement"] },
@@ -65,10 +94,22 @@ export const phrasePatterns: { pattern: RegExp; sentiment: 'positive' | 'negativ
   { pattern: /this\s+ain't\s+it/i, sentiment: "negative", weight: 1.4 },
   { pattern: /not\s+it\s+chief/i, sentiment: "negative", weight: 1.3 },
   { pattern: /major\s+disappointment/i, sentiment: "negative", weight: 1.5 },
-  { pattern: /straight\s+up\s+(trash|fire)/i, sentiment: "negative", weight: 1.5 }, // depends on context
+  { pattern: /straight\s+up\s+trash/i, sentiment: "negative", weight: 1.5 },
+  { pattern: /straight\s+up\s+fire/i, sentiment: "positive", weight: 1.5 },
+  { pattern: /straight\s+up\s+broken/i, sentiment: "negative", weight: 1.5 },
   { pattern: /no\s+cap/i, sentiment: "positive", weight: 1.2 },
   { pattern: /hits\s+different/i, sentiment: "positive", weight: 1.3 },
   { pattern: /chef's\s+kiss/i, sentiment: "positive", weight: 1.5 },
+  { pattern: /lowkey\s+goated/i, sentiment: "positive", weight: 1.4 },
+  { pattern: /highkey\s+goated/i, sentiment: "positive", weight: 1.5 },
+  { pattern: /not\s+gonna\s+lie/i, sentiment: "positive", weight: 1.1 },
+  { pattern: /fr\s+fr/i, sentiment: "positive", weight: 1.1 },
+  { pattern: /fumbled\s+the\s+bag/i, sentiment: "negative", weight: 1.4 },
+  { pattern: /absolutely\s+fire/i, sentiment: "positive", weight: 1.5 },
+  { pattern: /it's\s+bussin/i, sentiment: "positive", weight: 1.4 },
+  { pattern: /that's\s+cap/i, sentiment: "negative", weight: 1.3 },
+  { pattern: /lowkey\s+(fire|sick|good|amazing)/i, sentiment: "positive", weight: 1.3 },
+  { pattern: /highkey\s+(fire|sick|good|amazing)/i, sentiment: "positive", weight: 1.4 },
 ];
 
 // Emojis y su peso sentimental

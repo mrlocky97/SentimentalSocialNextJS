@@ -1,6 +1,6 @@
 /**
- * Tweet Sentiment Analysis Manager Service - Optimized
- * Motor unificado para análisis de sentimiento con manejo centralizado de errores
+ * Tweet Sentiment Analysis Manager Service - Optimized with Auto-Learning
+ * Motor unificado para análisis de sentimiento con capacidades de auto-aprendizaje
  */
 
 import { Core } from "../core";
@@ -9,16 +9,27 @@ import { defaultMetrics, metricsRegistry } from "../lib/observability/metrics";
 import { SentimentAnalysisOrchestrator } from "../lib/sentiment/orchestrator";
 import { TweetSentimentAnalysis } from "../lib/sentiment/types";
 import { Tweet } from "../types/twitter";
+import { AutoLearningNaiveBayesService } from "./auto-learning-naive-bayes.service";
 import type {
-  NaiveBayesTrainingExample,
-  SentimentLabel,
+    NaiveBayesTrainingExample,
+    SentimentLabel,
 } from "./naive-bayes-sentiment.service";
 
 export class TweetSentimentAnalysisManager {
   private orchestrator: SentimentAnalysisOrchestrator;
+  private autoLearningService: AutoLearningNaiveBayesService | null = null;
+  private autoLearningEnabled: boolean;
 
-  constructor() {
+  constructor(enableAutoLearning: boolean = true) {
     this.orchestrator = new SentimentAnalysisOrchestrator();
+    this.autoLearningEnabled = enableAutoLearning;
+    
+    if (this.autoLearningEnabled) {
+      this.autoLearningService = new AutoLearningNaiveBayesService();
+      logger.info("TweetSentimentAnalysisManager initialized with auto-learning enabled");
+    } else {
+      logger.info("TweetSentimentAnalysisManager initialized without auto-learning");
+    }
   }
 
   /**
@@ -465,15 +476,186 @@ export class TweetSentimentAnalysisManager {
   }
 
   /**
+   * Proporcionar feedback para auto-aprendizaje
+   */
+  public provideFeedback(
+    text: string, 
+    actualLabel: SentimentLabel, 
+    userId?: string, 
+    source?: string
+  ): boolean {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      logger.warn("Auto-learning not enabled, feedback ignored");
+      return false;
+    }
+
+    try {
+      this.autoLearningService.provideFeedback(text, actualLabel, userId, source);
+      logger.debug("Feedback provided to auto-learning system", {
+        actualLabel,
+        userId,
+        source
+      });
+      return true;
+    } catch (error) {
+      logger.error("Error providing feedback to auto-learning system", error);
+      return false;
+    }
+  }
+
+  /**
+   * Entrenar incrementalmente con nuevos datos
+   */
+  public incrementalTrain(examples: NaiveBayesTrainingExample[]): boolean {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      logger.warn("Auto-learning not enabled, incremental training ignored");
+      return false;
+    }
+
+    try {
+      this.autoLearningService.incrementalTrain(examples);
+      logger.info(`Incremental training completed with ${examples.length} examples`);
+      return true;
+    } catch (error) {
+      logger.error("Error during incremental training", error);
+      return false;
+    }
+  }
+
+  /**
+   * Predecir con el modelo de auto-aprendizaje (si está habilitado)
+   */
+  public predictWithAutoLearning(text: string): any {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      // Fallback al modelo regular
+      return this.predictNaiveBayes(text);
+    }
+
+    return this.autoLearningService.predict(text);
+  }
+
+  /**
+   * Predecir con análisis avanzado para casos complejos
+   * Usa el manejador especializado integrado en el servicio de auto-aprendizaje
+   */
+  public async predictWithEnhancedAutoLearning(text: string): Promise<any> {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      // Fallback al modelo regular
+      const basicResult = this.predictNaiveBayes(text);
+      return {
+        ...basicResult,
+        complexityScore: 0,
+        reasoning: ["Auto-learning disabled, using basic prediction"],
+        fallbackUsed: true
+      };
+    }
+
+    try {
+      return await this.autoLearningService.predictEnhanced(text);
+    } catch (error) {
+      logger.error("Error in enhanced auto-learning prediction", error);
+      const fallbackResult = this.predictNaiveBayes(text);
+      return {
+        ...fallbackResult,
+        complexityScore: 0,
+        reasoning: ["Error in enhanced prediction, using fallback"],
+        fallbackUsed: true
+      };
+    }
+  }
+
+  /**
+   * Obtener estadísticas del sistema de auto-aprendizaje
+   */
+  public getAutoLearningStats(): any {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      return {
+        enabled: false,
+        message: "Auto-learning is not enabled"
+      };
+    }
+
+    return {
+      enabled: true,
+      stats: this.autoLearningService.getAutoLearningStats(),
+      performance: this.autoLearningService.getCurrentMetrics(),
+      modelInfo: this.autoLearningService.getStats()
+    };
+  }
+
+  /**
+   * Forzar procesamiento del buffer de auto-aprendizaje
+   */
+  public forceProcessAutoLearningBuffer(): boolean {
+    if (!this.autoLearningEnabled || !this.autoLearningService) {
+      logger.warn("Auto-learning not enabled, cannot process buffer");
+      return false;
+    }
+
+    try {
+      this.autoLearningService.forceProcessBuffer();
+      logger.info("Auto-learning buffer processed successfully");
+      return true;
+    } catch (error) {
+      logger.error("Error processing auto-learning buffer", error);
+      return false;
+    }
+  }
+
+  /**
+   * Habilitar/deshabilitar auto-aprendizaje dinámicamente
+   */
+  public setAutoLearningEnabled(enabled: boolean): void {
+    if (enabled && !this.autoLearningService) {
+      this.autoLearningService = new AutoLearningNaiveBayesService();
+      logger.info("Auto-learning enabled dynamically");
+    } else if (!enabled && this.autoLearningService) {
+      this.autoLearningService = null;
+      logger.info("Auto-learning disabled dynamically");
+    }
+    
+    this.autoLearningEnabled = enabled;
+  }
+
+  /**
+   * Verificar si el auto-aprendizaje está habilitado
+   */
+  public isAutoLearningEnabled(): boolean {
+    return this.autoLearningEnabled && this.autoLearningService !== null;
+  }
+
+  /**
+   * Análisis con feedback automático opcional
+   * Usa el análisis regular pero permite feedback posterior para auto-aprendizaje
+   */
+  public async analyzeTweetWithFeedbackPotential(
+    tweet: Tweet,
+    config?: { brandKeywords?: string[]; enableFeedback?: boolean }
+  ): Promise<TweetSentimentAnalysis & { feedbackEnabled: boolean }> {
+    const analysis = await this.analyzeTweet(tweet, config);
+    const feedbackEnabled = Boolean(config?.enableFeedback && this.isAutoLearningEnabled());
+
+    return {
+      ...analysis,
+      feedbackEnabled
+    };
+  }
+
+  /**
    * Dispose resources for testing
    */
   public dispose(): void {
     if (this.orchestrator) {
       this.orchestrator.dispose();
     }
+    
+    if (this.autoLearningService) {
+      this.autoLearningService = null;
+      logger.info("Auto-learning service disposed");
+    }
   }
 }
 
-// Instancia singleton exportada
+// Instancia singleton exportada con auto-aprendizaje habilitado
 export const tweetSentimentAnalysisManager =
-  new TweetSentimentAnalysisManager();
+  new TweetSentimentAnalysisManager(true);

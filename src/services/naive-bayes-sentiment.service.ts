@@ -1,3 +1,4 @@
+import { basicEnglishSentimentDataset } from "../data/basic-english-sentiment-dataset";
 import { enhancedTrainingDataV3Clean as MultilingualSentimentDataset } from "../data/enhanced-training-data-v3-clean";
 import { logger } from "../lib/observability/logger";
 
@@ -8,7 +9,7 @@ export interface NaiveBayesTrainingExample {
   label: SentimentLabel;
 }
 
-interface SentimentPrediction {
+export interface SentimentPrediction {
   label: SentimentLabel;
   confidence: number;
   scores: Record<SentimentLabel, number>;
@@ -23,7 +24,7 @@ export class NaiveBayesSentimentService {
   private classWordCounts = new Map<SentimentLabel, Map<string, number>>();
   private classCounts = new Map<SentimentLabel, number>();
   private totalDocuments = 0;
-  private smoothingFactor = 1; // Laplace smoothing
+  private smoothingFactor = 0.1; // Reduced smoothing to prevent over-neutralization
 
   constructor() {
     this.initializeModel();
@@ -41,16 +42,27 @@ export class NaiveBayesSentimentService {
   }
 
   private trainWithEnhancedData(): void {
-    // Use the imported MultilingualSentimentDataset
-    const trainingData: NaiveBayesTrainingExample[] =
+    // Combine multilingual dataset with basic English vocabulary
+    const multilingualData: NaiveBayesTrainingExample[] =
       MultilingualSentimentDataset.map(
         (item: { text: string; label: string }) => ({
           text: item.text,
           label: item.label as SentimentLabel,
         }),
       );
+    
+    // Add basic English sentiment vocabulary
+    const englishData: NaiveBayesTrainingExample[] = basicEnglishSentimentDataset.map(
+      item => ({
+        text: item.text,
+        label: item.label as SentimentLabel,
+      }),
+    );
 
-    this.train(trainingData);
+    // Combine both datasets
+    const combinedData = [...multilingualData, ...englishData];
+    
+    this.train(combinedData);
   }
 
   private preprocessText(text: string): string[] {
@@ -60,15 +72,16 @@ export class NaiveBayesSentimentService {
 
     return text
       .toLowerCase()
-      .replace(/[^\w\s]/g, " ") // Remove punctuation but keep word boundaries
+      .replace(/[^a-zA-Z\s']/g, " ") // Keep letters and apostrophes, replace others with spaces
       .replace(/\s+/g, " ") // Normalize whitespace
       .trim()
       .split(" ")
-      .filter((word) => word.length > 0)
+      .filter((word) => word.length > 1) // Keep words longer than 1 character
       .filter((word) => !this.isStopWord(word));
   }
 
   private isStopWord(word: string): boolean {
+    // Reduced stop words list - keep more sentiment-bearing words
     const stopWords = new Set([
       "a",
       "an",
@@ -95,27 +108,7 @@ export class NaiveBayesSentimentService {
       "were",
       "will",
       "with",
-      "this",
-      "but",
-      "they",
-      "have",
-      "had",
-      "what",
-      "said",
-      "each",
-      "which",
-      "she",
-      "do",
-      "how",
-      "their",
-      "if",
-      "up",
-      "out",
-      "many",
-      "then",
-      "them",
-      "these",
-      "so",
+      // Removed "this", "but", "they", etc. as they can carry sentiment context
     ]);
     return stopWords.has(word);
   }
@@ -268,6 +261,9 @@ export class NaiveBayesSentimentService {
       vocabularySize: this.vocabulary.size,
       totalDocuments: this.totalDocuments,
       classCounts: Object.fromEntries(this.classCounts),
+      vocabulary: Array.from(this.vocabulary),
+      smoothingFactor: this.smoothingFactor,
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -317,5 +313,106 @@ export class NaiveBayesSentimentService {
     );
     this.totalDocuments = data.totalDocuments;
     this.smoothingFactor = data.smoothingFactor;
+  }
+
+  /**
+   * Aprendizaje incremental - Agrega nuevos ejemplos sin resetear el modelo existente
+   */
+  incrementalTrain(examples: NaiveBayesTrainingExample[]): void {
+    logger.info(`Incremental training with ${examples.length} examples...`);
+
+    // NO resetear el modelo existente - solo agregar nuevos datos
+    for (const example of examples) {
+      if (!example.text || !example.label) {
+        continue;
+      }
+
+      const words = this.preprocessText(example.text);
+      const label = example.label;
+
+      // Actualizar contadores de clase incrementalmente
+      this.classCounts.set(label, (this.classCounts.get(label) || 0) + 1);
+      this.totalDocuments++;
+
+      // Actualizar contadores de palabras por clase incrementalmente
+      let classWordMap = this.classWordCounts.get(label);
+      if (!classWordMap) {
+        classWordMap = new Map();
+        this.classWordCounts.set(label, classWordMap);
+      }
+
+      for (const word of words) {
+        this.vocabulary.add(word);
+        classWordMap.set(word, (classWordMap.get(word) || 0) + 1);
+      }
+    }
+
+    logger.info("Incremental training completed", {
+      newVocabularySize: this.vocabulary.size,
+      positiveExamples: this.classCounts.get("positive"),
+      negativeExamples: this.classCounts.get("negative"),
+      neutralExamples: this.classCounts.get("neutral"),
+      totalDocuments: this.totalDocuments,
+    });
+  }
+
+  /**
+   * Obtener tamaño del vocabulario (útil para estadísticas)
+   */
+  public getVocabularySize(): number {
+    return this.vocabulary.size;
+  }
+
+  /**
+   * Obtener contadores de clase (útil para estadísticas)
+   */
+  public getClassCounts(): Map<SentimentLabel, number> {
+    return new Map(this.classCounts);
+  }
+
+  /**
+   * Obtener número total de documentos entrenados
+   */
+  public getTotalDocuments(): number {
+    return this.totalDocuments;
+  }
+
+  /**
+   * Método para combinar con otro modelo (útil para aprendizaje distribuido)
+   */
+  mergeWith(otherModel: NaiveBayesSentimentService): void {
+    logger.info("Merging with another model...");
+
+    // Combinar vocabularios
+    const otherVocab = otherModel.getStats().vocabulary as string[] || [];
+    otherVocab.forEach(word => this.vocabulary.add(word));
+
+    // Combinar contadores de clase
+    const otherClassCounts = otherModel.getClassCounts();
+    for (const [label, count] of otherClassCounts) {
+      this.classCounts.set(label, (this.classCounts.get(label) || 0) + count);
+    }
+
+    // Combinar total de documentos
+    this.totalDocuments += otherModel.getTotalDocuments();
+
+    // Combinar contadores de palabras (esto requiere serialización)
+    const otherSerialized = otherModel.serialize();
+    for (const [label, wordCounts] of Object.entries(otherSerialized.classWordCounts)) {
+      let currentClassMap = this.classWordCounts.get(label as SentimentLabel);
+      if (!currentClassMap) {
+        currentClassMap = new Map();
+        this.classWordCounts.set(label as SentimentLabel, currentClassMap);
+      }
+
+      for (const [word, count] of Object.entries(wordCounts)) {
+        currentClassMap.set(word, (currentClassMap.get(word) || 0) + count);
+      }
+    }
+
+    logger.info("Model merge completed", {
+      newVocabularySize: this.vocabulary.size,
+      totalDocuments: this.totalDocuments
+    });
   }
 }

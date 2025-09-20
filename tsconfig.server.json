@@ -32,7 +32,8 @@
     "src/routes/**/*",
     "src/models/**/*",
     "src/repositories/**/*",
-    "src/services/**/*"
+    "src/services/**/*",
+    "src/data/**/*"
   ],
   "exclude": ["node_modules", "dist", ".next", "src/app/**/*"]
 }
