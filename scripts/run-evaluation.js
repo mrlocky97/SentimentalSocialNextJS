@@ -28,7 +28,7 @@ function showMenu() {
 }
 
 function runSimpleValidation() {
-  console.log('\n▶️  Ejecutando Validación Cruzada Simple...');
+  console.log('\n  Ejecutando Validación Cruzada Simple...');
   try {
     execSync('node scripts/simple-cross-validation.js', { 
       stdio: 'inherit',
@@ -41,7 +41,7 @@ function runSimpleValidation() {
 }
 
 function runSlangTest() {
-  console.log('\n▶️  Ejecutando Test de Slang Moderno...');
+  console.log('\n Ejecutando Test de Slang Moderno...');
   try {
     execSync('node scripts/test-enhanced-system.js', { 
       stdio: 'inherit',
@@ -54,23 +54,23 @@ function runSlangTest() {
 }
 
 function runCompleteValidation() {
-  console.log('\n▶️  Ejecutando Validación Cruzada Completa...');
+  console.log('\n  Ejecutando Validación Cruzada Completa...');
   try {
     // Primero compilar
-    console.log('🔨 Compilando TypeScript...');
+    console.log('Compilando TypeScript...');
     execSync('npx tsc --build tsconfig.server.json', { 
       stdio: 'inherit',
       cwd: process.cwd()
     });
     
-    console.log('▶️  Ejecutando evaluación TypeScript...');
+    console.log(' Ejecutando evaluación TypeScript...');
     execSync('npx ts-node --esm scripts/quick-cross-validation.ts', { 
       stdio: 'inherit',
       cwd: process.cwd()
     });
   } catch (error) {
     console.error('❌ Error ejecutando validación completa:', error.message);
-    console.log('💡 Intentando alternativa...');
+    console.log('Intentando alternativa...');
     
     try {
       // Alternativa: usar solo la validación simple
@@ -127,8 +127,8 @@ function main() {
     console.log('\n✅ Evaluación completada exitosamente!');
     
   } catch (error) {
-    console.error('\n💥 Error en el sistema de evaluación:', error);
-    console.log('\n💡 Comandos disponibles:');
+    console.error('\n Error en el sistema de evaluación:', error);
+    console.log('\n Comandos disponibles:');
     console.log('   node scripts/run-evaluation.js simple    # Validación simple');
     console.log('   node scripts/run-evaluation.js slang     # Test de slang');
     console.log('   node scripts/run-evaluation.js complete  # Evaluación completa');
@@ -139,34 +139,34 @@ function main() {
 }
 
 function showHelp() {
-  console.log('\n🆘 AYUDA - SISTEMA DE EVALUACIÓN');
+  console.log('\n AYUDA - SISTEMA DE EVALUACIÓN');
   console.log('='.repeat(60));
   console.log('');
-  console.log('📖 USO:');
+  console.log(' USO:');
   console.log('   node scripts/run-evaluation.js [comando]');
   console.log('');
-  console.log('📋 COMANDOS:');
+  console.log(' COMANDOS:');
   console.log('   simple     Validación cruzada simple (por defecto)');
   console.log('   slang      Test específico de slang moderno');
   console.log('   complete   Evaluación completa con TypeScript');
   console.log('   all        Ejecutar simple + slang');
   console.log('   help       Mostrar esta ayuda');
   console.log('');
-  console.log('📊 METODOLOGÍAS:');
+  console.log(' METODOLOGÍAS:');
   console.log('   • K-Fold Cross Validation (3-fold y 5-fold)');
   console.log('   • Stratified Sampling');
   console.log('   • Análisis de errores por clase');
   console.log('   • Intervalos de confianza');
   console.log('   • Test específicos de slang moderno');
   console.log('');
-  console.log('📈 MÉTRICAS:');
+  console.log(' MÉTRICAS:');
   console.log('   • Accuracy con desviación estándar');
   console.log('   • Precisión por clase');
   console.log('   • Análisis de confianza');
   console.log('   • Tiempo de procesamiento');
   console.log('   • Distribución de errores');
   console.log('');
-  console.log('🎯 RECOMENDACIONES:');
+  console.log(' RECOMENDACIONES:');
   console.log('   • Desarrollo: use "simple" para pruebas rápidas');
   console.log('   • Validación: use "slang" para verificar mejoras');
   console.log('   • Producción: use "complete" para evaluación final');

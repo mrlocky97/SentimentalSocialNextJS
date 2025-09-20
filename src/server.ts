@@ -219,7 +219,7 @@ function initializeExpress(): express.Application {
         try {
           JSON.parse(buf.toString());
         } catch (e) {
-          throw new Error('Invalid JSON payload');
+          throw new Error(`ERROR: ${e} Invalid JSON payload.`);
         }
       },
     })
