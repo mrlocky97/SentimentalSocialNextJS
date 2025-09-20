@@ -7,8 +7,14 @@ import { globalSecurity, securitySchemes } from "./security";
 const apiGlobs = [
   "./src/routes/*.ts",
   "./src/routes/**/*.ts",
+  "./src/routes/modules/**/*.ts",
   "./src/controllers/*.ts",
   "./src/middleware/*.ts",
+  "/app/src/routes/*.ts",
+  "/app/src/routes/**/*.ts", 
+  "/app/src/routes/modules/**/*.ts",
+  "/app/src/controllers/*.ts",
+  "/app/src/middleware/*.ts",
 ];
 
 export function buildSwaggerSpec() {
