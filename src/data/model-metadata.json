@@ -1,12 +1,14 @@
 {
-  "version": "v3.1",
-  "datasetSize": 4000,
-  "accuracy": 0.9987515605493134,
+  "version": "v3.3-clean-anti-overfitting",
+  "datasetSize": 2237,
+  "accuracy": 1,
   "features": [
     "naive_bayes",
-    "enhanced"
+    "enhanced_dataset_v3_clean",
+    "anti_overfitting",
+    "cross_validation"
   ],
   "modelType": "naive_bayes",
-  "trainingDate": "2025-09-01T16:16:33.691Z",
-  "lastUpdated": "2025-09-01T16:16:33.695Z"
+  "trainingDate": "2025-09-19T23:17:16.647Z",
+  "lastUpdated": "2025-09-19T23:17:16.652Z"
 }

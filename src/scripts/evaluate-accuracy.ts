@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { enhancedTrainingDataV3Complete as TRAIN } from "../data/enhanced-training-data-v3";
+import { enhancedTrainingDataV3Clean as TRAIN } from "../data/enhanced-training-data-v3-clean";
 import { TweetSentimentAnalysisManager } from "../services/tweet-sentiment-analysis.manager.service";
 
 type Label = "positive" | "negative" | "neutral";
@@ -420,7 +420,7 @@ function printDetailedResults(results: EvaluationResults) {
     created_at: new Date().toISOString(),
     model_type: "naive_bayes_enhanced",
     dataset: {
-      source: "enhanced-training-data-v3.ts",
+      source: "enhanced-training-data-v3-clean.ts",
       total_samples: TRAIN.length,
       distribution: {
         positive: TRAIN.filter((d) => d.label === "positive").length,

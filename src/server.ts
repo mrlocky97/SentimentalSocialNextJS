@@ -35,20 +35,20 @@ import './types/socket';
 
 // Import middleware
 import {
-    analyticsRateLimit,
-    authRateLimit,
-    cacheControlMiddleware,
-    compressionMiddleware,
-    performanceMiddleware,
-    sanitizeMiddleware,
-    scrapingRateLimit,
+  analyticsRateLimit,
+  authRateLimit,
+  cacheControlMiddleware,
+  compressionMiddleware,
+  performanceMiddleware,
+  sanitizeMiddleware,
+  scrapingRateLimit,
 } from './lib/middleware/performance';
 import { generalRateLimitMiddleware } from './middleware/intelligent-rate-limit';
 import { createMetricsMiddleware } from './middleware/metrics.middleware';
 import {
-    errorLoggingMiddleware,
-    performanceLoggingMiddleware,
-    requestLoggingMiddleware,
+  errorLoggingMiddleware,
+  performanceLoggingMiddleware,
+  requestLoggingMiddleware,
 } from './middleware/request-logging';
 
 // Import services
@@ -366,15 +366,15 @@ function configureSwagger(app: express.Application): void {
  */
 async function trainSentimentModel(manager: TweetSentimentAnalysisManager): Promise<void> {
   try {
-    const datasetName = 'enhanced-v3-production';
-    const { enhancedTrainingDataV3Complete } = await import('./data/enhanced-training-data-v3');
+    const datasetName = 'enhanced-v3-clean-production';
+    const { enhancedTrainingDataV3Clean } = await import('./data/enhanced-training-data-v3-clean');
 
     systemLogger.info(
-      `🧠 Training with ${enhancedTrainingDataV3Complete.length} examples from ${datasetName} dataset`
+      `🧠 Training with ${enhancedTrainingDataV3Clean.length} examples from ${datasetName} dataset`
     );
 
     const startTime = Date.now();
-    await manager.trainNaiveBayes(enhancedTrainingDataV3Complete);
+    await manager.trainNaiveBayes(enhancedTrainingDataV3Clean);
     const trainingTime = Date.now() - startTime;
 
     systemLogger.info(`✅ Model trained in ${trainingTime}ms`);
@@ -399,8 +399,8 @@ async function trainSentimentModel(manager: TweetSentimentAnalysisManager): Prom
 async function fallbackModelTraining(manager: TweetSentimentAnalysisManager): Promise<void> {
   try {
     systemLogger.info('🔄 Attempting fallback training...');
-    const { enhancedTrainingDataV3Complete } = await import('./data/enhanced-training-data-v3');
-    await manager.trainNaiveBayes(enhancedTrainingDataV3Complete.slice(0, 800));
+    const { enhancedTrainingDataV3Clean } = await import('./data/enhanced-training-data-v3-clean');
+    await manager.trainNaiveBayes(enhancedTrainingDataV3Clean.slice(0, 800));
     systemLogger.info('⚠️ Using fallback model with reduced dataset');
   } catch (fallbackError) {
     systemLogger.error('❌ Fallback training also failed:', { fallbackError });
@@ -413,29 +413,32 @@ async function fallbackModelTraining(manager: TweetSentimentAnalysisManager): Pr
  */
 async function validateModel(): Promise<void> {
   try {
-    systemLogger.info('🧪 Validating model with test dataset...');
+    systemLogger.info('🧪 Validating model with enhanced dataset...');
 
-    const { sentimentTestDataset } = await import('./data/test-datasets');
-    if (!sentimentTestDataset?.length) {
-      systemLogger.warn('⚠️ No test dataset available for validation');
+    const { enhancedTrainingDataV3Clean } = await import('./data/enhanced-training-data-v3-clean');
+    if (!enhancedTrainingDataV3Clean?.length) {
+      systemLogger.warn('⚠️ No enhanced dataset available for validation');
       return;
     }
 
+    // Use a small sample for validation (first 50 examples)
+    const validationSample = enhancedTrainingDataV3Clean.slice(0, 50);
+    
     // Use sentimentServiceFacade for compatibility with unified architecture
     const { sentimentServiceFacade } = await import('./lib/sentiment/sentiment-service-facade');
 
     // Simple validation using orchestrator through facade
     systemLogger.info('📊 Model validation using unified orchestrator via facade', {
-      testCases: sentimentTestDataset.length,
+      testCases: validationSample.length,
       model: 'unified-orchestrator-v2.0'
     });
 
     // Test a small sample to verify the system is working
-    const sampleSize = Math.min(10, sentimentTestDataset.length);
+    const sampleSize = Math.min(10, validationSample.length);
     let correct = 0;
     
     for (let i = 0; i < sampleSize; i++) {
-      const testCase = sentimentTestDataset[i];
+      const testCase = validationSample[i];
       try {
         const result = await sentimentServiceFacade.testSentimentAnalysis({ 
           text: testCase.text, 

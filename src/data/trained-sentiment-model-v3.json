@@ -1,0 +1,34 @@
+{
+  "trained": true,
+  "trainingDate": "2025-09-19T23:17:16.654Z",
+  "originalDatasetSize": 3197,
+  "trainingDatasetSize": 2237,
+  "validationDatasetSize": 479,
+  "testDatasetSize": 481,
+  "trainingAccuracy": 0.98,
+  "validationAccuracy": 0.99,
+  "testAccuracy": 1,
+  "overfittingScore": -0.010000000000000009,
+  "hasOverfitting": false,
+  "stats": {
+    "trained": true,
+    "vocabularySize": 1062,
+    "totalDocuments": 2237,
+    "classCounts": {
+      "positive": 712,
+      "negative": 818,
+      "neutral": 707
+    }
+  },
+  "trainingTime": 30,
+  "validation": {
+    "duplicatesRemoved": 0,
+    "languages": [
+      "en",
+      "es",
+      "de",
+      "fr"
+    ],
+    "averageLength": 42.86675007819831
+  }
+}

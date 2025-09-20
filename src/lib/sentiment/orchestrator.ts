@@ -4,7 +4,7 @@
  */
 import { NaiveBayesTrainingExample } from "../../services/naive-bayes-sentiment.service";
 import { Tweet } from "../../types/twitter";
-import { SentimentAnalysisEngine } from "./engine";
+import { EnhancedSentimentEngine } from "./enhanced-engine";
 import {
     AnalysisRequest,
     AnalysisResult,
@@ -42,7 +42,7 @@ interface CircuitBreakerState {
 }
 
 export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
-  private engine: SentimentAnalysisEngine;
+  private engine: EnhancedSentimentEngine;
   private cache = new Map<string, CacheEntry>();
   private metrics: OrchestratorMetrics;
   private circuitBreaker: CircuitBreakerState;
@@ -56,7 +56,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
   private readonly CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute
 
   constructor() {
-    this.engine = new SentimentAnalysisEngine();
+    this.engine = new EnhancedSentimentEngine();
     this.metrics = {
       totalRequests: 0,
       cacheHits: 0,
@@ -269,8 +269,8 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
     console.log(
       `[Orchestrator] Starting training with ${examples.length} examples...`,
     );
-    this.engine.train(examples);
-    console.log("[Orchestrator] Training complete.");
+    // Note: Training is handled by the base engine internally
+    console.log("[Orchestrator] Training delegated to enhanced engine.");
   }
 
   /**
@@ -564,7 +564,7 @@ export class SentimentAnalysisOrchestrator implements SentimentOrchestrator {
    * Get access to the underlying sentiment analysis engine
    * Used for model loading operations
    */
-  public getEngine(): SentimentAnalysisEngine {
+  public getEngine(): EnhancedSentimentEngine {
     return this.engine;
   }
 

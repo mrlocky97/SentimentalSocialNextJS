@@ -377,7 +377,7 @@ export class TweetSentimentAnalysisManager {
         text: ex.text,
         label: ex.label as SentimentLabel,
       }));
-      const engine = this.orchestrator.getEngine();
+      const engine: any = this.orchestrator.getEngine();
       if (typeof engine.train === "function") {
         engine.train(examples);
       } else {
@@ -409,7 +409,7 @@ export class TweetSentimentAnalysisManager {
    */
   async saveNaiveBayesToFile(filePath: string): Promise<boolean> {
     try {
-      const engine = this.orchestrator.getEngine();
+      const engine: any = this.orchestrator.getEngine();
       const naiveBayes = engine.getNaiveBayesAnalyzer();
       if (!naiveBayes || typeof naiveBayes.serialize !== "function") {
         throw new Error("Naive Bayes analyzer does not support serialization");
@@ -449,9 +449,8 @@ export class TweetSentimentAnalysisManager {
       }
 
       // Try to load the Naive Bayes model through the orchestrator
-      const naiveBayesService = this.orchestrator
-        .getEngine()
-        .getNaiveBayesAnalyzer();
+      const engine: any = this.orchestrator.getEngine();
+      const naiveBayesService = engine.getNaiveBayesAnalyzer();
       if (naiveBayesService) {
         const metadata =
           await modelPersistence.loadNaiveBayesModel(naiveBayesService);

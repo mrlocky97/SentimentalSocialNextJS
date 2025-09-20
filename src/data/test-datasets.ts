@@ -1,5 +1,5 @@
 // Import the SentimentTrainingItem type from enhanced-training-data
-import { SentimentTrainingItem } from "./enhanced-training-data-v3";
+import { SentimentTrainingItem } from "./enhanced-training-data-v3-clean";
 
 // Primary dataset also used for training
 export const MultilingualSentimentDataset: SentimentTrainingItem[] = [];

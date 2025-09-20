@@ -8,37 +8,37 @@ import { asyncHandler } from "../../../core/errors/error-handler";
 
 // Import handlers
 import {
-  advancedCompareHandler,
-  analyzeMultiLangHandler,
-  analyzeTextHandler,
-  analyzeTweetHandler,
-  analyzeWithMethodHandler,
-  batchAnalyzeHandler,
-  compareMethodsHandler,
-  getBenchmarksHandler,
-  getDemoHandler,
-  getMetricsHandler,
-  getModelStatusHandler,
-  getTestHandler,
-  initializeBertHandler,
-  trainModelHandler,
+    advancedCompareHandler,
+    analyzeMultiLangHandler,
+    analyzeTextHandler,
+    analyzeTweetHandler,
+    analyzeWithMethodHandler,
+    batchAnalyzeHandler,
+    compareMethodsHandler,
+    getBenchmarksHandler,
+    getDemoHandler,
+    getMetricsHandler,
+    getModelStatusHandler,
+    getTestHandler,
+    initializeBertHandler,
+    trainModelHandler,
 } from "./handlers";
 
 // Import middleware
 import {
-  limitRequestSize,
-  logSentimentRequest,
-  sentimentRateLimit,
-  setApiVersion,
-  setSentimentSecurityHeaders,
-  validateBatchInput,
-  validateContentType,
-  validateMethodInput,
-  validateMultiLangInput,
-  validateTextInput,
-  validateTrainingInput,
-  validateTweetInput,
-  validateBertInitInput,
+    limitRequestSize,
+    logSentimentRequest,
+    sentimentRateLimit,
+    setApiVersion,
+    setSentimentSecurityHeaders,
+    validateBatchInput,
+    validateBertInitInput,
+    validateContentType,
+    validateMethodInput,
+    validateMultiLangInput,
+    validateTextInput,
+    validateTrainingInput,
+    validateTweetInput,
 } from "./middleware";
 
 const router = Router();
@@ -854,11 +854,11 @@ router.post(
           tweet.tweetId = tweet.id;
         }
 
-        // Import sentiment service
-        const { sentimentService } = await import(
-          "../../../services/sentiment.service"
+        // Import sentiment service facade (unified architecture)
+        const { sentimentServiceFacade } = await import(
+          "../../../lib/sentiment/sentiment-service-facade"
         );
-        const result = await sentimentService.analyzeTweet(tweet);
+        const result = await sentimentServiceFacade.analyzeTweet(tweet);
 
         return res.json({
           success: true,

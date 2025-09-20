@@ -1,4 +1,4 @@
-import { sentimentTestDataset as MultilingualSentimentDataset } from "../data/test-datasets";
+import { enhancedTrainingDataV3Clean as MultilingualSentimentDataset } from "../data/enhanced-training-data-v3-clean";
 import { logger } from "../lib/observability/logger";
 
 export type SentimentLabel = "positive" | "negative" | "neutral";
