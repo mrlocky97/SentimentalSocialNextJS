@@ -2,6 +2,41 @@
 
 Este directorio contiene scripts para entrenar, evaluar y administrar funcionalidades de la aplicación SentimentalSocial, **incluyendo un sistema completo de evaluación con metodologías avanzadas**.
 
+## 🚀 Scripts de Evaluación - Comando Unificado (RECOMENDADO)
+
+### Comando Principal Multiplataforma
+```bash
+# Evaluación completa del sistema unificado (Windows, Linux, macOS)
+npm run eval:unified
+```
+
+**Lo que hace:**
+1. 🔧 Compila automáticamente el proyecto TypeScript
+2. 📊 Ejecuta evaluación exhaustiva del sistema híbrido
+3. 📄 Genera resultados en `docs/tfg-evaluation-results/`
+4. 📈 Calcula métricas de accuracy, precision, recall y F1-score
+
+### Comandos de Evaluación Rápida
+```bash
+# Evaluaciones específicas
+npm run eval:simple     # Validación cruzada simple (1-2 min)
+npm run eval:slang      # Test de slang moderno (30 seg)  
+npm run eval:all        # Ambas evaluaciones secuencialmente
+npm run eval:help       # Ayuda detallada
+
+# Entrenamiento avanzado
+npm run train:cv        # Cross-validation 5-fold
+npm run train:cv10      # Cross-validation 10-fold
+```
+
+**Ventajas del comando unificado:**
+- ✅ **Multiplataforma**: Un solo comando para todos los OS
+- ✅ **Sin duplicación**: Eliminados archivos .bat/.sh redundantes
+- ✅ **Automático**: Compilación y ejecución integradas
+- ✅ **Mantenible**: Un solo punto de entrada para evaluaciones
+
+---
+
 ## 🚀 Sistema de Evaluación con Metodologías Avanzadas
 
 ### Script Principal de Evaluación
