@@ -609,8 +609,17 @@ export class SentimentAnalysisEngine implements AnalyzerEngine {
 
   constructor() {
     this.ruleBasedAnalyzer = new ConsolidatedRuleAnalyzer();
-    this.naiveBayesAnalyzer = new NaiveBayesSentimentService();
+    this.naiveBayesAnalyzer = new NaiveBayesSentimentService({
+      smoothing: 1.0,
+      prior: "empirical",
+      defaultLang: "en",
+      enableLangDetect: true,
+      enableStopwords: true
+    });
     this.hybridAnalyzer = new AdvancedHybridAnalyzer();
+    
+    // Bootstrap with default datasets for compatibility
+    this.naiveBayesAnalyzer.bootstrap();
   }
 
   /**
